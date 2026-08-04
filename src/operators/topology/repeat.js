@@ -59,7 +59,7 @@ Operators.register({
         out.push(transform(c, (pt) => {
           const x = p.rotateCopies ? pt.x * cos - pt.y * sin : pt.x;
           const y = p.rotateCopies ? pt.x * sin + pt.y * cos : pt.y;
-          return { x: x + ox, y: y + oy };
+          return { ...pt, x: x + ox, y: y + oy };
         }));
       }
     }
@@ -112,7 +112,7 @@ Operators.register({
         const tx = q * p.dx - ox;
         const ty = r * p.dy - oy;
         for (const c of curves) {
-          out.push(transform(c, (pt) => ({ x: pt.x + tx, y: pt.y + ty })));
+          out.push(transform(c, (pt) => ({ ...pt, x: pt.x + tx, y: pt.y + ty })));
         }
       }
     }

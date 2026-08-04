@@ -43,9 +43,9 @@ export function offsetPoints(points, d, closed) {
     const k = Math.min(4, 1 / dot);
     if (!closed && (i === 0 || i === n - 1)) {
       const nn = i === 0 ? n0 : n1;
-      out[i] = { x: points[i].x + nn.x * d, y: points[i].y + nn.y * d };
+      out[i] = { ...points[i], x: points[i].x + nn.x * d, y: points[i].y + nn.y * d };
     } else {
-      out[i] = { x: points[i].x + mx * d * k, y: points[i].y + my * d * k };
+      out[i] = { ...points[i], x: points[i].x + mx * d * k, y: points[i].y + my * d * k };
     }
   }
   return out;

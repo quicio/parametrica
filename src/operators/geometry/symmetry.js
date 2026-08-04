@@ -30,7 +30,7 @@ Operators.register({
           id: opId(),
           points: c.points.map((pt) => {
             const x = mirrored ? -pt.x : pt.x;
-            return { x: x * cos - pt.y * sin, y: x * sin + pt.y * cos };
+            return { ...pt, x: x * cos - pt.y * sin, y: x * sin + pt.y * cos };
           }),
         });
       }

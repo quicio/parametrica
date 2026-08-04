@@ -157,6 +157,23 @@ console.log(`4. generators (${Generators.list().length})`);
     assert(curves[0].closed === expectedClosed, `${def.id}: closure flag matches domain`);
   }
 
+  // 3D depth metadata survives post-processing (fit/center) and geometry
+  // operators — per-point fields (depth, depthAlpha) must not be dropped.
+  const helixDoc = createDocument('parametric-3d', {
+    generator: { params: { samples: 300 } },
+  });
+  const helixEval = evaluateDocument(helixDoc, { time: 0 });
+  const helixPoint = helixEval.curves[0]?.points[100];
+  assert(helixPoint?.depthAlpha != null, 'parametric-3d: depthAlpha survives fit/center');
+  assert(typeof helixPoint?.depth === 'number', 'parametric-3d: depth survives fit/center');
+  // A mirror operator must preserve depth fields on the flipped copies.
+  helixDoc.operators.push({ id: 'mirror', enabled: true, params: { axis: 'vertical', keepOriginal: true }, mods: {} });
+  const mirrored = evaluateDocument(helixDoc, { time: 0 });
+  assert(mirrored.curves.length === 2, 'mirror: two curves (original + flipped)');
+  for (const c of mirrored.curves) {
+    assert(c.points[50]?.depthAlpha != null, 'mirror: flipped copy keeps depthAlpha');
+  }
+
   // superformula symmetry: r(θ) period 2π/m when m integer
   const sf = Generators.get('superformula');
   const p = { ...schemaDefaults(sf.params), m: 4, radius: 100 };

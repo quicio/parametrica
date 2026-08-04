@@ -169,6 +169,7 @@ export function fitCurves(curves, size, { preserveAspect = true } = {}) {
   return curves.map((c) => ({
     ...c,
     points: c.points.map((p) => ({
+      ...p,
       x: (p.x - box.cx) * sx,
       y: (p.y - box.cy) * sy,
     })),
@@ -180,6 +181,6 @@ export function centerCurves(curves) {
   const box = bboxAll(curves);
   return curves.map((c) => ({
     ...c,
-    points: c.points.map((p) => ({ x: p.x - box.cx, y: p.y - box.cy })),
+    points: c.points.map((p) => ({ ...p, x: p.x - box.cx, y: p.y - box.cy })),
   }));
 }

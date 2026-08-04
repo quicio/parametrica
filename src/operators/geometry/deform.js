@@ -32,7 +32,7 @@ Operators.register({
         const sin = Math.sin(a);
         const dx = pt.x - box.cx;
         const dy = pt.y - box.cy;
-        return { x: box.cx + dx * cos - dy * sin, y: box.cy + dx * sin + dy * cos };
+        return { ...pt, x: box.cx + dx * cos - dy * sin, y: box.cy + dx * sin + dy * cos };
       }),
     }));
   },
@@ -114,7 +114,7 @@ Operators.register({
         points: c.points.map((pt, i) => {
           const nrm = normals[i] ?? { x: 0, y: 1 };
           const d = noise(pt.x * p.scale, pt.y * p.scale) * p.amplitude;
-          return { x: pt.x + nrm.x * d, y: pt.y + nrm.y * d };
+          return { ...pt, x: pt.x + nrm.x * d, y: pt.y + nrm.y * d };
         }),
       };
     });

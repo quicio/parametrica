@@ -21,8 +21,8 @@ Operators.register({
   },
   apply(curves, p) {
     const out = p.keepOriginal ? curves.map((c) => clone(c, c.points)) : [];
-    const flipX = (pt) => ({ x: -pt.x, y: pt.y });
-    const flipY = (pt) => ({ x: pt.x, y: -pt.y });
+    const flipX = (pt) => ({ ...pt, x: -pt.x });
+    const flipY = (pt) => ({ ...pt, y: -pt.y });
     for (const c of curves) {
       if (p.axis === 'vertical' || p.axis === 'both') out.push(clone(c, c.points.map(flipX)));
       if (p.axis === 'horizontal' || p.axis === 'both') out.push(clone(c, c.points.map(flipY)));
@@ -48,7 +48,7 @@ Operators.register({
     return curves.map((c) => clone(c, c.points.map((pt) => {
       const dx = pt.x - p.cx;
       const dy = pt.y - p.cy;
-      return { x: p.cx + dx * cos - dy * sin, y: p.cy + dx * sin + dy * cos };
+      return { ...pt, x: p.cx + dx * cos - dy * sin, y: p.cy + dx * sin + dy * cos };
     })));
   },
 });
@@ -62,7 +62,7 @@ Operators.register({
     sy: { label: 'Scale Y', type: TYPE.NUMBER, min: 0.05, max: 4, step: 0.01, default: 1 },
   },
   apply(curves, p) {
-    return curves.map((c) => clone(c, c.points.map((pt) => ({ x: pt.x * p.sx, y: pt.y * p.sy }))));
+    return curves.map((c) => clone(c, c.points.map((pt) => ({ ...pt, x: pt.x * p.sx, y: pt.y * p.sy }))));
   },
 });
 

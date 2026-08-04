@@ -10,7 +10,7 @@
  * closes itself and the vesica piscis emerges as negative space.
  */
 
-const reflectPoint = (p) => ({ x: -p.x, y: p.y });
+const reflectPoint = (p) => ({ ...p, x: -p.x });
 
 export class Mirror {
   /** Reflect a chain of cubic Bézier segments across the vertical axis. */

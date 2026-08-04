@@ -66,7 +66,7 @@ function midpoint(points, closed) {
   for (let i = 0; i < count; i++) {
     const a = points[i];
     const b = points[(i + 1) % n];
-    out.push({ x: a.x, y: a.y }, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    out.push({ ...a }, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
   }
   if (!closed) out.push({ ...points[n - 1] });
   return out;
@@ -81,8 +81,8 @@ function chaikin(points, closed) {
     const a = points[i];
     const b = points[(i + 1) % n];
     out.push(
-      { x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 },
-      { x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 },
+      { ...a, x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 },
+      { ...b, x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 },
     );
   }
   if (!closed) out.push({ ...points[n - 1] });

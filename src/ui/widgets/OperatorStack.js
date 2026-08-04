@@ -111,13 +111,24 @@ export function bindStageParams(gui, schema, stage, rebuild) {
   for (const [key, s] of Object.entries(schema)) {
     if (s.type === TYPE.NUMBER) {
       numericKeys.push(key);
-      const proxy = { value: toBaseNumber(stage.params[key], s.default) };
-      gui.add(proxy, 'value', s.min, s.max, s.step)
+      // Bind DIRECTLY to stage.params[key]. The previous proxy
+      // pattern (`{ value: ... }`) desynced the slider from the
+      // document because dragging updated only the proxy; the
+      // onChange only fired on commit (release) and the copy
+      // back to stage.params[key] could fail silently if the
+      // stage object was swapped between events. Direct binding
+      // makes lil-gui own the lifecycle of the value — drag,
+      // release, mutation, all flow through the same property.
+      //
+      // For AnimatableValue ({expr: ...}) the binding still
+      // works: lil-gui will coerce to a number for the slider,
+      // and any direct write to stage.params[key] is preserved
+      // until the next user interaction. The animation layer
+      // resolves the AnimatableValue at evaluation time, not
+      // binding time.
+      gui.add(stage.params, key, s.min, s.max, s.step)
         .name(s.label ?? key)
-        .onChange((v) => {
-          stage.params[key] = v;
-          rebuild();
-        });
+        .onChange(rebuild);
     } else if (s.type === TYPE.BOOLEAN) {
       gui.add(stage.params, key).name(s.label ?? key).onChange(rebuild);
     } else if (s.type === TYPE.SELECT) {

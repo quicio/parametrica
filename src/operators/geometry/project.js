@@ -25,11 +25,12 @@ Operators.register({
         let target;
         if (p.mode === 'circle') {
           const len = Math.hypot(pt.x, pt.y) || 1e-9;
-          target = { x: (pt.x / len) * p.radius, y: (pt.y / len) * p.radius };
+          target = { ...pt, x: (pt.x / len) * p.radius, y: (pt.y / len) * p.radius };
         } else {
-          target = { x: pt.x, y: 0 };
+          target = { ...pt, x: pt.x, y: 0 };
         }
         return {
+          ...pt,
           x: pt.x + (target.x - pt.x) * p.mix,
           y: pt.y + (target.y - pt.y) * p.mix,
         };
