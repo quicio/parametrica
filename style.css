@@ -1,0 +1,225 @@
+/* ————————————————————————————————————————————————
+   GLYPH LAB — Swiss modernism / CAD instrument
+   ———————————————————————————————————————————————— */
+
+:root {
+  --black: #000000;
+  --panel: #050505;
+  --panel-2: #0d0d0d;
+  --hairline: #1c1c1c;
+  --ink: #f2f2f2;
+  --ink-dim: #8a8a8a;
+  --ink-faint: #4a4a4a;
+  --swiss-red: #e30613;
+  --font: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
+  --mono: "SF Mono", "IBM Plex Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--black);
+  color: var(--ink);
+  font-family: var(--font);
+  height: 100%;
+  overflow: hidden;
+}
+
+#stage {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ——— Canvas ——— */
+
+#canvas-container {
+  position: relative;
+  flex: 1 1 auto;
+  height: 100vh;
+  min-width: 0;
+  background: var(--black);
+  cursor: crosshair;
+}
+
+#canvas-container canvas {
+  display: block;
+}
+
+/* ——— Masthead ——— */
+
+#masthead {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  pointer-events: none;
+  user-select: none;
+}
+
+#masthead .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#masthead .swiss-cross {
+  width: 10px;
+  height: 10px;
+  background: var(--swiss-red);
+  display: inline-block;
+}
+
+#masthead h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+#masthead .subtitle {
+  margin: 8px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+#masthead .doctrine {
+  margin: 4px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ——— Telemetry ——— */
+
+#telemetry {
+  position: absolute;
+  left: 24px;
+  bottom: 20px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1.9;
+  white-space: pre;
+}
+
+#telemetry .ok   { color: var(--ink); }
+#telemetry .fail { color: var(--swiss-red); }
+
+/* ——— Control panel ——— */
+
+#ui {
+  flex: 0 0 304px;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--panel);
+  border-left: 1px solid var(--hairline);
+}
+
+#ui::-webkit-scrollbar { width: 4px; }
+#ui::-webkit-scrollbar-thumb { background: var(--hairline); }
+
+/* ——— lil-gui Swiss overrides ——— */
+
+.lil-gui {
+  --background-color: #050505;
+  --title-background-color: #0d0d0d;
+  --widget-color: #161616;
+  --hover-color: #1f1f1f;
+  --focus-color: #2a2a2a;
+  --text-color: #e8e8e8;
+  --number-color: #e30613;
+  --string-color: #e30613;
+  --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-size: 10px;
+  --input-font-size: 10px;
+  --padding: 5px;
+  --spacing: 5px;
+  --widget-height: 22px;
+  --name-width: 46%;
+  --slider-knob-width: 2px;
+  width: 100% !important;
+}
+
+.lil-gui.root {
+  border: none;
+}
+
+.lil-gui.root > .title {
+  display: none; /* masthead carries the identity */
+}
+
+.lil-gui .title {
+  font-size: 9px !important;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: 9px 12px !important;
+}
+
+.lil-gui .name {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+}
+
+.lil-gui .controller {
+  border-bottom: 1px solid #101010;
+  padding: 6px 10px;
+}
+
+.lil-gui .controller button {
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  background: var(--panel-2);
+  color: var(--ink);
+  height: 30px;
+  cursor: pointer;
+}
+
+.lil-gui .controller button:hover {
+  background: #161616;
+  border-color: #2c2c2c;
+}
+
+.lil-gui .controller.gl-accent button {
+  background: var(--swiss-red);
+  border-color: var(--swiss-red);
+  color: #fff;
+}
+
+.lil-gui .controller.gl-accent button:hover {
+  background: #b3050f;
+  border-color: #b3050f;
+}
+
+.lil-gui input[type="text"],
+.lil-gui select {
+  font-family: var(--mono);
+  font-size: 10px;
+  border-radius: 0;
+}
+
+.lil-gui .slider {
+  border-radius: 0;
+}
