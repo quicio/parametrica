@@ -18,11 +18,25 @@ export const DOCUMENT_VERSION = 2;
 /** Default state for every overlay toggle — derived from OVERLAYS, all off. */
 const DEFAULT_OVERLAYS = Object.fromEntries(OVERLAYS.map((o) => [o.id, false]));
 
+/**
+ * Default camera state for 3D-projected generators. The renderer
+ * reads this when the generator attaches per-point depth. 2D
+ * generators ignore it (they emit z=0 by construction). Defaults
+ * give the classic Wikipedia-style isometric view: yaw = −30°, pitch
+ * ≈ 20°, fov = 320.
+ */
+const DEFAULT_CAMERA = {
+  yaw:   -Math.PI / 6,
+  pitch: Math.PI / 9,
+  fov:   320,
+};
+
 export const DEFAULT_VIEW = {
   modes: ['stroke'],
   overlays: DEFAULT_OVERLAYS,
   strokeWeight: 2,
   guides: true,
+  camera: DEFAULT_CAMERA,
 };
 
 export const DEFAULT_ANIMATION = {
@@ -81,6 +95,14 @@ export function sanitizeDocument(raw) {
     Object.entries(rawOverlays).filter(([k]) => registered.has(k))
   );
   view.overlays = { ...DEFAULT_OVERLAYS, ...filteredRaw };
+  // Camera: same merge pattern. Each axis clamped to its physical range
+  // (yaw free, pitch bounded away from the gimbal-lock poles).
+  const rawCam = (raw.view?.camera && typeof raw.view.camera === 'object') ? raw.view.camera : {};
+  view.camera = {
+    yaw:   clamp(Number(rawCam.yaw   ?? DEFAULT_CAMERA.yaw),   -Math.PI, Math.PI,                    DEFAULT_CAMERA.yaw),
+    pitch: clamp(Number(rawCam.pitch ?? DEFAULT_CAMERA.pitch), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05, DEFAULT_CAMERA.pitch),
+    fov:   clamp(Number(rawCam.fov   ?? DEFAULT_CAMERA.fov),   1, 2000,                              DEFAULT_CAMERA.fov),
+  };
 
   const animation = { ...DEFAULT_ANIMATION, ...(raw.animation ?? {}) };
   animation.playing = Boolean(animation.playing);

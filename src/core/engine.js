@@ -31,9 +31,12 @@ export function evaluateDocument(document, options = {}) {
   const time = options.time ?? document.animation?.time ?? 0;
   const errors = [];
   const scope = createStdlib(document.seed ?? 1);
-  const ctx = { time, seed: document.seed ?? 1, scope, quality: options.quality ?? {} };
+  const ctx = { time, seed: document.seed ?? 1, scope, quality: options.quality ?? {}, document };
 
-  const cacheKey = (stage) => JSON.stringify([stage.id, stage.params, stage.mods, stage.enabled]);
+  // Cache key for each stage. Includes view.camera so 3D-projected
+  // generators invalidate when the user drags the canvas to rotate.
+  const camSig = JSON.stringify(document.view?.camera ?? {});
+  const cacheKey = (stage) => JSON.stringify([stage.id, stage.params, stage.mods, stage.enabled, camSig]);
 
   let curves = [];
   const stages = [document.generator, ...(document.operators ?? [])];

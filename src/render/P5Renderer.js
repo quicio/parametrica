@@ -12,6 +12,21 @@ import p5 from 'p5';
 import { RenderPasses } from '../core/registry.js';
 import { drawOverlays } from '../viz/overlays.js';
 
+/** Wrap an angle into the half-open interval (-π, π]. */
+function wrapPi(angle) {
+  const TAU = Math.PI * 2;
+  let a = angle;
+  while (a > Math.PI) a -= TAU;
+  while (a <= -Math.PI) a += TAU;
+  return a;
+}
+
+/** Clamp a number to [lo, hi]. */
+function clamp(v, lo, hi) {
+  if (!Number.isFinite(v)) return lo;
+  return Math.min(hi, Math.max(lo, v));
+}
+
 export class P5Renderer {
   constructor(container, app) {
     this.container = container;
@@ -29,6 +44,42 @@ export class P5Renderer {
       };
       p.draw = () => this.drawFrame(p);
       p.windowResized = () => this.fitToContainer();
+
+      // Camera drag: holding the mouse down anywhere on the canvas
+      // and dragging rotates the document's view.camera. Horizontal
+      // delta → yaw, vertical delta → pitch. Sensitivity is 1° per
+      // pixel — predictable, no acceleration. Release ends the drag.
+      this.dragState = null;
+      p.mousePressed = () => {
+        // Only respond to primary button on the canvas itself.
+        if (p.mouseButton !== p.LEFT) return;
+        this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
+      };
+      p.mouseDragged = () => {
+        if (!this.dragState) return;
+        const dx = p.mouseX - this.dragState.startX;
+        const dy = p.mouseY - this.dragState.startY;
+        const cam = this.app.document.view.camera;
+        // 1° per pixel — wrap yaw into [-π, π), clamp pitch away from
+        // the gimbal-lock poles (±π/2 − ε).
+        cam.yaw = wrapPi(this.dragState.yaw - dx * (Math.PI / 180));
+        cam.pitch = clamp(this.dragState.pitch + dy * (Math.PI / 180), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
+        this.app.rebuild();
+      };
+      p.mouseReleased = () => {
+        if (!this.dragState) return;
+        this.dragState = null;
+      };
+      p.mouseWheel = (event) => {
+        // Scroll-wheel zooms by adjusting FOV. Up = more telephoto
+        // (larger FOV), down = wider angle (smaller FOV).
+        event.preventDefault();
+        const cam = this.app.document.view.camera;
+        const factor = event.delta > 0 ? 1.08 : 1 / 1.08;
+        cam.fov = clamp(cam.fov * factor, 1, 2000);
+        this.app.rebuild();
+        return false;
+      };
     });
 
     if (typeof ResizeObserver !== 'undefined') {

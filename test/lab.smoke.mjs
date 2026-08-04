@@ -304,6 +304,39 @@ console.log('6. documents');
     assert(nullOverlay.view.overlays[k] === false, `null overlays.${k} defaults to false`);
   }
 
+  // view.camera: every fresh document carries a fully-populated
+  // { yaw, pitch, fov } so 3D-projected generators and the canvas
+  // drag handler never see undefined.
+  assert(defaultDoc.view.camera, 'default view.camera exists');
+  assert(typeof defaultDoc.view.camera.yaw === 'number', 'default view.camera.yaw is number');
+  assert(typeof defaultDoc.view.camera.pitch === 'number', 'default view.camera.pitch is number');
+  assert(typeof defaultDoc.view.camera.fov === 'number', 'default view.camera.fov is number');
+  // Partial camera in raw: only the set key is honored, others default.
+  const partialCam = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Partial Camera',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { camera: { yaw: 0.5 } }, animation: {},
+  });
+  assert(partialCam.view.camera.yaw === 0.5, 'partial camera preserves yaw');
+  assert(Math.abs(partialCam.view.camera.pitch - Math.PI / 9) < 1e-6, 'partial camera defaults pitch');
+  assert(partialCam.view.camera.fov === 320, 'partial camera defaults fov');
+  // Null / non-object camera → defaults applied.
+  const nullCam = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Null Camera',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { camera: null }, animation: {},
+  });
+  assert(typeof nullCam.view.camera.yaw === 'number', 'null camera → defaults have yaw');
+  // Out-of-range yaw clamps to [-π, π], pitch clamps away from ±π/2.
+  const oorCam = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'OOR Camera',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { camera: { yaw: 100, pitch: 1.55, fov: 99999 } }, animation: {},
+  });
+  assert(Math.abs(oorCam.view.camera.yaw) <= Math.PI + 1e-9, `yaw clamped (got ${oorCam.view.camera.yaw})`);
+  assert(Math.abs(oorCam.view.camera.pitch) <= Math.PI / 2, `pitch clamped (got ${oorCam.view.camera.pitch})`);
+  assert(oorCam.view.camera.fov === 2000, 'fov clamped to 2000');
+
   // dual-format read: current app id
   assert(APP_ID === 'parametrica', 'APP_ID is parametrica');
   const re = JSON.parse(json);

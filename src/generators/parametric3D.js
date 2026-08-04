@@ -61,25 +61,12 @@ Generators.register({
     t1:    { label: 't max', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, default: TAU * 3 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 600 },
 
-    // Camera — defaults give the classic isometric view (yaw=−30°, pitch≈20°).
-    yaw: {
-      label: 'Yaw', type: TYPE.NUMBER,
-      min: -Math.PI, max: Math.PI, step: 0.01,
-      default: -Math.PI / 6,
-      doc: 'Turntable rotation around the world Z axis (radians).',
-    },
-    pitch: {
-      label: 'Pitch', type: TYPE.NUMBER,
-      min: -Math.PI / 2 + 0.05, max: Math.PI / 2 - 0.05, step: 0.01,
-      default: Math.PI / 9,
-      doc: 'Tilt up/down. Stay inside (−π/2, π/2).',
-    },
-    fov: {
-      label: 'FOV (lens)', type: TYPE.NUMBER,
-      min: 1, max: 2000, step: 1,
-      default: 320,
-      doc: 'Pinhole distance. Larger = telephoto, smaller = wide-angle.',
-    },
+    // yaw/pitch/fov used to live as generator params; they moved to
+    // document.view.camera so they can be driven by canvas drag and
+    // shared across generators. The sample() function falls back to
+    // a built-in isometric if view.camera is absent (only happens for
+    // malformed documents — sanitized docs always have it).
+
     depthOcclusion: {
       label: 'Depth Fade', type: TYPE.BOOLEAN,
       default: true,
@@ -101,11 +88,17 @@ Generators.register({
     const fnY = compileOrThrow(params.exprY, 'y(t)');
     const fnZ = compileOrThrow(params.exprZ, 'z(t)');
 
-    const cy = Math.cos(params.yaw);
-    const sy = Math.sin(params.yaw);
-    const cp = Math.cos(params.pitch);
-    const sp = Math.sin(params.pitch);
-    const fov = params.fov;
+    // Camera state lives on the document (view.camera) so it persists
+    // with presets and is shared across generators. If absent (malformed
+    // document) we fall back to the classic isometric defaults.
+    const cam = ctx.document?.view?.camera ?? {
+      yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320,
+    };
+    const cy = Math.cos(cam.yaw);
+    const sy = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch);
+    const sp = Math.sin(cam.pitch);
+    const fov = cam.fov;
     const depthFade = params.depthOcclusion;
     const fadeK = params.depthAttenuation;
 
