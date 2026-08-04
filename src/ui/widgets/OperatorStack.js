@@ -108,9 +108,11 @@ export class OperatorStack {
  */
 export function bindStageParams(gui, schema, stage, rebuild) {
   const numericKeys = [];
+  const labels = {};
   for (const [key, s] of Object.entries(schema)) {
     if (s.type === TYPE.NUMBER) {
       numericKeys.push(key);
+      labels[key] = s.label ?? key;
       // Bind DIRECTLY to stage.params[key]. The previous proxy
       // pattern (`{ value: ... }`) desynced the slider from the
       // document because dragging updated only the proxy; the
@@ -141,7 +143,9 @@ export function bindStageParams(gui, schema, stage, rebuild) {
     const modsFolder = gui.addFolder('Modulate (time)');
     for (const key of numericKeys) {
       if (typeof stage.mods[key] !== 'string') stage.mods[key] = '';
-      modsFolder.add(stage.mods, key).name(key).onFinishChange(rebuild);
+      // Same label as the slider above — the modulation field refers
+      // to the same parameter, so it must read identically.
+      modsFolder.add(stage.mods, key).name(labels[key]).onFinishChange(rebuild);
     }
     modsFolder.close();
   }
