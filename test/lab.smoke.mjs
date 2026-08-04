@@ -281,6 +281,27 @@ console.log('6. documents');
     }
   }
 
+  // Unknown overlay keys in raw are dropped — only the registered 4 survive.
+  const foreignOverlay = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Foreign Overlays',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { overlays: { inflections: true, foo: true, bar: 42 } }, animation: {},
+  });
+  assert(foreignOverlay.view.overlays.foo === undefined, 'unknown overlay key foo dropped');
+  assert(foreignOverlay.view.overlays.bar === undefined, 'unknown overlay key bar dropped');
+  assert(foreignOverlay.view.overlays.inflections === true, 'known overlay preserved alongside foreign ones');
+  assert(Object.keys(foreignOverlay.view.overlays).length === overlayKeys.length, `only ${overlayKeys.length} registered overlays survive`);
+
+  // Edge case: raw overlays is null/non-object → defaults applied.
+  const nullOverlay = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Null Overlays',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { overlays: null }, animation: {},
+  });
+  for (const k of overlayKeys) {
+    assert(nullOverlay.view.overlays[k] === false, `null overlays.${k} defaults to false`);
+  }
+
   // dual-format read: current app id
   assert(APP_ID === 'parametrica', 'APP_ID is parametrica');
   const re = JSON.parse(json);

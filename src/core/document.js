@@ -72,11 +72,15 @@ export function sanitizeDocument(raw) {
   if (!view.modes.length) view.modes = ['stroke'];
   view.strokeWeight = clamp(Number(view.strokeWeight), 0.1, 40, 2);
   view.guides = Boolean(view.guides);
-  // Merge overlays: defaults as base, then any keys present in the raw
-  // document. New overlays added since the preset was saved default to
-  // false; obsolete overlays are dropped.
+  // Merge overlays: defaults as base, then only the keys that match a
+  // registered OVERLAYS id. Foreign keys (typos, obsolete ids) are
+  // dropped so they don't pollute the sanitized document.
+  const registered = new Set(OVERLAYS.map((o) => o.id));
   const rawOverlays = (raw.view?.overlays && typeof raw.view.overlays === 'object') ? raw.view.overlays : {};
-  view.overlays = { ...DEFAULT_OVERLAYS, ...rawOverlays };
+  const filteredRaw = Object.fromEntries(
+    Object.entries(rawOverlays).filter(([k]) => registered.has(k))
+  );
+  view.overlays = { ...DEFAULT_OVERLAYS, ...filteredRaw };
 
   const animation = { ...DEFAULT_ANIMATION, ...(raw.animation ?? {}) };
   animation.playing = Boolean(animation.playing);
