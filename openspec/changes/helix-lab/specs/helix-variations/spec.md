@@ -19,8 +19,12 @@ The preset library SHALL include exactly these six helix presets:
    `b>0, m=3`
 5. `Doble Hélice` — two interleaved helices: two curves with opposite
    `phi`/`theta` phase
-6. `Cónica` — cone-shaped: radius shrinks with height (via `r` modulated
-   by z, expressed with `a=r0` and phase chosen so the envelope tapers)
+6. `Cónica` — cone-shaped: radius envelope via half-wave cosine.
+   `a = r/2`, `k = 1/(2·turns)`, `phi = π` makes the radius oscillate
+   `r → 0 → r` across the full traversal — an hourglass (double cone),
+   achieved with zero generator changes. A true pointed cone (radius
+   shrinking monotonically to a tip) is out of scope: it needs an
+   optional `exprR` on the generator and is tracked as a future change.
 
 #### Scenario: Each variation loads
 

@@ -54,11 +54,11 @@ would be wasted work and would break the camera-drag cache contract.
 
 ### D3: Gradient wireframe is a render pass
 
-`gradient-wireframe` reads each point's screen `y` (height) and maps it
-through a color ramp (default yellow→purple→blue, matching the reference).
-It composes with the projection: in `xz`/`yz` the height IS the vertical
-axis, so the gradient tracks the true 3D height stored on the point
-(`z` from `curve.meta` or a per-point `h3` field).
+`gradient-wireframe` maps a color ramp along a **per-view axis**: `pt.h3`
+(true 3D height) for `'3d' | 'xz' | 'yz'`, and `hypot(pt.x, pt.y)` (radial
+distance) for `'xy'` — in plan view the height is invisible, so the ramp
+follows the radius to keep radial modulation readable. Default palette
+yellow→purple→blue (bottom→top), matching the reference.
 
 Per-point metadata already survives the pipeline, so the pass can read
 `pt.depth`/`pt.h3`. Decision: store `h3` (true 3D height) alongside

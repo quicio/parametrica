@@ -73,3 +73,29 @@ coordinates via `view.camera` (yaw/pitch/fov), consistent with `parametric-3d`.
 
 - **WHEN** the curve passes through fit/center or any geometry operator
 - **THEN** `depth` and `depthAlpha` survive on every point
+
+### Requirement: Gradient wireframe rendering
+
+The generator's curves SHALL be renderable through a `gradient-wireframe`
+render pass that maps a color ramp along a per-view axis: true 3D height
+(`h3`) for `'3d' | 'xz' | 'yz'` views, and radial distance
+(`hypot(x, y)`) for the `'xy'` (top-down) view, where height is
+perpendicular to the screen.
+
+#### Scenario: Height gradient in 3D and elevation views
+
+- **WHEN** `view.projection` is `'3d'`, `'xz'`, or `'yz'`
+- **THEN** the gradient ramps along `pt.h3` (bottom of the helix is one
+  ramp end, top is the other)
+
+#### Scenario: Radial gradient in top-down view
+
+- **WHEN** `view.projection` is `'xy'`
+- **THEN** the gradient ramps along `hypot(pt.x, pt.y)` so radial
+  modulation (a·cos(k·t+φ)) is readable in plan view
+
+#### Scenario: Default ramp palette
+
+- **WHEN** no custom color ramp is set
+- **THEN** the ramp defaults to the reference palette (yellow → purple →
+  blue, bottom → top)
