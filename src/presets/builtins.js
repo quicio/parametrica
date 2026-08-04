@@ -1,0 +1,120 @@
+/**
+ * presets/builtins.js — the mathematical preset library (spec §14).
+ *
+ * Each preset is a complete GlyphDocument: equations + parameters +
+ * operator stack. They are families to explore, not logos to admire.
+ */
+
+import { createDocument } from '../core/document.js';
+
+const PI = Math.PI;
+
+export const BUILT_IN_PRESETS = {
+  'Lissajous 3:5': () =>
+    createDocument('lissajous', {
+      name: 'Lissajous 3:5',
+      generator: { params: { a: 3, b: 5, delta: PI / 2, size: 340 } },
+    }),
+
+  'Golden Rose': () =>
+    createDocument('polar', {
+      name: 'Golden Rose',
+      generator: {
+        params: {
+          exprR: 'cos(phi*theta)',
+          turns: 8, samples: 2400, closed: false, fit: 360,
+        },
+      },
+    }),
+
+  Infinity: () =>
+    createDocument('parametric', {
+      name: 'Infinity',
+      generator: {
+        params: {
+          exprX: 'cos(t) / (1 + sin(t)^2)',
+          exprY: 'sin(t)*cos(t) / (1 + sin(t)^2)',
+          t0: 0, t1: 2 * PI, fit: 380,
+        },
+      },
+    }),
+
+  Spirograph: () =>
+    createDocument('spirograph', {
+      name: 'Spirograph',
+      generator: { params: {} },
+    }),
+
+  Butterfly: () =>
+    createDocument('parametric', {
+      name: 'Butterfly',
+      generator: {
+        params: {
+          exprX: 'sin(t) * (e^cos(t) - 2*cos(4*t) - sin(t/12)^5)',
+          exprY: 'cos(t) * (e^cos(t) - 2*cos(4*t) - sin(t/12)^5)',
+          t0: 0, t1: 37.7, samples: 2400, closed: false, fit: 380,
+        },
+      },
+    }),
+
+  'Superformula Star': () =>
+    createDocument('superformula', {
+      name: 'Superformula Star',
+      generator: { params: { m: 5, n1: 0.35, n2: 1.6, n3: 1.6, radius: 300 } },
+      operators: [
+        { id: 'polar-repeat', enabled: true, params: { rings: 3, ringScale: 0.62, rotate: 36 }, mods: {} },
+      ],
+    }),
+
+  'Superformula Flower': () =>
+    createDocument('superformula', {
+      name: 'Superformula Flower',
+      generator: { params: { m: 8, n1: 0.7, n2: 1.2, n3: 1.2, radius: 300 } },
+    }),
+
+  Hypotrochoid: () =>
+    createDocument('hypotrochoid', {
+      name: 'Hypotrochoid',
+      generator: { params: { R: 210, r: 63, d: 130 } },
+    }),
+
+  'Fourier Capsule': () =>
+    createDocument('fourier', {
+      name: 'Fourier Capsule',
+      generator: {
+        params: {
+          harmonicsX: [
+            { freq: 1, amp: 1, phase: 0, rot: 0, ox: 0, oy: 0 },
+            { freq: 3, amp: 0.22, phase: 0, rot: 0, ox: 0, oy: 0 },
+          ],
+          harmonicsY: [
+            { freq: 1, amp: 0.55, phase: 0, rot: PI / 2, ox: 0, oy: 0 },
+          ],
+        },
+      },
+    }),
+
+  'Fourier Butterfly': () =>
+    createDocument('fourier', {
+      name: 'Fourier Butterfly',
+      generator: {
+        params: {
+          harmonicsX: [
+            { freq: 1, amp: 1, phase: 0, rot: 0, ox: 0, oy: 0 },
+            { freq: 6, amp: 0.3, phase: 0.5, rot: 0, ox: 0, oy: 0 },
+            { freq: 11, amp: 0.12, phase: 2, rot: 0, ox: 0, oy: 0 },
+          ],
+          harmonicsY: [
+            { freq: 2, amp: 0.9, phase: 1.2, rot: PI / 2, ox: 0, oy: 0 },
+            { freq: 7, amp: 0.22, phase: 2.8, rot: PI / 2, ox: 0, oy: 0 },
+          ],
+        },
+      },
+    }),
+
+  'Vesica Prime (v1)': () =>
+    createDocument('bilateral-spline', {
+      name: 'Vesica Prime (v1)',
+      generator: { params: {} },
+    }),
+};

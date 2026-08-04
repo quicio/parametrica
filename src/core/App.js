@@ -1,92 +1,176 @@
 /**
- * App.js — composition root.
+ * App.js — v2 composition root.
  *
- * Wires the pure-geometry core to the renderer, the controls, the
- * exporter and the two engines. Holds the single mutable state object
- * (`this.params`); every mutation path funnels through
- * `onParamsChanged()` so the geometry and telemetry stay coherent.
+ * Holds the single GlyphDocument and routes every state change through
+ * rebuild() → evaluateDocument → telemetry. Identity rule (the v1 bug):
+ * `this.document` is never replaced as an object; its sub-objects are
+ * swapped only by methods that also rebuild the affected UI sections.
  */
 
-import { defaultParams } from './params.js';
-import { GlyphGeometry } from '../geometry/GlyphGeometry.js';
+import { createDocument, sanitizeDocument } from './document.js';
+import { Generators, Operators } from './registry.js';
+import { evaluateDocument } from './engine.js';
+import { schemaDefaults } from './schema.js';
 import { P5Renderer } from '../render/P5Renderer.js';
 import { Controls } from '../ui/Controls.js';
 import { Exporter } from '../export/Exporter.js';
-import { MutationEngine } from '../engine/MutationEngine.js';
-import { PresetManager } from '../engine/PresetManager.js';
+import { MutationEngine } from '../mutation/MutationEngine.js';
+import { PresetManager } from '../presets/PresetManager.js';
 
 export class App {
-  /**
-   * @param {{canvasContainer: HTMLElement, uiContainer: HTMLElement, telemetryEl: HTMLElement}} refs
-   */
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
-    this.params = defaultParams();
     this.telemetryEl = telemetryEl;
-
     this.presets = new PresetManager();
     this.mutator = new MutationEngine();
-    this.geometry = new GlyphGeometry(this.params);
+    this.document = createDocument('parametric');
+
+    this.evaluate();
     this.renderer = new P5Renderer(canvasContainer, this);
     this.exporter = new Exporter(this);
     this.controls = new Controls(this, uiContainer);
 
-    this.onParamsChanged();
+    this.fileInput = document.createElement('input');
+    this.fileInput.type = 'file';
+    this.fileInput.accept = 'application/json,.json';
+    this.fileInput.style.display = 'none';
+    this.fileInput.addEventListener('change', () => this.handleImportFile());
+    document.body.appendChild(this.fileInput);
   }
 
-  /** Single entry point for "parameters changed → regenerate now". */
-  onParamsChanged() {
-    this.geometry.rebuild(this.params);
+  get evaluation() {
+    return this._evaluation;
+  }
+
+  /** Evaluate pipeline + telemetry + error routing. Single funnel. */
+  rebuild() {
+    this.evaluate();
+  }
+
+  evaluate() {
+    this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
+    this.controls?.showErrors(this._evaluation.errors);
     this.updateTelemetry();
   }
 
-  /**
-   * IMPORTANT: `this.params` must never be REPLACED, only updated in
-   * place. The lil-gui controllers are bound to this exact object
-   * reference; swapping it would leave every slider writing to a dead
-   * object (the "controls stop responding after Mutate" bug).
-   */
-  #setParams(next) {
-    Object.assign(this.params, next);
-    this.controls.sync();
-    this.onParamsChanged();
+  /* ———————— generator ———————— */
+
+  setGenerator(id) {
+    if (!Generators.has(id)) return;
+    this.document.generator = {
+      id,
+      params: schemaDefaults(Generators.get(id).params),
+      mods: {},
+    };
+    this.document.name = Generators.get(id).name;
+    this.controls.rebuildAll();
+    this.rebuild();
   }
 
+  /* ———————— operators ———————— */
+
+  addOperator(id) {
+    if (!Operators.has(id)) return;
+    this.document.operators.push({
+      id,
+      enabled: true,
+      params: schemaDefaults(Operators.get(id).params),
+      mods: {},
+    });
+    this.controls.rebuildAll();
+    this.rebuild();
+  }
+
+  removeOperator(index) {
+    this.document.operators.splice(index, 1);
+    this.controls.rebuildAll();
+    this.rebuild();
+  }
+
+  moveOperator(index, dir) {
+    const j = index + dir;
+    if (j < 0 || j >= this.document.operators.length) return;
+    const ops = this.document.operators;
+    [ops[index], ops[j]] = [ops[j], ops[index]];
+    this.controls.rebuildAll();
+    this.rebuild();
+  }
+
+  setOperatorEnabled(index, enabled) {
+    this.document.operators[index].enabled = enabled;
+    this.rebuild();
+  }
+
+  /* ———————— animation ———————— */
+
+  setTime(t) {
+    this.document.animation.time = t;
+    this.evaluate();
+  }
+
+  resetTime() {
+    this.setTime(0);
+  }
+
+  /* ———————— mutation / presets ———————— */
+
   mutate() {
-    this.#setParams(this.mutator.mutate(this.params));
+    const next = this.mutator.mutate(this.document);
+    this.adoptDocument(next);
+  }
+
+  adoptDocument(doc) {
+    // swap sub-objects, keep document identity, rebuild UI bindings
+    this.document.name = doc.name;
+    this.document.seed = doc.seed;
+    this.document.generator = doc.generator;
+    this.document.operators = doc.operators;
+    Object.assign(this.document.view, doc.view);
+    Object.assign(this.document.animation, doc.animation);
+    this.controls.rebuildAll();
+    this.rebuild();
   }
 
   applyPreset(name) {
-    const preset = this.presets.get(name);
-    if (!preset) return;
-    this.#setParams(preset);
+    const doc = this.presets.get(name);
+    if (!doc) return;
+    this.adoptDocument(doc);
   }
 
-  /** @returns {boolean} success */
-  importJSON(json) {
-    try {
-      const { params } = this.presets.parse(json);
-      this.#setParams(params);
-      return true;
-    } catch (err) {
-      console.warn('[glyph-lab] import failed:', err.message);
-      return false;
-    }
+  openImportDialog() {
+    this.fileInput.click();
   }
+
+  handleImportFile() {
+    const file = this.fileInput.files?.[0];
+    this.fileInput.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const { name, document } = this.presets.parse(String(reader.result));
+        this.adoptDocument({ ...document, name });
+        this.controls.sync();
+      } catch (err) {
+        console.warn('[glyph-lab] import failed:', err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ———————— telemetry ———————— */
 
   updateTelemetry() {
     if (!this.telemetryEl) return;
-    const m = this.geometry.metrics;
-    const v = this.geometry.validation;
-    const status = v.ok ? 'VALID' : `INVALID — ${v.reason}`;
-    const crossA = m.crossings[0] ? Math.round(m.crossings[0].y) : '—';
-    const crossB = m.crossings[1] ? Math.round(m.crossings[1].y) : '—';
+    const e = this._evaluation;
+    const gen = Generators.get(this.document.generator.id);
+    const errors = e.errors.length;
     const lines = [
-      `W ${Math.round(m.width)}  H ${Math.round(m.height)}  WAIST ${(m.waistX * 2).toFixed(1)}`,
-      `CROSS ${crossA} / ${crossB}  SEG ${this.geometry.master.segments.length} ×2`,
-      `STATE ${status}`,
+      `MODEL ${gen.name.toUpperCase()} · OPS ${this.document.operators.filter((o) => o.enabled).length}`,
+      `CURVES ${e.stats.curveCount} · PTS ${e.stats.pointCount} · LEN ${e.stats.arcLength} · EVAL ${e.stats.evalMs.toFixed(1)}MS`,
+      `T ${this.document.animation.time.toFixed(2)} · SEED ${this.document.seed} · STATE ${errors ? `ERROR ×${errors}` : 'VALID'}`,
     ];
     this.telemetryEl.textContent = lines.join('\n');
-    this.telemetryEl.classList.toggle('fail', !v.ok);
-    this.telemetryEl.classList.toggle('ok', v.ok);
+    this.telemetryEl.classList.toggle('fail', errors > 0);
+    this.telemetryEl.classList.toggle('ok', errors === 0);
   }
 }

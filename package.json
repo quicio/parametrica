@@ -1,18 +1,20 @@
 {
   "name": "glyph-lab",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Parametric geometry engine for discovering abstract monoline glyphs from a single continuous master spline.",
+  "description": "Computational geometry laboratory: discover abstract monoline glyphs by exploring mathematical spaces — equations, harmonics, parameter domains.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/geometry.smoke.mjs"
+    "test": "node test/lab.smoke.mjs"
   },
   "dependencies": {
+    "d3-delaunay": "^6.0.4",
     "lil-gui": "^0.19.2",
-    "p5": "^1.11.0"
+    "p5": "^1.11.0",
+    "polygon-clipping": "^0.15.7"
   },
   "devDependencies": {
     "vite": "^5.4.8"

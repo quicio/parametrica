@@ -1,21 +1,18 @@
 /**
- * P5Renderer.js — real-time p5 rendering surface.
+ * P5Renderer.js — v2 rendering surface.
  *
- *  - Black background, white monoline strokes, no fill.
- *  - High-DPI: pixelDensity follows window.devicePixelRatio.
- *  - Perfect anti-aliasing: smooth() + native Bézier rasterization —
- *    the same Bézier segments the SVG exporter writes.
- *  - CAD guides: hairline axes + frame, ultra-low alpha.
- *  - Redraws every frame; geometry is swapped atomically by the app.
+ *  - Drives the animation clock: when the transport plays, time advances
+ *    (delta × speed) and the document re-evaluates at the new time —
+ *    the glyph becomes a living mathematical object.
+ *  - Composes registered render passes (view.modes) plus overlays.
+ *  - HiDPI via pixelDensity; black field; CAD guides.
  */
 
 import p5 from 'p5';
+import { RenderPasses } from '../core/registry.js';
+import { drawOverlays } from '../viz/overlays.js';
 
 export class P5Renderer {
-  /**
-   * @param {HTMLElement} container
-   * @param {object} app  read access to app.params + app.geometry
-   */
   constructor(container, app) {
     this.container = container;
     this.app = app;
@@ -25,8 +22,7 @@ export class P5Renderer {
       this.p = p;
       p.setup = () => {
         const { w, h } = this.size();
-        const canvas = p.createCanvas(w, h);
-        canvas.parent(container);
+        p.createCanvas(w, h).parent(container);
         p.pixelDensity(window.devicePixelRatio || 1);
         p.smooth();
         p.frameRate(60);
@@ -41,13 +37,9 @@ export class P5Renderer {
     }
   }
 
-  /** Current CSS-pixel drawing surface size. */
   size() {
     const rect = this.container.getBoundingClientRect();
-    return {
-      w: Math.max(320, Math.floor(rect.width)),
-      h: Math.max(320, Math.floor(rect.height)),
-    };
+    return { w: Math.max(320, Math.floor(rect.width)), h: Math.max(320, Math.floor(rect.height)) };
   }
 
   fitToContainer() {
@@ -57,37 +49,47 @@ export class P5Renderer {
   }
 
   drawFrame(p) {
-    p.background(0);
-    const geometry = this.app.geometry;
-    if (!geometry) return;
+    const { app } = this;
+    const doc = app.document;
 
+    // animation transport
+    if (doc.animation.playing) {
+      const dt = Math.min(0.1, p.deltaTime / 1000);
+      app.setTime(doc.animation.time + dt * doc.animation.speed);
+    }
+
+    p.background(0);
     p.push();
     p.translate(p.width / 2, p.height / 2);
 
-    this.drawGuides(p);
+    if (doc.view.guides) this.drawGuides(p);
 
-    p.noFill();
-    p.stroke(255);
-    p.strokeWeight(this.app.params.strokeWeight);
-    p.strokeCap(p.ROUND);
-    p.strokeJoin(p.ROUND);
-
-    this.strokeSegments(p, geometry.master.segments);
-    if (this.app.params.mirror) {
-      this.strokeSegments(p, geometry.mirrorSegments);
+    const evaluation = app.evaluation;
+    if (evaluation) {
+      const data = {
+        curves: evaluation.curves,
+        analysis: evaluation.analysis,
+        bbox: evaluation.bbox,
+        view: doc.view,
+        document: doc,
+        time: doc.animation.time,
+      };
+      for (const modeId of doc.view.modes) {
+        if (!RenderPasses.has(modeId)) continue;
+        p.push();
+        try {
+          RenderPasses.get(modeId).draw(p, data);
+        } catch (e) {
+          console.warn(`[glyph-lab] pass "${modeId}" failed:`, e.message);
+        }
+        p.pop();
+      }
+      p.push();
+      drawOverlays(p, data);
+      p.pop();
     }
 
     p.pop();
-  }
-
-  strokeSegments(p, segments) {
-    if (!segments.length) return;
-    p.beginShape();
-    p.vertex(segments[0].p0.x, segments[0].p0.y);
-    for (const s of segments) {
-      p.bezierVertex(s.p1.x, s.p1.y, s.p2.x, s.p2.y, s.p3.x, s.p3.y);
-    }
-    p.endShape();
   }
 
   drawGuides(p) {
@@ -95,11 +97,9 @@ export class P5Renderer {
     const h = p.height;
     p.push();
     p.strokeWeight(1);
-    // mirror axis + equator
     p.stroke(255, 255, 255, 16);
     p.line(0, -h / 2, 0, h / 2);
     p.line(-w / 2, 0, w / 2, 0);
-    // frame
     p.noFill();
     p.stroke(255, 255, 255, 10);
     p.rect(-w / 2 + 14, -h / 2 + 14, w - 28, h - 28);

@@ -1,54 +1,55 @@
 /**
- * Exporter.js — SVG / PNG / JSON output.
+ * Exporter.js — v2: SVG / PNG / JSON from evaluated curves.
  *
- * SVG: mathematically clean paths. The exact cubic Bézier segments
- * produced by the Catmull-Rom conversion are written as `C` commands —
- * no polyline approximation, rounded to 2 decimals. The full parameter
- * set is embedded as an XML comment so an SVG is itself a preset.
- *
- * PNG: the live p5 canvas (already HiDPI via pixelDensity).
- *
- * JSON: the canonical preset document from PresetManager.
+ * SVG: one clean <path> per curve (M + L + Z for closed), coordinates
+ * rounded to 2 decimals, black field, white monoline, the full
+ * GlyphDocument embedded as an XML comment — every SVG is a preset.
  */
 
 export class Exporter {
-  /** @param {object} app */
   constructor(app) {
     this.app = app;
   }
 
-  /* ——— Pure builders (DOM-free, unit-testable) ——— */
+  /* ——— Pure builder (DOM-free, unit-testable) ——— */
 
   /**
-   * @param {object} geometry  GlyphGeometry instance
-   * @param {object} params    glyph params (strokeWeight, mirror)
-   * @param {{w:number,h:number}} size  view surface in px
-   * @returns {string} SVG document
+   * @param {Array} curves   evaluated curves
+   * @param {object} view    { strokeWeight }
+   * @param {object} size    { w, h }
+   * @param {object} document  embedded as metadata
    */
-  static buildSVG(geometry, params, { w, h }) {
-    const subPaths = [pathData(geometry.master.segments)];
-    if (params.mirror) subPaths.push(pathData(geometry.mirrorSegments));
+  static buildSVG(curves, view, { w, h }, document = null) {
+    const paths = curves
+      .filter((c) => c.points.length > 1)
+      .map((c) => {
+        const pts = c.points;
+        let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
+        for (let i = 1; i < pts.length; i++) d += ` L ${fmt(pts[i].x)} ${fmt(pts[i].y)}`;
+        if (c.closed) d += ' Z';
+        return d;
+      });
 
-    const meta = escapeComment(
-      JSON.stringify({ app: 'glyph-lab', version: 1, params: geometry.params }),
-    );
+    const meta = document
+      ? `<!-- glyph-lab document: ${escapeComment(JSON.stringify({ app: 'glyph-lab', ...document }))} -->\n`
+      : '';
 
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
-      `<!-- glyph-lab preset: ${meta} -->`,
+      meta +
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-w / 2)} ${fmt(-h / 2)} ${fmt(w)} ${fmt(h)}" width="${fmt(w)}" height="${fmt(h)}">`,
       `  <rect x="${fmt(-w / 2)}" y="${fmt(-h / 2)}" width="${fmt(w)}" height="${fmt(h)}" fill="#000000"/>`,
-      `  <path d="${subPaths.join(' ')}" fill="none" stroke="#ffffff" stroke-width="${fmt(params.strokeWeight)}" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `  <path d="${paths.join(' ')}" fill="none" stroke="#ffffff" stroke-width="${fmt(view.strokeWeight)}" stroke-linecap="round" stroke-linejoin="round"/>`,
       '</svg>',
       '',
     ].join('\n');
   }
 
-  /* ——— Browser-bound export actions ——— */
+  /* ——— Browser-bound actions ——— */
 
   exportSVG() {
     const { w, h } = this.app.renderer.size();
-    const svg = Exporter.buildSVG(this.app.geometry, this.app.params, { w, h });
+    const svg = Exporter.buildSVG(this.app.evaluation.curves, this.app.document.view, { w, h }, this.app.document);
     downloadFile(`glyph-lab-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 
@@ -57,36 +58,26 @@ export class Exporter {
   }
 
   exportJSON() {
-    const json = this.app.presets.serialize('untitled', this.app.params);
-    downloadFile(`glyph-lab-${timestamp()}.json`, json, 'application/json');
+    downloadFile(
+      `glyph-lab-${timestamp()}.json`,
+      this.app.presets.serialize(this.app.document.name, this.app.document),
+      'application/json',
+    );
   }
 
   async copyJSON() {
-    const json = this.app.presets.serialize('untitled', this.app.params);
+    const json = this.app.presets.serialize(this.app.document.name, this.app.document);
     try {
       await navigator.clipboard.writeText(json);
       return true;
     } catch {
-      // Clipboard API blocked (permissions / non-secure context).
       return false;
     }
   }
 }
 
-/* ——— helpers ——— */
-
 const fmt = (n) => Number(Number(n).toFixed(2));
 
-/** Compact, clean path data from Bézier segments. */
-function pathData(segments) {
-  let d = `M ${fmt(segments[0].p0.x)} ${fmt(segments[0].p0.y)}`;
-  for (const s of segments) {
-    d += ` C ${fmt(s.p1.x)} ${fmt(s.p1.y)} ${fmt(s.p2.x)} ${fmt(s.p2.y)} ${fmt(s.p3.x)} ${fmt(s.p3.y)}`;
-  }
-  return d;
-}
-
-/** Keep the embedded JSON from accidentally closing the XML comment. */
 function escapeComment(text) {
   return text.replace(/--/g, '—');
 }

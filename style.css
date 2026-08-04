@@ -223,3 +223,270 @@ html, body {
 .lil-gui .slider {
   border-radius: 0;
 }
+
+/* ——— Panel sections ——— */
+
+.panel-section {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.panel-h {
+  padding: 14px 12px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--swiss-red);
+  user-select: none;
+}
+
+.panel-body .lil-gui.root > .children > .title {
+  border-top: none;
+}
+
+/* ——— Expression editor ——— */
+
+.expr-field {
+  padding: 6px 12px 10px;
+  border-bottom: 1px solid #101010;
+}
+
+.expr-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  margin-bottom: 5px;
+}
+
+.expr-editor {
+  position: relative;
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  overflow: hidden;
+}
+
+.expr-field.has-error .expr-editor {
+  border-color: var(--swiss-red);
+}
+
+.expr-highlight,
+.expr-input {
+  margin: 0;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  tab-size: 2;
+}
+
+.expr-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+.expr-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  color: transparent;
+  caret-color: var(--swiss-red);
+  min-height: 34px;
+}
+
+.expr-field.multiline .expr-input {
+  min-height: 96px;
+}
+
+.tok-num   { color: var(--swiss-red); }
+.tok-ident { color: #e8e8e8; }
+.tok-op    { color: #777; font-weight: 700; }
+.tok-punct { color: #4a4a4a; }
+
+.expr-error {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--swiss-red);
+  padding-top: 4px;
+  min-height: 12px;
+  white-space: pre-wrap;
+}
+
+/* ——— Harmonics editor ——— */
+
+.harmonics-editor {
+  padding: 4px 12px 12px;
+}
+
+.harm-table {
+  margin-bottom: 12px;
+}
+
+.harm-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink);
+  padding: 8px 0 6px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 4px;
+}
+
+.harm-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr) 18px;
+  gap: 3px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.harm-row.harm-head span {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.harm-row input {
+  width: 100%;
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 3px 2px;
+  outline: none;
+}
+
+.harm-row input:focus {
+  border-color: #333;
+}
+
+.harm-remove,
+.harm-add {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-align: center;
+}
+
+.harm-remove:hover { color: var(--swiss-red); }
+
+.harm-add {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 0;
+  border: 1px dashed var(--hairline);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--ink-dim);
+}
+
+.harm-add:hover {
+  border-color: var(--swiss-red);
+  color: var(--swiss-red);
+}
+
+/* ——— Operator stack ——— */
+
+.operator-stack {
+  padding: 4px 12px 12px;
+}
+
+.op-add-row {
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.op-add-row select {
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 5px 6px;
+  outline: none;
+}
+
+.op-add-row button {
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+}
+
+.op-add-row button:hover {
+  border-color: var(--swiss-red);
+  color: var(--swiss-red);
+}
+
+.op-item {
+  border: 1px solid var(--hairline);
+  margin-bottom: 8px;
+}
+
+.op-item.disabled .op-name {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+.op-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+}
+
+.op-head input[type="checkbox"] {
+  accent-color: var(--swiss-red);
+  margin: 0;
+}
+
+.op-name {
+  flex: 1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.op-icon {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 3px;
+}
+
+.op-icon:hover:not(:disabled) { color: var(--swiss-red); }
+.op-icon:disabled { opacity: 0.25; cursor: default; }
+
+.op-body .lil-gui.root {
+  border-top: 1px solid var(--hairline);
+}
+
+.op-body .lil-gui .controller {
+  padding: 4px 8px;
+}

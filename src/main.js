@@ -1,10 +1,16 @@
 /**
- * main.js — Glyph Lab entry point.
+ * main.js — Glyph Lab v2 entry point.
  *
- * Glyph Lab is not a logo editor. It is a parametric geometry engine
- * for discovering mathematically inevitable monoline glyphs:
- * one continuous master spline, mirrored, never drawn by hand.
+ * A computational geometry laboratory: glyphs are discovered by exploring
+ * mathematical equations, never drawn by hand.
+ *
+ * Side-effect imports register every generator, operator and render
+ * pass with the engine registries before the app boots.
  */
+
+import './generators/index.js';
+import './operators/index.js';
+import './render/passes/index.js';
 
 import { App } from './core/App.js';
 
@@ -14,5 +20,4 @@ const app = new App({
   telemetryEl: document.getElementById('telemetry'),
 });
 
-// Console access for inspection / scripting (CAD tool courtesy).
 window.__glyphlab = app;
