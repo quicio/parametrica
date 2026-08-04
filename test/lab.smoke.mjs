@@ -425,8 +425,37 @@ console.log('10. animation');
   assert(m0.bbox.diagonal !== m1.bbox.diagonal, 'modulated param animates');
 }
 
-/* ——— 11. Performance budget ——— */
-console.log('11. performance');
+/* ——— 11. Sampling contracts ——— */
+console.log('11. sampling');
+{
+  // The adaptive sampler must respect `samples` as a hard upper
+  // bound — high-curvature curves used to produce ~3× the requested
+  // count, breaking the user-visible slider.
+  const { sampleUniform, sampleAdaptive } = await import('../src/sampling/sampling.js');
+  const fn = (t) => ({ x: Math.sin(t) + 0.25 * Math.sin(11 * t), y: Math.cos(2 * t) - 0.4 * Math.cos(7 * t) });
+  for (const N of [32, 50, 100, 250, 700, 2000]) {
+    const u = sampleUniform(fn, 0, Math.PI * 2, N);
+    assert(u.length === N, `uniform sampler returns exactly ${N} (got ${u.length})`);
+    const a = sampleAdaptive(fn, 0, Math.PI * 2, { minSteps: 8, samples: N });
+    assert(a.length <= N, `adaptive sampler respects ${N} upper bound (got ${a.length})`);
+    assert(a.length >= 2, `adaptive sampler keeps at least 2 points (got ${a.length})`);
+  }
+  // Adaptive output for a smooth low-curvature curve is naturally
+  // shorter than the requested cap (it only refines where curvature
+  // demands it). Use a circle — straight-line chords approximate
+  // it well at coarse granularity.
+  const circle = (t) => ({ x: Math.cos(t), y: Math.sin(t) });
+  const simple = sampleAdaptive(circle, 0, Math.PI * 2, { minSteps: 8, samples: 200 });
+  assert(simple.length < 200, `simple curve under cap: ${simple.length} < 200`);
+  assert(simple.length >= 8, `coarse grid is still respected: ${simple.length} >= 8`);
+  // Total points (used by engine budgets) — a known-issue regressed to
+  // ~177 on samples=50 before this fix; should now be exactly 50.
+  const fifty = sampleAdaptive(fn, 0, Math.PI * 2, { minSteps: 8, samples: 50 });
+  assert(fifty.length === 50, `samples=50 yields exactly 50 (got ${fifty.length})`);
+}
+
+/* ——— 12. Performance budget ——— */
+console.log('12. performance');
 {
   const doc = BUILT_IN_PRESETS.Butterfly();
   const t0 = performance.now();

@@ -24,15 +24,27 @@ export function sampleUniform(fn, t0, t1, count) {
  * same point — e.g. roses), then each interval refines recursively where
  * its midpoint deviates from the chord (curvature-aware). Tolerance is
  * derived from the coarse pass so it is scale-relative.
+ *
+ * `samples` is a hard upper bound on the output length. For simple
+ * curves the output is naturally shorter than `samples`; for highly
+ * detailed curves the adaptive refinement is capped so the user
+ * always sees ≤ samples points regardless of curvature.
  */
-export function sampleAdaptive(fn, t0, t1, { minSteps = 128, maxDepth = 5, tolerance = null } = {}) {
-  const intervals = Math.max(8, Math.floor(minSteps));
+export function sampleAdaptive(fn, t0, t1, { minSteps = 128, maxDepth = 5, tolerance = null, samples = Infinity } = {}) {
+  const requested = Math.max(8, Math.floor(samples));
+  const intervals = Math.max(8, Math.min(Math.floor(minSteps), requested));
   const coarse = sampleUniform(fn, t0, t1, intervals + 1);
   const diag = bbox(coarse).diagonal || 1;
   const tol = tolerance ?? diag / 600;
 
   const out = [coarse[0]];
+  // Track remaining budget so total length never exceeds `samples`.
+  // Each pushed point costs 1; each subdivision reserves 1 for the
+  // midpoint and 1 for the b endpoint.
+  let remaining = Math.max(0, requested - 1);
+
   for (let i = 0; i < intervals; i++) {
+    if (remaining <= 0) break;
     const a = t0 + ((t1 - t0) * i) / intervals;
     const b = t0 + ((t1 - t0) * (i + 1)) / intervals;
     walk(a, b, coarse[i], coarse[i + 1], 0);
@@ -40,13 +52,25 @@ export function sampleAdaptive(fn, t0, t1, { minSteps = 128, maxDepth = 5, toler
   return out;
 
   function walk(a, b, pa, pb, depth) {
+    if (remaining <= 0) return;
     const m = (a + b) / 2;
     const pm = fn(m);
-    if (distanceToChord(pm, pa, pb) > tol && depth < maxDepth) {
+    const refine = distanceToChord(pm, pa, pb) > tol && depth < maxDepth;
+    if (refine) {
+      // Subdivision: order must stay chronological (left half, then
+      // midpoint, then right half). The midpoint belongs at the start
+      // of the right half so we push it before recursing into it.
       walk(a, m, pa, pm, depth + 1);
+      if (remaining >= 1) {
+        out.push(pm);
+        remaining -= 1;
+      } else {
+        return;
+      }
       walk(m, b, pm, pb, depth + 1);
     } else {
       out.push(pb);
+      remaining -= 1;
     }
   }
 }

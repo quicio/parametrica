@@ -38,7 +38,7 @@ export function sampleParametric(fnX, fnY, { t0, t1, samples, adaptive, scope })
     return { x, y };
   };
   return adaptive
-    ? sampleAdaptive(fn, t0, t1, { minSteps: Math.min(256, samples) })
+    ? sampleAdaptive(fn, t0, t1, { minSteps: Math.min(256, samples), samples })
     : sampleUniform(fn, t0, t1, samples);
 }
 
