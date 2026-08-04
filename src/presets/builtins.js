@@ -117,4 +117,44 @@ export const BUILT_IN_PRESETS = {
       name: 'Vesica Prime (v1)',
       generator: { params: {} },
     }),
+
+  // ——— Multi-curve families ———
+
+  'Vesica Piscis': () =>
+    createDocument('concentric-ellipses', {
+      name: 'Vesica Piscis',
+      generator: { params: { count: 2, rx: 100, ry: 200, offset: 100, spread: 'pair', samples: 400 } },
+    }),
+
+  'Three Ellipses': () =>
+    createDocument('concentric-ellipses', {
+      name: 'Three Ellipses',
+      generator: { params: { count: 3, rx: 120, ry: 240, offset: 100, spread: 'pair', samples: 400 } },
+    }),
+
+  // ——— Strange attractors ———
+
+  'Lorenz Butterfly': () =>
+    createDocument('lorenz', {
+      name: 'Lorenz Butterfly',
+      generator: { params: { samples: 6000, skip: 2000, projection: 'xy' } },
+    }),
+
+  'Clifford Web': () =>
+    createDocument('clifford', {
+      name: 'Clifford Web',
+      generator: { params: { samples: 8000, skip: 1000, a: 1.5, b: -1.8, c: 1.6, d: 0.9 } },
+    }),
+
+  'De Jong Filament': () =>
+    createDocument('dejong', {
+      name: 'De Jong Filament',
+      generator: { params: { samples: 8000, skip: 1000, a: -2.0, b: -2.0, c: 1.2, d: 0.2 } },
+    }),
+
+  'Aizawa Torus': () =>
+    createDocument('aizawa', {
+      name: 'Aizawa Torus',
+      generator: { params: { samples: 8000, skip: 2000 } },
+    }),
 };

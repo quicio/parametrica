@@ -52,3 +52,60 @@ export function postProcess(curves, { fit = 0, center = true }) {
 
 /** TAU shortcut for schema defaults. */
 export const TAU = Math.PI * 2;
+
+/**
+ * Compose a Curve[] from a per-sample function that gets called `count`
+ * times across a parameter domain. Returns the array of generated
+ * curves (one per "branch"). Useful for strange attractors, IFS, and
+ * any generator that naturally produces multiple separate curves.
+ *
+ * @param {(i: number, ctx: {scope, t0, t1}) => Point[]} branchFn
+ * @param {object} opts  { count, t0, t1, closed, source, scope }
+ * @returns {Array<{id, points, closed, meta}>}
+ */
+export function composeCurves(branchFn, { count, t0 = 0, t1 = TAU, closed = false, source = 'compose', scope }) {
+  const curves = [];
+  for (let i = 0; i < count; i++) {
+    scope.t = t0 + ((t1 - t0) * i) / Math.max(1, count - 1);
+    scope.theta = scope.t;
+    const points = branchFn(i, { scope, t0, t1 });
+    if (!Array.isArray(points) || points.length < 2) continue;
+    // Sanitize: drop any non-finite points so a bad sample doesn't
+    // poison the whole curve.
+    const clean = [];
+    for (const p of points) {
+      if (Number.isFinite(p.x) && Number.isFinite(p.y)) clean.push(p);
+      else if (clean.length) break; // halt at first NaN; keep leading run
+    }
+    if (clean.length >= 2) {
+      curves.push({
+        id: `${source}-${i}`,
+        points: clean,
+        closed,
+        meta: { source, branch: i },
+      });
+    }
+  }
+  return curves;
+}
+
+/**
+ * Sugar for building a generator that emits multiple curves. Centralizes
+ * the registry boilerplate (id/name/category) so each attractor-style
+ * generator is just its params schema + sample body.
+ */
+export function registerMultiCurveGenerator({ id, name, category = 'attractor', params, sample }) {
+  return {
+    id,
+    name,
+    category,
+    params,
+    domain: () => ({ t0: 0, t1: TAU, closed: false }),
+    sample(p, ctx) {
+      const scope = makeScope(ctx);
+      const curves = sample(p, ctx, scope);
+      return postProcess(curves, p);
+    },
+  };
+}
+

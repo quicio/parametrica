@@ -15,3 +15,5 @@ import './harmonicOscillator.js';
 import './noiseField.js';
 import './splines.js';
 import './bilateralSpline.js';
+import './attractors.js';
+import './concentricEllipses.js';

@@ -136,13 +136,14 @@ console.log('3. splines');
 }
 
 /* ——— 4. All generators ——— */
-console.log('4. generators (16)');
+console.log(`4. generators (${Generators.list().length})`);
 {
   const expected = [
     'parametric', 'polar', 'custom', 'lissajous', 'rose', 'superformula',
     'fourier', 'hypotrochoid', 'epitrochoid', 'spirograph',
     'harmonic-oscillator', 'noise-field', 'catmull-rom', 'bezier',
     'cubic-spline', 'bilateral-spline',
+    'lorenz', 'clifford', 'dejong', 'aizawa', 'concentric-ellipses',
   ];
   for (const id of expected) {
     assert(Generators.has(id), `generator "${id}" registered`);
@@ -326,10 +327,10 @@ console.log('6. documents');
 }
 
 /* ——— 7. Built-in preset library ——— */
-console.log('7. built-in presets (11)');
+console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
 {
   const pm = new PresetManager(null);
-  assert(pm.names().length === 11, `expected 11 built-ins, got ${pm.names().length}`);
+  assert(pm.names().length === Object.keys(BUILT_IN_PRESETS).length, `expected ${Object.keys(BUILT_IN_PRESETS).length} built-ins, got ${pm.names().length}`);
   for (const name of pm.names()) {
     const doc = pm.get(name);
     assert(doc, `preset "${name}" loads`);
