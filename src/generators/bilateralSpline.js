@@ -3,7 +3,7 @@
  *
  * The original Glyph Lab mathematics (single master spline weaving
  * across the axis + pure mirror reflection ⇒ emergent vesica piscis)
- * lives on inside the laboratory. v1 presets migrate here unchanged.
+ * lives on inside Parametrica. v1 presets migrate here unchanged.
  */
 
 import { Generators } from '../core/registry.js';

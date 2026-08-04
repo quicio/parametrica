@@ -80,7 +80,7 @@ export class P5Renderer {
         try {
           RenderPasses.get(modeId).draw(p, data);
         } catch (e) {
-          console.warn(`[glyph-lab] pass "${modeId}" failed:`, e.message);
+          console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
         }
         p.pop();
       }

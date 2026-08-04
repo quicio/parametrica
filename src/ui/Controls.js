@@ -185,7 +185,7 @@ export class Controls {
           this.rebuildPresetsSection();
           this.sync();
         } catch (err) {
-          console.warn('[glyph-lab] preset save failed:', err.message);
+          console.warn('[parametrica] preset save failed:', err.message);
         }
       },
     }, 'save').name('Save Preset');
@@ -215,7 +215,7 @@ export class Controls {
     gui.add({
       copy: async () => {
         const ok = await ex.copyJSON();
-        if (!ok) console.warn('[glyph-lab] clipboard unavailable — use Export JSON');
+        if (!ok) console.warn('[parametrica] clipboard unavailable — use Export JSON');
       },
     }, 'copy').name('Copy JSON');
   }

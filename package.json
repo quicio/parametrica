@@ -1,9 +1,9 @@
 {
-  "name": "glyph-lab",
+  "name": "parametrica",
   "private": true,
-  "version": "2.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "description": "Computational geometry laboratory: discover abstract monoline glyphs by exploring mathematical spaces — equations, harmonics, parameter domains.",
+  "description": "A parametric geometry workbench: discover continuous monoline forms by exploring mathematical equations, harmonics and parameter domains.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

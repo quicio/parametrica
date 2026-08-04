@@ -20,7 +20,7 @@ import { compileExpression, evaluate, perturbLiterals } from '../src/math/expres
 import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
-import { createDocument, sanitizeDocument, migrateV1Document, DOCUMENT_VERSION } from '../src/core/document.js';
+import { createDocument, sanitizeDocument, migrateV1Document, DOCUMENT_VERSION, APP_ID, isLegacyApp } from '../src/core/document.js';
 import { evaluateDocument } from '../src/core/engine.js';
 import { schemaDefaults, TYPE } from '../src/core/schema.js';
 import { MutationEngine } from '../src/mutation/MutationEngine.js';
@@ -251,6 +251,28 @@ console.log('6. documents');
   // hostile input
   const junk = sanitizeDocument({ generator: { id: 'nope', params: { a: 'x' } }, operators: [{ id: 'ghost' }] });
   assert(junk.generator.id === 'parametric' && junk.operators.length === 0, 'unknown ids dropped safely');
+
+  // dual-format read: current app id
+  assert(APP_ID === 'parametrica', 'APP_ID is parametrica');
+  const re = JSON.parse(json);
+  assert(re.app === 'parametrica', 'serialized document carries current app id');
+
+  // dual-format read: legacy glyph-lab v2 documents still sanitize
+  const legacyV2 = {
+    app: 'glyph-lab', version: 2, name: 'Legacy Test',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: {}, animation: {},
+  };
+  const fromLegacy = sanitizeDocument(legacyV2);
+  assert(fromLegacy && fromLegacy.version === DOCUMENT_VERSION, 'legacy v2 glyph-lab doc still sanitizes');
+  assert(isLegacyApp('glyph-lab') === true, 'glyph-lab recognized as legacy');
+  assert(isLegacyApp('parametrica') === false, 'parametrica is not legacy');
+  assert(isLegacyApp(undefined) === false, 'undefined is not legacy');
+
+  // v2 migration: legacy v2 doc with params only (no generator) treated as v1
+  const legacyWeird = { app: 'glyph-lab', version: 1, name: 'V1 Weird', params: { width: 150, height: 360, crossTop: 0.4, crossBottom: 0.4, waist: 0.2, tension: 0.3, mirror: true } };
+  const fromV1Legacy = sanitizeDocument(legacyWeird);
+  assert(fromV1Legacy.generator.id === 'bilateral-spline', 'v1 glyph-lab preset migrates via legacy app id');
 }
 
 /* ——— 7. Built-in preset library ——— */

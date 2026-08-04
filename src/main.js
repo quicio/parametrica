@@ -1,7 +1,7 @@
 /**
- * main.js — Glyph Lab v2 entry point.
+ * main.js — Parametrica entry point.
  *
- * A computational geometry laboratory: glyphs are discovered by exploring
+ * A parametric geometry workbench: forms are discovered by exploring
  * mathematical equations, never drawn by hand.
  *
  * Side-effect imports register every generator, operator and render
@@ -20,4 +20,4 @@ const app = new App({
   telemetryEl: document.getElementById('telemetry'),
 });
 
-window.__glyphlab = app;
+window.__parametrica = app;

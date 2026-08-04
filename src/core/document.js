@@ -1,11 +1,12 @@
 /**
- * document.js — the GlyphDocument: the serializable soul of a glyph (G2).
+ * document.js — the Parametrica Document: the serializable soul of a form (G2).
  *
  *   { version, name, seed, generator: {id, params, mods},
  *     operators: [{id, params, mods, enabled}], view, animation }
  *
  * The document is ALL the engine needs: render, export, share, mutate.
- * v1 presets migrate to `bilateral-spline` documents automatically.
+ * v1 glyph-lab presets migrate to `bilateral-spline` documents
+ * automatically (dual-format read on `app: 'glyph-lab' | 'parametrica'`).
  */
 
 import { Generators, Operators } from './registry.js';
@@ -54,7 +55,8 @@ export function sanitizeDocument(raw) {
   if (!raw || typeof raw !== 'object') return null;
 
   // v1 migration: { app:'glyph-lab', version:1, name, params:{width,…} }
-  if (raw.version === 1 || (raw.app === 'glyph-lab' && raw.params && !raw.generator)) {
+  // (legacy app id; v0 uses 'parametrica' but both are accepted for reads)
+  if (raw.version === 1 || (isLegacyApp(raw.app) && raw.params && !raw.generator)) {
     return migrateV1Document(raw);
   }
 
@@ -129,4 +131,16 @@ export function migrateV1Document(raw) {
 function clamp(v, lo, hi, dflt) {
   if (!Number.isFinite(v)) return dflt;
   return Math.min(hi, Math.max(lo, v));
+}
+
+/**
+ * Recognized app identifiers for incoming documents.
+ * 'glyph-lab' is the legacy v1 brand; 'parametrica' is the current one.
+ * Both are accepted on read so users don't lose saved presets across
+ * the rename. Writes always emit the current id (see PresetManager).
+ */
+export const APP_ID = 'parametrica';
+const LEGACY_APP_IDS = new Set(['glyph-lab']);
+export function isLegacyApp(id) {
+  return typeof id === 'string' && LEGACY_APP_IDS.has(id);
 }

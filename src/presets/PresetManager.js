@@ -1,17 +1,16 @@
 /**
- * PresetManager.js — save / restore / share glyph configurations.
+ * presets/PresetManager.js — v2 preset persistence & sharing.
  *
- *  - Built-in presets ship with the app (read-only).
- *  - User presets persist to localStorage.
- *  - Every preset is a plain JSON document { app, version, name, params }
- *    that can be exported as a file, copied to the clipboard, imported
- *    back, or pasted by hand. All input passes through sanitizeParams().
+ *  - Built-in mathematical presets (read-only factories).
+ *  - User presets (full GlyphDocuments) in localStorage.
+ *  - JSON documents are the share format; v1 presets migrate
+ *    automatically via sanitizeDocument().
  */
 
 import { BUILT_IN_PRESETS } from './builtins.js';
-import { sanitizeDocument, createDocument, DOCUMENT_VERSION } from '../core/document.js';
+import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.js';
 
-const STORAGE_KEY = 'glyph-lab.presets.v2';
+const STORAGE_KEY = 'parametrica.presets.v0';
 
 export class PresetManager {
   constructor(storage = globalThis.localStorage ?? null) {
@@ -75,11 +74,13 @@ export class PresetManager {
 
   serialize(name, document) {
     const doc = sanitizeDocument(document) ?? createDocument('parametric');
-    return JSON.stringify({ app: 'glyph-lab', ...doc, name: String(name ?? doc.name ?? 'untitled') }, null, 2);
+    return JSON.stringify({ app: APP_ID, ...doc, name: String(name ?? doc.name ?? 'untitled') }, null, 2);
   }
 
   /**
-   * Parse any preset JSON: v2 document, v1 legacy, or bare document.
+   * Parse any preset JSON: current Parametrica document, legacy glyph-lab v2,
+   * or v1 legacy. The dual-format read lives in sanitizeDocument(); this
+   * wrapper just propagates the name.
    * @returns {{name: string, document: object}}
    */
   parse(json) {

@@ -1,23 +1,24 @@
-# Glyph Lab — v2.0 Specification
+# Parametrica — v0.1 Specification
 
-**Computational Geometry Laboratory**
+**A parametric geometry workbench**
 
-Status: Draft for v2.0.0
-Supersedes: v1.0 (parametric bilateral-spline engine, tagged `v1.0.0`)
+Status: Draft for v0.1.0
+Supersedes: Glyph Lab v2.0.0 (parametrized bilateral-spline engine)
+
+> A form is not drawn. A form is parameterized.
 
 ---
 
 ## 1. Vision
 
-Glyph Lab evolves from a parametric glyph engine into a **computational
-geometry laboratory**.
+Parametrica evolves Glyph Lab into a **parametric geometry workbench**.
 
-A glyph is not designed. A glyph is **discovered**.
+A form is not designed. A form is **parameterized**.
 
 The user does not tweak control points. The user explores mathematical
-spaces — equations, harmonics, parameter domains — and abstract symbols
-emerge. The application must feel closer to Desmos, GeoGebra, Processing,
-Mathematica or Shadertoy than to Illustrator.
+spaces — equations, harmonics, parameter domains — and continuous monoline
+forms emerge. The application must feel closer to Desmos, GeoGebra,
+Processing, Mathematica or Shadertoy than to Illustrator.
 
 ---
 
@@ -26,7 +27,7 @@ Mathematica or Shadertoy than to Illustrator.
 | # | Principle |
 |---|-----------|
 | G1 | Every visual element originates from mathematics. No pen tool, no anchor editing, no manual drawing — ever. |
-| G2 | A glyph is a **serializable pipeline**: generator + ordered operator stack + parameters. The JSON document *is* the glyph. |
+| G2 | A form is a **serializable pipeline**: generator + ordered operator stack + parameters. The JSON document *is* the form. |
 | G3 | Every pipeline stage is **replaceable** via registries. New generators/operators plug in without modifying the engine. |
 | G4 | Mutation occurs in **parameter space only**. Never pixels, never paths. |
 | G5 | Real-time: full pipeline evaluation ≤ 16 ms for ≤ 20 000 samples. |
@@ -86,8 +87,9 @@ SVG / PNG / JSON
   meta: { source: string }, // provenance: which generator/operator made it
 }
 
-/** GlyphDocument — the serializable soul of a glyph */ {
+/** ParametricaDocument — the serializable soul of a form */ {
   version: 2,
+  app: 'parametrica',
   name: string,
   generator: { id: string, params: Record<string, AnimatableValue> },
   operators: Array<{ id: string, params: object, enabled: boolean }>,
@@ -139,6 +141,13 @@ globals. All `sample`/`apply` functions are **pure** and **Node-runnable**.
   (≤ 50 k/curve, ≤ 200 k total). Invalid results are rejected with the
   stage flagged, never rendered half-broken.
 
+### 4.4 Document app identifier & legacy read
+
+Serialized documents carry `app: 'parametrica'`. The sanitizer accepts
+both `'parametrica'` (current) and the legacy `'glyph-lab'` on read, so
+presets saved before the rename keep loading. Writes always emit
+`'parametrica'`. v1 presets (no `generator` field, just `params`) continue
+to migrate to the `bilateral-spline` generator through the same path.
 
 ---
 
@@ -183,7 +192,7 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `bilateral-spline` | **v1 legacy**: MasterSpline + Mirror + OpticalCorrection (preserved as generator for v1 preset migration) | v1 schema | t ∈ [0,1] |
 
 > **Implementation status (2026-08-04):** all 14 generators registered and
-> covered by the v2 test suite (`lab.smoke.mjs` group 4 — 16 registered
+> covered by the test suite (`lab.smoke.mjs` group 4 — 16 registered
 > entries: the 14 above plus the Fourier preset lab alias).
 
 ---
@@ -218,7 +227,7 @@ Implemented (8):
 | `stroke` | polyline → outline polygon (round/miter joins) |
 | `boolean` | union / difference / intersection (closed curves, `polygon-clipping`) |
 
-Planned (post-v2.0): `clip` (rect/circle window).
+Planned (post-v0.1): `clip` (rect/circle window).
 
 ## 9. Topology Operators (`operators/topology/`)
 
@@ -231,7 +240,7 @@ Implemented (2):
 | `repeat` | n-fold radial / grid / polar / mirror / recursive repeat |
 | `voronoi` | dense-sample Voronoi tessellation of the curve envelope (`d3-delaunay`) |
 
-Planned (post-v2.0): `intersections`, `self-intersections`, `ribbon`,
+Planned (post-v0.1): `intersections`, `self-intersections`, `ribbon`,
 `offset-ribbon`, `centerline`, `skeleton` (medial-axis approx).
 
 Detected intersection points become first-class geometry (`meta`) usable
@@ -307,13 +316,15 @@ Generates endless families of mathematically related glyphs.
 
 ## 14. Presets
 
-Mathematical presets, each a full `GlyphDocument`:
+Mathematical presets, each a complete Parametrica document (with
+`app: 'parametrica'`):
 
 Lissajous 3:5 · Golden Rose · Infinity · Spirograph · Butterfly ·
 Superformula Star · Superformula Flower · Hypotrochoid ·
 Fourier Capsule · Fourier Butterfly.
 
-v1 JSON presets migrate automatically → `bilateral-spline` documents.
+v1 Glyph Lab presets migrate automatically → `bilateral-spline` documents
+through the dual-format read (§4.4).
 
 ## 15. Custom Formula Editor
 
@@ -341,8 +352,9 @@ formula editor drawer.
 
 ## 17. Export
 
-SVG (one `<path>` per curve, clean coordinates, document embedded as
-comment) · PNG (HiDPI canvas) · JSON (`GlyphDocument`) · clipboard JSON.
+SVG (one `<path>` per curve, clean coordinates, Parametrica document
+embedded as XML comment under `<!-- parametrica document: … -->`) ·
+PNG (HiDPI canvas) · JSON (ParametricaDocument) · clipboard JSON.
 Tier 2: animation frame sequences.
 
 ---
@@ -391,7 +403,7 @@ v1 pattern extended — the entire core stays DOM-free and Node-runnable:
 
 ## 20. Milestones
 
-Implementation status as of **2026-08-04** (v2.0.0):
+Implementation status as of **2026-08-04** (v0.1.0):
 
 | MS | Scope | Status | Evidence |
 |---|---|---|---|
@@ -400,14 +412,22 @@ Implementation status as of **2026-08-04** (v2.0.0):
 | **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | 🟡 **Partial** — animation transport, mutation v2, presets, harmonic editor, formula editor (textarea-based), operator stack reorder/toggle, render passes (6/13), overlays (4/4) **all done**; CodeMirror syntax highlighting still planned (see §15); epicycles pass registered but light; missing topology ops: ribbon, intersections, self-intersections | `lab.smoke.mjs` groups 8–10 |
 | **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | 🟡 **Partial** — `boolean.js` and `voronoi.js` operators shipped; `stroke.js` shipped; signed-distance / skeleton / negative-space passes + centerline + frame-sequence export still pending | Source tree |
 
-### What ships in v2.0.0
+### What ships in v0.1.0
 
 The 11 acceptance criteria from §22 below are the gate. M3 and M4 items
 explicitly marked "planned" above are not blockers — they are polish
-features deferred to v2.x. The MVP that ships is everything M1+M2 plus
+features deferred to v0.x. The MVP that ships is everything M1+M2 plus
 the M3 user-facing surfaces (animation, mutation, presets, formula
 editor, operator stack) at functional parity, with heavy geometry
 (boolean + voronoi + stroke expansion) already usable.
+
+> **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
+> brand identity and a renumbered version. No engine changes shipped in
+> the rename — the previous v2.0.0 work becomes the seed for v0.1.0.
+> The `app: 'glyph-lab'` document id and the
+> `glyph-lab.presets.v2` storage key are both honored on read; writes
+> emit `app: 'parametrica'` and the `parametrica.presets.v0` storage
+> key (§4.4).
 
 ---
 
@@ -440,4 +460,4 @@ editor, operator stack) at functional parity, with heavy geometry
 
 ---
 
-*A glyph is not drawn. A glyph is discovered.*
+*A form is not drawn. A form is parameterized.*

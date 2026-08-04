@@ -1,8 +1,8 @@
 /**
  * noise.js — deterministic seeded simplex noise (2D).
  *
- * All noise in Glyph Lab is seeded (spec G6): same seed ⇒ same field,
- * same glyph, every time. Implementation: Gustavson-style simplex with a
+ * All noise in Parametrica is seeded (spec G6): same seed ⇒ same field,
+ * same form, every time. Implementation: Gustavson-style simplex with a
  * permutation table shuffled by mulberry32.
  */
 

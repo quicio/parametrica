@@ -1,10 +1,12 @@
 /**
- * Exporter.js — v2: SVG / PNG / JSON from evaluated curves.
+ * Exporter.js — SVG / PNG / JSON from evaluated curves.
  *
  * SVG: one clean <path> per curve (M + L + Z for closed), coordinates
  * rounded to 2 decimals, black field, white monoline, the full
- * GlyphDocument embedded as an XML comment — every SVG is a preset.
+ * Parametrica document embedded as an XML comment — every SVG is a preset.
  */
+
+import { APP_ID } from '../core/document.js';
 
 export class Exporter {
   constructor(app) {
@@ -31,7 +33,7 @@ export class Exporter {
       });
 
     const meta = document
-      ? `<!-- glyph-lab document: ${escapeComment(JSON.stringify({ app: 'glyph-lab', ...document }))} -->\n`
+      ? `<!-- parametrica document: ${escapeComment(JSON.stringify({ app: APP_ID, ...document }))} -->\n`
       : '';
 
     return [
@@ -50,16 +52,16 @@ export class Exporter {
   exportSVG() {
     const { w, h } = this.app.renderer.size();
     const svg = Exporter.buildSVG(this.app.evaluation.curves, this.app.document.view, { w, h }, this.app.document);
-    downloadFile(`glyph-lab-${timestamp()}.svg`, svg, 'image/svg+xml');
+    downloadFile(`parametrica-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 
   exportPNG() {
-    this.app.renderer.p.saveCanvas(`glyph-lab-${timestamp()}`, 'png');
+    this.app.renderer.p.saveCanvas(`parametrica-${timestamp()}`, 'png');
   }
 
   exportJSON() {
     downloadFile(
-      `glyph-lab-${timestamp()}.json`,
+      `parametrica-${timestamp()}.json`,
       this.app.presets.serialize(this.app.document.name, this.app.document),
       'application/json',
     );

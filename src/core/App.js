@@ -151,7 +151,7 @@ export class App {
         this.adoptDocument({ ...document, name });
         this.controls.sync();
       } catch (err) {
-        console.warn('[glyph-lab] import failed:', err.message);
+        console.warn('[parametrica] import failed:', err.message);
       }
     };
     reader.readAsText(file);

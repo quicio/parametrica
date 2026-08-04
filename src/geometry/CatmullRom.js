@@ -5,7 +5,7 @@
  * segments using the tangent formulation of Yuksel, Schaefer & Keyser
  * ("On the Parameterization of Catmull-Rom Curves", 2011).
  *
- * Properties that matter to Glyph Lab:
+ * Properties that matter to Parametrica:
  *  - Interpolating: the curve passes through every control point,
  *    so axis crossings land exactly on x = 0.
  *  - Centripetal parameterization (alpha = 0.5): provably no cusps or
