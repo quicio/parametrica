@@ -42,15 +42,15 @@ test('panel renders and canvas evaluates', async ({ page }) => {
 });
 
 test('t min slider drag reaches the document', async ({ page }) => {
-  // t0 range: -200..200. Drag to ~25% → expect ≈ -100.
-  const r = await expectSliderChangesDoc(page, 't min', 't0', -200, 200, 0.25);
+  // t0 range: ±4π ≈ ±12.57. Drag to ~25% → expect ≈ -6.28.
+  const r = await expectSliderChangesDoc(page, 't min', 't0', -4 * Math.PI * 2, 4 * Math.PI * 2, 0.25, 0.5);
   expect(r.ok, r.message).toBeTruthy();
 });
 
 test('t max slider drag reaches the document', async ({ page }) => {
-  // Tolerancia 5: el drag del slider depende de la posición exacta del
+  // Tolerancia 0.5: el drag del slider depende de la posición exacta del
   // mouse en el track (lil-gui usa clientX), nunca es exacto al objetivo.
-  const r = await expectSliderChangesDoc(page, 't max', 't1', -200, 200, 0.75, 5);
+  const r = await expectSliderChangesDoc(page, 't max', 't1', -4 * Math.PI * 2, 4 * Math.PI * 2, 0.75, 0.5);
   expect(r.ok, r.message).toBeTruthy();
 });
 
@@ -71,23 +71,22 @@ test('typing a value into t min updates the document', async ({ page }) => {
 });
 
 test('typing t max and t min inverts the domain and evaluation reacts', async ({ page }) => {
-  // The screenshot bug: user can set t0 > t1 with no warning. The
-  // sampler normalizes the domain to [min, max] so the curve stays
-  // sane (no 13-period tangle).
+  // The screenshot bug: user typed t0=57 > t1=-24. With the slider range
+  // now clamped to ±4π (~±12.57), typing 57 clamps to 4π and typing -24
+  // clamps to -4π. The domain still evaluates forward (swap) — the
+  // slider range prevents the 13-period tangle entirely.
   await typeInto(page, 't min', '57.09');
   await typeInto(page, 't max', '-24.58');
   const params = await docParams(page);
-  expect(params.t0).toBeCloseTo(57.09, 1);
+  // t0=57 clamps to the slider max (+4π); t1=-24.58 is within range.
+  expect(params.t0).toBeCloseTo(4 * Math.PI * 2, 1);
   expect(params.t1).toBeCloseTo(-24.58, 1);
   const state = await evalState(page);
   // No crash, no NaN points.
   expect(state.errors).toBe(0);
   const f = state.first;
   expect(Number.isFinite(f.x) && Number.isFinite(f.y)).toBe(true);
-  // The domain [−24.58, 57.09] spans 81.67 rad ≈ 13 periods — the raw
-  // inverted walk would produce a dense tangle. Normalization means the
-  // curve still evaluates with a sane point count (not thousands of
-  // overlapping loops from walking 13 periods at 700 samples).
+  // The domain [−4π, 4π] spans 4 periods — still sane point count.
   expect(state.pts).toBeLessThanOrEqual(700);
 });
 
