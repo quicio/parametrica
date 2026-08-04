@@ -42,15 +42,14 @@ test('panel renders and canvas evaluates', async ({ page }) => {
 });
 
 test('t min slider drag reaches the document', async ({ page }) => {
-  // t0 range: ±4π ≈ ±12.57. Drag to ~25% → expect ≈ -6.28.
-  const r = await expectSliderChangesDoc(page, 't min', 't0', -4 * Math.PI * 2, 4 * Math.PI * 2, 0.25, 0.5);
+  // t0 range: ±2π ≈ ±12.57. Drag to 25% → ≈ -6.28 (−π).
+  const r = await expectSliderChangesDoc(page, 't min', 't0', -2 * Math.PI * 2, 2 * Math.PI * 2, 0.25, 0.3);
   expect(r.ok, r.message).toBeTruthy();
 });
 
 test('t max slider drag reaches the document', async ({ page }) => {
-  // Tolerancia 0.5: el drag del slider depende de la posición exacta del
-  // mouse en el track (lil-gui usa clientX), nunca es exacto al objetivo.
-  const r = await expectSliderChangesDoc(page, 't max', 't1', -4 * Math.PI * 2, 4 * Math.PI * 2, 0.75, 0.5);
+  // t1 range: 0..4π ≈ 0..25.13. Drag to 75% → ≈ 18.85 (3π).
+  const r = await expectSliderChangesDoc(page, 't max', 't1', 0, 4 * Math.PI * 2, 0.75, 0.3);
   expect(r.ok, r.message).toBeTruthy();
 });
 
@@ -78,9 +77,9 @@ test('typing t max and t min inverts the domain and evaluation reacts', async ({
   await typeInto(page, 't min', '57.09');
   await typeInto(page, 't max', '-24.58');
   const params = await docParams(page);
-  // t0=57 clamps to the slider max (+4π); t1=-24.58 is within range.
-  expect(params.t0).toBeCloseTo(4 * Math.PI * 2, 1);
-  expect(params.t1).toBeCloseTo(-24.58, 1);
+  // t0=57 clamps to +2π (t0 range ±2π); t1=-24.58 clamps to 0 (t1 range 0..4π).
+  expect(params.t0).toBeCloseTo(2 * Math.PI * 2, 1);
+  expect(params.t1).toBeCloseTo(0, 1);
   const state = await evalState(page);
   // No crash, no NaN points.
   expect(state.errors).toBe(0);

@@ -57,10 +57,10 @@ Generators.register({
       default: '0.2*t',
       doc: '3D z-coordinate as a function of t.',
     },
-    t0:    { label: 't min', type: TYPE.NUMBER, min: -4 * TAU, max: 4 * TAU, step: 0.01, default: 0,
-             doc: 'Start of the parameter domain. Slider range ±4π; type larger values by hand.' },
-    t1:    { label: 't max', type: TYPE.NUMBER, min: -4 * TAU, max: 4 * TAU, step: 0.01, default: TAU * 3,
-             doc: 'End of the parameter domain. Slider range ±4π; type larger values by hand.' },
+    t0:    { label: 't min', type: TYPE.NUMBER, min: -2 * TAU, max: 2 * TAU, step: 0.05, default: 0,
+             doc: 'Start of the parameter domain. Range ±2π; type larger values by hand.' },
+    t1:    { label: 't max', type: TYPE.NUMBER, min: 0, max: 4 * TAU, step: 0.05, default: TAU * 3,
+             doc: 'End of the parameter domain. Range 0..4π; type larger values by hand.' },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 600 },
 
     // yaw/pitch/fov used to live as generator params; they moved to
