@@ -59,10 +59,14 @@ export async function dragSlider(page, label, fraction) {
   const cx = box.x + box.width * fraction;
   const cy = box.y + box.height / 2;
 
-  // Physical mouse sequence: pointerdown+mousedown, move, mouseup+pointerup
+  // Physical mouse sequence: pointerdown+mousedown, move, mouseup+pointerup.
+  // Nudge +6px past the target then back to it — this exceeds lil-gui's
+  // DRAG_THRESH (5px) so the gesture is a drag, while the final position
+  // lands exactly on the requested fraction.
   await page.mouse.move(cx, cy);
   await page.mouse.down();
-  await page.mouse.move(cx + 1, cy, { steps: 2 });
+  await page.mouse.move(cx + 6, cy, { steps: 2 });
+  await page.mouse.move(cx, cy, { steps: 2 });
   await page.mouse.up();
 }
 

@@ -41,7 +41,7 @@ Generators.register({
       return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
     };
     const points = params.adaptive
-      ? sampleAdaptive(fn, params.theta0, t1, { minSteps: Math.min(256, params.samples) })
+      ? sampleAdaptive(fn, params.theta0, t1, { minSteps: Math.min(256, params.samples), samples: params.samples })
       : sampleUniform(fn, params.theta0, t1, params.samples);
     const curve = { id: genId('polar'), points, closed: params.closed, meta: { source: 'polar' } };
     return postProcess([curve], params);

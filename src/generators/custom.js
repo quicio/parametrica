@@ -57,7 +57,7 @@ Generators.register({
       throw new Error('program must assign x and y (or r)');
     };
     const points = params.adaptive
-      ? sampleAdaptive(fn, params.t0, params.t1, { minSteps: Math.min(256, params.samples) })
+      ? sampleAdaptive(fn, params.t0, params.t1, { minSteps: Math.min(256, params.samples), samples: params.samples })
       : sampleUniform(fn, params.t0, params.t1, params.samples);
     const curve = { id: genId('custom'), points, closed: params.closed, meta: { source: 'custom' } };
     return postProcess([curve], params);
