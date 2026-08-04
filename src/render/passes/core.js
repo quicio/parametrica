@@ -5,10 +5,33 @@
 import { RenderPasses } from '../../core/registry.js';
 
 export function traceCurve(p, curve) {
+  // Two paths: if the curve carries per-point depth, draw segment-by-segment
+  // so each segment's stroke alpha can fade with depth. Otherwise use the
+  // cheap beginShape/vertex path.
+  const pts = curve.points;
+  if (curve.closed) {
+    p.beginShape();
+    for (const pt of pts) p.vertex(pt.x, pt.y);
+    p.endShape(p.CLOSE);
+    return;
+  }
+  if (pts[0]?.depthAlpha != null) {
+    // depth-aware path: one line per segment with its own alpha
+    p.beginShape(p.LINES);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const alpha = Math.round(((a.depthAlpha ?? 1) + (b.depthAlpha ?? 1)) / 2 * 255);
+      p.stroke(255, alpha);
+      p.vertex(a.x, a.y);
+      p.vertex(b.x, b.y);
+    }
+    p.endShape();
+    return;
+  }
   p.beginShape();
-  for (const pt of curve.points) p.vertex(pt.x, pt.y);
-  if (curve.closed) p.endShape(p.CLOSE);
-  else p.endShape();
+  for (const pt of pts) p.vertex(pt.x, pt.y);
+  p.endShape();
 }
 
 RenderPasses.register({
@@ -16,11 +39,20 @@ RenderPasses.register({
   name: 'Stroke',
   draw(p, { curves, view }) {
     p.noFill();
-    p.stroke(255);
-    p.strokeWeight(view.strokeWeight);
     p.strokeCap(p.ROUND);
     p.strokeJoin(p.ROUND);
-    for (const c of curves) traceCurve(p, c);
+    for (const c of curves) {
+      // If any point has depthAlpha, the tracer handles stroke per segment;
+      // otherwise we set a single stroke for the whole curve.
+      const hasDepth = c.points[0]?.depthAlpha != null;
+      if (!hasDepth) {
+        p.stroke(255);
+        p.strokeWeight(view.strokeWeight);
+      } else {
+        p.strokeWeight(view.strokeWeight);
+      }
+      traceCurve(p, c);
+    }
   },
 });
 

@@ -144,6 +144,7 @@ console.log(`4. generators (${Generators.list().length})`);
     'harmonic-oscillator', 'noise-field', 'catmull-rom', 'bezier',
     'cubic-spline', 'bilateral-spline',
     'lorenz', 'clifford', 'dejong', 'aizawa', 'concentric-ellipses',
+    'parametric-3d',
   ];
   for (const id of expected) {
     assert(Generators.has(id), `generator "${id}" registered`);

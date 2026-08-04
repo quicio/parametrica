@@ -157,4 +157,48 @@ export const BUILT_IN_PRESETS = {
       name: 'Aizawa Torus',
       generator: { params: { samples: 8000, skip: 2000 } },
     }),
+
+  // ——— 3D projected ———
+
+  'Helix (Isometric)': () =>
+    createDocument('parametric-3d', {
+      name: 'Helix (Isometric)',
+      generator: {
+        params: {
+          exprX: '60*cos(t)',
+          exprY: '60*sin(t)',
+          exprZ: '20*t',
+          t0: 0, t1: 6 * Math.PI,
+          samples: 1200,
+        },
+      },
+    }),
+
+  'Spiral Helix': () =>
+    createDocument('parametric-3d', {
+      name: 'Spiral Helix',
+      generator: {
+        params: {
+          exprX: '60*cos(t)',
+          exprY: '60*sin(t)',
+          exprZ: '12*t + 30*sin(t*0.5)',
+          t0: 0, t1: 8 * Math.PI,
+          samples: 1500,
+        },
+      },
+    }),
+
+  'Cone (Projected)': () =>
+    createDocument('parametric-3d', {
+      name: 'Cone (Projected)',
+      generator: {
+        params: {
+          exprX: '(100 - 15*t) * cos(t * 5)',
+          exprY: '(100 - 15*t) * sin(t * 5)',
+          exprZ: '20*t',
+          t0: 0, t1: 6,
+          samples: 600,
+        },
+      },
+    }),
 };
