@@ -1,0 +1,12 @@
+name: helix-lab
+description: >
+  Generalized helix generator (radial/pitch modulation + torsion),
+  orthographic projections (xy/xz/yz), gradient wireframe render pass,
+  and six named helix variations. Educational Helix Lab direction.
+status: proposed
+created: 2026-08-04
+capabilities:
+  - helix-generator
+  - orthographic-projection
+  - helix-variations
+skip_specs: false
