@@ -252,6 +252,35 @@ console.log('6. documents');
   const junk = sanitizeDocument({ generator: { id: 'nope', params: { a: 'x' } }, operators: [{ id: 'ghost' }] });
   assert(junk.generator.id === 'parametric' && junk.operators.length === 0, 'unknown ids dropped safely');
 
+  // view.overlays is always populated with the keys from OVERLAYS so the
+  // lil-gui controllers don't blow up on `gui.add(view.overlays, 'id')`.
+  const defaultDoc = createDocument('parametric');
+  const overlayKeys = ['inflections', 'samplePoints', 'ruler', 'bbox'];
+  for (const k of overlayKeys) {
+    assert(typeof defaultDoc.view.overlays[k] === 'boolean', `default view.overlays.${k} is boolean`);
+  }
+  // Old-format preset (overlays: {}) sanitizes to a fully-populated object.
+  const oldPreset = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Legacy View',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { overlays: {} }, animation: {},
+  });
+  for (const k of overlayKeys) {
+    assert(typeof oldPreset.view.overlays[k] === 'boolean', `legacy view.overlays.${k} defaulted`);
+  }
+  // New overlay key in raw overrides, but old keys still defaulted.
+  const partialOverlay = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Partial Overlays',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { overlays: { inflections: true } }, animation: {},
+  });
+  assert(partialOverlay.view.overlays.inflections === true, 'partial overlay preserves set value');
+  for (const k of overlayKeys) {
+    if (k !== 'inflections') {
+      assert(partialOverlay.view.overlays[k] === false, `partial overlay.${k} defaulted`);
+    }
+  }
+
   // dual-format read: current app id
   assert(APP_ID === 'parametrica', 'APP_ID is parametrica');
   const re = JSON.parse(json);

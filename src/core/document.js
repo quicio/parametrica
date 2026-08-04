@@ -11,12 +11,16 @@
 
 import { Generators, Operators } from './registry.js';
 import { sanitizeParams } from './schema.js';
+import { OVERLAYS } from '../viz/overlays.js';
 
 export const DOCUMENT_VERSION = 2;
 
+/** Default state for every overlay toggle — derived from OVERLAYS, all off. */
+const DEFAULT_OVERLAYS = Object.fromEntries(OVERLAYS.map((o) => [o.id, false]));
+
 export const DEFAULT_VIEW = {
   modes: ['stroke'],
-  overlays: {},
+  overlays: DEFAULT_OVERLAYS,
   strokeWeight: 2,
   guides: true,
 };
@@ -68,7 +72,11 @@ export function sanitizeDocument(raw) {
   if (!view.modes.length) view.modes = ['stroke'];
   view.strokeWeight = clamp(Number(view.strokeWeight), 0.1, 40, 2);
   view.guides = Boolean(view.guides);
-  view.overlays = view.overlays && typeof view.overlays === 'object' ? view.overlays : {};
+  // Merge overlays: defaults as base, then any keys present in the raw
+  // document. New overlays added since the preset was saved default to
+  // false; obsolete overlays are dropped.
+  const rawOverlays = (raw.view?.overlays && typeof raw.view.overlays === 'object') ? raw.view.overlays : {};
+  view.overlays = { ...DEFAULT_OVERLAYS, ...rawOverlays };
 
   const animation = { ...DEFAULT_ANIMATION, ...(raw.animation ?? {}) };
   animation.playing = Boolean(animation.playing);
