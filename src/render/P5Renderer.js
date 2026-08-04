@@ -45,18 +45,31 @@ export class P5Renderer {
       p.draw = () => this.drawFrame(p);
       p.windowResized = () => this.fitToContainer();
 
-      // Camera drag: holding the mouse down anywhere on the canvas
-      // and dragging rotates the document's view.camera. Horizontal
-      // delta → yaw, vertical delta → pitch. Sensitivity is 1° per
-      // pixel — predictable, no acceleration. Release ends the drag.
+      // Camera drag: holding the mouse down on the canvas and dragging
+      // rotates the document's view.camera. Horizontal delta → yaw,
+      // vertical → pitch. Sensitivity is 1° per pixel — predictable,
+      // no acceleration. Release ends the drag.
+      //
+      // IMPORTANT: we must gate on the DOM event target so clicks on
+      // the control panel (#ui) — slider drags, scroll wheel over a
+      // widget, combobox opens — do NOT trigger camera rotation.
+      // Otherwise the panel intercepts slider drags.
       this.dragState = null;
-      p.mousePressed = () => {
-        // Only respond to primary button on the canvas itself.
+      const isOverCanvas = (event) => {
+        // Trust the DOM event target first — this is the only
+        // authoritative check. Fall back to coordinate tests if no
+        // event is present (defensive, should not happen in practice).
+        if (event && event.target) return event.target === p.drawingContext.canvas;
+        return false;
+      };
+      p.mousePressed = (event) => {
         if (p.mouseButton !== p.LEFT) return;
+        if (!isOverCanvas(event)) return;
         this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
       };
-      p.mouseDragged = () => {
+      p.mouseDragged = (event) => {
         if (!this.dragState) return;
+        if (!isOverCanvas(event)) return;
         const dx = p.mouseX - this.dragState.startX;
         const dy = p.mouseY - this.dragState.startY;
         const cam = this.app.document.view.camera;
@@ -66,13 +79,17 @@ export class P5Renderer {
         cam.pitch = clamp(this.dragState.pitch + dy * (Math.PI / 180), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
         this.app.rebuild();
       };
-      p.mouseReleased = () => {
+      p.mouseReleased = (event) => {
         if (!this.dragState) return;
+        // Release anywhere ends the drag — the user might drag off the
+        // canvas. Don't require isOverCanvas here.
         this.dragState = null;
       };
       p.mouseWheel = (event) => {
-        // Scroll-wheel zooms by adjusting FOV. Up = more telephoto
-        // (larger FOV), down = wider angle (smaller FOV).
+        // Scroll-wheel zooms by adjusting FOV. Only respond when the
+        // wheel happens over the canvas — over the panel, native
+        // scrolling handles the slider/scrollbar.
+        if (!isOverCanvas(event)) return;
         event.preventDefault();
         const cam = this.app.document.view.camera;
         const factor = event.delta > 0 ? 1.08 : 1 / 1.08;
