@@ -27,6 +27,14 @@ export function makeScope(ctx) {
 
 /** Sample x(t), y(t) over a domain with optional adaptive refinement. */
 export function sampleParametric(fnX, fnY, { t0, t1, samples, adaptive, scope }) {
+  // Domain sanity: t0 must be ≤ t1. If the user typed them inverted
+  // (T MIN=57 > T MAX=-24) the sampler would walk the domain backwards,
+  // producing a dense 13-period tangle that looks identical to the
+  // default curve — the exact bug from the screenshot. Normalize by
+  // swapping so the domain is always [min, max].
+  let a = t0;
+  let b = t1;
+  if (a > b) [a, b] = [b, a];
   const fn = (t) => {
     scope.t = t;
     scope.theta = t;
@@ -38,8 +46,8 @@ export function sampleParametric(fnX, fnY, { t0, t1, samples, adaptive, scope })
     return { x, y };
   };
   return adaptive
-    ? sampleAdaptive(fn, t0, t1, { minSteps: Math.min(256, samples), samples })
-    : sampleUniform(fn, t0, t1, samples);
+    ? sampleAdaptive(fn, a, b, { minSteps: Math.min(256, samples), samples })
+    : sampleUniform(fn, a, b, samples);
 }
 
 /** Apply fit/center post-processing when the generator asks for it. */

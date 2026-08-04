@@ -469,6 +469,23 @@ console.log('11. sampling');
   // ~177 on samples=50 before this fix; should now be exactly 50.
   const fifty = sampleAdaptive(fn, 0, Math.PI * 2, { minSteps: 8, samples: 50 });
   assert(fifty.length === 50, `samples=50 yields exactly 50 (got ${fifty.length})`);
+
+  // Inverted domain (t0 > t1) must be normalized by sampleParametric —
+  // the user can type T MIN=57 > T MAX=-24 and get [−24, 57], not a
+  // 13-period backwards tangle.
+  const { sampleParametric } = await import('../src/generators/helpers.js');
+  const scope = { t: 0, theta: 0, time: 0 };
+  const inv = sampleParametric(
+    (s) => Math.cos(s.t),
+    (s) => Math.sin(s.t),
+    { t0: 57.09, t1: -24.58, samples: 50, adaptive: false, scope },
+  );
+  assert(inv.length === 50, `inverted domain yields 50 points (got ${inv.length})`);
+  // First point is at t=-24.58, NOT at t=57.09 — proves the swap.
+  const tAtFirst = -24.58;
+  assert(Math.abs(inv[0].x - Math.cos(tAtFirst)) < 1e-6, `inverted domain starts at t1 (${inv[0].x.toFixed(4)} ≈ ${Math.cos(tAtFirst).toFixed(4)})`);
+  const tAtLast = 57.09;
+  assert(Math.abs(inv[inv.length - 1].x - Math.cos(tAtLast)) < 1e-6, `inverted domain ends at t0 (${inv[inv.length - 1].x.toFixed(4)} ≈ ${Math.cos(tAtLast).toFixed(4)})`);
 }
 
 /* ——— 12. Performance budget ——— */
