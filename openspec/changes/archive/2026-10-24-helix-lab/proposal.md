@@ -76,8 +76,7 @@ Non-goals (this change):
   projection switching is single-view first, layout later.
 - No UI language switch; panel labels stay English (consistent with the
   rest of Parametrica), preset names bilingual-friendly.
-- No true pointed cone for the Cónica variation (needs optional `exprR`
-  on the generator — tracked as a future change; Cónica ships as the
-  half-wave cosine hourglass instead).
+- No per-variation expression overrides. Cónica uses the generalized
+  radial envelope (`a = r`, `phi = 0`) to taper to a point.
 - No custom color-ramp editor; the gradient pass ships with the default
   palette and an optional `view.colorRamp` placeholder.

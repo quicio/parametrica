@@ -121,6 +121,7 @@ extraction and conversion to a Fourier document.
 | Optional LLM advisor: providers, prompts, validation, cache, privacy | shipped (2026-10-24) |
 | Image input: underlay, contour extraction, Fourier tracing | shipped (2026-10-24) |
 | Evolution: parent selection, crossover, structural mutation, lineage | shipped (2026-10-24) |
+| Helix Lab: generalized helix, orthographic views, gradient wireframe | shipped (2026-10-24) |
 
 ### Foundation contracts (this phase)
 

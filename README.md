@@ -23,7 +23,7 @@ mathematics is the only authoring surface.
 ```bash
 npm install
 npm run dev          # vite dev server, opens the app
-npm test             # node-only verification suite (1000 checks)
+npm test             # node-only verification suite (1139 checks)
 npm run test:e2e     # Playwright suite (starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
@@ -73,14 +73,14 @@ leaving your machine.
 ## Architecture
 
 ```
-generators/  (22 registered)  one file each, self-registered
+generators/  (23 registered)  one file each, self-registered
 operators/   (31 registered)  geometry/ + topology/, each Curve[] → Curve[]
 math/               safe Pratt-parser expression engine + seeded simplex noise
 sampling/           uniform + adaptive + arc-length resampling + bbox helpers
 analysis/           differential geometry: tangents, normals, curvature, inflections
 lab/                descriptor, hash, sensitivity, notebook, exploration and diffs
 ai/                 deterministic offline narration and suggestion rules
-render/             p5 surface, artboard/palettes, thumbnails and 11 passes
+render/             p5 surface, artboard/palettes, thumbnails, projections and 12 passes
 viz/                toggleable diagnostic overlays
 animation/          AnimatableValue + timeline resolution (keyframes/easing)
 mutation/           parameter-space mutation with full evaluation validation
@@ -168,6 +168,7 @@ No central config to update.
 | Fourier Capsule | `fourier` | closed shape from harmonic series |
 | Fourier Butterfly | `fourier` | open shape from harmonic series |
 | Vesica Prime (v1) | `bilateral-spline` | legacy v1 generator, preserved |
+| Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
 
 ---
 
@@ -179,14 +180,14 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1000 checks across 24 groups (expression
-engine, noise determinism, splines, all 22 registered generators,
+Runs `test/lab.smoke.mjs` — 1139 checks across 25 groups (expression
+engine, noise determinism, splines, all 23 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
 performance budget, reliability regressions, offline and optional LLM
-advisors, image contour tracing, evolution). The whole core is
+advisors, image contour tracing, evolution, helix projections). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (50 tests) against a Vite server started by Playwright itself.
+suite (55 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -207,18 +208,18 @@ loading and tree-shaking p5 is on the roadmap (see SPEC.md §20).
 
 ## What ships in v0.1.0
 
-- **22 generators** registered and tested (parametric, polar, custom,
+- **23 generators** registered and tested (parametric, polar, custom,
   lissajous, rose, superformula, fourier, trochoids (hypo/epi/spirograph),
   harmonic-oscillator, noise-field, catmull-rom, bezier, cubic-spline,
   bilateral-spline, lorenz, clifford, dejong, aizawa, concentric-ellipses,
-  parametric-3d)
+  parametric-3d, generalized helix)
 - **31 operators** across geometry (transform, symmetry, resample,
   offset, deform, project, stroke, boolean) and topology (repeat,
   voronoi, skeleton, medial-axis, ribbons, centerline)
 - **4 analysis overlays** (inflections, sample points, ruler, bbox)
-- **11 render passes** (stroke, points, wireframe, control polygon,
-  tangents, normals, curvature heatmap, negative space, signed distance,
-  topology, epicycles)
+- **12 render passes** (stroke, points, wireframe, control polygon,
+  gradient wireframe, tangents, normals, curvature heatmap, negative space,
+  signed distance, topology, epicycles)
 - **Animation transport** with time-driven AnimatableValue expressions
 - **Analysis panel** with deterministic descriptor metrics and parameter influence
 - **Notebook** with checkpoints, thumbnails, lineage and A/B comparison
@@ -231,6 +232,7 @@ loading and tree-shaking p5 is on the roadmap (see SPEC.md §20).
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure
 - **Image input** with local underlay, threshold preview, largest-contour tracing and editable Fourier documents
 - **Evolution** with parent selection, numeric crossover, structural mutation and generation lineage
+- **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views and a height-gradient wireframe
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)

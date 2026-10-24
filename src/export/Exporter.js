@@ -7,6 +7,7 @@
  */
 
 import { APP_ID } from '../core/document.js';
+import { projectCurves } from '../render/projection.js';
 
 export class Exporter {
   constructor(app) {
@@ -68,10 +69,26 @@ export class Exporter {
   /* ——— Browser-bound actions ——— */
 
   exportSVG() {
-    const artboard = this.app.document.view.artboard;
+    const doc = this.app.document;
+    const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
-    const svg = Exporter.buildSVG(this.app.evaluation.curves, this.app.document.view, { w, h }, this.app.document, this.app.evaluation.layers);
+    const projection = doc.view.projection ?? '3d';
+    const evaluation = this.app.evaluation;
+    const layers = projection === '3d'
+      ? evaluation.layers
+      : evaluation.layers?.map((layer) => ({
+        ...layer,
+        curves: projectCurves(layer.curves, projection, {
+          fit: Number(layer.generator?.params?.fit) || 0,
+        }),
+      }));
+    const curves = projection === '3d'
+      ? evaluation.curves
+      : projectCurves(evaluation.curves, projection, {
+        fit: Number(doc.generator?.params?.fit) || 0,
+      });
+    const svg = Exporter.buildSVG(curves, doc.view, { w, h }, doc, layers);
     downloadFile(`parametrica-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 

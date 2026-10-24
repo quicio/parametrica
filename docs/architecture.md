@@ -72,7 +72,7 @@ src/
 │   ├── evolution.js              crossover, structural mutation and lineage
 │   └── diff.js                   document and descriptor diffs
 │
-├── generators/                   22 registered models across 15 modules
+├── generators/                   23 registered models across 16 modules
 │   ├── index.js                  side-effect imports
 │   ├── helpers.js                compileOrThrow, makeScope, sampleParametric, isClosedPolyline
 │   ├── parametric.js             x(t), y(t)
@@ -89,6 +89,7 @@ src/
 │   ├── attractors.js             lorenz / clifford / dejong / aizawa
 │   ├── concentricEllipses.js     multi-curve families
 │   ├── parametric3D.js           projected x/y/z curves
+│   ├── helix.js                  generalized helix + true 3D metadata
 │   └── bilateralSpline.js        v1 legacy, preserved
 │
 ├── operators/
@@ -109,9 +110,11 @@ src/
 ├── render/
 │   ├── P5Renderer.js             p5 sketch, animation clock, pass composer
 │   ├── thumbnail.js              plain-canvas candidate previews
+│   ├── projection.js             render-time xy/xz/yz orthographic views
 │   ├── palettes.js               artboard presets and color pairs
 │   └── passes/
 │       ├── core.js               stroke / points / wireframe
+│       ├── gradient.js           height/radius gradient wireframe
 │       ├── vectors.js            normals / tangents
 │       ├── fields.js             curvature heatmap
 │       └── epicycles.js          rotating-vector visualization
@@ -137,7 +140,7 @@ src/
 │
 ├── presets/
 │   ├── PresetManager.js          built-ins + user storage + JSON I/O
-│   └── builtins.js               20 built-in mathematical families
+│   └── builtins.js               26 built-in mathematical families
 │
 ├── export/
 │   ├── Exporter.js               SVG (path-embedded document) · PNG · JSON
@@ -333,7 +336,7 @@ should never produce a form that breaks at `time = 0.5`.
 
 ### Why per-stage caching?
 
-Slider drags fire 60 times per second. Re-evaluating 22 generators +
+Slider drags fire 60 times per second. Re-evaluating 23 generators +
 31 operators from scratch on every drag is wasteful. The cache keys
 on `(seed, time, quality, camera, stage.id, stage.params, stage.mods,
 stage.enabled)` JSON-stringified. A slider drag invalidates exactly one
@@ -392,17 +395,17 @@ behind a dynamic import is the planned v0.x optimization.
 
 ### What the suite covers
 
-24 groups in `test/lab.smoke.mjs`:
+25 groups in `test/lab.smoke.mjs`:
 
 | # | Group | What it verifies |
 |---|---|---|
 | 1 | expression engine | precedence, right-assoc, unary, stdlib, error spans, perturbation |
 | 2 | noise determinism | same seed = identical field, different seed ≠ same field |
 | 3 | splines | Catmull-Rom → Bézier conversion, cubic spline |
-| 4 | generators | evalOK over all 22 registered models + variations |
+| 4 | generators | evalOK over all 23 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
-| 7 | built-in presets | all 20 built-in presets evaluate to non-degenerate forms |
+| 7 | built-in presets | all 26 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
 | 9 | SVG export | output is well-formed, document is embedded |
 | 10 | animation | time-driven resolution, deterministic across time |
@@ -420,8 +423,9 @@ behind a dynamic import is the planned v0.x optimization.
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
 | 23 | image trace | grayscale/Otsu, component selection, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, privacy |
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
+| 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 
-1000 checks total.
+1139 checks total.
 
 ### Adding tests
 

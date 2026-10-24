@@ -3,6 +3,7 @@
  */
 
 import './core.js';
+import './gradient.js';
 import './vectors.js';
 import './fields.js';
 import './epicycles.js';

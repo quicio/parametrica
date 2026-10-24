@@ -10,7 +10,9 @@
 
 import p5 from 'p5';
 import { RenderPasses } from '../core/registry.js';
+import { bboxAll } from '../sampling/sampling.js';
 import { drawOverlays } from '../viz/overlays.js';
+import { projectCurves } from './projection.js';
 
 /** Wrap an angle into the half-open interval (-π, π]. */
 function wrapPi(angle) {
@@ -79,6 +81,8 @@ export class P5Renderer {
       p.mousePressed = (event) => {
         if (p.mouseButton !== p.LEFT) return;
         if (!isOverCanvas(event)) return;
+        // Orthographic views have no camera to rotate.
+        if ((this.app.document.view.projection ?? '3d') !== '3d') return;
         this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
       };
       p.mouseDragged = (event) => {
@@ -105,6 +109,7 @@ export class P5Renderer {
         // scrolling handles the slider/scrollbar.
         if (!isOverCanvas(event)) return;
         event.preventDefault();
+        if ((this.app.document.view.projection ?? '3d') !== '3d') return false;
         const cam = this.app.document.view.camera;
         const factor = event.delta > 0 ? 1.08 : 1 / 1.08;
         cam.fov = clamp(cam.fov * factor, 1, 2000);
@@ -273,15 +278,22 @@ export class P5Renderer {
       // or overlay actually uses tangents/normals/curvature/inflections.
       const analysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
       const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
-      const groups = Array.isArray(evaluation.layers) && evaluation.layers.length
+      const projection = doc.view.projection ?? '3d';
+      const sourceGroups = Array.isArray(evaluation.layers) && evaluation.layers.length
         ? evaluation.layers.filter((layer) => layer.visible !== false && layer.curves.length)
-        : [{ curves: evaluation.curves, style: doc.view.style, bbox: evaluation.bbox }];
+        : [{ curves: evaluation.curves, style: doc.view.style, bbox: evaluation.bbox, generator: doc.generator }];
+      const groups = sourceGroups.map((group) => ({
+        ...group,
+        curves: projectCurves(group.curves, projection, {
+          fit: Number(group.generator?.params?.fit) || 0,
+        }),
+      }));
 
       for (const group of groups) {
         const layerData = {
           ...data,
           curves: group.curves,
-          bbox: group.bbox ?? evaluation.bbox,
+          bbox: group.curves.length ? bboxAll(group.curves) : (group.bbox ?? evaluation.bbox),
           view: { ...doc.view, style: group.style ?? doc.view.style },
         };
         if (analysis) layerData.analysis = analysis;
@@ -297,7 +309,13 @@ export class P5Renderer {
         }
       }
       p.push();
-      drawOverlays(p, { ...data, analysis });
+      const renderCurves = groups.flatMap((group) => group.curves);
+      drawOverlays(p, {
+        ...data,
+        curves: renderCurves,
+        bbox: renderCurves.length ? bboxAll(renderCurves) : data.bbox,
+        analysis,
+      });
       p.pop();
     }
 

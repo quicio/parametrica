@@ -269,6 +269,17 @@ export class Controls {
     const body = this.section('View');
     const gui = this.makeGui(body);
     const view = this.app.document.view;
+    view.projection ??= '3d';
+    const projection = gui
+      .add(view, 'projection', {
+        '3D camera': '3d',
+        'XY · Planta': 'xy',
+        'XZ · Alzado': 'xz',
+        'YZ · Perfil': 'yz',
+      })
+      .name('Projection');
+    projection.domElement.classList.add('view-projection-row');
+    projection.$widget?.querySelector?.('select')?.classList.add('view-projection');
     gui.add(view, 'guides').name('CAD Guides').onChange(() => this.app.rebuild());
 
     // Render modes are a multi-select, but lil-gui's option controller

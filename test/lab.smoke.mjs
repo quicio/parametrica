@@ -14,14 +14,15 @@ import { join } from 'node:path';
 
 import '../src/generators/index.js';
 import '../src/operators/index.js';
+import '../src/render/passes/index.js';
 
-import { Generators, Operators } from '../src/core/registry.js';
+import { Generators, Operators, RenderPasses } from '../src/core/registry.js';
 import { compileExpression, evaluate, perturbLiterals } from '../src/math/expression.js';
 import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive } from '../src/sampling/sampling.js';
-import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp } from '../src/core/document.js';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP } from '../src/core/document.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults, TYPE } from '../src/core/schema.js';
 import { History } from '../src/core/history.js';
@@ -46,6 +47,8 @@ import { PresetManager } from '../src/presets/PresetManager.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter } from '../src/export/Exporter.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
+import { projectCurves, projectPoint, gradientAxisValue } from '../src/render/projection.js';
+import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 
 let failures = 0;
 let checks = 0;
@@ -162,7 +165,7 @@ console.log(`4. generators (${Generators.list().length})`);
     'harmonic-oscillator', 'noise-field', 'catmull-rom', 'bezier',
     'cubic-spline', 'bilateral-spline',
     'lorenz', 'clifford', 'dejong', 'aizawa', 'concentric-ellipses',
-    'parametric-3d',
+    'parametric-3d', 'helix',
   ];
   for (const id of expected) {
     assert(Generators.has(id), `generator "${id}" registered`);
@@ -184,6 +187,8 @@ console.log(`4. generators (${Generators.list().length})`);
   const helixPoint = helixEval.curves[0]?.points[100];
   assert(helixPoint?.depthAlpha != null, 'parametric-3d: depthAlpha survives fit/center');
   assert(typeof helixPoint?.depth === 'number', 'parametric-3d: depth survives fit/center');
+  assert(typeof helixPoint?.h3 === 'number', 'parametric-3d: true height survives fit/center');
+  assert(typeof helixPoint?.x3 === 'number' && typeof helixPoint?.y3 === 'number', 'parametric-3d: world coordinates survive fit/center');
   // A mirror operator must preserve depth fields on the flipped copies.
   helixDoc.operators.push({ id: 'mirror', enabled: true, params: { axis: 'vertical', keepOriginal: true }, mods: {} });
   const mirrored = evaluateDocument(helixDoc, { time: 0 });
@@ -524,6 +529,18 @@ console.log('12. performance');
   const heavyMs = performance.now() - t1;
   assert(heavyEval.stats.pointCount === 20000, 'performance sample has 20k points');
   assert(heavyMs < 50, `20k geometry pipeline in ${heavyMs.toFixed(1)}ms (< 50ms CI gate)`);
+
+  // Helix at the maximum practical sample count: the 3D pipeline must stay
+  // inside the same geometry gate; gradient batching is covered by e2e.
+  const helixHeavy = createDocument('helix', {
+    generator: { params: { samples: 8000, adaptive: false } },
+  });
+  delete evaluateDocument._cache;
+  const t2 = performance.now();
+  const helixEval = evaluateDocument(helixHeavy, { time: 0 });
+  const helixMs = performance.now() - t2;
+  assert(helixEval.stats.pointCount === 8000, 'helix performance sample has 8k points');
+  assert(helixMs < 50, `8k helix pipeline in ${helixMs.toFixed(1)}ms (< 50ms CI gate)`);
 }
 
 /* ——— 13. Reliability hardening regressions ——— */
@@ -1591,6 +1608,184 @@ console.log('24. evolution lab');
   assert(notebook.get('child-1').parents.includes(cpB.id), 'removing a parent keeps the remaining parent');
   assert(!notebook.get('child-1').parents.includes(cpA.id), 'removing a parent clears it from children');
   assert(notebook.get('child-1').parentId === null, 'removing the primary parent clears parentId');
+}
+
+/* ——— 25. Helix Lab ——— */
+console.log('25. helix lab');
+{
+  const helix = Generators.get('helix');
+  assert(helix, 'helix generator is registered');
+  assert(PROJECTIONS.join(',') === '3d,xy,xz,yz', 'projection ids are stable');
+  assert(sanitizeProjection(undefined) === '3d', 'missing projection defaults to 3d');
+  assert(sanitizeProjection('nope') === '3d', 'invalid projection defaults to 3d');
+  assert(sanitizeProjection('xz') === 'xz', 'valid projection is preserved');
+  assert(sanitizeColorRamp(['#fff', '#000'])?.length === 2, 'valid color ramp is preserved');
+  assert(sanitizeColorRamp(['#fff', 'red']) === null, 'invalid color ramp falls back to default');
+  assert(RenderPasses.has('gradient-wireframe'), 'gradient wireframe pass is registered');
+
+  const baseParams = {
+    ...schemaDefaults(helix.params),
+    samples: 401,
+    adaptive: false,
+    fit: 0,
+  };
+  const base = createDocument('helix', { generator: { params: baseParams } });
+  const domain = helix.domain(baseParams);
+  assert(Math.abs((domain.t1 - domain.t0) - Math.PI * 2 * baseParams.turns) < 1e-9,
+    'helix domain spans turns full revolutions');
+  const baseEval = evaluateDocument(base, { time: 0 });
+  assert(baseEval.errors.length === 0 && baseEval.curves.length === 1, 'classic helix evaluates');
+  const basePoints = baseEval.curves[0].points;
+  assert(basePoints.length === baseParams.samples, 'uniform helix honors the sample count');
+  let classicOK = true;
+  for (let i = 0; i < basePoints.length; i++) {
+    const t = domain.t0 + ((domain.t1 - domain.t0) * i) / (basePoints.length - 1);
+    const point = basePoints[i];
+    if (Math.abs(point.x3 - baseParams.r * Math.cos(t)) > 1e-6 ||
+        Math.abs(point.y3 - baseParams.r * Math.sin(t)) > 1e-6 ||
+        Math.abs(point.h3 - baseParams.p * t) > 1e-6) {
+      classicOK = false;
+      break;
+    }
+  }
+  assert(classicOK, 'a=0, b=0, theta=0 reduces to the classic helix');
+  assert(basePoints.every((point) => point.depthAlpha != null && point.depth != null), 'helix stores depth metadata');
+  assert(basePoints.every((point) => Number.isFinite(point.h3)), 'helix stores true height h3');
+
+  const radial = createDocument('helix', {
+    generator: { params: { ...baseParams, a: 35, k: 3, phi: 0 } },
+  });
+  const radialPoints = evaluateDocument(radial, { time: 0 }).curves[0].points;
+  const radii = radialPoints.map((point) => Math.hypot(point.x3, point.y3));
+  assert(Math.min(...radii) <= 120 - 35 + 1e-6, 'radial modulation reaches r+a');
+  assert(Math.max(...radii) >= 120 + 35 - 1e-6, 'radial modulation reaches r+a');
+  assert(Math.max(...radii) - Math.min(...radii) > 60, 'radial modulation has visible amplitude');
+
+  const ripple = createDocument('helix', {
+    generator: { params: { ...baseParams, b: 25, m: 2, psi: 0.4 } },
+  });
+  const ripplePoints = evaluateDocument(ripple, { time: 0 }).curves[0].points;
+  let rippleOK = true;
+  for (let i = 0; i < ripplePoints.length; i++) {
+    const t = domain.t0 + ((domain.t1 - domain.t0) * i) / (ripplePoints.length - 1);
+    const expected = 25 * Math.sin(2 * t + 0.4);
+    if (Math.abs((ripplePoints[i].h3 - baseParams.p * t) - expected) > 1e-6) {
+      rippleOK = false;
+      break;
+    }
+  }
+  assert(rippleOK, 'pitch ripple follows b·sin(m·t+ψ)');
+
+  const torsion = createDocument('helix', {
+    generator: { params: { ...baseParams, theta: Math.PI / 3 } },
+  });
+  const torsionPoints = evaluateDocument(torsion, { time: 0 }).curves[0].points;
+  const torsionAngle = torsion.generator.params.theta;
+  let torsionOK = true;
+  for (let i = 0; i < torsionPoints.length; i++) {
+    const angle = torsionAngle;
+    const ex = basePoints[i].x3 * Math.cos(angle) - basePoints[i].y3 * Math.sin(angle);
+    const ey = basePoints[i].x3 * Math.sin(angle) + basePoints[i].y3 * Math.cos(angle);
+    if (Math.abs(torsionPoints[i].x3 - ex) > 1e-6 || Math.abs(torsionPoints[i].y3 - ey) > 1e-6) {
+      torsionOK = false;
+      break;
+    }
+  }
+  assert(torsionOK, 'theta rotates the helix about the z axis');
+
+  const adaptive = createDocument('helix', {
+    generator: { params: { ...baseParams, samples: 220, adaptive: true, a: 25, k: 5 } },
+  });
+  const adaptiveEval = evaluateDocument(adaptive, { time: 0 });
+  assert(adaptiveEval.curves[0].points.length <= 220, 'adaptive sampling honors the samples cap');
+  assert(adaptiveEval.curves[0].points.length >= 2, 'adaptive sampling keeps a usable curve');
+
+  const double = createDocument('helix', {
+    generator: { params: { ...baseParams, strands: 2, a: 0, p: 12, theta: 0 } },
+  });
+  const doubleEval = evaluateDocument(double, { time: 0 });
+  assert(doubleEval.curves.length === 2, 'strands=2 emits two curves');
+  const first = doubleEval.curves[0].points;
+  const second = doubleEval.curves[1].points;
+  assert(first.length === second.length, 'double-helix strands share a sample count');
+  assert(Math.abs(second[0].x3 + first[0].x3) < 1e-6, 'second strand is phase-shifted by π (x)');
+  assert(Math.abs(second[0].y3 + first[0].y3) < 1e-6, 'second strand is phase-shifted by π (y)');
+  assert(Math.abs(second[0].h3 - first[0].h3) < 1e-6, 'double-helix strands share their height');
+
+  const metadata = createDocument('helix', {
+    generator: { params: { ...baseParams, fit: 340, samples: 300 } },
+  });
+  const metadataPoint = evaluateDocument(metadata, { time: 0 }).curves[0].points[100];
+  assert(metadataPoint.h3 != null && metadataPoint.x3 != null, 'helix world metadata survives fit');
+  metadata.operators.push({ id: 'mirror', enabled: true, params: { axis: 'vertical', keepOriginal: true }, mods: {} });
+  const mirrored = evaluateDocument(metadata, { time: 0 });
+  assert(mirrored.curves.length === 2, 'mirror duplicates the helix');
+  assert(mirrored.curves.every((curve) => curve.points[60]?.h3 != null), 'mirror preserves h3 metadata');
+
+  const samplePoint = { x: 1, y: 2, x3: 3, y3: 4, h3: 5 };
+  const xy = projectPoint(samplePoint, 'xy');
+  const xz = projectPoint(samplePoint, 'xz');
+  const yz = projectPoint(samplePoint, 'yz');
+  assert(xy.x === 3 && xy.y === -4, 'xy keeps x/y');
+  assert(xz.x === 3 && xz.y === -5, 'xz keeps x/z');
+  assert(yz.x === -4 && yz.y === -5, 'yz keeps y/z');
+  assert(xy.depthAlpha === 1, 'orthographic projections disable camera fade');
+
+  const fake = [{ points: [
+    { x: 0, y: 0, x3: 0, y3: 0, h3: 0 },
+    { x: 0, y: 0, x3: 10, y3: 0, h3: 0 },
+  ] }];
+  const fitted = projectCurves(fake, 'xz', { fit: 100 });
+  const fx = fitted[0].points.map((point) => point.x);
+  assert(Math.abs(Math.max(...fx) - Math.min(...fx) - 100) < 1e-6, 'projection fit scales the projected bbox');
+  assert(Math.abs(Math.max(...fx) + Math.min(...fx)) < 1e-6, 'projection fit centers the projected bbox');
+
+  assert(gradientAxisValue({ x3: 3, y3: 4, h3: 9 }, 'xy') === 5, 'xy gradient uses radial distance');
+  assert(gradientAxisValue({ x3: 3, y3: 4, h3: 9 }, 'xz') === 9, 'xz gradient uses true height');
+  assert(rampColor(DEFAULT_COLOR_RAMP, 0).join(',') === '255,212,0', 'gradient starts yellow');
+  assert(rampColor(DEFAULT_COLOR_RAMP, 1).join(',') === '30,91,255', 'gradient ends blue');
+  const mid = rampColor(DEFAULT_COLOR_RAMP, 0.5);
+  assert(mid[0] > 100 && mid[2] > 150, 'gradient midpoint is purple');
+  const range = gradientRange(fake, 'xz');
+  assert(range.min === 0 && range.max === 0, 'flat gradient range is finite');
+  const tilted = [{ points: [{ x3: 0, y3: 0, h3: 2 }, { x3: 0, y3: 0, h3: 8 }] }];
+  const tiltedRange = gradientRange(tilted, 'xz');
+  assert(tiltedRange.min === 2 && tiltedRange.max === 8, 'gradient range follows h3');
+
+  const helixNames = ['Básica', 'Radio Variable', 'Paso Variable', 'Ondulada', 'Doble Hélice', 'Cónica'];
+  for (const name of helixNames) {
+    assert(typeof BUILT_IN_PRESETS[name] === 'function', `helix preset "${name}" exists`);
+  }
+  const signatures = new Set();
+  const pm = new PresetManager(null);
+  for (const name of helixNames) {
+    const doc = BUILT_IN_PRESETS[name]();
+    assert(doc.view.projection === '3d', `${name}: defaults to the 3D camera`);
+    assert(doc.generator.id === 'helix', `${name}: uses the helix generator`);
+    const first = evaluateDocument(doc, { time: 0 });
+    const second = evaluateDocument(doc, { time: 0 });
+    assert(first.errors.length === 0, `${name}: evaluates without errors`);
+    assert(first.curves.length > 0 && first.stats.pointCount > 24, `${name}: produces geometry`);
+    assert(
+      JSON.stringify(first.curves.map((curve) => curve.points.map((point) => [point.x3, point.y3, point.h3]))) ===
+      JSON.stringify(second.curves.map((curve) => curve.points.map((point) => [point.x3, point.y3, point.h3]))),
+      `${name}: is deterministic`,
+    );
+    const signature = first.curves[0].points
+      .filter((_, index) => index % 17 === 0)
+      .map((point) => `${point.x3.toFixed(2)},${point.y3.toFixed(2)},${point.h3.toFixed(2)}`)
+      .join('|');
+    signatures.add(signature);
+    const json = pm.serialize(name, doc);
+    const parsed = pm.parse(json);
+    assert(parsed.document.generator.id === 'helix', `${name}: JSON round-trip keeps the generator`);
+    const roundTrip = evaluateDocument(parsed.document, { time: 0 });
+    assert(roundTrip.errors.length === 0 && roundTrip.curves.length === first.curves.length,
+      `${name}: JSON round-trip evaluates`);
+    const svg = Exporter.buildSVG(first.curves, parsed.document.view, { w: 900, h: 900 }, parsed.document);
+    assert(svg.includes('<path') && svg.includes('parametrica document:'), `${name}: SVG export is well-formed`);
+  }
+  assert(signatures.size === helixNames.length, 'all six helix variations are geometrically distinct');
 }
 
 /* ——— Snapshots ——— */

@@ -46,6 +46,8 @@ const DEFAULT_STYLE = {
 };
 
 const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
+export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
 
 export function createDefaultArtboard() {
   return { ...DEFAULT_ARTBOARD };
@@ -57,6 +59,20 @@ export function createDefaultStyle() {
     fill: { ...DEFAULT_STYLE.fill },
     blend: DEFAULT_STYLE.blend,
   };
+}
+
+/** Normalize a projection id; unknown/missing values fall back to 3D. */
+export function sanitizeProjection(value) {
+  return PROJECTIONS.includes(value) ? value : '3d';
+}
+
+/** Optional custom gradient ramp: 2–6 hex colors, otherwise the default. */
+export function sanitizeColorRamp(value) {
+  if (!Array.isArray(value)) return null;
+  const colors = value
+    .filter((colorValue) => typeof colorValue === 'string' && COLOR_RE.test(colorValue))
+    .slice(0, 6);
+  return colors.length >= 2 ? colors : null;
 }
 
 /**
@@ -72,6 +88,8 @@ export function createDefaultView() {
     camera: { ...DEFAULT_CAMERA },
     artboard: createDefaultArtboard(),
     style: createDefaultStyle(),
+    projection: '3d',
+    colorRamp: null,
   };
 }
 
@@ -85,6 +103,8 @@ export const DEFAULT_VIEW = Object.freeze({
   overlays: Object.freeze({ ...DEFAULT_OVERLAYS }),
   camera: Object.freeze({ ...DEFAULT_CAMERA }),
   artboard: Object.freeze({ ...DEFAULT_ARTBOARD }),
+  projection: '3d',
+  colorRamp: null,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({ ...DEFAULT_STYLE.fill }),
@@ -259,6 +279,8 @@ export function createDefaultAnimation() {
 export function createDocument(generatorId = 'parametric', overrides = {}) {
   const generator = Generators.get(generatorId);
   const view = mergeView(createDefaultView(), overrides.view);
+  view.projection = sanitizeProjection(view.projection);
+  view.colorRamp = sanitizeColorRamp(view.colorRamp);
   view.artboard = sanitizeArtboard(overrides.view?.artboard);
   const style = sanitizeStyle(overrides.view?.style, overrides.view?.strokeWeight ?? view.strokeWeight);
   view.style = style;
@@ -327,6 +349,8 @@ export function sanitizeDocument(raw) {
     fov:   clamp(Number(rawCam.fov   ?? DEFAULT_CAMERA.fov),   1, 2000,                              DEFAULT_CAMERA.fov),
   };
   view.artboard = sanitizeArtboard(raw.view?.artboard);
+  view.projection = sanitizeProjection(view.projection);
+  view.colorRamp = sanitizeColorRamp(view.colorRamp);
   const fallbackStyle = sanitizeStyle(raw.view?.style, view.strokeWeight);
   const seed = clamp(Number(raw.seed), 0, 1e9, 1);
 

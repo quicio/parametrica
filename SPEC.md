@@ -195,10 +195,13 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `noise-field` | Integral curve through seeded simplex flow field | seed, scale, steps, stepSize | parametric |
 || `custom` | Free multi-line equations with intermediate variables (`a = …; x = …`) | source, domain | user |
 || `bilateral-spline` | **v1 legacy**: MasterSpline + Mirror + OpticalCorrection (preserved as generator for v1 preset migration) | v1 schema | t ∈ [0,1] |
+|| `helix` | Generalized circular helix with radial/pitch modulation and torsion | r, p, turns, a, k, φ, θ, b, m, ψ, strands | t ∈ [θ0, θ0+2π·turns] |
+|| `parametric-3d` | Projected x/y/z expression curve | exprX/Y/Z, t0, t1, samples | user |
 
-> **Implementation status (2026-10-23):** 22 generators registered and
+> **Implementation status (2026-10-24):** 23 generators registered and
 > covered by the test suite (`lab.smoke.mjs` group 4), including the
-> attractor family, concentric ellipses and the projected 3D generator.
+> attractor family, concentric ellipses, the projected 3D generator and
+> the generalized helix family.
 
 ---
 
@@ -266,11 +269,12 @@ equation(s), parameter values, point count, arc length, per-stage ms.
 
 ## 11. Visualization Modes (`render/passes/`)
 
-Render passes registered as of 2026-08-04:
+Render passes registered as of 2026-10-24:
 
 || Pass id | Source | Implements |
 |---|---|---|
 | `stroke` | `render/passes/core.js` | Main monoline stroke (curve) |
+| `gradient-wireframe` | `render/passes/gradient.js` | Height/radius color ramp wireframe |
 | `points` | `render/passes/core.js` | Sampled points |
 | `wireframe` | `render/passes/core.js` | Control polygon / segments |
 | `normals` / `tangents` | `render/passes/vectors.js` | Per-sample normal & tangent vectors |
@@ -292,9 +296,18 @@ pass with its own z-order. Overlays are a separate layer stacked above
 the active passes.
 
 > **Future passes (planned, not yet implemented):** `signed-distance`,
-> `offset`, `skeleton`, `negative-space`, `topology-graph`,
-> `control-polygon`. Each is a 30-line `RenderPasses.register({...})`
-> once the supporting operator (§8/§9) is in place.
+> `offset`, `skeleton`, `negative-space`, `topology-graph`. Each is a
+> 30-line `RenderPasses.register({...})` once the supporting operator
+> (§8/§9) is in place.
+
+### Orthographic projections
+
+`document.view.projection` is `3d | xy | xz | yz`. The engine keeps full 3D
+points (`x3`, `y3`, `h3`) and the renderer drops the perpendicular axis at
+draw time, fitting the projected bbox with the generator `fit` value. No
+re-evaluation occurs on view switch. `view.colorRamp` is an optional array
+of 2–6 hex colors for the gradient pass; the default is yellow → purple →
+blue.
 
 ## 12. Animation
 
@@ -326,7 +339,8 @@ Mathematical presets, each a complete Parametrica document (with
 
 Lissajous 3:5 · Golden Rose · Infinity · Spirograph · Butterfly ·
 Superformula Star · Superformula Flower · Hypotrochoid ·
-Fourier Capsule · Fourier Butterfly.
+Fourier Capsule · Fourier Butterfly · Helix Lab (Básica, Radio Variable,
+Paso Variable, Ondulada, Doble Hélice, Cónica).
 
 v1 Glyph Lab presets migrate automatically → `bilateral-spline` documents
 through the dual-format read (§4.4).
@@ -360,7 +374,8 @@ Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
 Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
-and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
+and multi-layer export · Timeline keyframes, easing and frame-sequence export · Helix Lab
+(generalized helix, orthographic projections, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
 prompts, validated responses, caching and privacy disclosure · Local image
@@ -455,7 +470,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 | MS | Scope | Status | Evidence |
 |---|---|---|---|
 | **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
-| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 22 generators registered, 31 operators, `analysis/differential.js`, 4 overlays |
+| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 23 generators registered, 31 operators, `analysis/differential.js`, 4 overlays |
 | **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, formula editor (textarea-based, CodeMirror still deferred), operator stack reorder/toggle, 11 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
 | **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | 🟡 **Partial** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance and negative-space are shipped; frame-sequence export remains deferred | Source tree + `e2e` |
 

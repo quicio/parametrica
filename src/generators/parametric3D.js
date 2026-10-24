@@ -33,9 +33,8 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { compileOrThrow, makeScope, postProcess, TAU } from './helpers.js';
+import { cameraFrom, compileOrThrow, makeScope, postProcess, project3D, TAU } from './helpers.js';
 
-const EPS = 1e-9;
 
 Generators.register({
   id: 'parametric-3d',
@@ -93,14 +92,7 @@ Generators.register({
     // Camera state lives on the document (view.camera) so it persists
     // with presets and is shared across generators. If absent (malformed
     // document) we fall back to the classic isometric defaults.
-    const cam = ctx.document?.view?.camera ?? {
-      yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320,
-    };
-    const cy = Math.cos(cam.yaw);
-    const sy = Math.sin(cam.yaw);
-    const cp = Math.cos(cam.pitch);
-    const sp = Math.sin(cam.pitch);
-    const fov = cam.fov;
+    const cam = cameraFrom(ctx.document?.view);
     const depthFade = params.depthOcclusion;
     const fadeK = params.depthAttenuation;
 
@@ -123,21 +115,18 @@ Generators.register({
       const y = fnY(scope);
       const z = fnZ(scope);
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-      // Rotate: yaw around Z, then pitch around X (camera frame).
-      const xp =  x * cy + y * sy;
-      const yp = -x * sy * cp + y * cy * cp + z * sp;
-      const zp =  x * sy * sp - y * cy * sp + z * cp;
-      const denom = zp + fov;
-      if (Math.abs(denom) < EPS) continue;
-      const X = (xp * fov) / denom;
-      const Y = (yp * fov) / denom;
-      // Normalized depth: 0 = far, 1 = near.
-      const depth = Math.max(0, Math.min(1, (zp + fov) / (2 * fov)));
+      const projected = project3D(x, y, z, cam, { depthFade, fadeStrength: fadeK });
+      if (!projected) continue;
       points[k++] = {
-        x: X,
-        y: Y,
-        depth,
-        depthAlpha: depthFade ? 0.4 + fadeK * depth : 1,
+        x: projected.x,
+        y: projected.y,
+        // True 3D coordinates survive fit/center and power orthographic
+        // projections at render time.
+        x3: x,
+        y3: y,
+        h3: z,
+        depth: projected.depth,
+        depthAlpha: projected.depthAlpha,
       };
     }
     if (k < 2) return [];

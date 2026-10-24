@@ -201,4 +201,72 @@ export const BUILT_IN_PRESETS = {
         },
       },
     }),
+
+  // ——— Helix Lab variations ———
+
+  'Básica': () =>
+    createDocument('helix', {
+      name: 'Básica',
+      generator: {
+        params: {
+          r: 120, p: 30, turns: 6, a: 0, k: 3, phi: 0, theta: 0,
+          b: 0, m: 2, psi: 0, strands: 1, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
+
+  'Radio Variable': () =>
+    createDocument('helix', {
+      name: 'Radio Variable',
+      generator: {
+        params: {
+          r: 120, p: 30, turns: 6, a: 38, k: 3, phi: 0, theta: 0,
+          b: 0, m: 2, psi: 0, strands: 1, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
+
+  'Paso Variable': () =>
+    createDocument('helix', {
+      name: 'Paso Variable',
+      generator: {
+        params: {
+          r: 120, p: 30, turns: 6, a: 0, k: 3, phi: 0, theta: 0,
+          b: 28, m: 2, psi: 0, strands: 1, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
+
+  'Ondulada': () =>
+    createDocument('helix', {
+      name: 'Ondulada',
+      generator: {
+        params: {
+          r: 120, p: 30, turns: 6, a: 30, k: 4, phi: 0, theta: 0,
+          b: 18, m: 3, psi: 0, strands: 1, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
+
+  'Doble Hélice': () =>
+    createDocument('helix', {
+      name: 'Doble Hélice',
+      generator: {
+        params: {
+          r: 110, p: 28, turns: 6, a: 0, k: 3, phi: 0, theta: 0,
+          b: 0, m: 2, psi: 0, strands: 2, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
+
+  'Cónica': () =>
+    createDocument('helix', {
+      name: 'Cónica',
+      generator: {
+        params: {
+          r: 60, p: 24, turns: 5, a: 60, k: 1 / 10, phi: 0, theta: 0,
+          b: 0, m: 2, psi: 0, strands: 1, samples: 1800, adaptive: true, fit: 340,
+        },
+      },
+    }),
 };

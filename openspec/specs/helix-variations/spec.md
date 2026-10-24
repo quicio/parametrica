@@ -1,12 +1,11 @@
-## Purpose
+# helix-variations Specification
 
+## Purpose
 A named family of six helix presets that explores the parameter space of
 the `helix` generator — the "VARIACIONES" row of the reference design. Each
 preset is a valid, deterministic document that a user can load, mutate, and
 export.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Six named variations
 
 The preset library SHALL include exactly these six helix presets:
@@ -19,12 +18,9 @@ The preset library SHALL include exactly these six helix presets:
    `b>0, m=3`
 5. `Doble Hélice` — two interleaved helices: two curves with opposite
    `phi`/`theta` phase
-6. `Cónica` — cone-shaped: radius envelope via half-wave cosine.
-   `a = r/2`, `k = 1/(2·turns)`, `phi = π` makes the radius oscillate
-   `r → 0 → r` across the full traversal — an hourglass (double cone),
-   achieved with zero generator changes. A true pointed cone (radius
-   shrinking monotonically to a tip) is out of scope: it needs an
-   optional `exprR` on the generator and is tracked as a future change.
+6. `Cónica` — pointed cone: `a = r`, `k = 1/(2·turns)`, `phi = 0`
+   makes the radius taper from `2r` at the start to `0` at the tip,
+   using the existing radial modulation. No optional `exprR` is needed.
 
 #### Scenario: Each variation loads
 

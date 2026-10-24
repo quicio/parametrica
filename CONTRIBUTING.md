@@ -301,5 +301,5 @@ Before opening a PR (or merging to `main`):
 | New UI section | `src/ui/Controls.js` (add a `buildXSection()` method) |
 | New widget | `src/ui/widgets/<name>.js` |
 | Schema/param types | `src/core/schema.js` (`TYPE` enum + `schemaDefaults`) |
-| Tests | `test/lab.smoke.mjs` (one assertion per behaviour, grouped 1–24) |
+| Tests | `test/lab.smoke.mjs` (one assertion per behaviour, grouped 1–25) |
 | Architecture docs | [SPEC.md](./SPEC.md) |
