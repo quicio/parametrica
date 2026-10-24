@@ -75,8 +75,18 @@ Operators.register({
   apply(curves, p, ctx) {
     const fx = compileExpression(p.exprX);
     const fy = compileExpression(p.exprY);
-    if (!fx.ok) throw new Error(`warp x': ${fx.error.message}`);
-    if (!fy.ok) throw new Error(`warp y': ${fy.error.message}`);
+    if (!fx.ok) {
+      const e = new Error(`warp x': ${fx.error.message}`);
+      e.key = 'exprX';
+      e.span = fx.error;
+      throw e;
+    }
+    if (!fy.ok) {
+      const e = new Error(`warp y': ${fy.error.message}`);
+      e.key = 'exprY';
+      e.span = fy.error;
+      throw e;
+    }
     const scope = Object.assign(Object.create(null), ctx.scope, { time: ctx.time ?? 0 });
     return curves.map((c) => ({
       ...c,

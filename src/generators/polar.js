@@ -30,7 +30,7 @@ Generators.register({
   domain: (p) => ({ t0: p.theta0, t1: p.theta0 + TAU * p.turns, closed: p.closed }),
 
   sample(params, ctx) {
-    const fnR = compileOrThrow(params.exprR, 'r(θ)');
+    const fnR = compileOrThrow(params.exprR, 'r(θ)', 'exprR');
     const scope = makeScope(ctx);
     const t1 = params.theta0 + TAU * params.turns;
     const fn = (theta) => {

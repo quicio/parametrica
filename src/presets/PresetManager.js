@@ -59,6 +59,7 @@ export class PresetManager {
   save(name, document) {
     const clean = String(name ?? '').trim();
     if (!clean) throw new Error('Preset name required');
+    if (this.isBuiltIn(clean)) throw new Error(`"${clean}" is a built-in preset name`);
     const doc = sanitizeDocument(document) ?? createDocument('parametric');
     this.user[clean] = { ...doc, name: clean };
     this.#persist();

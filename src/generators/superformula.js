@@ -8,8 +8,8 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { genId, TAU } from './helpers.js';
-import { sampleAdaptive } from '../sampling/sampling.js';
+import { genId, isClosedPolyline, TAU } from './helpers.js';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 
 const EPS = 1e-9;
 
@@ -26,20 +26,23 @@ Generators.register({
     b: { label: 'b', type: TYPE.NUMBER, min: 0.1, max: 4, step: 0.01, default: 1 },
     radius: { label: 'Radius', type: TYPE.NUMBER, min: 20, max: 600, step: 1, default: 280 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 64, max: 12000, step: 1, default: 1000 },
+    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
 
   domain: () => ({ t0: 0, t1: TAU, closed: true }),
 
   sample(p) {
-    const points = sampleAdaptive(
-      (theta) => {
-        const term1 = Math.pow(Math.abs(Math.cos((p.m * theta) / 4) / p.a), p.n2);
-        const term2 = Math.pow(Math.abs(Math.sin((p.m * theta) / 4) / p.b), p.n3);
-        const r = p.radius * Math.pow(Math.max(term1 + term2, EPS), -1 / p.n1);
-        return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
-      },
-      0, TAU, { minSteps: Math.min(384, p.samples) },
-    );
-    return [{ id: genId('superformula'), points, closed: true, meta: { source: 'superformula' } }];
+    const fn = (theta) => {
+      const term1 = Math.pow(Math.abs(Math.cos((p.m * theta) / 4) / p.a), p.n2);
+      const term2 = Math.pow(Math.abs(Math.sin((p.m * theta) / 4) / p.b), p.n3);
+      const r = p.radius * Math.pow(Math.max(term1 + term2, EPS), -1 / p.n1);
+      return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
+    };
+    const points = p.adaptive
+      ? sampleAdaptive(fn, 0, TAU, { minSteps: Math.min(384, p.samples), samples: p.samples })
+      : sampleUniform(fn, 0, TAU, p.samples);
+    return [{
+      id: genId('superformula'), points, closed: isClosedPolyline(points), meta: { source: 'superformula' },
+    }];
   },
 });

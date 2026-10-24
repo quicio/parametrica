@@ -21,11 +21,38 @@ export const TYPE = {
   HARMONICS: 'harmonics',   // fourier harmonic table
 };
 
-/** Defaults for every key in a schema. */
+/** Defaults for every key in a schema. Structured values are deep-cloned. */
 export function schemaDefaults(schema) {
   const out = {};
-  for (const [key, s] of Object.entries(schema)) out[key] = s.default;
+  for (const [key, s] of Object.entries(schema)) out[key] = cloneDefault(s.default);
   return out;
+}
+
+function cloneDefault(value) {
+  if (value === null || typeof value !== 'object') return value;
+  return typeof structuredClone === 'function'
+    ? structuredClone(value)
+    : JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * Clamp/snap a resolved numeric value against its schema.
+ * Used by both base-value sanitization and time-expression resolution so
+ * storage and evaluation cannot disagree about a parameter's range.
+ */
+export function clampNumber(schemaEntry, value) {
+  const s = schemaEntry;
+  let v = Number(value);
+  if (!Number.isFinite(v)) v = Number(s.default);
+  if (!Number.isFinite(v)) return 0;
+  if (typeof s.min === 'number') v = Math.max(s.min, v);
+  if (typeof s.max === 'number') v = Math.min(s.max, v);
+  if (s.step) v = Math.round(v / s.step) * s.step;
+  // Snapping can push a value just past a bound when bounds are not
+  // multiples of step; clamp once more.
+  if (typeof s.min === 'number') v = Math.max(s.min, v);
+  if (typeof s.max === 'number') v = Math.min(s.max, v);
+  return Number(v.toFixed(5));
 }
 
 /** Clamp/snap/validate one value against its schema entry. */
@@ -52,16 +79,12 @@ export function sanitizeValue(schemaEntry, value) {
 
     case TYPE.NUMBER:
     default: {
-      // Animatable: { expr } passes through if it compiles.
+      // Animatable: { expr } passes through if it compiles; the value is
+      // clamped when the expression is resolved at evaluation time.
       if (value && typeof value === 'object' && typeof value.expr === 'string') {
-        return compileExpression(value.expr).ok ? { expr: value.expr } : s.default;
+        return compileExpression(value.expr).ok ? { expr: value.expr } : cloneDefault(s.default);
       }
-      let v = Number(value);
-      if (!Number.isFinite(v)) v = s.default;
-      if (typeof s.min === 'number') v = Math.max(s.min, v);
-      if (typeof s.max === 'number') v = Math.min(s.max, v);
-      if (s.step) v = Math.round(v / s.step) * s.step;
-      return Number(v.toFixed(5));
+      return clampNumber(s, value);
     }
   }
 }

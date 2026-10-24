@@ -20,9 +20,27 @@ import { compileExpression, evaluate, perturbLiterals } from '../src/math/expres
 import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
-import { createDocument, sanitizeDocument, migrateV1Document, DOCUMENT_VERSION, APP_ID, isLegacyApp } from '../src/core/document.js';
-import { evaluateDocument } from '../src/core/engine.js';
+import { sampleAdaptive } from '../src/sampling/sampling.js';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp } from '../src/core/document.js';
+import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults, TYPE } from '../src/core/schema.js';
+import { History } from '../src/core/history.js';
+import { toggleMode, normalizeModes } from '../src/ui/widgets/modeToggles.js';
+import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.js';
+import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
+import { computeDescriptor } from '../src/lab/descriptor.js';
+import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.js';
+import { Notebook, sanitizeCheckpoint } from '../src/lab/notebook.js';
+import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
+import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
+import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
+import { adviseOffline, validateSuggestion, applySuggestionToDocument } from '../src/ai/offline.js';
+import { createProvider, runAdvisor, parseAdvisorResponse, shouldAutoAnalyze, PROVIDERS } from '../src/ai/provider.js';
+import { AdvisorCache, cacheKey } from '../src/ai/cache.js';
+import { buildAdvisorPrompt } from '../src/ai/prompt.js';
+import { traceImageData, otsuThreshold, binarize, grayscale, simplifyRDP, resampleClosed, contourToFourier, reconstructFromHarmonics, buildFourierDocument, MAX_IMAGE_EDGE } from '../src/input/imageTrace.js';
+import { createGeneration, nextGeneration, isChildValid, describeStructuralChange, MAX_CHILDREN, MAX_PARENTS } from '../src/lab/evolution.js';
+import { numericParameterRefs, refKey, schemaForRef, stageForRef, pathForRef } from '../src/lab/parameters.js';
 import { MutationEngine } from '../src/mutation/MutationEngine.js';
 import { PresetManager } from '../src/presets/PresetManager.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
@@ -496,6 +514,1083 @@ console.log('12. performance');
   evaluateDocument(doc, { time: 0 });
   const ms = performance.now() - t0;
   assert(ms < 500, `Butterfly evaluates in ${ms.toFixed(1)}ms (< 500ms budget)`);
+
+  // Geometry-only reference: 20k samples, no differential analysis.
+  // The CI gate is deliberately looser than the local <16ms target.
+  const heavy = createDocument('clifford', { generator: { params: { samples: 20000 } } });
+  delete evaluateDocument._cache;
+  const t1 = performance.now();
+  const heavyEval = evaluateDocument(heavy, { time: 0 });
+  const heavyMs = performance.now() - t1;
+  assert(heavyEval.stats.pointCount === 20000, 'performance sample has 20k points');
+  assert(heavyMs < 50, `20k geometry pipeline in ${heavyMs.toFixed(1)}ms (< 50ms CI gate)`);
+}
+
+/* ——— 13. Reliability hardening regressions ——— */
+console.log('13. reliability regressions');
+{
+  /* — document isolation — */
+  const a = createDocument('parametric');
+  a.view.overlays.inflections = true;
+  a.view.camera.yaw = 1.234;
+  a.view.modes.push('points');
+  const b = createDocument('polar');
+  assert(b.view.overlays.inflections === false, 'new document does not inherit overlay state');
+  assert(b.view.camera.yaw !== 1.234, 'new document does not inherit camera state');
+  assert(b.view.modes.length === 1 && b.view.modes[0] === 'stroke', 'new document keeps default modes');
+  assert(a.view.overlays !== b.view.overlays, 'overlay objects are per-document');
+  assert(a.view.camera !== b.view.camera, 'camera objects are per-document');
+  assert(a.view.modes !== b.view.modes, 'mode arrays are per-document');
+
+  const s1 = sanitizeDocument({ generator: { id: 'parametric' }, view: { overlays: { inflections: true } } });
+  const s2 = sanitizeDocument({ generator: { id: 'parametric' } });
+  assert(s1.view.overlays !== s2.view.overlays, 'sanitized views do not share overlay objects');
+  assert(s1.view.camera !== s2.view.camera, 'sanitized views do not share camera objects');
+
+  /* — schema defaults are cloned — */
+  const f1 = createDocument('fourier');
+  const f2 = createDocument('fourier');
+  assert(f1.generator.params.harmonicsX !== f2.generator.params.harmonicsX, 'harmonic default arrays are cloned');
+  f1.generator.params.harmonicsX[0].amp = 9;
+  assert(f2.generator.params.harmonicsX[0].amp !== 9, 'mutating one harmonic table does not leak');
+
+  /* — built-in preset namespace — */
+  const pm = new PresetManager(null);
+  let collision = false;
+  try {
+    pm.save('Lissajous 3:5', createDocument('parametric'));
+  } catch {
+    collision = true;
+  }
+  assert(collision, 'built-in preset names are reserved');
+  assert(pm.isBuiltIn('Lissajous 3:5'), 'built-in preset still resolves after rejected save');
+
+  /* — seed-aware cache — */
+  const noiseDoc = createDocument('parametric');
+  noiseDoc.generator.params.exprX = 'noise(t)*100';
+  noiseDoc.generator.params.exprY = 't*10';
+  delete evaluateDocument._cache;
+  const seed1 = evaluateDocument(noiseDoc, { time: 0 });
+  const first = seed1.curves[0].points[50].x;
+  noiseDoc.seed = 4242;
+  const seed2 = evaluateDocument(noiseDoc, { time: 0 });
+  const second = seed2.curves[0].points[50].x;
+  assert(first !== second, `seed change invalidates cached noise geometry (${first} vs ${second})`);
+  noiseDoc.seed = 1;
+  delete evaluateDocument._cache;
+  const seed3 = evaluateDocument(noiseDoc, { time: 0 });
+  assert(seed3.curves[0].points[50].x === first, 'same seed reproduces the same geometry');
+
+  /* — modulation clamping — */
+  const clampDoc = createDocument('parametric');
+  clampDoc.generator.params.adaptive = false;
+  clampDoc.generator.mods.samples = '50000';
+  const clampEval = evaluateDocument(clampDoc, { time: 0 });
+  assert(clampEval.stats.pointCount === 8000, `samples modulation clamps to schema max (got ${clampEval.stats.pointCount})`);
+  assert(clampEval.errors.length === 0, 'clamped modulation is not an error');
+
+  const nonFinite = createDocument('parametric');
+  nonFinite.generator.params.adaptive = false;
+  nonFinite.generator.mods.samples = '1/0';
+  const nf = evaluateDocument(nonFinite, { time: 0 });
+  assert(nf.errors.some((e) => e.key === 'samples'), 'non-finite modulation carries its schema key');
+  assert(nf.stats.pointCount === 700, 'non-finite modulation falls back to the schema default');
+
+  /* — keyed generator errors — */
+  const badX = createDocument('parametric');
+  badX.generator.params.exprX = 'sin(3*t';
+  const badXEval = evaluateDocument(badX, { time: 0 });
+  assert(badXEval.errors[0]?.key === 'exprX', 'invalid x(t) error carries key exprX');
+  assert(/Expected/.test(badXEval.errors[0]?.message ?? ''), 'invalid x(t) keeps the parser message');
+
+  const badR = createDocument('polar');
+  badR.generator.params.exprR = 'sin(';
+  const badREval = evaluateDocument(badR, { time: 0 });
+  assert(badREval.errors[0]?.key === 'exprR', 'invalid r(θ) error carries key exprR');
+
+  /* — per-stage budget — */
+  const budgetDoc = createDocument('clifford', {
+    generator: { params: { samples: 12000 } },
+    operators: [{
+      id: 'radial-repeat', enabled: true,
+      params: { count: 48, radius: 0, rotateCopies: true }, mods: {},
+    }],
+  });
+  const budgetEval = evaluateDocument(budgetDoc, { time: 0 });
+  assert(budgetEval.stats.peakPoints <= POINT_LIMITS.total, `peak points capped (${budgetEval.stats.peakPoints})`);
+  assert(budgetEval.stats.pointCount <= POINT_LIMITS.total, 'final points capped');
+
+  /* — lazy analysis — */
+  const lazyDoc = createDocument('clifford', { generator: { params: { samples: 4000 } } });
+  const lazy = evaluateDocument(lazyDoc, { time: 0 });
+  assert(lazy.stats.analysisMs === 0, 'analysis is lazy until requested');
+  const analysis = lazy.analysis;
+  assert(analysis.perCurve.length === lazy.curves.length, 'lazy analysis produces per-curve results');
+  assert(lazy.stats.analysisMs >= 0, 'analysis timing is recorded');
+
+  /* — sampling: exact uniform counts — */
+  const exactIds = [
+    'parametric', 'polar', 'custom', 'lissajous', 'rose', 'superformula',
+    'hypotrochoid', 'epitrochoid', 'spirograph', 'harmonic-oscillator',
+  ];
+  for (const id of exactIds) {
+    const doc = createDocument(id);
+    doc.generator.params.samples = 321;
+    doc.generator.params.adaptive = false;
+    const ev = evaluateDocument(doc, { time: 0 });
+    assert(ev.errors.length === 0, `${id}: uniform evaluation has no errors`);
+    assert(ev.stats.pointCount === 321, `${id}: adaptive=false gives exactly 321 points (got ${ev.stats.pointCount})`);
+  }
+
+  /* — sampling: adaptive cap — */
+  for (const def of Generators.list()) {
+    if (!def.params.samples || !def.params.adaptive) continue;
+    const doc = createDocument(def.id);
+    const min = def.params.samples.min ?? 64;
+    const cap = Math.min(256, Math.max(min, 64));
+    doc.generator.params.samples = cap;
+    doc.generator.params.adaptive = true;
+    const ev = evaluateDocument(doc, { time: 0 });
+    assert(ev.errors.length === 0, `${def.id}: adaptive evaluation has no errors`);
+    assert(ev.stats.pointCount <= cap, `${def.id}: adaptive output <= cap ${cap} (got ${ev.stats.pointCount})`);
+  }
+
+  /* — sampler endpoint completeness — */
+  const circle = (t) => ({ x: Math.cos(t), y: Math.sin(t) });
+  const circlePts = sampleAdaptive(circle, 0, Math.PI * 2, { minSteps: 8, samples: 200 });
+  const circleEnd = circlePts[circlePts.length - 1];
+  assert(Math.hypot(circleEnd.x - 1, circleEnd.y) < 1e-9, 'adaptive sampler always reaches t1');
+  assert(circlePts.length < 200, 'adaptive sampler may use fewer than the cap');
+
+  /* — closure follows endpoints — */
+  const closed35 = createDocument('lissajous', {
+    generator: { params: { a: 3, b: 5, samples: 400, adaptive: false } },
+  });
+  assert(evaluateDocument(closed35, { time: 0 }).curves[0].closed === true, '3:5 Lissajous is closed');
+
+  const openLissajous = createDocument('lissajous', {
+    generator: { params: { a: 1.25, b: 5, samples: 400, adaptive: false } },
+  });
+  assert(evaluateDocument(openLissajous, { time: 0 }).curves[0].closed === false, 'fractional Lissajous is open');
+
+  const openSuper = createDocument('superformula', {
+    generator: { params: { m: 5, a: 1, b: 2, samples: 400, adaptive: false } },
+  });
+  assert(evaluateDocument(openSuper, { time: 0 }).curves[0].closed === false, 'non-periodic superformula is open');
+
+  /* — discrete attractors hide the inert Step Size control — */
+  assert(!Object.prototype.hasOwnProperty.call(Generators.get('clifford').params, 'dt'), 'clifford omits dt');
+  assert(!Object.prototype.hasOwnProperty.call(Generators.get('dejong').params, 'dt'), 'dejong omits dt');
+  assert(Object.prototype.hasOwnProperty.call(Generators.get('lorenz').params, 'dt'), 'lorenz keeps dt');
+  assert(Object.prototype.hasOwnProperty.call(Generators.get('aizawa').params, 'dt'), 'aizawa keeps dt');
+
+  /* — history helper — */
+  const h = new History(3);
+  h.record('a');
+  h.record('b');
+  assert(h.undo('c') === 'b', 'history undo returns the previous snapshot');
+  assert(h.redo('b') === 'c', 'history redo returns the future snapshot');
+  const limited = new History(2);
+  limited.record('1');
+  limited.record('2');
+  limited.record('3');
+  assert(limited.past.length === 2, 'history respects its limit');
+
+  /* — mode helpers — */
+  assert(JSON.stringify(normalizeModes(undefined)) === '["stroke"]', 'empty modes normalize to stroke');
+  assert(JSON.stringify(normalizeModes(['bogus'], ['stroke', 'points'])) === '["stroke"]',
+    'unknown mode ids normalize to stroke when the registry order is known');
+  assert(JSON.stringify(toggleMode(['stroke'], 'points', true, ['stroke', 'points', 'wireframe']))
+    === '["stroke","points"]', 'toggleMode adds in registry order');
+  assert(JSON.stringify(toggleMode(['stroke', 'points'], 'points', false, ['stroke', 'points']))
+    === '["stroke"]', 'toggleMode removes a mode');
+  assert(JSON.stringify(toggleMode(['stroke'], 'stroke', false, ['stroke', 'points']))
+    === '["stroke"]', 'toggleMode never leaves the view empty');
+
+  /* — harmonics editor accepts its documented API — */
+  {
+    const previousDocument = globalThis.document;
+    const makeEl = () => ({
+      className: '',
+      textContent: '',
+      innerHTML: '',
+      children: [],
+      appendChild(child) { this.children.push(child); return child; },
+      addEventListener() {},
+      setAttribute() {},
+    });
+    globalThis.document = { createElement: makeEl };
+    try {
+      let getRowsCalls = 0;
+      const rows = {
+        harmonicsX: [{ freq: 1, amp: 1, phase: 0, rot: 0, ox: 0, oy: 0 }],
+        harmonicsY: [{ freq: 2, amp: 0.5, phase: 0, rot: Math.PI / 2, ox: 0, oy: 0 }],
+      };
+      const editor = new HarmonicsEditor({
+        getRows: (axis) => { getRowsCalls++; return rows[axis]; },
+        onChange: () => {},
+      });
+      assert(editor.el, 'HarmonicsEditor constructs with {getRows,onChange}');
+      assert(getRowsCalls === 2, `HarmonicsEditor reads both axes (got ${getRowsCalls})`);
+    } finally {
+      if (previousDocument === undefined) delete globalThis.document;
+      else globalThis.document = previousDocument;
+    }
+  }
+}
+
+/* ——— 14. Lab observer ——— */
+console.log('14. lab observer');
+{
+  assert(sha256Hex('') === 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'sha256 empty vector');
+  assert(sha256Hex('abc') === 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', 'sha256 abc vector');
+  assert(canonicalStringify({ b: 1, a: { d: 2, c: [3] } }) === '{"a":{"c":[3],"d":2},"b":1}', 'canonical JSON sorts keys');
+  assert(
+    sha256Hex(canonicalStringify({ a: 1, b: 2 })) === sha256Hex(canonicalStringify({ b: 2, a: 1 })),
+    'canonical hash ignores key insertion order',
+  );
+
+  const circleDoc = createDocument('parametric');
+  circleDoc.generator.params.exprX = 'cos(t)';
+  circleDoc.generator.params.exprY = 'sin(t)';
+  circleDoc.generator.params.samples = 512;
+  const circleEval = evaluateDocument(circleDoc, { time: 0 });
+  const circle = computeDescriptor(circleDoc, circleEval.curves);
+  const expectedArea = Math.PI * 170 * 170;
+  assert(circle.version === 1, 'descriptor version is 1');
+  assert(circle.documentHash.length === 64, 'descriptor hash is 64 hex chars');
+  assert(Math.abs(circle.area - expectedArea) / expectedArea < 0.02, 'circle area within 2%');
+  assert(Math.abs(circle.perimeter - 2 * Math.PI * 170) / (2 * Math.PI * 170) < 0.05, 'circle perimeter within 5%');
+  assert(circle.compactness > 0.95, `circle compactness (${circle.compactness.toFixed(3)})`);
+  assert(circle.symmetry.folds === 1 && circle.symmetry.score > 0.95, 'circle is continuously symmetric');
+  assert(circle.complexity.turningNumber > 0.9 && circle.complexity.turningNumber < 1.1, 'circle turning number ≈ 1');
+  assert(circle.topology.components === 1 && circle.topology.holes === 0, 'circle topology');
+  assert(circle.coverage > 0 && circle.coverage < 1, 'circle coverage is bounded');
+  for (const value of [circle.area, circle.perimeter, circle.compactness, circle.curvature.entropy, circle.coverage, circle.complexity.fractalDimension]) {
+    assert(Number.isFinite(value), 'descriptor metrics are finite');
+  }
+
+  const sfDoc = createDocument('superformula');
+  const sfEval = evaluateDocument(sfDoc, { time: 0 });
+  const sf = computeDescriptor(sfDoc, sfEval.curves);
+  assert(sf.symmetry.folds === 6, `superformula default has 6-fold symmetry (got ${sf.symmetry.folds})`);
+  assert(sf.symmetry.score > 0.95, 'superformula symmetry score is high');
+  assert(sf.documentHash === computeDescriptor(sfDoc, sfEval.curves).documentHash, 'descriptor hash is reproducible');
+
+  const empty = computeDescriptor(sfDoc, []);
+  assert(empty.curveCount === 0 && empty.area === 0 && empty.coverage === 0, 'empty descriptor is zeroed');
+  assert(empty.symmetry.folds === 1 && empty.symmetry.score === 0, 'empty descriptor symmetry defaults');
+
+  const before = JSON.stringify(sfDoc);
+  const reportA = computeSensitivity(sfDoc, sfEval.curves, { maxParams: 8 });
+  const reportB = computeSensitivity(sfDoc, sfEval.curves, { maxParams: 8 });
+  assert(JSON.stringify(reportA.entries) === JSON.stringify(reportB.entries), 'sensitivity is deterministic');
+  assert(reportA.entries.length === 8, 'sensitivity respects maxParams');
+  assert(reportA.entries[0].impact >= reportA.entries[reportA.entries.length - 1].impact, 'sensitivity is sorted by impact');
+  assert(reportA.entries.some((entry) => entry.impact > 0), 'sensitivity finds an influential parameter');
+  assert(JSON.stringify(sfDoc) === before, 'sensitivity does not mutate the document');
+
+  const identical = shapeDistance(sfEval.curves, sfEval.curves, 340);
+  assert(identical === 0, `shape distance to itself is 0 (got ${identical})`);
+
+  const heavyDoc = createDocument('clifford', { generator: { params: { samples: 12000 } } });
+  const heavyEval = evaluateDocument(heavyDoc, { time: 0 });
+  const tDesc = performance.now();
+  const heavyDesc = computeDescriptor(heavyDoc, heavyEval.curves);
+  const descMs = performance.now() - tDesc;
+  assert(descMs < 500, `12k descriptor in ${descMs.toFixed(1)}ms (< 500ms)`);
+  assert(heavyDesc.analysis.intersectionsSampled === true, 'large figures sample intersection metrics');
+}
+
+/* ——— 15. Lab notebook ——— */
+console.log('15. lab notebook');
+{
+  class MemoryStorage {
+    constructor() { this.map = new Map(); }
+    getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
+    setItem(key, value) { this.map.set(key, String(value)); }
+    removeItem(key) { this.map.delete(key); }
+  }
+
+  const docA = createDocument('superformula');
+  const evalA = evaluateDocument(docA, { time: 0 });
+  const descriptorA = computeDescriptor(docA, evalA.curves);
+  const docB = sanitizeDocument(structuredClone(docA));
+  docB.seed = 4242;
+  docB.generator.params.radius = 300;
+  const evalB = evaluateDocument(docB, { time: 0 });
+  const descriptorB = computeDescriptor(docB, evalB.curves);
+
+  const storage = new MemoryStorage();
+  const notebook = new Notebook({ storage, now: () => 1000 });
+  const a = notebook.add({
+    id: 'cp-a', name: 'A', createdAt: 1000,
+    document: docA, descriptor: descriptorA,
+    thumbnail: 'data:image/png;base64,AAAA',
+  });
+  const b = notebook.add({
+    id: 'cp-b', name: 'B', createdAt: 2000,
+    document: docB, descriptor: descriptorB,
+    parentId: a.id, tags: ['symmetry', ' test ', 'symmetry'], notes: 'first branch',
+  });
+
+  assert(notebook.items.length === 2, 'notebook accepts two checkpoints');
+  assert(a.name === 'A' && b.name === 'B', 'checkpoint names survive');
+  assert(b.parentId === 'cp-a', 'checkpoint parent lineage');
+  assert(b.tags.length === 2 && b.tags[1] === 'test', 'tags are trimmed and deduplicated');
+  assert(notebook.latest().id === 'cp-b', 'latest checkpoint');
+  assert(notebook.get('cp-a').document.generator.params.radius === 280, 'stored document is cloned');
+
+  // Mutating the source after saving must not mutate the checkpoint.
+  docA.generator.params.radius = 999;
+  assert(notebook.get('cp-a').document.generator.params.radius === 280, 'checkpoint is isolated from source document');
+
+  const comparison = notebook.compare('cp-a', 'cp-b');
+  assert(comparison !== null, 'compare returns a result');
+  assert(comparison.parameterDiff.some((d) => d.path === 'seed'), 'parameter diff catches seed');
+  assert(comparison.parameterDiff.some((d) => d.path === 'generator.params.radius'), 'parameter diff catches radius');
+  assert(comparison.descriptorDiff.length > 0, 'descriptor diff catches changed metrics');
+  assert(comparison.descriptorDiff.every((d) => typeof d.delta === 'number'), 'descriptor diff carries deltas');
+
+  const same = notebook.compare('cp-a', 'cp-a');
+  assert(same.parameterDiff.length === 0 && same.descriptorDiff.length === 0, 'same checkpoint produces empty diffs');
+
+  const reloaded = new Notebook({ storage });
+  assert(reloaded.items.length === 2, 'notebook persists to injected storage');
+  assert(reloaded.get('cp-b').parentId === 'cp-a', 'lineage persists');
+
+  const exported = notebook.exportJSON();
+  const importedStorage = new MemoryStorage();
+  const importedNotebook = new Notebook({ storage: importedStorage });
+  const importResult = importedNotebook.importJSON(exported);
+  assert(importResult.added === 2 && importResult.skipped === 0, 'notebook export/import round-trip');
+  assert(importedNotebook.get('cp-b').parentId === 'cp-a', 'imported lineage is preserved');
+
+  const partial = JSON.stringify({
+    version: 1,
+    checkpoints: [
+      { id: 'ok', name: 'OK', createdAt: 1, document: docA, descriptor: descriptorA },
+      { id: 'bad', name: 'Bad', createdAt: 2, document: null, descriptor: null },
+    ],
+  });
+  const partialResult = importedNotebook.importJSON(partial);
+  assert(partialResult.added === 1 && partialResult.skipped === 1, 'partial import skips invalid checkpoints');
+
+  const oversized = 'data:image/png;base64,' + 'A'.repeat(70_000);
+  const oversizedCp = sanitizeCheckpoint({
+    id: 'oversized', name: 'Oversized', createdAt: 3,
+    document: docA, descriptor: descriptorA, thumbnail: oversized,
+  });
+  assert(oversizedCp && oversizedCp.thumbnail === null, 'oversized thumbnails are dropped');
+
+  const invalid = sanitizeCheckpoint({ id: 'x', document: { generator: { id: 'nope' } }, descriptor: null });
+  assert(invalid === null, 'invalid checkpoint rejected');
+  let rejected = false;
+  try {
+    notebook.add({ id: 'bad', name: 'Bad', document: null, descriptor: descriptorA });
+  } catch {
+    rejected = true;
+  }
+  assert(rejected, 'adding an invalid checkpoint throws');
+
+  const limited = new Notebook({ storage: new MemoryStorage(), limit: 2, now: () => 10 });
+  for (let i = 0; i < 3; i++) {
+    limited.add({ id: `l${i}`, name: `L${i}`, document: docA, descriptor: descriptorA });
+  }
+  assert(limited.items.length === 2 && limited.items[0].id === 'l1', 'notebook limit keeps the newest');
+
+  const updated = notebook.update('cp-b', { name: 'B updated', tags: ['kept'], notes: 'changed' });
+  assert(updated.name === 'B updated' && updated.tags[0] === 'kept', 'checkpoint metadata update');
+  assert(notebook.remove('cp-b'), 'remove checkpoint');
+  assert(notebook.items.length === 1 && notebook.get('cp-a'), 'remove keeps the other checkpoint');
+
+  assert(documentDiff(docA, docB).some((d) => d.path === 'generator.params.radius'), 'documentDiff path shape');
+  assert(descriptorDiff(descriptorA, descriptorB).every((d) => d.path !== 'documentHash'), 'descriptorDiff excludes hash');
+}
+
+/* ——— 16. Lab exploration (1D) ——— */
+console.log('16. lab exploration');
+{
+  const doc = createDocument('lissajous');
+  const refs = numericParameterRefs(doc);
+  const refA = refs.find((ref) => ref.key === 'a');
+  const refB = refs.find((ref) => ref.key === 'b');
+  assert(refA && refB, 'lissajous exposes numeric a/b references');
+
+  const session = new ExplorationSession(doc);
+  const original = JSON.stringify(doc);
+  const sweep = session.sweep1D(refA, { steps: 5 });
+  assert(sweep.length === 5, 'sweep produces the requested number of candidates');
+  assert(sweep[0].value === refA.schema.min, 'sweep starts at schema min');
+  assert(sweep[4].value === refA.schema.max, 'sweep ends at schema max');
+  assert(sweep.every((candidate) => candidate.document.generator.params.b === doc.generator.params.b), 'sweep only changes the selected axis');
+  assert(JSON.stringify(doc) === original, 'sweep does not mutate the base document');
+
+  const sweepAgain = new ExplorationSession(doc).sweep1D(refA, { steps: 5 });
+  assert(
+    JSON.stringify(sweep.map((c) => c.document)) === JSON.stringify(sweepAgain.map((c) => c.document)),
+    'sweep is deterministic',
+  );
+
+  const random = new ExplorationSession(doc);
+  random.setSelection([refA]);
+  random.setLock(refB, true);
+  const batchA = random.randomize({ intensity: 0.2, count: 4, seed: 42 });
+  const batchB = random.randomize({ intensity: 0.2, count: 4, seed: 42 });
+  assert(batchA.length === 4, 'randomize produces requested candidates');
+  assert(JSON.stringify(batchA.map((c) => c.document)) === JSON.stringify(batchB.map((c) => c.document)), 'randomize is seeded and deterministic');
+  assert(batchA.every((candidate) => candidate.document.generator.params.b === doc.generator.params.b), 'locked parameters stay unchanged');
+  assert(batchA.every((candidate) => candidate.document.generator.params.a >= refA.schema.min && candidate.document.generator.params.a <= refA.schema.max), 'randomized values stay in schema range');
+  assert(JSON.stringify(doc) === original, 'randomize does not mutate the base document');
+
+  const solo = new ExplorationSession(doc);
+  solo.solo(refA);
+  assert(solo.selection.length === 1 && refKey(solo.selection[0]) === refKey(refA), 'solo selects exactly one parameter');
+  assert(solo.locks.length === refs.length - 1, 'solo locks every other parameter');
+  assert(solo.isLocked(refB), 'solo locks another parameter');
+
+  const filtered = new ExplorationSession(doc);
+  filtered.setLock(refB, true);
+  filtered.setSelection([refA, refB]);
+  assert(filtered.selection.length === 1 && filtered.selection[0].key === 'a', 'selection ignores locked parameters');
+
+  let noSelection = false;
+  try {
+    new ExplorationSession(doc).randomize();
+  } catch {
+    noSelection = true;
+  }
+  assert(noSelection, 'randomize requires a selection');
+}
+
+/* ——— 17. Artboard and style ——— */
+console.log('17. artboard and style');
+{
+  const defaults = createDocument('parametric');
+  assert(defaults.view.artboard.width === 900 && defaults.view.artboard.height === 900, 'default artboard is 900×900');
+  assert(defaults.view.artboard.background === '#000000' && defaults.view.artboard.margin === 0, 'default artboard background/margin');
+  assert(defaults.view.style.stroke.color === '#ffffff', 'default stroke is white');
+  assert(defaults.view.style.stroke.width === 2, 'default stroke width');
+  assert(defaults.view.style.fill.enabled === false, 'default fill is off');
+
+  const isolated = createDocument('polar');
+  assert(isolated.view.artboard !== defaults.view.artboard, 'artboards are per-document');
+  assert(isolated.view.style !== defaults.view.style, 'styles are per-document');
+
+  const legacy = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Legacy width',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { strokeWeight: 5 }, animation: {},
+  });
+  assert(legacy.view.strokeWeight === 5 && legacy.view.style.stroke.width === 5, 'legacy strokeWeight migrates to style width');
+
+  const styled = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Styled',
+    generator: { id: 'parametric', params: {} },
+    operators: [],
+    view: {
+      strokeWeight: 2,
+      artboard: { width: 1080, height: 1350, background: '#f2eee3', margin: 30 },
+      style: {
+        stroke: { color: '#e30613', width: 3, opacity: 0.5, cap: 'butt', join: 'miter' },
+        fill: { enabled: true, color: '#121212', opacity: 0.8 },
+        blend: 'multiply',
+      },
+    },
+    animation: {},
+  });
+  assert(styled.view.artboard.width === 1080 && styled.view.artboard.height === 1350, 'artboard dimensions round-trip');
+  assert(styled.view.artboard.background === '#f2eee3', 'artboard background round-trip');
+  assert(styled.view.style.stroke.color === '#e30613' && styled.view.style.stroke.opacity === 0.5, 'stroke style round-trip');
+  assert(styled.view.style.stroke.width === 3 && styled.view.strokeWeight === 3, 'style width wins and syncs legacy field');
+  assert(styled.view.style.fill.enabled && styled.view.style.fill.color === '#121212', 'fill style round-trip');
+  assert(styled.view.style.blend === 'multiply', 'blend round-trip');
+
+  const clamped = sanitizeDocument({
+    generator: { id: 'parametric', params: {} },
+    view: { artboard: { width: 10, height: 99999, margin: 999, background: 'not-a-color' } },
+  });
+  assert(clamped.view.artboard.width === 240, 'artboard width clamps to min');
+  assert(clamped.view.artboard.height === 4096, 'artboard height clamps to max');
+  assert(clamped.view.artboard.margin === 120, 'artboard margin clamps');
+  assert(clamped.view.artboard.background === '#000000', 'invalid background falls back');
+
+  const styledEval = evaluateDocument(styled, { time: 0 });
+  const svg = Exporter.buildSVG(styledEval.curves, styled.view, { w: 900, h: 900 }, styled);
+  assert(svg.includes('width="1080"') && svg.includes('height="1350"'), 'styled SVG uses artboard dimensions');
+  assert(svg.includes('fill="#f2eee3"'), 'styled SVG background');
+  assert(svg.includes('stroke="#e30613"') && svg.includes('stroke-opacity="0.5"') && svg.includes('stroke-width="3"'), 'styled SVG stroke');
+  assert(svg.includes('fill="#121212"') && svg.includes('fill-opacity="0.8"'), 'styled SVG fill');
+
+  const defaultSvg = Exporter.buildSVG(defaults.view ? evaluateDocument(defaults, { time: 0 }).curves : [], defaults.view, { w: 900, h: 900 }, defaults);
+  assert(defaultSvg.includes('stroke="#ffffff"'), 'default SVG keeps white stroke');
+}
+
+/* ——— 18. Grid and morph ——— */
+console.log('18. grid and morph');
+{
+  const doc = createDocument('lissajous');
+  const refs = numericParameterRefs(doc);
+  const refA = refs.find((ref) => ref.key === 'a');
+  const refB = refs.find((ref) => ref.key === 'b');
+  const session = new ExplorationSession(doc);
+  const grid = session.grid2D(refA, refB, { cols: 4, rows: 3 });
+  assert(grid.length === 12, '2D grid has cols × rows cells');
+  assert(grid[0].x === refA.schema.min && grid[0].y === refB.schema.min, 'grid starts at both minima');
+  assert(grid[11].x === refA.schema.max && grid[11].y === refB.schema.max, 'grid ends at both maxima');
+  assert(grid[1].y === grid[0].y && grid[1].x > grid[0].x, 'X changes fastest');
+  assert(grid[4].x === grid[0].x && grid[4].y > grid[0].y, 'rows advance Y');
+  const gridAgain = new ExplorationSession(doc).grid2D(refA, refB, { cols: 4, rows: 3 });
+  assert(JSON.stringify(grid.map((c) => c.document)) === JSON.stringify(gridAgain.map((c) => c.document)), 'grid is deterministic');
+  let sameAxis = false;
+  try { session.grid2D(refA, refA); } catch { sameAxis = true; }
+  assert(sameAxis, 'grid rejects the same axis twice');
+  const fullGrid = session.grid2D(refA, refB, { cols: 12, rows: 12 });
+  assert(fullGrid.length === 144, 'grid caps at 144 candidates');
+
+  const a = sanitizeDocument(structuredClone(doc));
+  a.generator.params.a = 3;
+  const b = sanitizeDocument(structuredClone(doc));
+  b.generator.params.a = 10;
+  const morph = morphDocuments(a, b, { steps: 5 });
+  assert(morph.length === 5, 'morph produces requested frames');
+  assert(morph[0].document.generator.params.a === 3, 'morph starts at A');
+  assert(morph[4].document.generator.params.a === 10, 'morph ends at B');
+  assert(Math.abs(morph[2].document.generator.params.a - 6.5) < 1e-6, 'morph interpolates linearly');
+  assert(JSON.stringify(a.generator.params) === JSON.stringify(sanitizeDocument(structuredClone(doc)).generator.params), 'morph does not mutate A');
+  assert(JSON.stringify(b.generator.params) !== JSON.stringify(doc.generator.params), 'morph B remains independent');
+
+  const differentExpression = sanitizeDocument(structuredClone(b));
+  differentExpression.generator.params.adaptive = !a.generator.params.adaptive;
+  let rejectedExpression = false;
+  try { morphDocuments(a, differentExpression); } catch { rejectedExpression = true; }
+  assert(rejectedExpression, 'morph rejects differing non-numeric parameters');
+
+  const differentSeed = sanitizeDocument(structuredClone(b));
+  differentSeed.seed = 99;
+  let rejectedSeed = false;
+  try { morphDocuments(a, differentSeed); } catch { rejectedSeed = true; }
+  assert(rejectedSeed, 'morph rejects differing seeds');
+
+  let rejectedGenerator = false;
+  try { morphDocuments(a, createDocument('rose')); } catch { rejectedGenerator = true; }
+  assert(rejectedGenerator, 'morph rejects different generators');
+}
+
+/* ——— 19. Composition layers ——— */
+console.log('19. composition layers');
+{
+  const doc = createDocument('parametric');
+  assert(doc.version === 3, 'documents are version 3');
+  assert(Array.isArray(doc.layers) && doc.layers.length === 1, 'new document has one layer');
+  assert(doc.generator === doc.layers[0].generator, 'active generator aliases the first layer');
+  assert(doc.activeLayer === 0, 'first layer is active');
+
+  const second = createLayer('rose', { name: 'Rose layer', seed: 7 });
+  second.style.stroke.color = '#e30613';
+  doc.layers.push(second);
+  doc.activeLayer = 1;
+  attachLayerAliases(doc);
+  assert(doc.generator.id === 'rose', 'generator alias follows active layer');
+  assert(doc.layers[1].style.stroke.color === '#e30613', 'per-layer style');
+
+  const ev = evaluateDocument(doc, { time: 0 });
+  assert(ev.layers.length === 2, 'evaluation returns both layers');
+  assert(ev.curves.length === ev.layers[0].curves.length + ev.layers[1].curves.length, 'composition concatenates curves');
+  assert(ev.curves.every((c) => c.meta.layerId), 'curves carry layer ids');
+  assert(ev.stats.curveCount === ev.curves.length, 'aggregate curve count');
+
+  const desc = computeDescriptor(doc, ev.curves, { layers: ev.layers });
+  assert(desc.layers.length === 2, 'descriptor exposes per-layer descriptors');
+  assert(desc.layers[0].layerId === doc.layers[0].id, 'layer descriptors carry ids');
+  assert(desc.curveCount === ev.curves.length, 'descriptor aggregate curve count');
+
+  const svg = Exporter.buildSVG(ev.curves, doc.view, { w: 900, h: 900 }, doc, ev.layers);
+  assert((svg.match(/<g /g) || []).length === 2, 'SVG has one group per visible layer');
+  assert(svg.includes('#e30613'), 'SVG carries per-layer color');
+
+  const hidden = structuredClone(doc);
+  hidden.layers[1].visible = false;
+  const hiddenEval = evaluateDocument(attachLayerAliases(hidden), { time: 0 });
+  assert(hiddenEval.curves.every((c) => c.meta.layerId !== hidden.layers[1].id), 'hidden layer omitted from curves');
+  const hiddenSvg = Exporter.buildSVG(hiddenEval.curves, hidden.view, { w: 900, h: 900 }, hidden, hiddenEval.layers);
+  assert((hiddenSvg.match(/<g /g) || []).length === 1, 'hidden layer omitted from SVG');
+
+  const broken = attachLayerAliases(structuredClone(doc));
+  broken.layers[0].generator.params.exprX = 'sin(';
+  const brokenEval = evaluateDocument(broken, { time: 0 });
+  assert(brokenEval.errors.some((e) => e.layerId === broken.layers[0].id), 'layer errors are identified');
+  assert(brokenEval.curves.some((c) => c.meta.layerId === broken.layers[1].id), 'valid layer still renders');
+
+  const migrated = sanitizeDocument({
+    version: 2,
+    name: 'V2 layer migration',
+    seed: 3,
+    generator: { id: 'parametric', params: { exprX: 'cos(t)', exprY: 'sin(t)' } },
+    operators: [],
+    view: { artboard: { width: 1080, height: 1350, background: '#f2eee3' } },
+    animation: {},
+  });
+  assert(migrated.version === 3 && migrated.layers.length === 1, 'v2 migrates to one v3 layer');
+  assert(migrated.layers[0].seed === 3, 'v2 seed migrates to layer');
+  assert(migrated.layers[0].generator.id === 'parametric', 'v2 generator migrates');
+  assert(migrated.view.artboard.width === 1080, 'shared artboard survives migration');
+
+  const roundtrip = sanitizeDocument(JSON.parse(JSON.stringify(doc)));
+  assert(roundtrip.layers.length === 2 && roundtrip.activeLayer === 1, 'v3 layers/active round-trip');
+  assert(roundtrip.layers[1].style.stroke.color === '#e30613', 'v3 layer style round-trip');
+}
+
+/* ——— 20. Motion timeline ——— */
+console.log('20. motion timeline');
+{
+  const timeline = createTimeline({ duration: 2, loop: false });
+  upsertKeyframe(timeline, { path: 'generator.params.a', layer: 0, time: 0, value: 0, easing: 'linear' });
+  upsertKeyframe(timeline, { path: 'generator.params.a', layer: 0, time: 2, value: 10, easing: 'linear' });
+  assert(resolveTimelineValue(timeline, 'generator.params.a', 0, 0) === 0, 'timeline starts at first keyframe');
+  assert(resolveTimelineValue(timeline, 'generator.params.a', 0, 1) === 5, 'linear timeline interpolation');
+  assert(resolveTimelineValue(timeline, 'generator.params.a', 0, 3) === 10, 'timeline clamps after the last keyframe');
+  assert(resolveTimelineValue(timeline, 'generator.params.a', 0, -1) === 0, 'timeline clamps before the first keyframe');
+
+  const easeTimeline = createTimeline({ duration: 1, loop: false });
+  upsertKeyframe(easeTimeline, { path: 'generator.params.a', layer: 0, time: 0, value: 0, easing: 'ease-in' });
+  upsertKeyframe(easeTimeline, { path: 'generator.params.a', layer: 0, time: 1, value: 10, easing: 'ease-in' });
+  assert(resolveTimelineValue(easeTimeline, 'generator.params.a', 0, 0.5) === 2.5, 'ease-in timeline');
+
+  const loopTimeline = createTimeline({ duration: 2, loop: true });
+  upsertKeyframe(loopTimeline, { path: 'generator.params.a', layer: 0, time: 0, value: 1 });
+  upsertKeyframe(loopTimeline, { path: 'generator.params.a', layer: 0, time: 2, value: 3 });
+  assert(resolveTimelineValue(loopTimeline, 'generator.params.a', 0, 3) === 2, 'loop normalizes time');
+
+  const doc = createDocument('lissajous');
+  doc.animation.timeline = structuredClone(timeline);
+  const before = evaluateDocument(doc, { time: 0 });
+  const after = evaluateDocument(doc, { time: 1 });
+  assert(JSON.stringify(before.curves[0].points[10]) !== JSON.stringify(after.curves[0].points[10]), 'engine applies timeline values');
+  doc.animation.timeline.tracks[0].keyframes[1].value = 16;
+  const changed = evaluateDocument(doc, { time: 1 });
+  assert(JSON.stringify(after.curves[0].points[10]) !== JSON.stringify(changed.curves[0].points[10]), 'timeline edits invalidate the engine cache');
+
+  const frames = frameTimes(6, 30);
+  assert(frames.length === 180, 'frameTimes produces duration × fps frames');
+  assert(frames[0] === 0 && Math.abs(frames[179] - 179 / 30) < 1e-6, 'frame timestamps are exact');
+
+  const clamped = sanitizeTimeline({
+    duration: 999,
+    loop: true,
+    tracks: [{ path: 'generator.params.a', layer: 0, keyframes: [{ time: 999, value: 999, easing: 'bogus' }] }],
+  });
+  assert(clamped.duration === 600, 'timeline duration clamps');
+  assert(clamped.tracks[0].keyframes[0].time === 600, 'keyframe time clamps to duration');
+  assert(clamped.tracks[0].keyframes[0].easing === 'linear', 'unknown easing falls back');
+}
+
+/* ——— 21. Offline advisor ——— */
+console.log('21. offline advisor');
+{
+  const doc = createDocument('lissajous');
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const descriptor = computeDescriptor(doc, evaluation.curves);
+  const response = adviseOffline({ current: descriptor, document: doc });
+  assert(response.version === 1, 'advisor response is versioned');
+  assert(typeof response.summary === 'string' && response.summary.length > 0, 'advisor produces a summary');
+  assert(response.suggestions.length > 0, 'advisor produces suggestions');
+  assert(response.suggestions.length <= 5, 'advisor caps suggestions at five');
+  assert(response.suggestions.every((s) => s.path && Number.isFinite(Number(s.to))), 'suggestions carry path/value');
+
+  const first = response.suggestions[0];
+  const sourceBefore = JSON.stringify(doc.generator.params);
+  const validated = validateSuggestion(doc, first);
+  assert(validated.ok, 'generated suggestions are valid');
+  const candidate = applySuggestionToDocument(doc, first);
+  assert(candidate, 'valid suggestion produces a candidate');
+  const field = first.path.split('.').pop();
+  assert(Number(candidate.generator.params[field]) === Number(first.to), 'candidate applies the suggested value');
+  assert(JSON.stringify(doc.generator.params) !== JSON.stringify(candidate.generator.params), 'candidate is independent');
+  assert(JSON.stringify(doc.generator.params) === sourceBefore, 'source document remains unchanged');
+
+  const invalid = validateSuggestion(doc, { path: 'generator.params.ghost', to: 2 });
+  assert(!invalid.ok && /Unknown parameter/.test(invalid.reason), 'unknown path is rejected');
+
+  const clamped = validateSuggestion(doc, {
+    path: 'generator.params.samples',
+    to: 999999,
+  });
+  assert(clamped.ok && clamped.value === 8000, 'numeric suggestion clamps to schema max');
+
+  const previous = structuredClone(descriptor);
+  previous.symmetry = { folds: 2, score: 0.2 };
+  previous.curvature = { ...previous.curvature, entropy: 0.1 };
+  const compared = adviseOffline({
+    current: descriptor,
+    previous,
+    parameterDiff: [{ path: 'generator.params.a', from: 2, to: 3 }],
+    descriptorDiff: [{ path: 'symmetry.score', from: 0.2, to: 0.9, delta: 0.7 }],
+    document: doc,
+  });
+  assert(compared.summary.includes('parameter change'), 'evolution summary mentions parameter changes');
+  assert(compared.changes.length === 1, 'evolution change list is populated');
+}
+
+/* ——— 22. Optional LLM advisor ——— */
+console.log('22. optional llm advisor');
+{
+  const doc = createDocument('lissajous');
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const descriptor = computeDescriptor(doc, evaluation.curves);
+  const input = {
+    current: descriptor,
+    previous: null,
+    parameterDiff: [],
+    descriptorDiff: [],
+    document: doc,
+  };
+
+  const offline = createProvider({ id: 'offline' });
+  const fake = createProvider({ id: 'fake' });
+  assert(offline.network === false && fake.network === false, 'offline and fake providers never use the network');
+  assert(PROVIDERS.find((p) => p.id === 'ollama')?.network === true, 'ollama is explicitly marked as a network provider');
+  assert(PROVIDERS.find((p) => p.id === 'openai-compatible')?.network === true, 'openai-compatible is marked as a network provider');
+
+  const cache = new AdvisorCache(10);
+  const first = await runAdvisor(fake, input, { document: doc, cache });
+  const second = await runAdvisor(fake, input, { document: doc, cache });
+  assert(first.suggestions.length > 0, 'fake provider returns grounded suggestions');
+  assert(JSON.stringify(first.summary) === JSON.stringify(second.summary), 'fake provider is deterministic');
+  assert(JSON.stringify(first.suggestions) === JSON.stringify(second.suggestions), 'fake suggestions are deterministic');
+  assert(second.fromCache === true, 'second identical analysis is served from cache');
+  assert(cache.size === 1, 'cache stores one entry per document/provider/prompt');
+
+  const key = cacheKey(input, fake, '1');
+  assert(key.includes(descriptor.documentHash), 'cache key includes the document hash');
+  assert(key.includes(fake.id), 'cache key includes the provider id');
+  assert(cacheKey(input, fake, '2') !== key, 'cache key changes with the prompt version');
+  assert(cacheKey({ ...input, current: { ...descriptor, documentHash: 'other' } }, fake, '1') !== key, 'cache key changes with the document hash');
+
+  let calls = 0;
+  const counting = {
+    id: 'openai-compatible',
+    network: true,
+    async analyse() {
+      calls += 1;
+      return JSON.stringify({
+        version: 1,
+        summary: 'A grounded model response.',
+        changes: [],
+        suggestions: [{
+          id: 'llm-1',
+          path: 'generator.params.a',
+          from: doc.generator.params.a,
+          to: doc.generator.params.a + 1,
+          rationale: 'Try a slightly different ratio.',
+          expectedEffect: 'Shifts the figure.',
+          confidence: 0.5,
+          kind: 'subtle',
+        }],
+        caveats: ['Model output is a hypothesis.'],
+      });
+    },
+  };
+  const networkCache = new AdvisorCache(10);
+  const modelFirst = await runAdvisor(counting, input, { document: doc, cache: networkCache });
+  const modelSecond = await runAdvisor(counting, input, { document: doc, cache: networkCache });
+  assert(calls === 1, 'a cache hit does not call the provider again');
+  assert(modelSecond.fromCache === true, 'network response is marked as cached');
+  assert(modelFirst.suggestions.length === 1, 'valid model suggestion survives validation');
+
+  const invalid = parseAdvisorResponse({
+    summary: 'Invalid paths and ranges.',
+    changes: [{ path: 'generator.params.a', from: 1, to: 2, reading: 'a 1 → 2' }],
+    suggestions: [
+      { path: 'generator.params.ghost', to: 2 },
+      { path: 'generator.params.samples', to: 999999, kind: 'structural' },
+    ],
+    caveats: ['Model caveat.'],
+  }, doc);
+  assert(invalid.suggestions.length === 1, 'invalid path suggestion is rejected');
+  assert(invalid.suggestions[0].to === 8000 && invalid.suggestions[0].clamped === true, 'out-of-range value is clamped and flagged');
+  assert(invalid.caveats.some((c) => /rejected/.test(c)), 'rejections are reported in caveats');
+  assert(invalid.caveats.some((c) => /clamped/.test(c)), 'clamping is reported in caveats');
+
+  let thrown = false;
+  try {
+    parseAdvisorResponse('this is not json', doc);
+  } catch {
+    thrown = true;
+  }
+  assert(thrown, 'non-JSON provider output is rejected');
+
+  const failing = {
+    id: 'ollama',
+    network: true,
+    async analyse() {
+      throw new Error('connection refused');
+    },
+  };
+  const fallback = await runAdvisor(failing, input, { document: doc, cache: new AdvisorCache(2) });
+  assert(fallback.suggestions.length > 0, 'provider failure falls back to offline suggestions');
+  assert(fallback.providerError === 'connection refused', 'provider failure is surfaced');
+  assert(fallback.caveats.some((c) => /Provider failed/.test(c)), 'provider failure is explained in caveats');
+
+  const prompt = buildAdvisorPrompt(input);
+  const payload = JSON.parse(prompt.user);
+  assert(payload.current.documentHash === descriptor.documentHash, 'prompt includes the grounded descriptor');
+  assert(payload.document.layers.length >= 1, 'prompt includes a document summary');
+  assert(!('image' in payload), 'no image is sent by default');
+  const imagePrompt = buildAdvisorPrompt(input, { image: 'data:image/png;base64,AAAA' });
+  assert(JSON.parse(imagePrompt.user).image === 'data:image/png;base64,AAAA', 'image is included only when opted in');
+  assert(/only/i.test(prompt.system) && /JSON/i.test(prompt.system), 'system prompt demands grounded JSON output');
+
+  assert(shouldAutoAnalyze({ provider: offline }) === true, 'automatic analysis is allowed offline');
+  assert(shouldAutoAnalyze({ provider: offline, playing: true }) === false, 'no automatic analysis during playback');
+  assert(shouldAutoAnalyze({ provider: offline, auto: false }) === false, 'automatic analysis respects the opt-out');
+  assert(shouldAutoAnalyze({ provider: null }) === false, 'no provider means no automatic analysis');
+
+  const small = new AdvisorCache(2);
+  small.set('a', 1);
+  small.set('b', 2);
+  small.get('a');
+  small.set('c', 3);
+  assert(small.size === 2, 'cache is bounded');
+  assert(small.get('b') === null, 'cache evicts the least recently used entry');
+  assert(small.get('a') === 1, 'cache keeps recently used entries');
+}
+
+/* ——— 23. Image contour → Fourier ——— */
+console.log('23. image contour to fourier');
+{
+  const makeImage = (w, h, draw) => {
+    const data = new Uint8ClampedArray(w * h * 4).fill(255);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        if (draw(x, y)) {
+          data[i] = 0;
+          data[i + 1] = 0;
+          data[i + 2] = 0;
+        }
+        data[i + 3] = 255;
+      }
+    }
+    return { width: w, height: h, data };
+  };
+
+  const circle = makeImage(240, 240, (x, y) => Math.hypot(x - 120, y - 120) < 70);
+  const gray = grayscale(circle);
+  const threshold = otsuThreshold(gray);
+  assert(threshold >= 0 && threshold <= 255, 'otsu threshold is in range');
+  const mask = binarize(gray, circle.width, circle.height, threshold);
+  assert(mask.some((v) => v === 1) && mask.some((v) => v === 0), 'threshold separates foreground and background');
+
+  const traced = traceImageData(circle, { harmonics: 32, samples: 512 });
+  assert(traced.ok, `circle trace succeeds (${traced.reason ?? 'ok'})`);
+  assert(traced.componentArea > 10_000, 'largest component keeps the silhouette area');
+  assert(traced.contour.length === 512, 'contour is resampled to the requested count');
+  assert(traced.reconstruction.length === 512, 'reconstruction uses the same sample count');
+  assert(traced.harmonicsX.length > 0 && traced.harmonicsY.length > 0, 'both axes receive harmonics');
+  assert(traced.harmonicsX.length <= 32 && traced.harmonicsY.length <= 32, 'harmonic count is bounded');
+  assert(traced.error.relative < 0.02, 'circle reconstruction error is small');
+  assert(traced.harmonicsX.concat(traced.harmonicsY).every((h) => (
+    Number.isFinite(h.freq) && Number.isFinite(h.amp) && Number.isFinite(h.phase) && Number.isFinite(h.rot)
+  )), 'harmonics contain only finite numbers');
+  assert(traced.mask.length === circle.width * circle.height, 'mask preview sizes match the image');
+
+  const square = makeImage(240, 240, (x, y) => x > 50 && x < 190 && y > 60 && y < 180);
+  const squareTrace = traceImageData(square, { harmonics: 24, samples: 512 });
+  assert(squareTrace.ok && squareTrace.error.relative < 0.03, 'square reconstruction error is small');
+  assert(squareTrace.pointCount < 40, 'RDP simplification reduces pixel staircases');
+
+  const empty = makeImage(80, 80, () => false);
+  const emptyTrace = traceImageData(empty);
+  assert(!emptyTrace.ok && /No pixels/.test(emptyTrace.reason), 'empty image reports no contour');
+  const black = makeImage(80, 80, () => true);
+  const blackTrace = traceImageData(black);
+  assert(!blackTrace.ok && /whole image/.test(blackTrace.reason), 'full foreground reports no contour');
+
+  const inverted = makeImage(200, 200, (x, y) => Math.hypot(x - 100, y - 100) > 55);
+  const invertedTrace = traceImageData(inverted, { invert: true, harmonics: 16 });
+  assert(invertedTrace.ok, 'invert option traces light silhouettes on dark');
+  assert(invertedTrace.error.relative < 0.03, 'inverted reconstruction stays close');
+
+  const line = Array.from({ length: 40 }, (_, i) => ({ x: i, y: 10 }));
+  const simplified = simplifyRDP(line, 1);
+  assert(simplified.length === 2, 'RDP removes collinear points');
+  const resampled = resampleClosed([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }], 16);
+  assert(resampled.length === 16, 'closed resampling keeps the requested count');
+  assert(resampled.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)), 'resampled points are finite');
+  const gaps = resampled.map((p, i) => {
+    const q = resampled[(i + 1) % resampled.length];
+    return Math.hypot(q.x - p.x, q.y - p.y);
+  });
+  assert(Math.max(...gaps) - Math.min(...gaps) < 0.01, 'closed resampling is uniform by arc length');
+
+  const circlePoints = Array.from({ length: 128 }, (_, i) => {
+    const t = (Math.PI * 2 * i) / 128;
+    return { x: Math.cos(t) * 50, y: Math.sin(t) * 50 };
+  });
+  const fourier = contourToFourier(circlePoints, 8);
+  assert(fourier.error.relative < 0.001, 'a circle is represented by a few harmonics');
+  assert(fourier.harmonicsX[0].freq === 1, 'dominant circle harmonic is frequency 1');
+  const reconstructed = reconstructFromHarmonics(fourier.harmonicsX, fourier.harmonicsY, 128);
+  assert(reconstructed.length === 128, 'reconstruction helper returns the requested samples');
+
+  const doc = buildFourierDocument(traced, { name: 'Trace test' });
+  assert(doc.version === 3, 'traced document uses the current document version');
+  assert(doc.generator.id === 'fourier', 'traced document is editable via the fourier generator');
+  assert(doc.layers.length === 1, 'traced document contains one layer');
+  assert(doc.layers[0].generator.params.harmonicsX.length > 0, 'harmonics are stored in the layer');
+  const serialized = JSON.stringify(doc);
+  assert(!/image\/png|image\/jpeg|data:image/i.test(serialized), 'document contains no image data');
+  assert(!/imageData|previewData|\.url/.test(serialized), 'document contains no UI-only image state');
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  assert(evaluation.errors.length === 0, `traced document evaluates without errors: ${evaluation.errors[0]?.message ?? ''}`);
+  assert(evaluation.curves.length > 0 && evaluation.stats.pointCount > 100, 'traced document produces curves');
+  assert(MAX_IMAGE_EDGE >= 512, 'image tracing is bounded but keeps useful resolution');
+}
+
+/* ——— 24. Evolution lab ——— */
+console.log('24. evolution lab');
+{
+  const parentA = createDocument('lissajous');
+  parentA.generator.params.a = 2;
+  parentA.generator.params.b = 3;
+  const parentB = createDocument('lissajous');
+  parentB.generator.params.a = 8;
+  parentB.generator.params.b = 5;
+
+  const generation = createGeneration([parentA, parentB], {
+    count: 6,
+    seed: 42,
+    generation: 3,
+    parentIds: ['A', 'B'],
+    structuralRate: 0,
+    mutationRate: 0,
+  });
+  assert(generation.children.length === 6, 'evolution produces the requested children');
+  assert(generation.rejected === 0 && generation.attempts === 6, 'valid children need no retries');
+  assert(generation.generation === 3 && generation.parentIds.join(',') === 'A,B', 'generation metadata is preserved');
+  assert(generation.children.every((child) => child.parents.join(',') === 'A,B'), 'each child records both parents');
+  assert(generation.children.every((child) => ['A', 'B'].includes(child.primaryParentId)), 'each child records a primary parent');
+  assert(generation.children.every((child) => isChildValid(child.document)), 'all children pass full evaluation');
+
+  for (const child of generation.children) {
+    const a = Number(child.document.generator.params.a);
+    const b = Number(child.document.generator.params.b);
+    assert(a >= 2 && a <= 8, 'numeric crossover of a stays between parents');
+    assert(b >= 3 && b <= 5, 'numeric crossover of b stays between parents');
+    for (const ref of numericParameterRefs(child.document)) {
+      const schema = schemaForRef(child.document, ref);
+      const stage = stageForRef(child.document, ref);
+      const value = Number(stage.params[ref.key]);
+      assert(Number.isFinite(value) && value >= schema.min && value <= schema.max,
+        `child numeric ${pathForRef(ref)} respects the schema`);
+    }
+  }
+
+  const again = createGeneration([parentA, parentB], {
+    count: 6,
+    seed: 42,
+    generation: 3,
+    parentIds: ['A', 'B'],
+    structuralRate: 0,
+    mutationRate: 0,
+  });
+  assert(
+    JSON.stringify(generation.children.map((child) => child.document)) ===
+    JSON.stringify(again.children.map((child) => child.document)),
+    'same parents and seed produce identical children',
+  );
+
+  const capped = createGeneration([parentA, parentB], {
+    count: 99,
+    seed: 1,
+    structuralRate: 0,
+    mutationRate: 0,
+    parentIds: ['A', 'B'],
+  });
+  assert(capped.children.length === MAX_CHILDREN, 'children per generation are capped');
+
+  let tooFew = false;
+  try { createGeneration([parentA], {}); } catch { tooFew = true; }
+  assert(tooFew, 'fewer than two parents are rejected');
+  let tooMany = false;
+  try { createGeneration([parentA, parentB, parentA, parentB, parentA], {}); } catch { tooMany = true; }
+  assert(tooMany, 'more than four parents are rejected');
+  assert(MAX_PARENTS === 4, 'parent budget is four');
+
+  const structural = createGeneration([parentA, parentB], {
+    count: 8,
+    seed: 7,
+    generation: 1,
+    parentIds: ['A', 'B'],
+    structuralRate: 1,
+    mutationRate: 0,
+  });
+  assert(structural.children.length > 0, 'structural generation yields valid children');
+  assert(structural.children.every((child) => isChildValid(child.document)), 'structural children are evaluated');
+  assert(structural.children.every((child) => child.structuralChanges.length <= 3), 'structural changes are bounded');
+  assert(structural.children.some((child) => child.structuralChanges.length > 0), 'structural mutation actually fires');
+  const ops = structural.children.flatMap((child) => child.structuralChanges);
+  assert(ops.some((change) => change.op === 'add'), 'structural add is exercised');
+  assert(ops.every((change) => typeof describeStructuralChange(change) === 'string'), 'structural changes are describable');
+
+  const rejected = createGeneration([parentA, parentB], {
+    count: 4,
+    seed: 3,
+    parentIds: ['A', 'B'],
+    validate: () => false,
+    maxAttempts: 1,
+  });
+  assert(rejected.children.length === 0 && rejected.rejected === 4, 'invalid children are discarded');
+
+  assert(!isChildValid({}), 'invalid documents fail validation');
+  assert(nextGeneration([{ generation: 2 }, { generation: 5 }]) === 6, 'next generation follows the highest checkpoint');
+  assert(nextGeneration([]) === 1, 'first generation is one');
+
+  class MemoryStorage {
+    constructor() { this.map = new Map(); }
+    getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
+    setItem(key, value) { this.map.set(key, String(value)); }
+    removeItem(key) { this.map.delete(key); }
+  }
+  const storage = new MemoryStorage();
+  const notebook = new Notebook({ storage, now: () => 1000 });
+  const evalA = evaluateDocument(parentA, { time: 0 });
+  const evalB = evaluateDocument(parentB, { time: 0 });
+  const cpA = notebook.add({
+    id: 'parent-a', name: 'Parent A', document: parentA,
+    descriptor: computeDescriptor(parentA, evalA.curves),
+  });
+  const cpB = notebook.add({
+    id: 'parent-b', name: 'Parent B', document: parentB,
+    descriptor: computeDescriptor(parentB, evalB.curves),
+  });
+  const childDoc = generation.children[0].document;
+  const childEval = evaluateDocument(childDoc, { time: 0 });
+  const cpChild = notebook.add({
+    id: 'child-1', name: 'G3 · child 1', document: childDoc,
+    descriptor: computeDescriptor(childDoc, childEval.curves),
+    parentId: cpA.id,
+    parents: [cpA.id, cpB.id],
+    generation: 3,
+  });
+  assert(cpChild.generation === 3, 'checkpoint stores its generation');
+  assert(cpChild.parents.join(',') === 'parent-a,parent-b', 'checkpoint stores parent ids');
+  const reloaded = new Notebook({ storage });
+  assert(reloaded.get('child-1').generation === 3, 'generation persists');
+  assert(reloaded.get('child-1').parents.length === 2, 'parent ids persist');
+  const clampedLineage = sanitizeCheckpoint({
+    id: 'child-x', name: 'X', document: parentA,
+    descriptor: computeDescriptor(parentA, evalA.curves),
+    generation: -10, parents: ['parent-a', 'parent-a', 'child-x', 'extra-1', 'extra-2', 'extra-3', 'extra-4'],
+  });
+  assert(clampedLineage.generation === 0, 'negative generation clamps to zero');
+  assert(clampedLineage.parents.length === MAX_PARENTS, 'parent ids are bounded and deduplicated');
+  assert(!clampedLineage.parents.includes('child-x'), 'a checkpoint cannot parent itself');
+  notebook.remove(cpA.id);
+  assert(notebook.get('child-1').parents.includes(cpB.id), 'removing a parent keeps the remaining parent');
+  assert(!notebook.get('child-1').parents.includes(cpA.id), 'removing a parent clears it from children');
+  assert(notebook.get('child-1').parentId === null, 'removing the primary parent clears parentId');
 }
 
 /* ——— Snapshots ——— */

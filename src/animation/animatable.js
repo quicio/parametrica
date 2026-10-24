@@ -12,7 +12,8 @@
  */
 
 import { compileExpression } from '../math/expression.js';
-import { TYPE } from '../core/schema.js';
+import { TYPE, clampNumber } from '../core/schema.js';
+import { resolveTimelineValue } from './timeline.js';
 
 /**
  * Resolve a full params object against its schema for a given context.
@@ -31,13 +32,24 @@ export function resolveParams(schema, params, mods, ctx, errors = []) {
     let value = params?.[key] ?? s.default;
 
     if (s.type === TYPE.NUMBER) {
+      if (ctx.timeline && ctx.stagePath) {
+        const timed = resolveTimelineValue(
+          ctx.timeline,
+          `${ctx.stagePath}.${key}`,
+          ctx.layerIndex ?? 0,
+          ctx.time,
+        );
+        if (timed !== null) value = clampNumber(s, timed);
+      }
       const modSource = typeof mods?.[key] === 'string' && mods[key].trim() ? mods[key] : null;
       if (modSource) {
-        value = evaluateExpr(modSource, { ...ctx.scope, time: ctx.time, value: toNumber(value, s.default) }, errors, key);
+        const raw = evaluateExpr(modSource, { ...ctx.scope, time: ctx.time, value: toNumber(value, s.default) }, errors, key);
+        value = Number.isFinite(raw) ? clampNumber(s, raw) : toNumber(s.default, s.default);
       } else if (value && typeof value === 'object' && typeof value.expr === 'string') {
-        value = evaluateExpr(value.expr, { ...ctx.scope, time: ctx.time }, errors, key);
+        const raw = evaluateExpr(value.expr, { ...ctx.scope, time: ctx.time }, errors, key);
+        value = Number.isFinite(raw) ? clampNumber(s, raw) : toNumber(s.default, s.default);
       } else {
-        value = toNumber(value, s.default);
+        value = clampNumber(s, toNumber(value, s.default));
       }
     }
     out[key] = value;
@@ -49,18 +61,18 @@ function evaluateExpr(source, scope, errors, key) {
   const compiled = compileExpression(source);
   if (!compiled.ok) {
     errors.push({ key, message: compiled.error.message });
-    return 0;
+    return null;
   }
   try {
     const v = compiled.fn(scope);
     if (!Number.isFinite(v)) {
       errors.push({ key, message: 'expression returned non-finite value' });
-      return 0;
+      return null;
     }
     return v;
   } catch (e) {
     errors.push({ key, message: e.message });
-    return 0;
+    return null;
   }
 }
 

@@ -12,7 +12,7 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { genId, postProcess, TAU } from './helpers.js';
+import { genId, postProcess, isClosedPolyline, TAU } from './helpers.js';
 import { sampleUniform } from '../sampling/sampling.js';
 
 const DEFAULT_X = [
@@ -49,7 +49,7 @@ Generators.register({
       return { x, y };
     }, 0, TAU, p.samples);
     const curve = {
-      id: genId('fourier'), points, closed: true,
+      id: genId('fourier'), points, closed: isClosedPolyline(points),
       meta: { source: 'fourier', harmonics: terms },
     };
     return postProcess([curve], { fit: p.size });

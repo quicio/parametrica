@@ -27,6 +27,15 @@ function clamp(v, lo, hi) {
   return Math.min(hi, Math.max(lo, v));
 }
 
+const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);
+
+/** Does the current view read differential geometry? */
+function needsAnalysis(view) {
+  if (view?.overlays?.inflections) return true;
+  const modes = Array.isArray(view?.modes) ? view.modes : [];
+  return modes.some((m) => ANALYSIS_MODES.has(m));
+}
+
 export class P5Renderer {
   constructor(container, app) {
     this.container = container;
@@ -41,6 +50,11 @@ export class P5Renderer {
         p.pixelDensity(window.devicePixelRatio || 1);
         p.smooth();
         p.frameRate(60);
+        const canvas = p.drawingContext?.canvas;
+        if (canvas) {
+          canvas.setAttribute('role', 'img');
+          canvas.setAttribute('aria-label', 'Parametric geometry canvas');
+        }
       };
       p.draw = () => this.drawFrame(p);
       p.windowResized = () => this.fitToContainer();
@@ -116,53 +130,208 @@ export class P5Renderer {
     if (w !== this.p.width || h !== this.p.height) this.p.resizeCanvas(w, h);
   }
 
+  /** Render one frame immediately (used by sequence export). */
+  renderNow() {
+    if (!this.p) return;
+    // Exports and thumbnails are mathematised: the reference underlay is
+    // UI-only and must never leak into captured artifacts.
+    this.captureMode = true;
+    try {
+      this.drawFrame(this.p);
+    } finally {
+      this.captureMode = false;
+    }
+  }
+
+  /** Artboard rectangle in canvas CSS coordinates. */
+  artboardRect() {
+    const p = this.p;
+    const artboard = this.app.document.view.artboard ?? { width: 900, height: 900 };
+    const scale = Math.min(p.width / artboard.width, p.height / artboard.height);
+    const w = artboard.width * scale;
+    const h = artboard.height * scale;
+    return {
+      x: (p.width - w) / 2,
+      y: (p.height - h) / 2,
+      w,
+      h,
+      scale,
+      artboard,
+    };
+  }
+
+  /**
+   * Capture the current artboard as a PNG data URL for the notebook.
+   * Preserves aspect ratio, tries progressively smaller sizes and gives up
+   * above the 64 KB notebook cap.
+   */
+  thumbnailDataURL(maxSize = 256, maxChars = 65_536) {
+    const source = this.p?.drawingContext?.canvas ?? this.p?.canvas;
+    if (!source || !source.width || !source.height) return null;
+    // Redraw without the reference underlay before capturing.
+    this.captureMode = true;
+    try { this.drawFrame(this.p); } finally { this.captureMode = false; }
+    const crop = this.sourceCrop();
+    const sizes = [maxSize, 192, 128, 96, 64].filter((s) => s <= maxSize);
+    for (const size of sizes) {
+      try {
+        const scale = Math.min(size / crop.sw, size / crop.sh);
+        const w = Math.max(1, Math.round(crop.sw * scale));
+        const h = Math.max(1, Math.round(crop.sh * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) continue;
+        ctx.fillStyle = this.app.document.view.artboard?.background ?? '#000000';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, w, h);
+        const url = canvas.toDataURL('image/png');
+        if (url.length <= maxChars) return url;
+      } catch {
+        /* try the next size */
+      }
+    }
+    return null;
+  }
+
+  /** Full-size artboard PNG for export. */
+  artboardDataURL() {
+    const source = this.p?.drawingContext?.canvas ?? this.p?.canvas;
+    if (!source) return null;
+    this.captureMode = true;
+    try { this.drawFrame(this.p); } finally { this.captureMode = false; }
+    try {
+      const crop = this.sourceCrop();
+      const width = Math.max(1, Math.round(crop.artboard.width));
+      const height = Math.max(1, Math.round(crop.artboard.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
+      return canvas.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }
+
+  sourceCrop() {
+    const p = this.p;
+    const source = p.drawingContext.canvas;
+    const rect = this.artboardRect();
+    const kx = source.width / p.width;
+    const ky = source.height / p.height;
+    return {
+      sx: rect.x * kx,
+      sy: rect.y * ky,
+      sw: rect.w * kx,
+      sh: rect.h * ky,
+      artboard: rect.artboard,
+    };
+  }
+
   drawFrame(p) {
     const { app } = this;
     const doc = app.document;
 
     // animation transport
-    if (doc.animation.playing) {
+    if (doc.animation.playing && !this.captureMode) {
       const dt = Math.min(0.1, p.deltaTime / 1000);
       app.setTime(doc.animation.time + dt * doc.animation.speed);
     }
 
-    p.background(0);
+    p.background(5);
+    const rect = this.artboardRect();
+    this._artboardRect = rect;
+    const artboard = doc.view.artboard;
     p.push();
-    p.translate(p.width / 2, p.height / 2);
+    p.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
+    p.scale(rect.scale);
 
-    if (doc.view.guides) this.drawGuides(p);
+    // Artboard field. The surround stays dark so the composition reads as
+    // a page inside the instrument.
+    p.noStroke();
+    p.fill(artboard.background);
+    p.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
+
+    if (doc.view.guides) this.drawGuides(p, artboard);
+
+    if (!this.captureMode) this.drawUnderlay(p, artboard);
 
     const evaluation = app.evaluation;
     if (evaluation) {
       const data = {
         curves: evaluation.curves,
-        analysis: evaluation.analysis,
         bbox: evaluation.bbox,
         view: doc.view,
         document: doc,
         time: doc.animation.time,
       };
-      for (const modeId of doc.view.modes) {
-        if (!RenderPasses.has(modeId)) continue;
-        p.push();
-        try {
-          RenderPasses.get(modeId).draw(p, data);
-        } catch (e) {
-          console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+      // Differential geometry is lazy: only read it when an active pass
+      // or overlay actually uses tangents/normals/curvature/inflections.
+      const analysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
+      const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
+      const groups = Array.isArray(evaluation.layers) && evaluation.layers.length
+        ? evaluation.layers.filter((layer) => layer.visible !== false && layer.curves.length)
+        : [{ curves: evaluation.curves, style: doc.view.style, bbox: evaluation.bbox }];
+
+      for (const group of groups) {
+        const layerData = {
+          ...data,
+          curves: group.curves,
+          bbox: group.bbox ?? evaluation.bbox,
+          view: { ...doc.view, style: group.style ?? doc.view.style },
+        };
+        if (analysis) layerData.analysis = analysis;
+        for (const modeId of modes) {
+          if (!RenderPasses.has(modeId)) continue;
+          p.push();
+          try {
+            RenderPasses.get(modeId).draw(p, layerData);
+          } catch (e) {
+            console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+          }
+          p.pop();
         }
-        p.pop();
       }
       p.push();
-      drawOverlays(p, data);
+      drawOverlays(p, { ...data, analysis });
       p.pop();
     }
 
     p.pop();
   }
 
-  drawGuides(p) {
-    const w = p.width;
-    const h = p.height;
+  /**
+   * Reference image, drawn in artboard coordinates behind the geometry.
+   * Purely UI state; it never enters the document or a saved preset.
+   */
+  drawUnderlay(p, artboard) {
+    const underlay = this.app.imageUnderlay;
+    const image = underlay?.image;
+    if (!underlay?.visible || !image?.complete || !image.naturalWidth) return;
+    const ctx = p.drawingContext;
+    if (!ctx) return;
+    const base = Math.min(artboard.width / image.naturalWidth, artboard.height / image.naturalHeight);
+    const w = image.naturalWidth * base * (Number(underlay.scale) || 1);
+    const h = image.naturalHeight * base * (Number(underlay.scale) || 1);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
+    ctx.clip();
+    ctx.globalAlpha = clamp(underlay.opacity ?? 0.35, 0, 1);
+    ctx.translate(Number(underlay.x) || 0, Number(underlay.y) || 0);
+    ctx.rotate(Number(underlay.rotation) || 0);
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
+  drawGuides(p, artboard) {
+    const w = artboard.width;
+    const h = artboard.height;
+    const margin = artboard.margin;
     p.push();
     p.strokeWeight(1);
     p.stroke(255, 255, 255, 16);
@@ -170,7 +339,7 @@ export class P5Renderer {
     p.line(-w / 2, 0, w / 2, 0);
     p.noFill();
     p.stroke(255, 255, 255, 10);
-    p.rect(-w / 2 + 14, -h / 2 + 14, w - 28, h - 28);
+    p.rect(-w / 2 + margin, -h / 2 + margin, w - margin * 2, h - margin * 2);
     p.pop();
   }
 }

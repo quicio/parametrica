@@ -37,8 +37,8 @@ Generators.register({
   domain: (p) => ({ t0: p.t0, t1: p.t1, closed: p.closed }),
 
   sample(params, ctx) {
-    const fnX = compileOrThrow(params.exprX, 'x(t)');
-    const fnY = compileOrThrow(params.exprY, 'y(t)');
+    const fnX = compileOrThrow(params.exprX, 'x(t)', 'exprX');
+    const fnY = compileOrThrow(params.exprY, 'y(t)', 'exprY');
     const scope = makeScope(ctx);
     const points = sampleParametric(fnX, fnY, { ...params, scope });
     const curve = { id: genId('parametric'), points, closed: params.closed, meta: { source: 'parametric' } };

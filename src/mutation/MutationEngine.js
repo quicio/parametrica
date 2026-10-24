@@ -14,7 +14,7 @@
 import { Generators, Operators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { sanitizeValue } from '../core/schema.js';
-import { sanitizeDocument } from '../core/document.js';
+import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
 import { evaluateDocument } from '../core/engine.js';
 import { perturbLiterals } from '../math/expression.js';
 
@@ -31,11 +31,11 @@ export class MutationEngine {
       const candidate = this.#perturb(document);
       if (MutationEngine.isValid(candidate)) return candidate;
     }
-    return structuredClone(document);
+    return attachLayerAliases(structuredClone(document));
   }
 
   #perturb(document) {
-    const doc = structuredClone(document);
+    const doc = attachLayerAliases(structuredClone(document));
     this.#perturbStageParams(doc.generator, Generators.get(doc.generator.id).params);
 
     for (const op of doc.operators) {
@@ -70,7 +70,7 @@ export class MutationEngine {
     // occasionally re-roll the seed: jump to a new region of the space
     if (this.rng() < 0.08) doc.seed = Math.floor(this.rng() * 9999) + 1;
 
-    return sanitizeDocument(doc) ?? structuredClone(document);
+    return sanitizeDocument(doc) ?? attachLayerAliases(structuredClone(document));
   }
 
   #perturbStageParams(stage, schema, scale = 1) {

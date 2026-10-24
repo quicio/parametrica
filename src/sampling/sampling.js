@@ -19,60 +19,106 @@ export function sampleUniform(fn, t0, t1, count) {
 }
 
 /**
- * Adaptive sampling: the domain is first partitioned into a coarse
- * uniform grid (guaranteeing coverage even when the curve revisits the
- * same point — e.g. roses), then each interval refines recursively where
- * its midpoint deviates from the chord (curvature-aware). Tolerance is
- * derived from the coarse pass so it is scale-relative.
+ * Adaptive sampling: a coarse uniform grid guarantees coverage, then the
+ * interval with the largest chord error is split until either the
+ * tolerance is met or the `samples` budget is exhausted.
  *
- * `samples` is a hard upper bound on the output length. For simple
- * curves the output is naturally shorter than `samples`; for highly
- * detailed curves the adaptive refinement is capped so the user
- * always sees ≤ samples points regardless of curvature.
+ * Contract (see openspec/changes/reliability-hardening):
+ *  - `samples` is a hard upper bound on the output length;
+ *  - the final endpoint `fn(t1)` is always present;
+ *  - refinement is deterministic (largest error first, leftmost wins ties);
+ *  - `minSteps` controls the initial coarse resolution, not the output.
  */
 export function sampleAdaptive(fn, t0, t1, { minSteps = 128, maxDepth = 5, tolerance = null, samples = Infinity } = {}) {
-  const requested = Math.max(8, Math.floor(samples));
-  const intervals = Math.max(8, Math.min(Math.floor(minSteps), requested));
+  const requested = Number.isFinite(samples) ? Math.max(2, Math.floor(samples)) : Infinity;
+  const requestedIntervals = Number.isFinite(requested) ? requested - 1 : Infinity;
+  const intervals = Math.max(1, Math.min(Math.floor(minSteps), requestedIntervals));
+
   const coarse = sampleUniform(fn, t0, t1, intervals + 1);
   const diag = bbox(coarse).diagonal || 1;
   const tol = tolerance ?? diag / 600;
 
-  const out = [coarse[0]];
-  // Track remaining budget so total length never exceeds `samples`.
-  // Each pushed point costs 1; each subdivision reserves 1 for the
-  // midpoint and 1 for the b endpoint.
-  let remaining = Math.max(0, requested - 1);
+  // Chronological entries: { t, p }. Coarse endpoints are retained.
+  const entries = coarse.map((p, i) => ({
+    t: t0 + ((t1 - t0) * i) / intervals,
+    p,
+  }));
 
+  // Max-heap of unresolved intervals, keyed by chord error. The tie
+  // breaker (leftmost first) keeps the output deterministic.
+  const heap = [];
+  const tAt = (i) => t0 + ((t1 - t0) * i) / intervals;
   for (let i = 0; i < intervals; i++) {
-    if (remaining <= 0) break;
-    const a = t0 + ((t1 - t0) * i) / intervals;
-    const b = t0 + ((t1 - t0) * (i + 1)) / intervals;
-    walk(a, b, coarse[i], coarse[i + 1], 0);
+    heapPush(heap, makeInterval(
+      tAt(i), tAt(i + 1), coarse[i], coarse[i + 1], 0,
+    ));
   }
-  return out;
 
-  function walk(a, b, pa, pb, depth) {
-    if (remaining <= 0) return;
-    const m = (a + b) / 2;
-    const pm = fn(m);
-    const refine = distanceToChord(pm, pa, pb) > tol && depth < maxDepth;
-    if (refine) {
-      // Subdivision: order must stay chronological (left half, then
-      // midpoint, then right half). The midpoint belongs at the start
-      // of the right half so we push it before recursing into it.
-      walk(a, m, pa, pm, depth + 1);
-      if (remaining >= 1) {
-        out.push(pm);
-        remaining -= 1;
-      } else {
-        return;
-      }
-      walk(m, b, pm, pb, depth + 1);
-    } else {
-      out.push(pb);
-      remaining -= 1;
+  while (entries.length < requested && heap.length) {
+    const top = heap[0];
+    if (!(top.error > tol) || top.depth >= maxDepth) break;
+    heapPop(heap);
+    entries.push({ t: (top.a + top.b) / 2, p: top.pm });
+    const depth = top.depth + 1;
+    const left = makeInterval(top.a, top.mid, top.pa, top.pm, depth);
+    const right = makeInterval(top.mid, top.b, top.pm, top.pb, depth);
+    if (left.error > tol && depth < maxDepth) heapPush(heap, left);
+    if (right.error > tol && depth < maxDepth) heapPush(heap, right);
+  }
+
+  entries.sort((a, b) => a.t - b.t);
+  const out = [];
+  for (const entry of entries) {
+    const prev = out[out.length - 1];
+    if (prev && Math.abs(prev.t - entry.t) < 1e-12) continue;
+    out.push(entry.p);
+  }
+  return out.length >= 2 ? out : coarse.slice(0, 2);
+
+  function makeInterval(a, b, pa, pb, depth) {
+    const mid = (a + b) / 2;
+    const pm = fn(mid);
+    const d = distanceToChord(pm, pa, pb);
+    const error = Number.isFinite(d) ? d : Infinity;
+    return { a, b, mid, pa, pb, pm, depth, error };
+  }
+}
+
+/** True when `a` should sit above `b` in the max-heap. */
+function heapHigher(a, b) {
+  if (a.error !== b.error) return a.error > b.error;
+  return a.a < b.a;
+}
+
+function heapPush(heap, item) {
+  heap.push(item);
+  let i = heap.length - 1;
+  while (i > 0) {
+    const parent = (i - 1) >> 1;
+    if (!heapHigher(heap[i], heap[parent])) break;
+    [heap[i], heap[parent]] = [heap[parent], heap[i]];
+    i = parent;
+  }
+}
+
+function heapPop(heap) {
+  const top = heap[0];
+  const last = heap.pop();
+  if (heap.length) {
+    heap[0] = last;
+    let i = 0;
+    for (;;) {
+      const l = i * 2 + 1;
+      const r = l + 1;
+      let best = i;
+      if (l < heap.length && heapHigher(heap[l], heap[best])) best = l;
+      if (r < heap.length && heapHigher(heap[r], heap[best])) best = r;
+      if (best === i) break;
+      [heap[i], heap[best]] = [heap[best], heap[i]];
+      i = best;
     }
   }
+  return top;
 }
 
 function distanceToChord(p, a, b) {

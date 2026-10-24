@@ -8,7 +8,7 @@
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { genId, postProcess, TAU } from './helpers.js';
-import { sampleAdaptive } from '../sampling/sampling.js';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 
 Generators.register({
   id: 'harmonic-oscillator',
@@ -27,19 +27,20 @@ Generators.register({
     duration: { label: 'Duration (T)', type: TYPE.NUMBER, min: 1, max: 100, step: 0.5, default: 19 },
     size: { label: 'Fit Size', type: TYPE.NUMBER, min: 40, max: 800, step: 1, default: 340 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 64, max: 8000, step: 1, default: 1000 },
+    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
 
   domain: (p) => ({ t0: 0, t1: p.duration, closed: false }),
 
   sample(p) {
-    const points = sampleAdaptive(
-      (t) => {
-        const x = p.ampX * Math.exp(-p.dampX * t) * Math.sin(p.freqX * t + p.phaseX);
-        const y = p.ampY * Math.exp(-p.dampY * t) * Math.sin(p.freqY * t + p.phaseY + p.coupling * x);
-        return { x, y };
-      },
-      0, p.duration, { minSteps: Math.min(384, p.samples) },
-    );
+    const fn = (t) => {
+      const x = p.ampX * Math.exp(-p.dampX * t) * Math.sin(p.freqX * t + p.phaseX);
+      const y = p.ampY * Math.exp(-p.dampY * t) * Math.sin(p.freqY * t + p.phaseY + p.coupling * x);
+      return { x, y };
+    };
+    const points = p.adaptive
+      ? sampleAdaptive(fn, 0, p.duration, { minSteps: Math.min(384, p.samples), samples: p.samples })
+      : sampleUniform(fn, 0, p.duration, p.samples);
     return postProcess(
       [{ id: genId('oscillator'), points, closed: false, meta: { source: 'harmonic-oscillator' } }],
       { fit: p.size },

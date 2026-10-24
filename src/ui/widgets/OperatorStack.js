@@ -128,13 +128,20 @@ export function bindStageParams(gui, schema, stage, rebuild) {
       // until the next user interaction. The animation layer
       // resolves the AnimatableValue at evaluation time, not
       // binding time.
-      gui.add(stage.params, key, s.min, s.max, s.step)
+      const ctrl = gui.add(stage.params, key, s.min, s.max, s.step)
         .name(s.label ?? key)
         .onChange(rebuild);
+      attachDoc(ctrl, s);
     } else if (s.type === TYPE.BOOLEAN) {
-      gui.add(stage.params, key).name(s.label ?? key).onChange(rebuild);
+      const ctrl = gui.add(stage.params, key)
+        .name(s.label ?? key)
+        .onChange(rebuild);
+      attachDoc(ctrl, s);
     } else if (s.type === TYPE.SELECT) {
-      gui.add(stage.params, key, s.options).name(s.label ?? key).onChange(rebuild);
+      const ctrl = gui.add(stage.params, key, s.options)
+        .name(s.label ?? key)
+        .onChange(rebuild);
+      attachDoc(ctrl, s);
     }
     // expression/source/harmonics types get custom widgets elsewhere
   }
@@ -145,10 +152,22 @@ export function bindStageParams(gui, schema, stage, rebuild) {
       if (typeof stage.mods[key] !== 'string') stage.mods[key] = '';
       // Same label as the slider above — the modulation field refers
       // to the same parameter, so it must read identically.
-      modsFolder.add(stage.mods, key).name(labels[key]).onFinishChange(rebuild);
+      const ctrl = modsFolder.add(stage.mods, key)
+        .name(labels[key])
+        .onFinishChange(rebuild);
+      const doc = schema[key]?.doc ?? `Time expression for ${labels[key]}.`;
+      ctrl.domElement.title = doc;
+      ctrl.domElement.setAttribute('aria-description', doc);
     }
     modsFolder.close();
   }
+}
+
+/** Attach schema documentation to a lil-gui controller. */
+function attachDoc(controller, schema) {
+  if (!controller?.domElement || !schema?.doc) return;
+  controller.domElement.title = schema.doc;
+  controller.domElement.setAttribute('aria-description', schema.doc);
 }
 
 function toBaseNumber(value, dflt) {

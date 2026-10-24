@@ -11,8 +11,8 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { genId, TAU } from './helpers.js';
-import { sampleAdaptive } from '../sampling/sampling.js';
+import { genId, isClosedPolyline, TAU } from './helpers.js';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 
 function gcd(a, b) {
   a = Math.abs(Math.round(a));
@@ -25,6 +25,13 @@ function turnsFor(R, r) {
   const Ri = Math.max(1, Math.round(R));
   const ri = Math.max(1, Math.round(r));
   return Math.min(64, ri / gcd(Ri, ri));
+}
+
+/** Sample a trochoid with the uniform/adaptive contract. */
+function sampleTrochoid(fn, t1, p) {
+  return p.adaptive
+    ? sampleAdaptive(fn, 0, t1, { minSteps: Math.min(384, p.samples), samples: p.samples })
+    : sampleUniform(fn, 0, t1, p.samples);
 }
 
 export function hypotrochoidPoint(R, r, d, t) {
@@ -52,15 +59,15 @@ Generators.register({
     r: { label: 'Wheel Radius (r)', type: TYPE.NUMBER, min: 5, max: 300, step: 1, default: 70 },
     d: { label: 'Pen Distance (d)', type: TYPE.NUMBER, min: 0, max: 400, step: 1, default: 140 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 128, max: 12000, step: 1, default: 1400 },
+    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
   domain: (p) => ({ t0: 0, t1: TAU * turnsFor(p.R, p.r), closed: true }),
   sample(p) {
     const turns = turnsFor(p.R, p.r);
-    const points = sampleAdaptive(
-      (t) => hypotrochoidPoint(p.R, p.r, p.d, t),
-      0, TAU * turns, { minSteps: Math.min(384, p.samples) },
-    );
-    return [{ id: genId('hypotrochoid'), points, closed: true, meta: { source: 'hypotrochoid' } }];
+    const points = sampleTrochoid((t) => hypotrochoidPoint(p.R, p.r, p.d, t), TAU * turns, p);
+    return [{
+      id: genId('hypotrochoid'), points, closed: isClosedPolyline(points), meta: { source: 'hypotrochoid' },
+    }];
   },
 });
 
@@ -73,15 +80,15 @@ Generators.register({
     r: { label: 'Wheel Radius (r)', type: TYPE.NUMBER, min: 5, max: 300, step: 1, default: 50 },
     d: { label: 'Pen Distance (d)', type: TYPE.NUMBER, min: 0, max: 400, step: 1, default: 90 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 128, max: 12000, step: 1, default: 1200 },
+    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
   domain: (p) => ({ t0: 0, t1: TAU * turnsFor(p.R, p.r), closed: true }),
   sample(p) {
     const turns = turnsFor(p.R, p.r);
-    const points = sampleAdaptive(
-      (t) => epitrochoidPoint(p.R, p.r, p.d, t),
-      0, TAU * turns, { minSteps: Math.min(384, p.samples) },
-    );
-    return [{ id: genId('epitrochoid'), points, closed: true, meta: { source: 'epitrochoid' } }];
+    const points = sampleTrochoid((t) => epitrochoidPoint(p.R, p.r, p.d, t), TAU * turns, p);
+    return [{
+      id: genId('epitrochoid'), points, closed: isClosedPolyline(points), meta: { source: 'epitrochoid' },
+    }];
   },
 });
 
@@ -100,20 +107,23 @@ Generators.register({
     mode2: { label: 'Wheel 2', type: TYPE.SELECT, options: ['hypo', 'epi'], default: 'epi' },
     mix: { label: 'Mix', type: TYPE.NUMBER, min: 0, max: 1, step: 0.01, default: 0.5 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 128, max: 12000, step: 1, default: 1400 },
+    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
   domain: (p) => ({ t0: 0, t1: TAU * Math.max(turnsFor(p.R1, p.r1), turnsFor(p.R2, p.r2)), closed: true }),
   sample(p) {
     const turns = Math.max(turnsFor(p.R1, p.r1), turnsFor(p.R2, p.r2));
     const fn1 = p.mode1 === 'epi' ? epitrochoidPoint : hypotrochoidPoint;
     const fn2 = p.mode2 === 'epi' ? epitrochoidPoint : hypotrochoidPoint;
-    const points = sampleAdaptive(
+    const points = sampleTrochoid(
       (t) => {
         const a = fn1(p.R1, p.r1, p.d1, t);
         const b = fn2(p.R2, p.r2, p.d2, t);
         return { x: a.x * (1 - p.mix) + b.x * p.mix, y: a.y * (1 - p.mix) + b.y * p.mix };
       },
-      0, TAU * turns, { minSteps: Math.min(384, p.samples) },
+      TAU * turns, p,
     );
-    return [{ id: genId('spirograph'), points, closed: true, meta: { source: 'spirograph' } }];
+    return [{
+      id: genId('spirograph'), points, closed: isClosedPolyline(points), meta: { source: 'spirograph' },
+    }];
   },
 });

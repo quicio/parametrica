@@ -30,7 +30,7 @@ Processing, Mathematica or Shadertoy than to Illustrator.
 | G2 | A form is a **serializable pipeline**: generator + ordered operator stack + parameters. The JSON document *is* the form. |
 | G3 | Every pipeline stage is **replaceable** via registries. New generators/operators plug in without modifying the engine. |
 | G4 | Mutation occurs in **parameter space only**. Never pixels, never paths. |
-| G5 | Real-time: full pipeline evaluation ≤ 16 ms for ≤ 20 000 samples. |
+| G5 | Real-time: geometry pipeline ≤ 16 ms for ≤ 20 000 samples on reference hardware. Differential analysis is lazy and opt-in. |
 | G6 | Determinism: same document + same seed + same time ⇒ identical geometry. All noise is seeded. |
 | G7 | Optical balance over numerical symmetry (carried from v1). |
 
@@ -88,14 +88,19 @@ SVG / PNG / JSON
 }
 
 /** ParametricaDocument — the serializable soul of a form */ {
-  version: 2,
+  version: 3,
   app: 'parametrica',
   name: string,
-  generator: { id: string, params: Record<string, AnimatableValue> },
-  operators: Array<{ id: string, params: object, enabled: boolean }>,
-  view:      { modes: string[], overlays: Record<string, boolean> },
-  animation: { playing: boolean, speed: number, time: number },
   seed: number,
+  activeLayer: number,
+  layers: Array<{
+    id, name, visible, locked, seed,
+    generator: { id, params, mods },
+    operators: Array<{ id, params, enabled }>,
+    style: { stroke, fill, blend },
+  }>,
+  view:      { modes, overlays, artboard, camera, guides },
+  animation: { playing: boolean, speed: number, time: number },
 }
 
 /** AnimatableValue */  number | { expr: string }   // see §11 Animation
@@ -191,9 +196,9 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `custom` | Free multi-line equations with intermediate variables (`a = …; x = …`) | source, domain | user |
 || `bilateral-spline` | **v1 legacy**: MasterSpline + Mirror + OpticalCorrection (preserved as generator for v1 preset migration) | v1 schema | t ∈ [0,1] |
 
-> **Implementation status (2026-08-04):** all 14 generators registered and
-> covered by the test suite (`lab.smoke.mjs` group 4 — 16 registered
-> entries: the 14 above plus the Fourier preset lab alias).
+> **Implementation status (2026-10-23):** 22 generators registered and
+> covered by the test suite (`lab.smoke.mjs` group 4), including the
+> attractor family, concentric ellipses and the projected 3D generator.
 
 ---
 
@@ -347,8 +352,20 @@ Carried from v1: Swiss-modernist black instrument, lil-gui, telemetry.
 
 New: generator selector · schema-built parameter panel (v1 pattern,
 rebuilt per generator) · operator-stack panel (add/remove/reorder/toggle)
-· visualization toggles · animation transport · harmonic table editor ·
-formula editor drawer.
+· per-pass visualization checkboxes · animation transport · harmonic
+table editor · formula editor drawer · undo/redo (50 snapshots, coalesced)
+· seed field + reroll · transient notices for import/preset failures ·
+Analysis panel with deterministic descriptor metrics and parameter influence ·
+Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
+Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
+Artboard presets, palettes, stroke/fill style and faithful export ·
+2D grids and same-structure morphing · Document v3 layers, per-layer styles
+and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
+Offline advisor with deterministic narration and grounded suggestions ·
+Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
+prompts, validated responses, caching and privacy disclosure · Local image
+underlay with threshold preview and contour-to-Fourier tracing · User-guided
+evolution with numeric crossover, structural mutation and generation lineage.
 
 ## 17. Export
 
@@ -374,6 +391,9 @@ src/
   render/      P5Renderer · passes/
   viz/         overlays
   animation/   transport · animatable values
+  ai/          offline rules · prompts · providers · cache
+  input/       local image → contour → Fourier
+  lab/         descriptor · notebook · exploration · evolution
   mutation/    MutationEngine
   presets/     built-in GlyphDocuments · v1 migration
   export/      SVG · PNG · JSON
@@ -395,22 +415,49 @@ v1 pattern extended — the entire core stays DOM-free and Node-runnable:
 - **Operator contracts:** curve counts, bbox behavior, idempotence where
   applicable (normalize∘normalize = normalize).
 - **Determinism:** same seed + document ⇒ bit-identical samples.
-- **Performance budget:** reference document evaluates < 16 ms (CI gate).
+- **Performance budget:** reference geometry document targets < 16 ms
+  locally (CI gate < 50 ms). Differential analysis is computed lazily
+  and only when diagnostics need it.
 - **Document round-trip:** serialize ⇒ parse ⇒ deep-equal.
+- **Browser regressions:** Playwright starts Vite automatically; the UI
+  suite covers Fourier harmonics, array-safe render modes, inline errors,
+  lazy analysis, undo, seed, preset-panel idempotence and the lab observer.
+- **Lab observer:** canonical SHA-256 document hash, descriptor metrics,
+  parameter docs and sensitivity ranking (unit group 14).
+- **Lab notebook:** reproducible checkpoints, thumbnails, lineage, A/B
+  comparison and persistence (unit group 15).
+- **Lab exploration:** 1D sweeps, Solo/Lock, seeded randomize and
+  candidate adoption through history (unit group 16).
+- **Artboard/style:** letterboxed artboard, palette presets, stroke/fill
+  renderer and export fidelity (unit group 17).
+- **Grid/morph:** row-major 2D candidate maps and same-structure parameter
+  morphing (unit group 18).
+- **Composition layers:** v3 layer graph, isolated evaluation and layered
+  export (unit group 19).
+- **Motion timeline:** keyframe resolution, easing, loop and frame times
+  (unit group 20).
+- **Offline advisor:** descriptor-aware narration, rule suggestions and
+  schema validation (unit group 21).
+- **Optional LLM advisor:** provider abstraction, grounded prompts, response
+  parsing/validation, cache and offline fallback (unit group 22).
+- **Image trace:** local grayscale/threshold, largest-contour extraction,
+  RDP/resampling, Fourier fitting and document privacy (unit group 23).
+- **Evolution:** bounded parent/child budgets, numeric crossover, structural
+  operator mutation, full child evaluation and lineage (unit group 24).
 - **v1 migration:** every v1 preset converts to a valid document.
 
 ---
 
 ## 20. Milestones
 
-Implementation status as of **2026-08-04** (v0.1.0):
+Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 
 | MS | Scope | Status | Evidence |
 |---|---|---|---|
-| **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; 444 checks pass |
-| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | All 14 generators registered (`generators/index.js`), 8 geometry + 2 topology operators, `analysis/differential.js`, 4 overlays |
-| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | 🟡 **Partial** — animation transport, mutation v2, presets, harmonic editor, formula editor (textarea-based), operator stack reorder/toggle, render passes (6/13), overlays (4/4) **all done**; CodeMirror syntax highlighting still planned (see §15); epicycles pass registered but light; missing topology ops: ribbon, intersections, self-intersections | `lab.smoke.mjs` groups 8–10 |
-| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | 🟡 **Partial** — `boolean.js` and `voronoi.js` operators shipped; `stroke.js` shipped; signed-distance / skeleton / negative-space passes + centerline + frame-sequence export still pending | Source tree |
+| **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
+| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 22 generators registered, 31 operators, `analysis/differential.js`, 4 overlays |
+| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, formula editor (textarea-based, CodeMirror still deferred), operator stack reorder/toggle, 11 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
+| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | 🟡 **Partial** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance and negative-space are shipped; frame-sequence export remains deferred | Source tree + `e2e` |
 
 ### What ships in v0.1.0
 
@@ -434,8 +481,8 @@ editor, operator stack) at functional parity, with heavy geometry
 ## 21. Non-Goals
 
 - No drawing tools of any kind (pen, brush, anchors, direct manipulation).
-- No layers panel, no typography, no color system (remains a black/white
-  monoline instrument).
+- No nested layer groups, masks or typography. Layers, color and per-layer
+  styles are supported; complex compositing remains out of scope.
 - No server, no accounts, no cloud preset sync.
 - No WebGL / WASM until profiling proves the CPU pipeline insufficient.
 

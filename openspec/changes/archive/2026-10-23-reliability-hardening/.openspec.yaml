@@ -1,0 +1,17 @@
+name: reliability-hardening
+description: >
+  Reliability and contract hardening pass. Fixes the two UI crashes
+  (Fourier harmonics editor, Viz Modes selector), document default
+  isolation, seed-aware caching, schema clamping for modulated values,
+  per-stage point budgets, inline error reporting, a coherent adaptive
+  sampling contract, undo/redo, and the missing quality gates (e2e
+  server, CI, docs).
+status: proposed
+created: 2026-10-23
+capabilities:
+  - ui-reliability
+  - document-integrity
+  - engine-safety
+  - sampling-contract
+  - quality-gates
+skip_specs: false

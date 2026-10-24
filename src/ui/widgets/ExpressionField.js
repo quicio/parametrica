@@ -9,21 +9,29 @@
 
 import { tokenize, TOKEN } from '../../math/expression.js';
 
+let fieldId = 0;
+
 export class ExpressionField {
   /**
    * @param {{label: string, multiline?: boolean, get: () => string, set: (v:string) => void}} opts
    */
-  constructor({ label, multiline = false, get, set }) {
+  constructor({ label, multiline = false, doc = '', get, set }) {
     this.get = get;
     this.set = set;
     this.debounceTimer = null;
+    this.id = `expr-field-${fieldId++}`;
 
     this.el = document.createElement('div');
     this.el.className = `expr-field${multiline ? ' multiline' : ''}`;
 
     const labelEl = document.createElement('label');
     labelEl.className = 'expr-label';
+    labelEl.htmlFor = this.id;
     labelEl.textContent = label;
+    if (doc) {
+      labelEl.title = doc;
+      labelEl.setAttribute('aria-description', doc);
+    }
     this.el.appendChild(labelEl);
 
     const wrap = document.createElement('div');
@@ -34,6 +42,7 @@ export class ExpressionField {
     this.highlight.setAttribute('aria-hidden', 'true');
 
     this.input = document.createElement('textarea');
+    this.input.id = this.id;
     this.input.className = 'expr-input';
     this.input.spellcheck = false;
     this.input.rows = multiline ? 5 : 1;
@@ -45,6 +54,8 @@ export class ExpressionField {
 
     this.errorEl = document.createElement('div');
     this.errorEl.className = 'expr-error';
+    this.errorEl.id = `${this.id}-error`;
+    this.input.setAttribute('aria-describedby', this.errorEl.id);
     this.el.appendChild(this.errorEl);
 
     this.input.addEventListener('input', () => {
@@ -69,6 +80,8 @@ export class ExpressionField {
   setError(message) {
     this.errorEl.textContent = message ?? '';
     this.el.classList.toggle('has-error', Boolean(message));
+    if (message) this.input.setAttribute('aria-invalid', 'true');
+    else this.input.removeAttribute('aria-invalid');
   }
 
   renderHighlight() {

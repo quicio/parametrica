@@ -36,7 +36,7 @@ Generators.register({
   domain: (p) => ({ t0: p.t0, t1: p.t1, closed: p.closed }),
 
   sample(params, ctx) {
-    const program = compileOrThrow(params.source, 'program');
+    const program = compileOrThrow(params.source, 'program', 'source');
     const scope = makeScope(ctx);
     const fn = (t) => {
       scope.t = t;

@@ -86,9 +86,9 @@ Generators.register({
   domain: (p) => ({ t0: p.t0, t1: p.t1, closed: false }),
 
   sample(params, ctx) {
-    const fnX = compileOrThrow(params.exprX, 'x(t)');
-    const fnY = compileOrThrow(params.exprY, 'y(t)');
-    const fnZ = compileOrThrow(params.exprZ, 'z(t)');
+    const fnX = compileOrThrow(params.exprX, 'x(t)', 'exprX');
+    const fnY = compileOrThrow(params.exprY, 'y(t)', 'exprY');
+    const fnZ = compileOrThrow(params.exprZ, 'z(t)', 'exprZ');
 
     // Camera state lives on the document (view.camera) so it persists
     // with presets and is shared across generators. If absent (malformed

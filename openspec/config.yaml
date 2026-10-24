@@ -15,6 +15,8 @@ context: |
   - Spanish for user comms, English for code/docs/commits.
   - Single branch `main`, remote github.com/quicio/parametrica.
   - SPEC.md is the canonical source of truth (v0.1 spec).
+  - Product roadmap: openspec/roadmap.md (living document).
+  - Irreversible decisions: openspec/decisions/ (ADRs).
   - Per-point metadata (depth, depthAlpha) must survive all transforms.
   - Adaptive sampler: output ≤ samples cap, ≥ minSteps.
   - Sliders bind DIRECTLY to stage.params (no proxies).

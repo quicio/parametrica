@@ -10,11 +10,17 @@ export const genId = (prefix) => `${prefix}-${id++}`;
 
 /**
  * Compile an expression or throw a labeled error (caught by the engine
- * and surfaced in the UI next to the offending field).
+ * and surfaced in the UI next to the offending field). `key` is the
+ * schema parameter key used by the inline error mapper.
  */
-export function compileOrThrow(source, label) {
+export function compileOrThrow(source, label, key = null) {
   const compiled = compileExpression(source);
-  if (!compiled.ok) throw new Error(`${label}: ${compiled.error.message}`);
+  if (!compiled.ok) {
+    const err = new Error(`${label}: ${compiled.error.message}`);
+    if (key) err.key = key;
+    if (compiled.error) err.span = compiled.error;
+    throw err;
+  }
   return compiled.fn;
 }
 
@@ -56,6 +62,19 @@ export function postProcess(curves, { fit = 0, center = true }) {
   if (fit > 0) out = fitCurves(out, fit);
   else if (center) out = centerCurves(out);
   return out;
+}
+
+/**
+ * True when the sampled polyline ends where it started. Used by
+ * generators whose closure depends on parameter choices (fractional
+ * frequencies, non-integer superformula symmetry) instead of hardcoding
+ * `closed: true` and drawing a false closing segment.
+ */
+export function isClosedPolyline(points, eps = 1e-6) {
+  if (!Array.isArray(points) || points.length < 2) return false;
+  const a = points[0];
+  const b = points[points.length - 1];
+  return Math.hypot(a.x - b.x, a.y - b.y) <= eps;
 }
 
 /** TAU shortcut for schema defaults. */

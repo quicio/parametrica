@@ -21,27 +21,45 @@ export class Exporter {
    * @param {object} size    { w, h }
    * @param {object} document  embedded as metadata
    */
-  static buildSVG(curves, view, { w, h }, document = null) {
-    const paths = curves
-      .filter((c) => c.points.length > 1)
-      .map((c) => {
-        const pts = c.points;
-        let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
-        for (let i = 1; i < pts.length; i++) d += ` L ${fmt(pts[i].x)} ${fmt(pts[i].y)}`;
-        if (c.closed) d += ' Z';
-        return d;
-      });
-
+  static buildSVG(curves, view, { w, h }, document = null, layers = null) {
+    const artboard = view.artboard ?? {
+      width: w,
+      height: h,
+      background: '#000000',
+    };
+    const fallbackStyle = view.style ?? {
+      stroke: { color: '#ffffff', width: view.strokeWeight ?? 2, opacity: 1, cap: 'round', join: 'round' },
+      fill: { enabled: false, color: '#ffffff', opacity: 1 },
+    };
+    const width = artboard.width;
+    const height = artboard.height;
     const meta = document
       ? `<!-- parametrica document: ${escapeComment(JSON.stringify({ app: APP_ID, ...document }))} -->\n`
       : '';
 
+    const groups = Array.isArray(layers) && layers.length
+      ? layers.filter((layer) => layer.visible !== false)
+        .map((layer) => ({ curves: layer.curves ?? [], style: layer.style ?? fallbackStyle }))
+      : [{ curves, style: fallbackStyle }];
+
+    const pathElements = groups
+      .filter((group) => group.curves.length)
+      .map((group) => {
+        const paths = buildPaths(group.curves);
+        if (!paths) return '';
+        const attrs = styleAttrs(group.style, view);
+        return layers
+          ? `  <g ${attrs}>${paths}</g>`
+          : `  <path d="${paths}" ${attrs}/>`;
+      })
+      .join('\n');
+
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
       meta +
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-w / 2)} ${fmt(-h / 2)} ${fmt(w)} ${fmt(h)}" width="${fmt(w)}" height="${fmt(h)}">`,
-      `  <rect x="${fmt(-w / 2)}" y="${fmt(-h / 2)}" width="${fmt(w)}" height="${fmt(h)}" fill="#000000"/>`,
-      `  <path d="${paths.join(' ')}" fill="none" stroke="#ffffff" stroke-width="${fmt(view.strokeWeight)}" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}">`,
+      `  <rect x="${fmt(-width / 2)}" y="${fmt(-height / 2)}" width="${fmt(width)}" height="${fmt(height)}" fill="${escapeAttr(artboard.background)}"/>`,
+      pathElements,
       '</svg>',
       '',
     ].join('\n');
@@ -50,13 +68,20 @@ export class Exporter {
   /* ——— Browser-bound actions ——— */
 
   exportSVG() {
-    const { w, h } = this.app.renderer.size();
-    const svg = Exporter.buildSVG(this.app.evaluation.curves, this.app.document.view, { w, h }, this.app.document);
+    const artboard = this.app.document.view.artboard;
+    const w = artboard?.width ?? this.app.renderer.size().w;
+    const h = artboard?.height ?? this.app.renderer.size().h;
+    const svg = Exporter.buildSVG(this.app.evaluation.curves, this.app.document.view, { w, h }, this.app.document, this.app.evaluation.layers);
     downloadFile(`parametrica-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 
   exportPNG() {
-    this.app.renderer.p.saveCanvas(`parametrica-${timestamp()}`, 'png');
+    const dataUrl = this.app.renderer.artboardDataURL();
+    if (!dataUrl) {
+      this.app.renderer.p.saveCanvas(`parametrica-${timestamp()}`, 'png');
+      return;
+    }
+    downloadDataURL(`parametrica-${timestamp()}.png`, dataUrl);
   }
 
   exportJSON() {
@@ -80,12 +105,52 @@ export class Exporter {
 
 const fmt = (n) => Number(Number(n).toFixed(2));
 
+function buildPaths(curves) {
+  return curves
+    .filter((c) => c.points.length > 1)
+    .map((c) => {
+      const pts = c.points;
+      let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
+      for (let i = 1; i < pts.length; i++) d += ` L ${fmt(pts[i].x)} ${fmt(pts[i].y)}`;
+      if (c.closed) d += ' Z';
+      return d;
+    })
+    .join(' ');
+}
+
+function styleAttrs(style, view) {
+  const stroke = style.stroke ?? {};
+  const fill = style.fill ?? {};
+  return [
+    `fill="${fill.enabled ? escapeAttr(fill.color) : 'none'}"`,
+    `fill-opacity="${fmt(fill.enabled ? fill.opacity : 0)}"`,
+    `stroke="${escapeAttr(stroke.color ?? '#ffffff')}"`,
+    `stroke-width="${fmt(stroke.width ?? view.strokeWeight)}"`,
+    `stroke-opacity="${fmt(stroke.opacity ?? 1)}"`,
+    `stroke-linecap="${escapeAttr(stroke.cap ?? 'round')}"`,
+    `stroke-linejoin="${escapeAttr(stroke.join ?? 'round')}"`,
+  ].join(' ');
+}
+
 function escapeComment(text) {
   return text.replace(/--/g, '—');
 }
 
+function escapeAttr(value) {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+function downloadDataURL(filename, dataUrl) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 function downloadFile(filename, content, mimeType) {

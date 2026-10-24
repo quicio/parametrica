@@ -47,6 +47,13 @@ const ATTRACTOR_BASE_PARAMS = {
                  doc: '0 = keep native scale.' },
 };
 
+/**
+ * Clifford/De Jong are discrete maps (dt = 1 by definition); exposing a
+ * Step Size slider for them would be inert, so those generators omit it.
+ */
+const DISCRETE_BASE_PARAMS = { ...ATTRACTOR_BASE_PARAMS };
+delete DISCRETE_BASE_PARAMS.dt;
+
 /* —————————— helpers —————————— */
 
 /**
@@ -176,7 +183,7 @@ Generators.register({
   name: 'Clifford Attractor',
   category: 'attractor',
   params: {
-    ...ATTRACTOR_BASE_PARAMS,
+    ...DISCRETE_BASE_PARAMS,
     a: { label: 'a', type: TYPE.NUMBER, min: -3, max: 3, step: 0.01, default: 1.5 },
     b: { label: 'b', type: TYPE.NUMBER, min: -3, max: 3, step: 0.01, default: -1.8 },
     c: { label: 'c', type: TYPE.NUMBER, min: -3, max: 3, step: 0.01, default: 1.6 },
@@ -215,7 +222,7 @@ Generators.register({
   name: 'De Jong Attractor',
   category: 'attractor',
   params: {
-    ...ATTRACTOR_BASE_PARAMS,
+    ...DISCRETE_BASE_PARAMS,
     a: { label: 'a', type: TYPE.NUMBER, min: -5, max: 5, step: 0.01, default: -2.0 },
     b: { label: 'b', type: TYPE.NUMBER, min: -5, max: 5, step: 0.01, default: -2.0 },
     c: { label: 'c', type: TYPE.NUMBER, min: -5, max: 5, step: 0.01, default: 1.2 },

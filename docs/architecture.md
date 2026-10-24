@@ -23,8 +23,8 @@ evaluate(document, ctx)        ◄── per-stage cache
    ├─ operator[0].apply(curves, params, ctx)
    ├─ operator[1].apply(curves, params, ctx)
    ├─ …
-   ├─ analyzeAll(curves)                    → analysis
-   ├─ enforceBudget(curves)
+   ├─ enforceBudget(curves)                 → after every stage
+   ├─ analyzeAll(curves)                    → lazy on `analysis` access
    │
    ▼
 { curves, analysis, errors, stats, bbox }
@@ -43,10 +43,11 @@ src/
 ├── main.js                       entry point
 ├── core/
 │   ├── App.js                    composition root (holds document, evaluation)
-│   ├── engine.js                 evaluate(document, ctx) → result
+│   ├── engine.js                 evaluate(document, ctx) → result (v3 layers)
 │   ├── registry.js               Generators / Operators / RenderPasses
-│   ├── schema.js                 parameter schema + TYPE enum
-│   └── document.js               createDocument / sanitizeDocument
+│   ├── schema.js                 parameter schema + TYPE enum + clamping
+│   ├── history.js                bounded undo/redo snapshots
+│   └── document.js               createDocument / sanitizeDocument / layers
 │
 ├── math/
 │   ├── expression.js             Pratt parser + evaluator (NO eval/Function)
@@ -59,11 +60,21 @@ src/
 │
 ├── analysis/
 │   ├── differential.js           tangents, normals, curvature, inflections
-│   └── intersections.js          (reserved)
+│   └── intersections.js          segment crossings (topology pass)
 │
-├── generators/                   14 modules, one per mathematical model
+├── lab/
+│   ├── hash.js                   canonical JSON + pure SHA-256
+│   ├── descriptor.js             deterministic figure descriptor (v1)
+│   ├── sensitivity.js            ±delta parameter influence
+│   ├── notebook.js               checkpoints, lineage and persistence
+│   ├── parameters.js             shared ParameterRef helpers
+│   ├── exploration.js            Solo/Lock, sweeps and seeded randomize
+│   ├── evolution.js              crossover, structural mutation and lineage
+│   └── diff.js                   document and descriptor diffs
+│
+├── generators/                   22 registered models across 15 modules
 │   ├── index.js                  side-effect imports
-│   ├── helpers.js                compileOrThrow, makeScope, sampleParametric
+│   ├── helpers.js                compileOrThrow, makeScope, sampleParametric, isClosedPolyline
 │   ├── parametric.js             x(t), y(t)
 │   ├── polar.js                  r(θ)
 │   ├── custom.js                 multi-line programs
@@ -75,6 +86,9 @@ src/
 │   ├── trochoids.js              hypo + epi + spirograph
 │   ├── noiseField.js             integral curves through flow field
 │   ├── splines.js                catmull-rom + bezier + cubic-spline
+│   ├── attractors.js             lorenz / clifford / dejong / aizawa
+│   ├── concentricEllipses.js     multi-curve families
+│   ├── parametric3D.js           projected x/y/z curves
 │   └── bilateralSpline.js        v1 legacy, preserved
 │
 ├── operators/
@@ -94,6 +108,8 @@ src/
 │
 ├── render/
 │   ├── P5Renderer.js             p5 sketch, animation clock, pass composer
+│   ├── thumbnail.js              plain-canvas candidate previews
+│   ├── palettes.js               artboard presets and color pairs
 │   └── passes/
 │       ├── core.js               stroke / points / wireframe
 │       ├── vectors.js            normals / tangents
@@ -103,25 +119,44 @@ src/
 ├── viz/
 │   └── overlays.js               inflections / samplePoints / ruler / bbox
 │
+├── ai/
+│   ├── offline.js                deterministic narration, rules and validation
+│   ├── prompt.js                  grounded system/user payloads
+│   ├── provider.js                fake, Ollama and OpenAI-compatible adapters
+│   └── cache.js                   bounded in-memory response cache
+│
+├── input/
+│   └── imageTrace.js              grayscale, threshold, contour and Fourier tracing
+│
 ├── animation/
-│   └── animatable.js             AnimatableValue resolution (number | {expr})
+│   ├── animatable.js             AnimatableValue resolution (number | {expr})
+│   └── timeline.js               keyframes, easing, frame times
 │
 ├── mutation/
 │   └── MutationEngine.js         parameter-space perturbation
 │
 ├── presets/
 │   ├── PresetManager.js          built-ins + user storage + JSON I/O
-│   └── builtins.js               7+ built-in mathematical families
+│   └── builtins.js               20 built-in mathematical families
 │
 ├── export/
-│   └── Exporter.js               SVG (path-embedded document) · PNG · JSON
+│   ├── Exporter.js               SVG (path-embedded document) · PNG · JSON
+│   └── zip.js                    frame-sequence ZIP writer
 │
 ├── ui/
 │   ├── Controls.js               instrument panel
 │   └── widgets/
 │       ├── ExpressionField.js    live formula editor
 │       ├── HarmonicsEditor.js    Fourier table editor
-│       └── OperatorStack.js      add/remove/reorder/toggle operators
+│       ├── OperatorStack.js      add/remove/reorder/toggle operators
+│       ├── LabPanel.js           metrics + parameter-influence panel
+│       ├── NotebookPanel.js      checkpoints, thumbnails and A/B compare
+│       ├── ExplorePanel.js       axis, scope, strip and candidate adoption
+│       ├── EvolutionPanel.js     parents, generations, previews and keeping children
+│       ├── TimelinePanel.js      tracks, keyframes, record and frame export
+│       ├── AdvisorPanel.js       provider settings, privacy, advice, preview and apply
+│       ├── ImagePanel.js         underlay controls, threshold preview and Fourier trace
+│       └── modeToggles.js        array-safe render-mode helpers
 │
 └── geometry/                     v1 Catmull-Rom + Mirror + OpticalCorrection
                                   (used only by bilateral-spline generator)
@@ -164,6 +199,7 @@ App.rebuild() → App.evaluate()
 evaluateDocument(document, { time })
    │
    ├─ ctx = { time, seed, scope = createStdlib(seed) }
+   ├─ stage cache key includes seed, time, quality, camera, stage state
    │
    ├─ generator.sample(params, ctx)         → Curve[]
    │     │
@@ -176,8 +212,9 @@ evaluateDocument(document, { time })
    │     operator.apply(curves, params, ctx)
    │
    ├─ sanitizeCurves: drop non-finite / degenerate
-   ├─ enforceBudget: decimate if points > 50k/curve, 200k total
-   ├─ analyzeAll: tangents, normals, κ, inflections, arc length
+   ├─ enforceBudget after EVERY stage: 50k/curve, 200k total
+   ├─ cheap stats: pointCount / arcLength / bbox (eager)
+   ├─ analyzeAll: tangents, normals, κ, inflections (lazy getter)
    │
    ▼
 { curves, analysis, errors, stats, bbox }
@@ -296,13 +333,14 @@ should never produce a form that breaks at `time = 0.5`.
 
 ### Why per-stage caching?
 
-Slider drags fire 60 times per second. Re-evaluating 14 generators +
-10 operators from scratch on every drag is wasteful. The cache keys
-on `(stage.id, stage.params, stage.mods, stage.enabled)` JSON-stringified.
-A slider drag invalidates exactly one stage and everything downstream.
+Slider drags fire 60 times per second. Re-evaluating 22 generators +
+31 operators from scratch on every drag is wasteful. The cache keys
+on `(seed, time, quality, camera, stage.id, stage.params, stage.mods,
+stage.enabled)` JSON-stringified. A slider drag invalidates exactly one
+stage and everything downstream.
 
-Animation (time-driven) bypasses the cache: time flows into every
-stage, so signatures always change.
+Animation (time-driven) flows into the signature, so animated frames do
+not reuse stage outputs even though the cache path is the same.
 
 ### Why no UI framework?
 
@@ -327,8 +365,11 @@ accent (`#e30613`) is the only chromatic note and it's reserved for
 
 ## 5. Performance
 
-The pipeline budget: full evaluation under **16 ms** for ≤ 20 000 samples
-(see SPEC.md G5). The test suite enforces this in group 11 (`performance`).
+The geometry pipeline budget: under **16 ms** for ≤ 20 000 samples on
+reference hardware, with the CI gate at 50 ms (see SPEC.md G5). Point
+budgets are enforced after every stage (50k/curve, 200k total), and
+differential analysis is lazy, so geometry-only evaluation avoids it.
+The test suite enforces the reference budget in group 12 (`performance`).
 
 Hot paths and their costs:
 
@@ -338,7 +379,7 @@ Hot paths and their costs:
 | Parametric sampling | O(samples × expr-cost) | Adaptive sampling only where needed |
 | Adaptive subdivision | O(samples × depth × expr-cost) | `maxDepth: 5` cap |
 | Resample (arc-length) | O(samples) | Pre-computed arc-length table |
-| Differential analysis | O(samples) | Streaming pass |
+| Differential analysis | O(samples) | Lazy getter; only diagnostics read it |
 | Voronoi topology | O(samples log samples) | Optional, opt-in via operator stack |
 | Boolean ops | O(vertices log vertices) | Optional, only when added |
 
@@ -351,23 +392,36 @@ behind a dynamic import is the planned v0.x optimization.
 
 ### What the suite covers
 
-11 groups in `test/lab.smoke.mjs`:
+24 groups in `test/lab.smoke.mjs`:
 
 | # | Group | What it verifies |
 |---|---|---|
 | 1 | expression engine | precedence, right-assoc, unary, stdlib, error spans, perturbation |
 | 2 | noise determinism | same seed = identical field, different seed ≠ same field |
 | 3 | splines | Catmull-Rom → Bézier conversion, cubic spline |
-| 4 | generators | evalOK over all 14 registered models + variations |
+| 4 | generators | evalOK over all 22 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
-| 7 | built-in presets | all 7+ presets evaluate to non-degenerate forms |
+| 7 | built-in presets | all 20 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
 | 9 | SVG export | output is well-formed, document is embedded |
 | 10 | animation | time-driven resolution, deterministic across time |
-| 11 | performance | full pipeline under 16 ms |
+| 11 | sampling | uniform/adaptive caps, endpoint completeness, inverted domains |
+| 12 | performance | reference document budget |
+| 13 | reliability regressions | isolation, seed cache, clamping, budgets, errors, history, UI helpers |
+| 14 | lab observer | hash vectors, descriptor metrics, symmetry, empty geometry, sensitivity ranking, shape distance |
+| 15 | lab notebook | checkpoint validation, lineage, persistence, import/export, thumbnail cap, diffs |
+| 16 | lab exploration | 1D sweep endpoints and determinism, Solo/Lock, seeded randomize, candidate isolation |
+| 17 | artboard/style | defaults, legacy stroke migration, clamping, style/artboard round-trip, styled SVG |
+| 18 | grid/morph | row-major grid order/budget, deterministic grid, morph endpoints/interpolation, incompatible structures |
+| 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, aggregate descriptor, layered SVG |
+| 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation |
+| 21 | offline advisor | narration/diff, grounded suggestions, validation, clamping, candidate isolation |
+| 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
+| 23 | image trace | grayscale/Otsu, component selection, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, privacy |
+| 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 
-451 checks total.
+1000 checks total.
 
 ### Adding tests
 
