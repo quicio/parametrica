@@ -8,7 +8,6 @@
  *  - HiDPI via pixelDensity; black field; CAD guides.
  */
 
-import p5 from 'p5';
 import { RenderPasses } from '../core/registry.js';
 import { bboxAll } from '../sampling/sampling.js';
 import { drawOverlays } from '../viz/overlays.js';
@@ -43,85 +42,106 @@ export class P5Renderer {
     this.container = container;
     this.app = app;
     this.p = null;
+    this.sketch = null;
+    this.ready = false;
+    this.loadError = null;
+    this.dragState = null;
 
-    this.sketch = new p5((p) => {
-      this.p = p;
-      p.setup = () => {
-        const { w, h } = this.size();
-        p.createCanvas(w, h).parent(container);
-        p.pixelDensity(window.devicePixelRatio || 1);
-        p.smooth();
-        p.frameRate(60);
-        const canvas = p.drawingContext?.canvas;
-        if (canvas) {
-          canvas.setAttribute('role', 'img');
-          canvas.setAttribute('aria-label', 'Parametric geometry canvas');
-        }
-      };
-      p.draw = () => this.drawFrame(p);
-      p.windowResized = () => this.fitToContainer();
-
-      // Camera drag: holding the mouse down on the canvas and dragging
-      // rotates the document's view.camera. Horizontal delta → yaw,
-      // vertical → pitch. Sensitivity is 1° per pixel — predictable,
-      // no acceleration. Release ends the drag.
-      //
-      // IMPORTANT: we must gate on the DOM event target so clicks on
-      // the control panel (#ui) — slider drags, scroll wheel over a
-      // widget, combobox opens — do NOT trigger camera rotation.
-      // Otherwise the panel intercepts slider drags.
-      this.dragState = null;
-      const isOverCanvas = (event) => {
-        // Trust the DOM event target first — this is the only
-        // authoritative check. Fall back to coordinate tests if no
-        // event is present (defensive, should not happen in practice).
-        if (event && event.target) return event.target === p.drawingContext.canvas;
-        return false;
-      };
-      p.mousePressed = (event) => {
-        if (p.mouseButton !== p.LEFT) return;
-        if (!isOverCanvas(event)) return;
-        // Orthographic views have no camera to rotate.
-        if ((this.app.document.view.projection ?? '3d') !== '3d') return;
-        this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
-      };
-      p.mouseDragged = (event) => {
-        if (!this.dragState) return;
-        if (!isOverCanvas(event)) return;
-        const dx = p.mouseX - this.dragState.startX;
-        const dy = p.mouseY - this.dragState.startY;
-        const cam = this.app.document.view.camera;
-        // 1° per pixel — wrap yaw into [-π, π), clamp pitch away from
-        // the gimbal-lock poles (±π/2 − ε).
-        cam.yaw = wrapPi(this.dragState.yaw - dx * (Math.PI / 180));
-        cam.pitch = clamp(this.dragState.pitch + dy * (Math.PI / 180), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
-        this.app.rebuild();
-      };
-      p.mouseReleased = (event) => {
-        if (!this.dragState) return;
-        // Release anywhere ends the drag — the user might drag off the
-        // canvas. Don't require isOverCanvas here.
-        this.dragState = null;
-      };
-      p.mouseWheel = (event) => {
-        // Scroll-wheel zooms by adjusting FOV. Only respond when the
-        // wheel happens over the canvas — over the panel, native
-        // scrolling handles the slider/scrollbar.
-        if (!isOverCanvas(event)) return;
-        event.preventDefault();
-        if ((this.app.document.view.projection ?? '3d') !== '3d') return false;
-        const cam = this.app.document.view.camera;
-        const factor = event.delta > 0 ? 1.08 : 1 / 1.08;
-        cam.fov = clamp(cam.fov * factor, 1, 2000);
-        this.app.rebuild();
-        return false;
-      };
-    });
+    // p5 is the largest dependency in the bundle. Importing it lazily
+    // keeps the first paint and the control panel responsive while the
+    // renderer chunk arrives.
+    this.readyPromise = this.load();
 
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.fitToContainer());
       this.resizeObserver.observe(container);
     }
+  }
+
+  async load() {
+    try {
+      const { default: p5 } = await import('p5');
+      this.sketch = new p5((p) => this.mount(p));
+      this.ready = true;
+      return this;
+    } catch (error) {
+      this.loadError = error;
+      console.error('[parametrica] p5 failed to load:', error);
+      return null;
+    }
+  }
+
+  mount(p) {
+    this.p = p;
+    p.setup = () => {
+      const { w, h } = this.size();
+      p.createCanvas(w, h).parent(this.container);
+      p.pixelDensity(window.devicePixelRatio || 1);
+      p.smooth();
+      p.frameRate(60);
+      const canvas = p.drawingContext?.canvas;
+      if (canvas) {
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', 'Parametric geometry canvas');
+      }
+    };
+    p.draw = () => this.drawFrame(p);
+    p.windowResized = () => this.fitToContainer();
+
+    // Camera drag: holding the mouse down on the canvas and dragging
+    // rotates the document's view.camera. Horizontal delta → yaw,
+    // vertical → pitch. Sensitivity is 1° per pixel — predictable,
+    // no acceleration. Release ends the drag.
+    //
+    // IMPORTANT: we must gate on the DOM event target so clicks on
+    // the control panel (#ui) — slider drags, scroll wheel over a
+    // widget, combobox opens — do NOT trigger camera rotation.
+    // Otherwise the panel intercepts slider drags.
+    const isOverCanvas = (event) => {
+      // Trust the DOM event target first — this is the only
+      // authoritative check. Fall back to coordinate tests if no
+      // event is present (defensive, should not happen in practice).
+      if (event && event.target) return event.target === p.drawingContext.canvas;
+      return false;
+    };
+    p.mousePressed = (event) => {
+      if (p.mouseButton !== p.LEFT) return;
+      if (!isOverCanvas(event)) return;
+      // Orthographic views have no camera to rotate.
+      if ((this.app.document.view.projection ?? '3d') !== '3d') return;
+      this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
+    };
+    p.mouseDragged = (event) => {
+      if (!this.dragState) return;
+      if (!isOverCanvas(event)) return;
+      const dx = p.mouseX - this.dragState.startX;
+      const dy = p.mouseY - this.dragState.startY;
+      const cam = this.app.document.view.camera;
+      // 1° per pixel — wrap yaw into [-π, π), clamp pitch away from
+      // the gimbal-lock poles (±π/2 − ε).
+      cam.yaw = wrapPi(this.dragState.yaw - dx * (Math.PI / 180));
+      cam.pitch = clamp(this.dragState.pitch + dy * (Math.PI / 180), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
+      this.app.rebuild();
+    };
+    p.mouseReleased = () => {
+      if (!this.dragState) return;
+      // Release anywhere ends the drag — the user might drag off the
+      // canvas. Don't require isOverCanvas here.
+      this.dragState = null;
+    };
+    p.mouseWheel = (event) => {
+      // Scroll-wheel zooms by adjusting FOV. Only respond when the
+      // wheel happens over the canvas — over the panel, native
+      // scrolling handles the slider/scrollbar.
+      if (!isOverCanvas(event)) return;
+      event.preventDefault();
+      if ((this.app.document.view.projection ?? '3d') !== '3d') return false;
+      const cam = this.app.document.view.camera;
+      const factor = event.delta > 0 ? 1.08 : 1 / 1.08;
+      cam.fov = clamp(cam.fov * factor, 1, 2000);
+      this.app.rebuild();
+      return false;
+    };
   }
 
   size() {
@@ -152,12 +172,14 @@ export class P5Renderer {
   artboardRect() {
     const p = this.p;
     const artboard = this.app.document.view.artboard ?? { width: 900, height: 900 };
-    const scale = Math.min(p.width / artboard.width, p.height / artboard.height);
+    const width = p?.width ?? this.size().w;
+    const height = p?.height ?? this.size().h;
+    const scale = Math.min(width / artboard.width, height / artboard.height);
     const w = artboard.width * scale;
     const h = artboard.height * scale;
     return {
-      x: (p.width - w) / 2,
-      y: (p.height - h) / 2,
+      x: (width - w) / 2,
+      y: (height - h) / 2,
       w,
       h,
       scale,

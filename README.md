@@ -23,8 +23,10 @@ mathematics is the only authoring surface.
 ```bash
 npm install
 npm run dev          # vite dev server, opens the app
-npm test             # node-only verification suite (1139 checks)
-npm run test:e2e     # Playwright suite (starts Vite automatically)
+npm run lint         # ESLint flat config
+npm test             # node-only verification suite (1152 checks)
+npm run check        # lint + unit + production build
+npm run test:e2e     # Playwright suite (57 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -180,19 +182,20 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1139 checks across 25 groups (expression
+Runs `test/lab.smoke.mjs` — 1152 checks across 26 groups (expression
 engine, noise determinism, splines, all 23 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
 performance budget, reliability regressions, offline and optional LLM
-advisors, image contour tracing, evolution, helix projections). The whole core is
+advisors, image contour tracing, evolution, helix projections, session recovery). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (55 tests) against a Vite server started by Playwright itself.
+suite (57 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
-No formal linter configured. Each `.js` and `.mjs` write auto-runs a
-syntax check.
+ESLint runs with a flat config (`eslint.config.js`). `npm run lint` checks
+`src`, `test`, `e2e` and the config files; CI runs it before the unit suite.
+`npm run check` runs lint, the Node suite and the production build.
 
 ### Build
 
@@ -201,8 +204,9 @@ npm run build      # writes dist/
 npm run preview    # serves the build
 ```
 
-Bundle weight: ~1.2 MB minified, ~320 KB gzip. The bulk is `p5.js`. Lazy
-loading and tree-shaking p5 is on the roadmap (see SPEC.md §20).
+Bundle: the eager shell is ~630 KB minified (~197 KB gzip), split into app,
+CodeMirror, lil-gui and geometry-vendor chunks. p5 is lazy-loaded as a
+separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 ---
 
@@ -233,6 +237,8 @@ loading and tree-shaking p5 is on the roadmap (see SPEC.md §20).
 - **Image input** with local underlay, threshold preview, largest-contour tracing and editable Fourier documents
 - **Evolution** with parent selection, numeric crossover, structural mutation and generation lineage
 - **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views and a height-gradient wireframe
+- **CodeMirror formula editor** with math-aware highlighting and inline errors
+- **Session recovery** with local autosave and an explicit Restore/Dismiss banner
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)
@@ -240,10 +246,11 @@ loading and tree-shaking p5 is on the roadmap (see SPEC.md §20).
 
 Deferred to v0.x:
 
-- CodeMirror syntax highlighting in the formula editor
-- Frame-sequence export for animations
-- Autosave/session recovery
-- p5 bundle splitting
+- Color-by-metric palette system
+- Plotter-ready SVG with line tests
+- Helix multi-viewport layout (3D + three projections at once)
+- Custom gradient-ramp editor
+- Multi-contour / hole-aware image tracing
 
 ---
 

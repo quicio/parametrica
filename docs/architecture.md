@@ -47,6 +47,7 @@ src/
 │   ├── registry.js               Generators / Operators / RenderPasses
 │   ├── schema.js                 parameter schema + TYPE enum + clamping
 │   ├── history.js                bounded undo/redo snapshots
+│   ├── session.js                debounced local session snapshots
 │   └── document.js               createDocument / sanitizeDocument / layers
 │
 ├── math/
@@ -108,7 +109,7 @@ src/
 │       └── voronoi.js            curve-envelope Voronoi tessellation
 │
 ├── render/
-│   ├── P5Renderer.js             p5 sketch, animation clock, pass composer
+│   ├── P5Renderer.js             lazy p5 sketch, animation clock, pass composer
 │   ├── thumbnail.js              plain-canvas candidate previews
 │   ├── projection.js             render-time xy/xz/yz orthographic views
 │   ├── palettes.js               artboard presets and color pairs
@@ -149,7 +150,7 @@ src/
 ├── ui/
 │   ├── Controls.js               instrument panel
 │   └── widgets/
-│       ├── ExpressionField.js    live formula editor
+│       ├── ExpressionField.js    CodeMirror 6 math editor
 │       ├── HarmonicsEditor.js    Fourier table editor
 │       ├── OperatorStack.js      add/remove/reorder/toggle operators
 │       ├── LabPanel.js           metrics + parameter-influence panel
@@ -386,8 +387,10 @@ Hot paths and their costs:
 | Voronoi topology | O(samples log samples) | Optional, opt-in via operator stack |
 | Boolean ops | O(vertices log vertices) | Optional, only when added |
 
-Bundle weight is dominated by p5 (~700 KB minified). Lazy-loading p5
-behind a dynamic import is the planned v0.x optimization.
+The eager shell is split into app, CodeMirror, lil-gui and geometry-vendor
+chunks (~630 KB minified / ~197 KB gzip total). p5 is dynamically imported
+as a separate ~1.06 MB chunk after the shell is usable; the e2e suite waits
+for `renderer.readyPromise` before touching the canvas.
 
 ---
 
@@ -395,7 +398,7 @@ behind a dynamic import is the planned v0.x optimization.
 
 ### What the suite covers
 
-25 groups in `test/lab.smoke.mjs`:
+26 groups in `test/lab.smoke.mjs`:
 
 | # | Group | What it verifies |
 |---|---|---|
@@ -424,8 +427,15 @@ behind a dynamic import is the planned v0.x optimization.
 | 23 | image trace | grayscale/Otsu, component selection, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, privacy |
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
+| 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
 
-1139 checks total.
+1152 checks total.
+
+### Quality gates
+
+`npm run lint` runs ESLint over `src`, `test`, `e2e` and config files.
+`npm run check` combines lint, the Node suite and the production build. CI
+runs lint before the unit suite.
 
 ### Adding tests
 

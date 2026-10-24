@@ -11,7 +11,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { evalState, dragSlider, controller } from './helpers.js';
+import { evalState, dragSlider } from './helpers.js';
 
 const setParams = (page, patch) =>
   page.evaluate((p) => {
@@ -24,6 +24,7 @@ const getParam = (page, key) =>
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   await page.evaluate(() => window.__parametrica.applyPreset('Golden Rose'));
   await page.waitForTimeout(300);
 });

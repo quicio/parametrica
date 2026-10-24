@@ -12,6 +12,7 @@ import { Generators, Operators } from './registry.js';
 import { evaluateDocument } from './engine.js';
 import { schemaDefaults } from './schema.js';
 import { History } from './history.js';
+import { SessionStore } from './session.js';
 import { Notebook } from '../lab/notebook.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
@@ -49,6 +50,11 @@ export class App {
       this.notify(`Notebook storage: ${this.notebook.lastError}`, 'error');
     }
 
+    this.session = new SessionStore();
+    this.pendingSession = this.session.load();
+    this.sessionPaused = Boolean(this.pendingSession);
+    this.sessionErrorShown = false;
+
     this.evaluate();
     this.renderer = new P5Renderer(canvasContainer, this);
     this.exporter = new Exporter(this);
@@ -63,6 +69,13 @@ export class App {
 
     this.onKeyDown = (event) => this.handleKeyDown(event);
     window.addEventListener('keydown', this.onKeyDown);
+    this.onVisibility = () => {
+      if (document.visibilityState === 'hidden') this.flushSession();
+    };
+    this.onBeforeUnload = () => this.flushSession();
+    document.addEventListener('visibilitychange', this.onVisibility);
+    window.addEventListener('beforeunload', this.onBeforeUnload);
+    this.mountSessionRecovery();
   }
 
   get evaluation() {
@@ -85,6 +98,7 @@ export class App {
     this.timelineRecorder?.(this.document.animation.time);
     this.scheduleHistory();
     this.evaluate();
+    this.scheduleSessionSave();
   }
 
   evaluate() {
@@ -239,6 +253,74 @@ export class App {
     this.adoptCandidate(candidate);
     this.notify(`Applied suggestion on ${suggestion.path}`);
     return candidate;
+  }
+
+  /* ———————— session recovery ———————— */
+
+  scheduleSessionSave() {
+    if (this.sessionPaused) return;
+    this.session.schedule(this.document);
+  }
+
+  flushSession() {
+    if (this.sessionPaused) return;
+    const ok = this.session.flush(this.document);
+    if (!ok && this.session.lastError && !this.sessionErrorShown) {
+      this.sessionErrorShown = true;
+      this.notify(`Session storage: ${this.session.lastError}`, 'error');
+    }
+  }
+
+  mountSessionRecovery() {
+    if (!this.pendingSession) return;
+    const banner = document.createElement('div');
+    banner.id = 'recovery';
+    banner.className = 'recovery';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+
+    const text = document.createElement('span');
+    text.className = 'recovery-text';
+    const when = new Date(this.pendingSession.savedAt).toLocaleString();
+    text.textContent = `Previous session found · ${when}`;
+
+    const restore = document.createElement('button');
+    restore.className = 'lab-button recovery-restore';
+    restore.textContent = 'Restore';
+    restore.addEventListener('click', () => this.restoreSession(banner));
+
+    const discard = document.createElement('button');
+    discard.className = 'lab-button recovery-discard';
+    discard.textContent = 'Dismiss';
+    discard.addEventListener('click', () => this.discardSession(banner));
+
+    banner.append(text, restore, discard);
+    document.body.appendChild(banner);
+  }
+
+  restoreSession(banner) {
+    const snapshot = this.pendingSession;
+    if (!snapshot) return;
+    this.pendingSession = null;
+    this.sessionPaused = false;
+    try {
+      this.adoptDocument(snapshot.document);
+      this.session.save(this.document);
+      banner?.remove();
+      this.notify('Previous session restored');
+    } catch (error) {
+      this.sessionPaused = true;
+      this.pendingSession = snapshot;
+      this.notify(`Could not restore session: ${error.message}`, 'error');
+    }
+  }
+
+  discardSession(banner) {
+    this.pendingSession = null;
+    this.sessionPaused = false;
+    this.session.clear();
+    banner?.remove();
+    this.notify('Previous session discarded');
   }
 
   /* ———————— history ———————— */

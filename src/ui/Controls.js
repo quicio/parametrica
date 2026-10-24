@@ -79,6 +79,7 @@ export class Controls {
     this.presetSelect = null;
     this.presetsGui = null;
     this.presetSectionBody = null;
+    for (const field of this.expressionFields.values()) field.destroy?.();
     this.expressionFields = new Map();
     this.harmonicsEditor = null;
     this.operatorStack = null;

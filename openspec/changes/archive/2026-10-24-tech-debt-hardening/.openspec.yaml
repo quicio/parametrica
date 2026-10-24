@@ -1,0 +1,12 @@
+name: tech-debt-hardening
+description: >
+  Technical-debt pass: ESLint quality gate, CodeMirror formula editor,
+  lazy-loaded p5 bundle, local session recovery, and documentation truth.
+status: proposed
+created: 2026-10-24
+capabilities:
+  - quality-gates
+  - formula-editor
+  - session-recovery
+  - bundle-performance
+skip_specs: false

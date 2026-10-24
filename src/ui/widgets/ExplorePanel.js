@@ -11,7 +11,6 @@ import { ExplorationSession, morphDocuments } from '../../lab/exploration.js';
 import { attachLayerAliases } from '../../core/document.js';
 import {
   numericParameterRefs,
-  pathForRef,
   refKey,
 } from '../../lab/parameters.js';
 import { boundsOf, curvesDataURL } from '../../render/thumbnail.js';

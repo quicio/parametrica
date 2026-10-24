@@ -10,6 +10,7 @@ import { test, expect } from '@playwright/test';
 
 async function boot(page) {
   await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
 }
 
@@ -91,7 +92,7 @@ test('curvature pass lazily computes differential analysis', async ({ page }) =>
 
 test('invalid equation produces an inline, keyed error', async ({ page }) => {
   const field = page.locator('.expr-field').first();
-  const input = field.locator('textarea');
+  const input = field.locator('.cm-content');
   await input.fill('sin(3*t');
   await page.waitForTimeout(400);
 
@@ -173,6 +174,7 @@ test('notebook saves, compares and survives reload', async ({ page }) => {
   await expect(page.locator('.notebook-compare-view')).toContainText('seed');
 
   await page.reload();
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
   await page.waitForTimeout(300);
   expect(await page.locator('.notebook-item').count()).toBe(2);

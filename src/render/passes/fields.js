@@ -4,7 +4,6 @@
 
 import { RenderPasses } from '../../core/registry.js';
 import { polylineIntersections, selfIntersections } from '../../analysis/intersections.js';
-import { traceCurve } from './core.js';
 
 RenderPasses.register({
   id: 'negative-space',

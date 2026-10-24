@@ -9,7 +9,8 @@ context: |
   (tests import the core directly).
 
   Tech stack: Vite, ES modules, p5.js, lil-gui, Playwright (e2e QA).
-  Tests: node test/lab.smoke.mjs (unit groups 1-12) + npm run test:e2e.
+  Tests: node test/lab.smoke.mjs (unit groups 1-26) + npm run test:e2e.
+  Quality gate: npm run lint (ESLint flat config).
 
   Conventions:
   - Spanish for user comms, English for code/docs/commits.

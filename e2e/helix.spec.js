@@ -18,7 +18,6 @@ async function loadPreset(page, name) {
 async function canvasFingerprint(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector('#canvas-container canvas');
-    const ctx = canvas.getContext('2d');
     const w = 48;
     const h = 48;
     const tmp = document.createElement('canvas');
@@ -60,6 +59,7 @@ async function coloredPixelCount(page) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
 });
 
 test('all six helix variations load, evaluate and are distinct', async ({ page }) => {

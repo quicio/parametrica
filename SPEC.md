@@ -38,16 +38,16 @@ Processing, Mathematica or Shadertoy than to Illustrator.
 
 ## 3. Tech Stack
 
-Carried from v1: **Vite · ES Modules · p5.js · lil-gui · SVG export ·
+Carried from v1: **Vite · ES Modules · p5.js (lazy chunk) · lil-gui · SVG export ·
 object-oriented, DOM-free core**.
 
 Current dependencies:
 
 | Dependency | Status | Purpose |
 |---|---|---|
-| `polygon-clipping` | ✅ shipped | Boolean union/difference/intersection (M4 partial) |
-| `d3-delaunay` | ✅ shipped | Voronoi topology operator (M4 partial) |
-| `@codemirror/*` | ⏳ planned | Formula editor with syntax highlighting (M3 polish) |
+| `polygon-clipping` | ✅ shipped | Boolean union/difference/intersection |
+| `d3-delaunay` | ✅ shipped | Voronoi topology operator |
+| `@codemirror/*` | ✅ shipped | Formula editor with math-aware syntax highlighting |
 
 No UI framework. No WebGL (until a profiled need proves otherwise).
 
@@ -347,18 +347,17 @@ through the dual-format read (§4.4).
 
 ## 15. Custom Formula Editor
 
-- Live textarea-based field (`ui/widgets/ExpressionField.js`), one per
+- CodeMirror 6 field (`ui/widgets/ExpressionField.js`), one per
   expression / source parameter.
+- Math-aware highlighting for numbers, identifiers/functions, operators
+  and punctuation.
 - Live re-compilation (debounced ~150 ms); compile errors are surfaced
-  through `controls.showErrors()` with `{ message, key }` tagging.
+  through `controls.showErrors()` with `{ message, key }` tagging and mark
+  the editor invalid.
 - Multi-line mode for `TYPE.SOURCE` parameters (`custom` generator);
-  single-line for `TYPE.EXPRESSION`.
-- Inline error spans (`{ start, end }`) are produced by the expression
-  engine (§5) and the API is ready for inline highlighting once the
-  editor upgrades from textarea to a syntax-aware component.
-- **Planned upgrade (M3 polish):** swap textarea for CodeMirror 6 with
-  the expression tokenizer as the syntax highlighter. Adds the
-  `@codemirror/*` dependency from §3 when the upgrade lands.
+  single-line for `TYPE.EXPRESSION`. Enter commits single-line fields;
+  Mod-Enter commits multi-line sources.
+- External document changes refresh the editor without scheduling a commit.
 
 ## 16. UI
 
@@ -374,7 +373,8 @@ Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
 Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
-and multi-layer export · Timeline keyframes, easing and frame-sequence export · Helix Lab
+and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
+Session recovery with debounced local snapshots · Helix Lab
 (generalized helix, orthographic projections, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
@@ -471,17 +471,16 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 |---|---|---|---|
 | **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
 | **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 23 generators registered, 31 operators, `analysis/differential.js`, 4 overlays |
-| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, formula editor (textarea-based, CodeMirror still deferred), operator stack reorder/toggle, 11 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
-| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | 🟡 **Partial** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance and negative-space are shipped; frame-sequence export remains deferred | Source tree + `e2e` |
+| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 12 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
+| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space and ZIP frame-sequence export | Source tree + `e2e` |
 
 ### What ships in v0.1.0
 
-The 11 acceptance criteria from §22 below are the gate. M3 and M4 items
-explicitly marked "planned" above are not blockers — they are polish
-features deferred to v0.x. The MVP that ships is everything M1+M2 plus
-the M3 user-facing surfaces (animation, mutation, presets, formula
-editor, operator stack) at functional parity, with heavy geometry
-(boolean + voronoi + stroke expansion) already usable.
+The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
+including the CodeMirror formula editor, frame-sequence export and heavy
+geometry. The remaining deferred items (color-by-metric palettes, plotter
+export, multi-viewport layout, custom gradient ramps, multi-contour tracing)
+are future work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in

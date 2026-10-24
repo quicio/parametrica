@@ -278,7 +278,9 @@ handles `harmonicsX`/`harmonicsY` — it iterates rows, perturbs
 
 Before opening a PR (or merging to `main`):
 
+- [ ] `npm run lint` passes
 - [ ] `npm test` passes (all checks)
+- [ ] `npm run test:e2e` passes
 - [ ] `npm run build` produces a clean bundle
 - [ ] New files are documented in [SPEC.md](./SPEC.md) if they change
       the public surface (new generator id, new operator id, new render
@@ -301,5 +303,5 @@ Before opening a PR (or merging to `main`):
 | New UI section | `src/ui/Controls.js` (add a `buildXSection()` method) |
 | New widget | `src/ui/widgets/<name>.js` |
 | Schema/param types | `src/core/schema.js` (`TYPE` enum + `schemaDefaults`) |
-| Tests | `test/lab.smoke.mjs` (one assertion per behaviour, grouped 1–25) |
+| Tests | `test/lab.smoke.mjs` (one assertion per behaviour, grouped 1–26) |
 | Architecture docs | [SPEC.md](./SPEC.md) |

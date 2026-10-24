@@ -68,7 +68,7 @@ Operators.register({
       }
       return fromMultiPolygon(result);
     } catch (e) {
-      throw new Error(`boolean failed: ${e.message}`);
+      throw new Error(`boolean failed: ${e.message}`, { cause: e });
     }
   },
 });

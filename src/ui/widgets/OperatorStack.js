@@ -170,12 +170,6 @@ function attachDoc(controller, schema) {
   controller.domElement.setAttribute('aria-description', schema.doc);
 }
 
-function toBaseNumber(value, dflt) {
-  if (value && typeof value === 'object') return dflt;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : dflt;
-}
-
 function iconButton(text, title, onClick) {
   const btn = document.createElement('button');
   btn.className = 'op-icon';

@@ -21,3 +21,4 @@ const app = new App({
 });
 
 window.__parametrica = app;
+window.__parametricaReady = app.renderer.readyPromise;

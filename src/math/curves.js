@@ -124,8 +124,6 @@ export function cubicSplinePoints(points, { closed = false, perSegment = 16 } = 
 /** Natural spline second derivatives (Thomas algorithm), h = 1. */
 function naturalSecondDerivatives(v) {
   const n = v.length;
-  const cp = new Array(n - 1).fill(0);
-  const dp = new Array(n).fill(0);
   // interior: M[i-1] + 4 M[i] + M[i+1] = 6 (v[i-1] - 2 v[i] + v[i+1])
   const beta = [0];
   const gamma = [0];

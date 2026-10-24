@@ -27,7 +27,7 @@ import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { createNoise2D } from '../math/noise.js';
 import { fitCurves } from '../sampling/sampling.js';
-import { composeCurves, TAU } from './helpers.js';
+import { TAU } from './helpers.js';
 
 /**
  * Shared attractor params. Each system adds its own coefficient params
@@ -86,7 +86,7 @@ function startingPoints(n, seed, jitter = 0.4) {
  * 3D systems, `step(x, y, z) → {x, y, z}`) for `samples` iterations,
  * dropping the first `skip` iterations. Returns the polyline.
  */
-function iterate({ step, x0, y0, z0, samples, skip, dt, dims }) {
+function iterate({ step, x0, y0, z0, samples, skip, dims }) {
   let x = x0, y = y0, z = z0;
   const path = new Array(samples);
   let k = 0;
@@ -135,7 +135,7 @@ Generators.register({
 
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
-  sample(params, ctx) {
+  sample(params, _ctx) {
     const { samples, trajectories, dt, skip, seed, fit, sigma, rho, beta, projection } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y, z) => ({
@@ -192,7 +192,7 @@ Generators.register({
 
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
-  sample(params, ctx) {
+  sample(params, _ctx) {
     const { samples, trajectories, skip, seed, fit, a, b, c, d } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y) => ({
@@ -231,7 +231,7 @@ Generators.register({
 
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
-  sample(params, ctx) {
+  sample(params, _ctx) {
     const { samples, trajectories, skip, seed, fit, a, b, c, d } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y) => ({
@@ -272,7 +272,7 @@ Generators.register({
 
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
-  sample(params, ctx) {
+  sample(params, _ctx) {
     const { samples, trajectories, dt, skip, seed, fit, a, b, c, d, e, f } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y, z) => {

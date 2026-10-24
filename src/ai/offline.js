@@ -109,7 +109,7 @@ export function adviseOffline(input = {}) {
     reading: describeChange(entry),
   }));
   const suggestions = document
-    ? buildSuggestions(document, current, parameterDiff)
+    ? buildSuggestions(document, current)
     : [];
 
   return {
@@ -141,7 +141,7 @@ function describeChange(entry) {
   return `${shortPath(entry.path)}: ${format(entry.from)} → ${format(entry.to)}`;
 }
 
-function buildSuggestions(document, current, parameterDiff) {
+function buildSuggestions(document, current) {
   const refs = numericRefs(document);
   const suggestions = [];
   const seen = new Set();

@@ -24,8 +24,9 @@ import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/ma
 import { sampleAdaptive } from '../src/sampling/sampling.js';
 import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP } from '../src/core/document.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
-import { schemaDefaults, TYPE } from '../src/core/schema.js';
+import { schemaDefaults } from '../src/core/schema.js';
 import { History } from '../src/core/history.js';
+import { SessionStore, SESSION_STORAGE_KEY } from '../src/core/session.js';
 import { toggleMode, normalizeModes } from '../src/ui/widgets/modeToggles.js';
 import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.js';
 import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
@@ -1786,6 +1787,54 @@ console.log('25. helix lab');
     assert(svg.includes('<path') && svg.includes('parametrica document:'), `${name}: SVG export is well-formed`);
   }
   assert(signatures.size === helixNames.length, 'all six helix variations are geometrically distinct');
+}
+
+/* ——— 26. Session recovery ——— */
+console.log('26. session recovery');
+{
+  class MemoryStorage {
+    constructor() { this.map = new Map(); this.fail = false; }
+    getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
+    setItem(key, value) {
+      if (this.fail) throw new Error('quota exceeded');
+      this.map.set(key, String(value));
+    }
+    removeItem(key) { this.map.delete(key); }
+  }
+
+  const storage = new MemoryStorage();
+  const store = new SessionStore({ storage, now: () => 1234, delay: 10 });
+  const doc = createDocument('helix', { generator: { params: { r: 222 } } });
+  doc.animation.playing = true;
+  assert(store.save(doc), 'session saves');
+  const loaded = store.load();
+  assert(loaded?.savedAt === 1234, 'session keeps its timestamp');
+  assert(loaded?.document.generator.id === 'helix', 'session keeps the generator');
+  assert(loaded?.document.generator.params.r === 222, 'session keeps numeric changes');
+  assert(loaded?.document.animation.playing === false, 'session never restores playback');
+  assert(storage.getItem(SESSION_STORAGE_KEY)?.includes('helix'), 'session uses the canonical storage key');
+
+  store.clear();
+  assert(store.load() === null, 'clear removes the session');
+
+  const scheduled = new SessionStore({ storage, now: () => 2000, delay: 5 });
+  scheduled.schedule(createDocument('lissajous', { generator: { params: { a: 7 } } }));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert(scheduled.load()?.document.generator.params.a === 7, 'scheduled session save lands');
+
+  scheduled.schedule(createDocument('lissajous'));
+  assert(scheduled.flush(createDocument('lissajous', { generator: { params: { a: 9 } } })), 'flush writes immediately');
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert(scheduled.load()?.document.generator.params.a === 9, 'flush cancels the pending debounce');
+
+  storage.setItem(SESSION_STORAGE_KEY, '{broken json');
+  const broken = new SessionStore({ storage });
+  assert(broken.load() === null && /JSON/.test(broken.lastError), 'corrupt sessions are rejected');
+
+  storage.fail = true;
+  const full = new SessionStore({ storage });
+  assert(full.save(doc) === false, 'quota failures do not throw');
+  assert(/quota/.test(full.lastError), 'quota failures are reported');
 }
 
 /* ——— Snapshots ——— */

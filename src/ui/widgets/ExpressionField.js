@@ -1,15 +1,61 @@
 /**
  * ui/widgets/ExpressionField.js — formula editor component.
  *
- * Lightweight, dependency-free: a transparent <textarea> over a
- * token-highlighted <pre>, live-compiled (debounced), errors inline.
- * Highlighting reuses the expression engine's own tokenizer — the
- * grammar you see is exactly the grammar that runs.
+ * CodeMirror 6 with a small tokenizer that mirrors the expression engine:
+ * numbers, identifiers, operators and punctuation keep the same visual
+ * language as the rest of the instrument. Input is live-compiled after a
+ * short debounce; errors are surfaced inline below the editor.
  */
 
-import { tokenize, TOKEN } from '../../math/expression.js';
+import { EditorState } from '@codemirror/state';
+import { EditorView, drawSelection, keymap } from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 
 let fieldId = 0;
+
+const mathLanguage = StreamLanguage.define({
+  token(stream) {
+    if (stream.eatSpace()) return null;
+    if (stream.match(/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/)) return 'number';
+    if (stream.match(/[A-Za-z_][A-Za-z0-9_]*/)) {
+      return stream.peek() === '(' ? 'function' : 'variableName';
+    }
+    if (stream.match(/[+\-*/^%<>=!&|]+/)) return 'operator';
+    if (stream.match(/[(),;]/)) return 'punctuation';
+    stream.next();
+    return null;
+  },
+});
+
+const mathHighlight = HighlightStyle.define([
+  { tag: tags.number, color: 'var(--swiss-red)' },
+  { tag: tags.variableName, color: '#e8e8e8' },
+  { tag: tags.function(tags.variableName), color: '#e8e8e8', fontWeight: '700' },
+  { tag: tags.operator, color: '#777', fontWeight: '700' },
+  { tag: tags.punctuation, color: '#4a4a4a' },
+]);
+
+const editorTheme = EditorView.theme({
+  '&': {
+    backgroundColor: 'transparent',
+    color: 'var(--ink)',
+    fontSize: '11px',
+  },
+  '&.cm-focused': { outline: 'none' },
+  '.cm-scroller': {
+    fontFamily: 'var(--mono)',
+    lineHeight: '1.6',
+  },
+  '.cm-content': {
+    padding: '8px 10px',
+    caretColor: 'var(--swiss-red)',
+    minHeight: '34px',
+  },
+  '.cm-line': { padding: '0' },
+  '.cm-cursor': { borderLeftColor: 'var(--swiss-red)' },
+});
 
 export class ExpressionField {
   /**
@@ -18,7 +64,9 @@ export class ExpressionField {
   constructor({ label, multiline = false, doc = '', get, set }) {
     this.get = get;
     this.set = set;
+    this.multiline = multiline;
     this.debounceTimer = null;
+    this.suppressUpdate = false;
     this.id = `expr-field-${fieldId++}`;
 
     this.el = document.createElement('div');
@@ -36,86 +84,101 @@ export class ExpressionField {
 
     const wrap = document.createElement('div');
     wrap.className = 'expr-editor';
-
-    this.highlight = document.createElement('pre');
-    this.highlight.className = 'expr-highlight';
-    this.highlight.setAttribute('aria-hidden', 'true');
-
-    this.input = document.createElement('textarea');
-    this.input.id = this.id;
-    this.input.className = 'expr-input';
-    this.input.spellcheck = false;
-    this.input.rows = multiline ? 5 : 1;
-    this.input.value = get();
-
-    wrap.appendChild(this.highlight);
-    wrap.appendChild(this.input);
     this.el.appendChild(wrap);
 
     this.errorEl = document.createElement('div');
     this.errorEl.className = 'expr-error';
     this.errorEl.id = `${this.id}-error`;
-    this.input.setAttribute('aria-describedby', this.errorEl.id);
     this.el.appendChild(this.errorEl);
 
-    this.input.addEventListener('input', () => {
-      this.renderHighlight();
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => this.set(this.input.value), 150);
-    });
-    this.input.addEventListener('scroll', () => {
-      this.highlight.scrollTop = this.input.scrollTop;
-      this.highlight.scrollLeft = this.input.scrollLeft;
-    });
+    const extensions = [
+      history(),
+      drawSelection(),
+      keymap.of([
+        ...defaultKeymap,
+        ...historyKeymap,
+        {
+          key: 'Enter',
+          run: () => {
+            if (this.multiline) return false;
+            this.commit();
+            this.view.contentDOM.blur();
+            return true;
+          },
+        },
+        {
+          key: 'Mod-Enter',
+          run: () => {
+            this.commit();
+            this.view.contentDOM.blur();
+            return true;
+          },
+        },
+      ]),
+      mathLanguage,
+      syntaxHighlighting(mathHighlight),
+      editorTheme,
+      EditorState.tabSize.of(2),
+      EditorView.contentAttributes.of({
+        id: this.id,
+        'aria-describedby': this.errorEl.id,
+        'aria-label': label,
+        spellcheck: 'false',
+      }),
+      EditorView.updateListener.of((update) => {
+        if (!update.docChanged || this.suppressUpdate) return;
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.commit(), 150);
+      }),
+    ];
+    if (multiline) extensions.push(EditorView.lineWrapping);
+    if (!multiline) extensions.push(singleLine());
 
-    this.renderHighlight();
+    this.view = new EditorView({
+      state: EditorState.create({
+        doc: String(get() ?? ''),
+        extensions,
+      }),
+      parent: wrap,
+    });
   }
 
   /** Re-read value from the document and re-render (after external changes). */
   refresh() {
-    if (this.input.value !== this.get()) this.input.value = this.get();
-    this.renderHighlight();
+    const next = String(this.get() ?? '');
+    if (this.view.state.doc.toString() === next) return;
+    this.suppressUpdate = true;
+    try {
+      this.view.dispatch({
+        changes: { from: 0, to: this.view.state.doc.length, insert: next },
+      });
+    } finally {
+      this.suppressUpdate = false;
+    }
+  }
+
+  commit() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = null;
+    this.set(this.view.state.doc.toString());
   }
 
   setError(message) {
     this.errorEl.textContent = message ?? '';
     this.el.classList.toggle('has-error', Boolean(message));
-    if (message) this.input.setAttribute('aria-invalid', 'true');
-    else this.input.removeAttribute('aria-invalid');
+    if (message) this.view.contentDOM.setAttribute('aria-invalid', 'true');
+    else this.view.contentDOM.removeAttribute('aria-invalid');
   }
 
-  renderHighlight() {
-    const source = this.input.value;
-    let html = '';
-    try {
-      const tokens = tokenize(source);
-      for (const tok of tokens) {
-        if (tok.type === TOKEN.EOF) continue;
-        const text = escapeHtml(source.slice(tok.start, tok.end));
-        html += `<span class="${tokenClass(tok)}">${text}</span>`;
-      }
-    } catch {
-      html = escapeHtml(source);
-    }
-    // trailing newline keeps pre height in sync with textarea
-    this.highlight.innerHTML = `${html}\n`;
+  destroy() {
+    clearTimeout(this.debounceTimer);
+    this.view.destroy();
   }
 }
 
-function tokenClass(tok) {
-  switch (tok.type) {
-    case TOKEN.NUM: return 'tok-num';
-    case TOKEN.IDENT: return 'tok-ident';
-    case TOKEN.OP: return 'tok-op';
-    case TOKEN.ASSIGN: return 'tok-op';
-    case TOKEN.LPAREN:
-    case TOKEN.RPAREN:
-    case TOKEN.COMMA:
-    case TOKEN.SEMI: return 'tok-punct';
-    default: return 'tok-ident';
-  }
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** Single-line fields reject multi-line changes (the Enter key is bound). */
+function singleLine() {
+  return EditorState.transactionFilter.of((transaction) => (
+    !transaction.docChanged || transaction.newDoc.lines <= 1 ? transaction : []
+  ));
 }

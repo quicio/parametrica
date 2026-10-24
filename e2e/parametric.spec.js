@@ -18,13 +18,13 @@
 
 import { test, expect } from '@playwright/test';
 import {
-  getApp, docParams, evalState,
-  controller, dragSlider, typeInto, inputValue,
+  docParams, evalState, controller, typeInto,
   expectSliderChangesDoc, toggleCheckbox,
 } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   // Ensure we start on Parametric Equations with a clean document.
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(200);
@@ -108,7 +108,7 @@ test('editing x(t) expression re-evaluates the curve', async ({ page }) => {
   // The equation fields are custom ExpressionField widgets (.expr-field),
   // not lil-gui controllers.
   const field = page.locator('.expr-field').filter({ hasText: 'x(t)' }).first();
-  const input = field.locator('textarea.expr-input');
+  const input = field.locator('.cm-content');
   await input.fill('2*cos(5*t)');
   await input.press('Enter');
   await page.waitForTimeout(400); // 150ms debounce + rebuild

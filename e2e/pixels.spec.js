@@ -10,13 +10,12 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { controller, typeInto, dragSlider, evalState } from './helpers.js';
+import { dragSlider } from './helpers.js';
 
 /** Grab a downscaled pixel fingerprint of the canvas (fast + stable). */
 async function canvasFingerprint(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector('#canvas-container canvas');
-    const ctx = canvas.getContext('2d');
     // Downscale to 48x48 for a stable, fast fingerprint.
     const w = 48, h = 48;
     const tmp = document.createElement('canvas');
@@ -43,6 +42,7 @@ async function canvasFingerprint(page) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(200);
   await page.evaluate(() => window.__parametrica.setGenerator('parametric'));
@@ -104,7 +104,7 @@ test('FIT SIZE change visibly alters the canvas', async ({ page }) => {
 test('x(t) equation change visibly alters the canvas', async ({ page }) => {
   const before = await canvasFingerprint(page);
   const field = page.locator('.expr-field').filter({ hasText: 'x(t)' }).first();
-  const input = field.locator('textarea.expr-input');
+  const input = field.locator('.cm-content');
   await input.fill('2*cos(5*t)');
   await input.press('Enter');
   await page.waitForTimeout(400);
