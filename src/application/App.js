@@ -7,19 +7,19 @@
  * swapped only by methods that also rebuild the affected UI sections.
  */
 
-import { createDocument, sanitizeDocument, createLayer, attachLayerAliases } from './document.js';
-import { Generators, Operators } from './registry.js';
-import { supportsSpatial } from './capabilities.js';
-import { evaluateDocument } from './engine.js';
-import { schemaDefaults } from './schema.js';
-import { History } from './history.js';
-import { SessionStore } from './session.js';
+import { createDocument, sanitizeDocument, createLayer, attachLayerAliases } from '../core/document.js';
+import { Generators, Operators } from '../core/registry.js';
+import { supportsSpatial } from '../core/capabilities.js';
+import { evaluateDocument } from '../core/engine.js';
+import { schemaDefaults } from '../core/schema.js';
+import { History } from '../core/history.js';
+import { SessionStore } from '../core/session.js';
 import { Notebook } from '../lab/notebook.js';
 import { NotebookWorkspace } from '../lab/workspace.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
 import { applySuggestionToDocument } from '../ai/offline.js';
-import { P5Renderer } from '../render/P5Renderer.js';
+import { P5Adapter } from '../render/p5/P5Adapter.js';
 import { Controls } from '../ui/Controls.js';
 import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
@@ -61,7 +61,7 @@ export class App {
     this.sessionErrorShown = false;
 
     this.evaluate();
-    this.renderer = new P5Renderer(canvasContainer, this);
+    this.renderer = new P5Adapter(canvasContainer, this);
     this.exporter = new Exporter(this);
     this.controls = new Controls(this, uiContainer);
 
@@ -127,7 +127,7 @@ export class App {
    */
   analyzeFigure({ sensitivity = false } = {}) {
     if (!this._evaluation) return null;
-    const descriptor = computeDescriptor(this.document, this._evaluation.curves, { layers: this._evaluation.layers });
+    const descriptor = computeDescriptor(this.document, this._evaluation.curves, { layers: this._evaluation.layers, geometry: this._evaluation.geometry ?? null });
     const report = sensitivity
       ? computeSensitivity(this.document, this._evaluation.curves, {
         time: this.document.animation.time,
@@ -159,7 +159,7 @@ export class App {
         throw new Error('Cannot save an invalid or empty figure');
       }
       if (!capturedDescriptor) {
-        capturedDescriptor = computeDescriptor(source, evaluation.curves, { layers: evaluation.layers });
+        capturedDescriptor = computeDescriptor(source, evaluation.curves, { layers: evaluation.layers, geometry: evaluation.geometry ?? null });
       }
     } else {
       if (!this._evaluation || this._evaluation.errors.length || !this._evaluation.curves.length) {

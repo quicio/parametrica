@@ -39,6 +39,9 @@ import { MemoryNotebookRepository, migrateNotebook } from '../src/lab/notebookRe
 import { supportsSpatial } from '../src/core/capabilities.js';
 import { ParamTypes } from '../src/ui/params/ParamRegistry.js';
 import { FakeDialogService } from '../src/ui/dialogs.js';
+import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.js';
+import { validateGeometry, validateMesh, validateSolid } from '../src/geometry/validate.js';
+import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
@@ -2089,6 +2092,103 @@ console.log('28. extensibility boundaries');
   assert(promptResult === 'Project A', 'fake dialog returns queued prompt values');
   assert(await fake.confirm({ title: 'Delete' }) === true, 'fake dialog returns queued confirmations');
   assert(await fake.confirm({ title: 'Cancel' }) === false, 'fake dialog can cancel');
+}
+
+/* ——— 29. world geometry contracts ——— */
+console.log('29. world geometry contracts');
+{
+  const curve2d = createCurve2D({
+    id: 'c2',
+    points: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+    closed: false,
+  });
+  assert(validateGeometry(curve2d).ok, 'valid Curve2D passes validation');
+  assert(!validateGeometry(createCurve2D({ id: 'bad', points: [{ x: NaN, y: 0 }, { x: 1, y: 1 }] })).ok, 'non-finite Curve2D rejected');
+
+  const curve3d = createCurve3D({
+    id: 'c3',
+    points: [{ x: 0, y: 0, z: 0 }, { x: 1, y: 1, z: 1 }],
+  });
+  assert(validateGeometry(curve3d).ok, 'valid Curve3D passes validation');
+  assert(liftCurve2D(curve2d).points[1].z === 0, 'lifting a curve keeps z = 0');
+
+  const surface = createSurface({
+    id: 's1',
+    domain: { u: [0, 1], v: [0, 1], closedU: false, closedV: false },
+    grid: {
+      rows: 2,
+      cols: 2,
+      points: [
+        [{ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }],
+        [{ x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 1 }],
+      ],
+    },
+  });
+  assert(validateGeometry(surface).ok, 'valid Surface passes validation');
+  const surfaceMesh = surfaceToMesh(surface);
+  assert(validateMesh(surfaceMesh).ok === false, 'open surface mesh is not watertight');
+  assert(surfaceMesh.faces.length === 2, 'surface tessellation emits two triangles');
+
+  const cubeVertices = [
+    { x: -1, y: -1, z: -1 }, { x: 1, y: -1, z: -1 }, { x: 1, y: 1, z: -1 }, { x: -1, y: 1, z: -1 },
+    { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: 1 }, { x: 1, y: 1, z: 1 }, { x: -1, y: 1, z: 1 },
+  ];
+  const cubeFaces = [
+    [4, 5, 6], [4, 6, 7],
+    [1, 0, 3], [1, 3, 2],
+    [1, 2, 6], [1, 6, 5],
+    [0, 4, 7], [0, 7, 3],
+    [3, 7, 6], [3, 6, 2],
+    [0, 1, 5], [0, 5, 4],
+  ];
+  const cube = createMesh({ id: 'cube', vertices: cubeVertices, faces: cubeFaces });
+  const cubeValidation = validateMesh(cube);
+  assert(cubeValidation.ok, 'closed cube mesh passes topology validation');
+  const promoted = meshToSolid(cube, { id: 'cube-solid' });
+  assert(promoted.solid?.closed === true, 'validated mesh promotes to Solid');
+  assert(Math.abs(promoted.solid.volume - 8) < 1e-6, 'cube volume is 8');
+  const openCube = createMesh({ id: 'open', vertices: cubeVertices, faces: cubeFaces.slice(0, -1) });
+  assert(meshToSolid(openCube).solid === null, 'open mesh cannot become Solid');
+  const degenerate = createMesh({ id: 'degenerate', vertices: cubeVertices, faces: [...cubeFaces, [0, 0, 1]] });
+  assert(!validateMesh(degenerate).ok, 'degenerate face rejected');
+  assert(!validateSolid({ ...promoted.solid, closed: false }).ok, 'unvalidated closed flag cannot make a solid');
+
+  const helixDoc = createDocument('helix', { generator: { params: { samples: 120, adaptive: false } } });
+  const first = evaluateDocument(helixDoc, { time: 0, bypassCache: false });
+  const firstWorld = first.layers[0].geometry;
+  const firstDescriptor = computeDescriptor(helixDoc, first.curves, { geometry: first.geometry });
+  helixDoc.view.camera.yaw += 0.7;
+  const second = evaluateDocument(helixDoc, { time: 0, bypassCache: false });
+  const secondDescriptor = computeDescriptor(helixDoc, second.curves, { geometry: second.geometry });
+  assert(second.layers[0].geometry === firstWorld, 'camera changes reuse cached world geometry');
+  assert(JSON.stringify(second.worldBBox ?? second.layers[0].worldBBox) === JSON.stringify(first.layers[0].worldBBox), 'camera changes keep world bbox stable');
+  assert(firstDescriptor.spatial === true, 'spatial descriptor is marked');
+  assert(firstDescriptor.world.perimeter === secondDescriptor.world.perimeter, 'camera changes keep world descriptor metrics stable');
+  const rotateDoc = createDocument('helix', {
+    generator: { params: { samples: 120, adaptive: false } },
+    operators: [{ id: 'rotate', enabled: true, params: { angle: 90, cx: 0, cy: 0 }, mods: {} }],
+  });
+  const cameraEval = evaluateDocument(rotateDoc, { time: 0 });
+  const world = cameraEval.layers[0].geometry;
+  rotateDoc.view.projection = 'xz';
+  const orthoEval = evaluateDocument(rotateDoc, { time: 0 });
+  assert(orthoEval.layers[0].geometry === world, 'projection switch keeps canonical world geometry');
+  assert(JSON.stringify(orthoEval.curves.map((c) => c.points)) !== JSON.stringify(cameraEval.curves.map((c) => c.points)), 'projection switch reprojects the world transform');
+
+  const viewDoc = createDocument('helix', {
+    generator: { params: { samples: 120, adaptive: false } },
+    operators: [{ id: 'warp', enabled: true, params: { mode: 'manual', exprX: 'x + 20', exprY: 'y' }, mods: {} }],
+  });
+  const viewEval = evaluateDocument(viewDoc, { time: 0 });
+  const viewWorld = viewEval.layers[0].geometry;
+  viewDoc.view.projection = 'xz';
+  const viewOrtho = evaluateDocument(viewDoc, { time: 0 });
+  assert(viewOrtho.layers[0].geometry === viewWorld, 'view-space operator never mutates world geometry');
+  assert(JSON.stringify(viewOrtho.curves.map((c) => c.points)) !== JSON.stringify(viewEval.curves.map((c) => c.points)), 'view-space operator result is recomputed for projection');
+
+  const cached = evaluateDocument(helixDoc, { time: 0, bypassCache: false });
+  const uncached = evaluateDocument(helixDoc, { time: 0, bypassCache: true });
+  assert(JSON.stringify(cached.curves.map((c) => c.points)) === JSON.stringify(uncached.curves.map((c) => c.points)), 'cache-on and cache-off project equivalent curves');
 }
 
 /* ——— Snapshots ——— */

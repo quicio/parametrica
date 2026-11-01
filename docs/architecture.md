@@ -42,7 +42,6 @@ core knows that p5 exists.
 src/
 ├── main.js                       entry point
 ├── core/
-│   ├── App.js                    composition root (holds document, evaluation)
 │   ├── engine.js                 evaluate(document, ctx) → result (v3 layers)
 │   ├── registry.js               validated Generators / Operators / RenderPasses
 │   ├── capabilities.js           declarative spatial/projection capabilities
@@ -77,6 +76,24 @@ src/
 │   ├── exploration.js            Solo/Lock, sweeps and seeded randomize
 │   ├── evolution.js              crossover, structural mutation and lineage
 │   └── diff.js                   document and descriptor diffs
+│
+├── application/
+│   ├── App.js                    composition root (document, commands, use cases)
+│   ├── renderSceneBuilder.js     evaluation + view → RenderScene
+│   └── animationController.js    transport/clock only
+│
+├── geometry/
+│   ├── contracts.js              Curve2D/Curve3D/Surface/Mesh/Solid
+│   ├── validate.js               geometry + mesh + solid validation
+│   ├── relations.js              lift, tessellate, mesh→solid
+│   ├── legacy.js                 Curve[] compatibility adapters
+│   ├── transform.js              world-space transforms
+│   └── analysis.js               world curve analysis
+│
+├── view/
+│   ├── camera.js                 pinhole camera + project3D
+│   ├── projection.js             camera/orthographic world projection
+│   └── cameraController.js       orbit/zoom state transitions
 │
 ├── generators/                   23 registered models across 16 modules
 │   ├── index.js                  side-effect imports
@@ -116,10 +133,12 @@ src/
 │       └── voronoi.js            curve-envelope Voronoi tessellation
 │
 ├── render/
-│   ├── P5Renderer.js             lazy p5 sketch, animation clock, pass composer
+│   ├── Renderer.js               backend contract
+│   ├── p5/P5Adapter.js           lazy p5 backend, pass composer
 │   ├── thumbnail.js              plain-canvas candidate previews
-│   ├── projection.js             render-time xy/xz/yz orthographic views
-│   ├── camera3d.js               shared cameraFrom / project3D
+│   ├── projection.js             legacy curve projection compatibility
+│   ├── camera3d.js               compatibility re-export of view/camera
+│   ├── scene.js                  backend-neutral RenderScene contract
 │   ├── palettes.js               artboard presets and color pairs
 │   └── passes/
 │       ├── core.js               stroke / points / wireframe
@@ -153,6 +172,7 @@ src/
 │
 ├── export/
 │   ├── Exporter.js               SVG (path-embedded document) · PNG · JSON
+│   ├── geometryExport.js         Mesh/Solid exporter contract for STL/3MF
 │   └── zip.js                    frame-sequence ZIP writer
 │
 ├── ui/
@@ -174,7 +194,7 @@ src/
 │       ├── ImagePanel.js         underlay controls, threshold preview and Fourier trace
 │       └── modeToggles.js        array-safe render-mode helpers
 │
-└── geometry/                     v1 Catmull-Rom + Mirror + OpticalCorrection
+└── geometry/legacy/              v1 Catmull-Rom + Mirror + OpticalCorrection
                                   (used only by bilateral-spline generator)
 ```
 

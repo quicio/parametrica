@@ -25,8 +25,11 @@ export class Registry {
     if (this.map.has(definition.id)) {
       throw new Error(`${this.kind}: duplicate id "${definition.id}"`);
     }
-    this.map.set(definition.id, Object.freeze(definition));
-    return definition;
+    const normalized = this.kind === 'operator'
+      ? { space: 'view', accepts: ['curve2d'], produces: ['curve2d'], ...definition }
+      : definition;
+    this.map.set(normalized.id, Object.freeze(normalized));
+    return normalized;
   }
 
   get(id) {
@@ -63,8 +66,14 @@ function validateDefinition(kind, definition) {
       throw new Error(`${label}: missing category`);
     }
     validateParams(label, definition.params);
-    if (kind === 'generator' && typeof definition.sample !== 'function') {
-      throw new Error(`${label}: missing sample(params, ctx)`);
+    if (kind === 'generator' && typeof definition.sample !== 'function' && typeof definition.generate !== 'function') {
+      throw new Error(`${label}: missing sample(params, ctx) or generate(params, ctx)`);
+    }
+    if (kind === 'generator' && definition.sample !== undefined && typeof definition.sample !== 'function') {
+      throw new Error(`${label}: sample must be a function`);
+    }
+    if (kind === 'generator' && definition.generate !== undefined && typeof definition.generate !== 'function') {
+      throw new Error(`${label}: generate must be a function`);
     }
     if (kind === 'generator' && definition.domain !== undefined && typeof definition.domain !== 'function') {
       throw new Error(`${label}: domain must be a function`);
@@ -72,6 +81,7 @@ function validateDefinition(kind, definition) {
     if (kind === 'operator' && typeof definition.apply !== 'function') {
       throw new Error(`${label}: missing apply(curves, params, ctx)`);
     }
+    if (kind === 'operator') validateOperatorSpace(label, definition);
     validateCapabilities(label, definition.capabilities);
     validateHooks(label, definition);
   }
@@ -121,6 +131,24 @@ function validateParams(label, params) {
   }
 }
 
+function validateOperatorSpace(label, definition) {
+  if (definition.space !== undefined && !['world', 'view'].includes(definition.space)) {
+    throw new Error(`${label}: space must be "world" or "view"`);
+  }
+  for (const key of ['accepts', 'produces']) {
+    if (definition[key] !== undefined) {
+      if (!Array.isArray(definition[key]) || !definition[key].length) {
+        throw new Error(`${label}: ${key} must be a non-empty array`);
+      }
+      for (const kind of definition[key]) {
+        if (!['curve2d', 'curve3d', 'surface', 'mesh', 'solid'].includes(kind)) {
+          throw new Error(`${label}: ${key} has unknown geometry kind "${kind}"`);
+        }
+      }
+    }
+  }
+}
+
 function validateCapabilities(label, capabilities) {
   if (capabilities === undefined) return;
   if (!capabilities || typeof capabilities !== 'object' || Array.isArray(capabilities)) {
@@ -131,6 +159,9 @@ function validateCapabilities(label, capabilities) {
   }
   if (capabilities.projection !== undefined && typeof capabilities.projection !== 'string') {
     throw new Error(`${label}: capabilities.projection must be a string`);
+  }
+  if (capabilities.geometryKind !== undefined && !['curve2d', 'curve3d', 'surface', 'mesh', 'solid'].includes(capabilities.geometryKind)) {
+    throw new Error(`${label}: capabilities.geometryKind is not a known geometry kind`);
   }
 }
 

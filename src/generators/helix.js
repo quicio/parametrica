@@ -17,7 +17,9 @@
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { sampleAdaptive, sampleUniform } from '../sampling/sampling.js';
-import { cameraFrom, genId, postProcess, project3D, TAU } from './helpers.js';
+import { cameraFrom, genId, TAU } from './helpers.js';
+import { createCurve3D } from '../geometry/contracts.js';
+import { projectWorldCurves } from '../view/projection.js';
 
 const MAX_STRANDS = 2;
 
@@ -25,7 +27,7 @@ Generators.register({
   id: 'helix',
   name: 'Helix (generalized)',
   category: '3d',
-  capabilities: { spatial: true, projection: '3d', supportsFit: true, supportsClosed: true },
+  capabilities: { spatial: true, projection: '3d', geometryKind: 'curve3d', supportsFit: true, supportsClosed: true },
   params: {
     theta0: { advanced: true, 
       label: 'Start θ', type: TYPE.NUMBER,
@@ -110,15 +112,14 @@ Generators.register({
     closed: Boolean(p.closed),
   }),
 
-  sample(params, ctx) {
+  generate(params) {
     const {
       theta0, turns, r, p: pitch, a, k, phi, theta, b, m, psi,
-      strands, samples, adaptive, closed, fit,
+      strands, samples, adaptive, closed,
     } = params;
     const t0 = theta0;
     const t1 = theta0 + TAU * turns;
     const count = Math.max(2, Math.floor(samples));
-    const cam = cameraFrom(ctx.document?.view);
     const strandCount = Math.max(1, Math.min(MAX_STRANDS, Math.round(strands)));
     const curves = [];
 
@@ -127,36 +128,35 @@ Generators.register({
       const twist = theta + strand * Math.PI;
       const pointAt = (t) => {
         const radius = r + a * Math.cos(k * t + phase);
-        const x = radius * Math.cos(t + twist);
-        const y = radius * Math.sin(t + twist);
-        const z = pitch * t + b * Math.sin(m * t + psi);
-        const projected = project3D(x, y, z, cam);
-        if (!projected) throw new Error(`Camera plane reached at t=${t.toFixed(4)}`);
         return {
-          x: projected.x,
-          y: projected.y,
-          x3: x,
-          y3: y,
-          h3: z,
-          depth: projected.depth,
-          depthAlpha: projected.depthAlpha,
+          x: radius * Math.cos(t + twist),
+          y: radius * Math.sin(t + twist),
+          z: pitch * t + b * Math.sin(m * t + psi),
         };
       };
       const points = adaptive
-        ? sampleAdaptive(pointAt, t0, t1, {
-          minSteps: Math.min(256, count),
-          samples: count,
-        })
+        ? sampleAdaptive(pointAt, t0, t1, { minSteps: Math.min(256, count), samples: count })
         : sampleUniform(pointAt, t0, t1, count);
       if (points.length < 2) continue;
-      curves.push({
+      curves.push(createCurve3D({
         id: genId('helix'),
         points,
         closed: Boolean(closed),
         meta: { source: 'helix', strand, true3D: true },
-      });
+      }));
     }
+    return curves;
+  },
 
-    return postProcess(curves, { fit, center: true });
+  sample(params, ctx) {
+    const geometry = this.generate(params, ctx);
+    const camera = cameraFrom(ctx.document?.view);
+    return projectWorldCurves(geometry, {
+      camera,
+      projection: '3d',
+      fit: params.fit,
+      depthFade: params.depthOcclusion ?? true,
+      depthStrength: params.depthAttenuation ?? 0.55,
+    });
   },
 });

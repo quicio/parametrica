@@ -10,11 +10,18 @@
  */
 
 import { Generators, Operators } from './registry.js';
+import { supportsSpatial } from './capabilities.js';
 import { resolveParams } from '../animation/animatable.js';
 import { createStdlib } from '../math/stdlib.js';
 import { analyzeAll } from '../analysis/differential.js';
+import { analyzeGeometry } from '../geometry/analysis.js';
 import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
+import { validateGeometry } from '../geometry/validate.js';
+import { projectionForGeometry, projectWorldCurves } from '../view/projection.js';
 
+const STAGE_CACHE = new WeakMap();
+const ANALYSIS_CACHE = new WeakMap();
+const WORLD_ANALYSIS_CACHE = new WeakMap();
 const MAX_POINTS_PER_CURVE = 50_000;
 const MAX_TOTAL_POINTS = 200_000;
 
@@ -35,6 +42,10 @@ export function evaluateDocument(document, options = {}) {
   if (Array.isArray(document.layers) && document.layers.length) {
     return evaluateLayers(document, options);
   }
+  const generatorDef = Generators.get(document.generator.id);
+  if (typeof generatorDef.generate === 'function' && supportsSpatial(generatorDef)) {
+    return evaluateSpatialDocument(document, options, generatorDef);
+  }
   const t0 = now();
   const time = options.time ?? document.animation?.time ?? 0;
   const seed = document.seed ?? 1;
@@ -43,26 +54,24 @@ export function evaluateDocument(document, options = {}) {
   const scope = createStdlib(seed);
   const ctx = { time, seed, scope, quality, document, timeline: document.animation?.timeline ?? null, layerIndex: options.layerIndex ?? 0 };
 
-  // Cache key for each stage. Includes view.camera so 3D-projected
-  // generators invalidate when the user drags the canvas to rotate, and
-  // seed/time/quality because noise and animation flow into every stage.
-  const camSig = JSON.stringify(document.view?.camera ?? {});
+  // Cache key for each stage. World generation never depends on the camera;
+  // seed/time/quality flow into every stage.
   const qualitySig = JSON.stringify(quality);
   const timelineSig = JSON.stringify(document.animation?.timeline ?? null);
   const cacheKey = (stage) => JSON.stringify([
     seed, time, qualitySig, timelineSig,
-    stage.id, stage.params, stage.mods, stage.enabled, camSig,
+    stage.id, stage.params, stage.mods, stage.enabled,
   ]);
 
   let curves = [];
   const stages = [document.generator, ...(document.operators ?? [])];
-  const prev = evaluateDocument._cache;
+  const cacheOwner = options.cacheKey ?? document;
+  const prev = options.bypassCache ? null : STAGE_CACHE.get(cacheOwner);
   const signatures = [];
   let reusedUntil = -1;
 
   if (
     prev &&
-    prev.documentRef === document &&
     prev.time === time &&
     prev.seed === seed &&
     prev.qualitySig === qualitySig
@@ -120,14 +129,15 @@ export function evaluateDocument(document, options = {}) {
   const pointCount = totalPoints(curves);
   if (pointCount > peakPoints) peakPoints = pointCount;
 
-  evaluateDocument._cache = {
-    documentRef: document,
+  const cacheEntry = {
     time,
     seed,
     qualitySig,
     signatures,
     stageOutputs,
   };
+  if (!options.bypassCache) STAGE_CACHE.set(cacheOwner, cacheEntry);
+  evaluateDocument._cache = cacheEntry;
 
   const bbox = bboxAll(curves);
   const stats = {
@@ -152,7 +162,7 @@ export function evaluateDocument(document, options = {}) {
     get() {
       if (!analysis) {
         const a0 = now();
-        analysis = analyzeAll(curves);
+        analysis = cachedAnalysis(curves);
         stats.analysisMs = now() - a0;
       }
       return analysis;
@@ -160,6 +170,229 @@ export function evaluateDocument(document, options = {}) {
   });
 
   return result;
+}
+
+const WORLD_CACHE = new WeakMap();
+const VIEW_CACHE = new WeakMap();
+const WORLD_CACHE_VERSION = 1;
+
+function evaluateSpatialDocument(document, options, generatorDef) {
+  const t0 = now();
+  const time = options.time ?? document.animation?.time ?? 0;
+  const seed = document.seed ?? 1;
+  const quality = options.quality ?? {};
+  const errors = [];
+  const scope = createStdlib(seed);
+  const ctx = {
+    time, seed, scope, quality, document,
+    timeline: document.animation?.timeline ?? null,
+    layerIndex: options.layerIndex ?? 0,
+  };
+  const stages = [document.generator, ...(document.operators ?? [])];
+  const worldOps = [];
+  const viewOps = [];
+  for (let i = 1; i < stages.length; i++) {
+    const stage = stages[i];
+    if (stage.enabled === false) continue;
+    const def = Operators.get(stage.id);
+    if (def.space === 'world') worldOps.push({ stage, def, index: i - 1 });
+    else viewOps.push({ stage, def, index: i - 1 });
+  }
+
+  const generatorParams = resolveParams(generatorDef.params, document.generator.params, document.generator.mods, {
+    ...ctx, stagePath: 'generator.params',
+  }, tagErrors(errors, 'generator', 0));
+  const signature = JSON.stringify([
+    WORLD_CACHE_VERSION,
+    seed,
+    time,
+    quality,
+    generatorDef.id,
+    worldParamView(generatorParams),
+    document.generator.mods,
+    worldOps.map(({ stage, def }) => [def.id, stage.params, stage.mods, stage.enabled]),
+  ]);
+  const cacheKey = options.cacheKey ?? document;
+  let cached = options.bypassCache ? null : WORLD_CACHE.get(cacheKey);
+  let worldGeometry;
+  if (cached?.signature === signature) {
+    worldGeometry = cached.geometry;
+  } else {
+    worldGeometry = runGuarded(() => generatorDef.generate(generatorParams, ctx), errors, 'generator', 0) ?? [];
+    worldGeometry = sanitizeGeometry(worldGeometry, errors, 'generator', 0);
+    for (const { stage, def, index } of worldOps) {
+      const rejected = worldGeometry.find((item) => !operatorAccepts(def, item));
+      if (rejected) {
+        errors.push({
+          stage: 'operator',
+          index,
+          message: `${def.name} does not accept ${rejected.kind} geometry`,
+        });
+        continue;
+      }
+      const params = resolveParams(def.params, stage.params, stage.mods, {
+        ...ctx, stagePath: `operators[${index}].params`,
+      }, tagErrors(errors, 'operator', index));
+      worldGeometry = runGuarded(() => def.apply(worldGeometry, params, ctx), errors, 'operator', index) ?? worldGeometry;
+      worldGeometry = sanitizeGeometry(worldGeometry, errors, 'operator', index);
+    }
+    if (!errors.length && !options.bypassCache) WORLD_CACHE.set(cacheKey, { signature, geometry: worldGeometry });
+  }
+
+  const projection = projectionForGeometry(worldGeometry, document.view?.projection ?? '3d');
+  const viewSignature = JSON.stringify([
+    WORLD_CACHE_VERSION,
+    projection,
+    document.view?.camera ?? null,
+    Number(generatorParams.fit) || 0,
+    generatorParams.depthOcclusion,
+    generatorParams.depthAttenuation,
+    viewOps.map(({ stage, def }) => [def.id, stage.params, stage.mods, stage.enabled]),
+  ]);
+  let viewCurves;
+  const cachedView = options.bypassCache ? null : VIEW_CACHE.get(worldGeometry);
+  if (!errors.length && cachedView?.signature === viewSignature) {
+    viewCurves = cachedView.curves;
+  } else {
+    viewCurves = sanitizeCurves(projectWorldCurves(worldGeometry, {
+      camera: document.view?.camera,
+      projection,
+      fit: Number(generatorParams.fit) || 0,
+      depthFade: generatorParams.depthOcclusion,
+      depthStrength: generatorParams.depthAttenuation,
+    }));
+    for (const { stage, def, index } of viewOps) {
+      const params = resolveParams(def.params, stage.params, stage.mods, {
+        ...ctx, stagePath: `operators[${index}].params`,
+      }, tagErrors(errors, 'operator', index));
+      viewCurves = runGuarded(() => def.apply(viewCurves, params, ctx), errors, 'operator', index) ?? viewCurves;
+      viewCurves = sanitizeCurves(viewCurves);
+      viewCurves = enforceBudget(viewCurves);
+    }
+    viewCurves = enforceBudget(viewCurves);
+    if (!errors.length && !options.bypassCache) VIEW_CACHE.set(worldGeometry, { signature: viewSignature, curves: viewCurves });
+  }
+  viewCurves = enforceBudget(viewCurves);
+
+  const pointCount = totalPoints(viewCurves);
+  const worldBBox = bboxGeometry(worldGeometry);
+  const stats = {
+    evalMs: now() - t0,
+    analysisMs: 0,
+    stageTimes: [],
+    curveCount: viewCurves.length,
+    pointCount,
+    peakPoints: pointCount,
+    arcLength: Math.round(arcLengthAll(viewCurves)),
+    worldPointCount: geometryPointCount(worldGeometry),
+  };
+  const result = {
+    curves: viewCurves,
+    geometry: worldGeometry,
+    worldBBox,
+    viewProjection: projection,
+    appliedProjection: projection,
+    errors,
+    stats,
+    bbox: bboxAll(viewCurves),
+  };
+  let analysis = null;
+  Object.defineProperty(result, 'analysis', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      if (!analysis) {
+        const a0 = now();
+        analysis = cachedAnalysis(viewCurves);
+        stats.analysisMs = now() - a0;
+      }
+      return analysis;
+    },
+  });
+  let worldAnalysis = null;
+  Object.defineProperty(result, 'worldAnalysis', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      if (!worldAnalysis) {
+        let value = WORLD_ANALYSIS_CACHE.get(worldGeometry);
+        if (!value) {
+          value = analyzeGeometry(worldGeometry);
+          WORLD_ANALYSIS_CACHE.set(worldGeometry, value);
+        }
+        worldAnalysis = value;
+      }
+      return worldAnalysis;
+    },
+  });
+  return result;
+}
+
+function cachedAnalysis(curves) {
+  let value = ANALYSIS_CACHE.get(curves);
+  if (!value) {
+    value = analyzeAll(curves);
+    ANALYSIS_CACHE.set(curves, value);
+  }
+  return value;
+}
+
+function operatorAccepts(def, item) {
+  return Array.isArray(def.accepts) ? def.accepts.includes(item.kind) : true;
+}
+
+function worldParamView(params) {
+  const copy = { ...params };
+  delete copy.fit;
+  delete copy.depthOcclusion;
+  delete copy.depthAttenuation;
+  return copy;
+}
+
+function sanitizeGeometry(geometry, errors, stage, index) {
+  if (!Array.isArray(geometry)) return [];
+  const out = [];
+  for (const item of geometry) {
+    const validation = validateGeometry(item);
+    if (!validation.ok) {
+      errors.push({ stage, index, message: validation.errors[0] ?? 'invalid geometry' });
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
+function geometryPointCount(geometry) {
+  return geometry.reduce((total, item) => total + (item.points?.length ?? 0), 0);
+}
+
+function bboxGeometry(geometry) {
+  let minX = Infinity; let minY = Infinity; let minZ = Infinity;
+  let maxX = -Infinity; let maxY = -Infinity; let maxZ = -Infinity;
+  for (const item of geometry) {
+    for (const point of item.points ?? []) {
+      if (point.x < minX) minX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.z < minZ) minZ = point.z;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y > maxY) maxY = point.y;
+      if (point.z > maxZ) maxZ = point.z;
+    }
+  }
+  if (!Number.isFinite(minX)) {
+    return { minX: 0, minY: 0, minZ: 0, maxX: 0, maxY: 0, maxZ: 0, width: 0, height: 0, depth: 0, diagonal: 0, cx: 0, cy: 0, cz: 0 };
+  }
+  return {
+    minX, minY, minZ, maxX, maxY, maxZ,
+    width: maxX - minX,
+    height: maxY - minY,
+    depth: maxZ - minZ,
+    diagonal: Math.hypot(maxX - minX, maxY - minY, maxZ - minZ),
+    cx: (minX + maxX) / 2,
+    cy: (minY + maxY) / 2,
+    cz: (minZ + maxZ) / 2,
+  };
 }
 
 function evaluateLayers(document, options = {}) {
@@ -200,7 +433,7 @@ function evaluateLayers(document, options = {}) {
       view: document.view,
       animation: document.animation,
     };
-    const evaluation = evaluateDocument(subdocument, { ...options, time, layerIndex: index });
+    const evaluation = evaluateDocument(subdocument, { ...options, time, layerIndex: index, cacheKey: layer });
     const layerErrors = evaluation.errors.map((error) => ({
       ...error,
       layerId: layer.id,
@@ -221,6 +454,10 @@ function evaluateLayers(document, options = {}) {
       generator: layer.generator,
       operators: layer.operators,
       curves,
+      geometry: evaluation.geometry ?? null,
+      appliedProjection: evaluation.appliedProjection ?? null,
+      viewProjection: evaluation.viewProjection ?? null,
+      worldBBox: evaluation.worldBBox ?? null,
       stats: evaluation.stats,
       bbox: evaluation.bbox,
       errors: layerErrors,
@@ -254,12 +491,20 @@ function evaluateLayers(document, options = {}) {
     peakPoints: Math.max(peakPoints, pointCount),
     arcLength: Math.round(arcLength),
   };
+  const spatialProjection = layerResults.some((layer) => layer.appliedProjection)
+    ? (document.view?.projection ?? '3d')
+    : null;
+  const worldGeometry = layerResults.flatMap((layer) => layer.geometry ?? []);
   const result = {
     curves: capped,
+    geometry: worldGeometry,
+    worldBBox: worldGeometry.length ? bboxGeometry(worldGeometry) : null,
     errors,
     stats,
     bbox,
     layers: layerResults,
+    appliedProjection: spatialProjection,
+    viewProjection: spatialProjection,
   };
   let analysis = null;
   Object.defineProperty(result, 'analysis', {

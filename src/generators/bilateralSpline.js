@@ -8,9 +8,9 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { MasterSpline } from '../geometry/MasterSpline.js';
-import { Mirror } from '../geometry/Mirror.js';
-import { sampleSegments } from '../geometry/CatmullRom.js';
+import { MasterSpline } from '../geometry/legacy/MasterSpline.js';
+import { Mirror } from '../geometry/legacy/Mirror.js';
+import { sampleSegments } from '../geometry/legacy/CatmullRom.js';
 import { genId } from './helpers.js';
 
 Generators.register({

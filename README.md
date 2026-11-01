@@ -24,7 +24,7 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1345 checks)
+npm test             # node-only verification suite (1367 checks)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (71 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
@@ -182,7 +182,7 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1345 checks across 28 groups (expression
+Runs `test/lab.smoke.mjs` — 1367 checks across 29 groups (expression
 engine, noise determinism, splines, all 23 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,

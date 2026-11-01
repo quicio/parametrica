@@ -74,16 +74,22 @@ export class Exporter {
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
     const evaluation = this.app.evaluation;
-    const projection = projectionFor(evaluation.curves, doc.view.projection ?? '3d');
+    const projection = evaluation.viewProjection ?? projectionFor(evaluation.curves, doc.view.projection ?? '3d');
     const layers = projection === '3d'
       ? evaluation.layers
-      : evaluation.layers?.map((layer) => ({
-        ...layer,
-        curves: projectCurves(layer.curves, projection, {
-          fit: Number(layer.generator?.params?.fit) || 0,
-        }),
-      }));
-    const curves = projection === '3d'
+      : evaluation.layers?.map((layer) => {
+        const applied = layer.appliedProjection ?? evaluation.appliedProjection ?? null;
+        return applied === projection
+          ? layer
+          : {
+            ...layer,
+            curves: projectCurves(layer.curves, projection, {
+              fit: Number(layer.generator?.params?.fit) || 0,
+            }),
+          };
+      });
+    const applied = evaluation.appliedProjection ?? null;
+    const curves = projection === '3d' || applied === projection
       ? evaluation.curves
       : projectCurves(evaluation.curves, projection, {
         fit: Number(doc.generator?.params?.fit) || 0,

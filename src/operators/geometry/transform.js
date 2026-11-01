@@ -17,6 +17,9 @@ Operators.register({
   id: 'mirror',
   name: 'Mirror',
   category: 'geometry',
+  space: 'world',
+  accepts: ['curve2d', 'curve3d'],
+  produces: ['curve2d', 'curve3d'],
   params: {
     axis: { label: 'Axis', type: TYPE.SELECT, options: ['vertical', 'horizontal', 'both'], default: 'vertical' },
     keepOriginal: { label: 'Keep Original', type: TYPE.BOOLEAN, default: true },
@@ -38,6 +41,9 @@ Operators.register({
   id: 'rotate',
   name: 'Rotate',
   category: 'geometry',
+  space: 'world',
+  accepts: ['curve2d', 'curve3d'],
+  produces: ['curve2d', 'curve3d'],
   params: {
     angle: { label: 'Angle (°)', type: TYPE.NUMBER, min: -360, max: 360, step: 0.5, default: 45 },
     angleExpr: {
@@ -51,6 +57,7 @@ Operators.register({
     const expr = compileOptionalExpression(p.angleExpr, 'rotate angle', 'angleExpr');
     const scope = expr ? makeExpressionScope(ctx) : null;
     return curves.map((c) => clone(c, c.points.map((pt, i) => {
+      if (scope && pt.z !== undefined) scope.z = pt.z;
       const extra = evaluatePointExpression(expr, scope, pt, i, c.points.length) ?? 0;
       const a = (p.angle + extra) * DEG;
       const cos = Math.cos(a);
@@ -66,6 +73,9 @@ Operators.register({
   id: 'scale',
   name: 'Scale',
   category: 'geometry',
+  space: 'world',
+  accepts: ['curve2d', 'curve3d'],
+  produces: ['curve2d', 'curve3d'],
   params: {
     sx: { label: 'Scale X', type: TYPE.NUMBER, min: 0.05, max: 4, step: 0.01, default: 1 },
     sy: { label: 'Scale Y', type: TYPE.NUMBER, min: 0.05, max: 4, step: 0.01, default: 1 },

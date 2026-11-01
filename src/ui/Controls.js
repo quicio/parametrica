@@ -503,7 +503,8 @@ export class Controls {
         'XZ · Alzado': 'xz',
         'YZ · Perfil': 'yz',
       })
-      .name('Projection');
+      .name('Projection')
+      .onChange(() => this.app.rebuild());
     projection.domElement.classList.add('view-projection-row');
     projection.$widget?.querySelector?.('select')?.classList.add('view-projection');
     if (!canProject) {

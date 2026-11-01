@@ -33,14 +33,16 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { cameraFrom, compileOrThrow, makeScope, postProcess, project3D, TAU } from './helpers.js';
+import { cameraFrom, compileOrThrow, genId, makeScope, TAU } from './helpers.js';
+import { createCurve3D } from '../geometry/contracts.js';
+import { projectWorldCurves } from '../view/projection.js';
 
 
 Generators.register({
   id: 'parametric-3d',
   name: 'Parametric 3D (projected)',
   category: '3d',
-  capabilities: { spatial: true, projection: '3d', supportsFit: true, supportsClosed: true },
+  capabilities: { spatial: true, projection: '3d', geometryKind: 'curve3d', supportsFit: true, supportsClosed: true },
   params: {
     exprX: {
       label: 'x(t)', type: TYPE.EXPRESSION,
@@ -85,29 +87,14 @@ Generators.register({
 
   domain: (p) => ({ t0: p.t0, t1: p.t1, closed: false }),
 
-  sample(params, ctx) {
+  generate(params, ctx) {
     const fnX = compileOrThrow(params.exprX, 'x(t)', 'exprX');
     const fnY = compileOrThrow(params.exprY, 'y(t)', 'exprY');
     const fnZ = compileOrThrow(params.exprZ, 'z(t)', 'exprZ');
-
-    // Camera state lives on the document (view.camera) so it persists
-    // with presets and is shared across generators. If absent (malformed
-    // document) we fall back to the classic isometric defaults.
-    const cam = cameraFrom(ctx.document?.view);
-    const depthFade = params.depthOcclusion;
-    const fadeK = params.depthAttenuation;
-
     const scope = makeScope(ctx);
     const { t0, t1, samples } = params;
-
-    /**
-     * Uniform sampling with per-point depth. We re-derive (X, Y) for
-     * each t (no caching) because depth has to be computed at the
-     * same time as the projected coordinates.
-     */
     const n = Math.max(2, Math.floor(samples));
-    const points = new Array(n);
-    let k = 0;
+    const points = [];
     for (let i = 0; i < n; i++) {
       const t = t0 + ((t1 - t0) * i) / (n - 1);
       scope.t = t;
@@ -116,29 +103,26 @@ Generators.register({
       const y = fnY(scope);
       const z = fnZ(scope);
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-      const projected = project3D(x, y, z, cam, { depthFade, fadeStrength: fadeK });
-      if (!projected) continue;
-      points[k++] = {
-        x: projected.x,
-        y: projected.y,
-        // True 3D coordinates survive fit/center and power orthographic
-        // projections at render time.
-        x3: x,
-        y3: y,
-        h3: z,
-        depth: projected.depth,
-        depthAlpha: projected.depthAlpha,
-      };
+      points.push({ x, y, z });
     }
-    if (k < 2) return [];
-    points.length = k;
-
-    const curve = {
-      id: `parametric-3d-${Date.now()}`,
+    if (points.length < 2) return [];
+    return [createCurve3D({
+      id: genId('parametric-3d'),
       points,
       closed: false,
       meta: { source: 'parametric-3d' },
-    };
-    return postProcess([curve], params);
+    })];
   },
+
+  sample(params, ctx) {
+    const geometry = this.generate(params, ctx);
+    return projectWorldCurves(geometry, {
+      camera: cameraFrom(ctx.document?.view),
+      projection: '3d',
+      fit: params.fit,
+      depthFade: params.depthOcclusion,
+      depthStrength: params.depthAttenuation,
+    });
+  },
+
 });

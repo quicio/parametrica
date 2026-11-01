@@ -9,6 +9,7 @@
  */
 
 import { analyzeCurve } from '../analysis/differential.js';
+import { analyzeGeometry, bbox3 } from '../geometry/analysis.js';
 import { bboxAll, resampleUniform } from '../sampling/sampling.js';
 import { selfIntersections, polylineIntersections } from '../analysis/intersections.js';
 import { canonicalStringify, sha256Hex } from './hash.js';
@@ -22,7 +23,7 @@ const SYMMETRY_BINS = 128;
  * @param {Array<{points:Array, closed:boolean}>} curves
  * @param {{hash?: boolean}} options
  */
-export function computeDescriptor(document, curves, { hash = true, layers = null } = {}) {
+export function computeDescriptor(document, curves, { hash = true, layers = null, geometry = null } = {}) {
   const safeCurves = Array.isArray(curves) ? curves.filter((c) => c && Array.isArray(c.points)) : [];
   const box = bboxAll(safeCurves);
   const analyses = safeCurves.map((c) => analyzeCurve(c.points, c.closed));
@@ -78,12 +79,16 @@ export function computeDescriptor(document, curves, { hash = true, layers = null
         layers: undefined,
       };
       return {
-        ...computeDescriptor(layerDocument, layer.curves ?? [], { hash: false }),
+        ...computeDescriptor(layerDocument, layer.curves ?? [], {
+          hash: false,
+          geometry: layer.geometry ?? null,
+        }),
         layerId: layer.id,
         layerName: layer.name,
       };
     })
     : undefined;
+  const world = worldDescriptor(geometry);
 
   return {
     version: 1,
@@ -125,7 +130,50 @@ export function computeDescriptor(document, curves, { hash = true, layers = null
     complexity,
     coverage: coverageStats(safeCurves, box),
     topology,
+    ...(world ? { spatial: true, world } : { spatial: false }),
     ...(layerDescriptors ? { layers: layerDescriptors } : {}),
+  };
+}
+
+function worldDescriptor(geometry) {
+  if (!Array.isArray(geometry) || !geometry.length) return null;
+  const spatial = geometry.filter((item) => item?.kind === 'curve3d');
+  if (!spatial.length) return null;
+  const analyses = analyzeGeometry(spatial);
+  let perimeter = 0;
+  const curvatures = [];
+  const torsions = [];
+  for (const analysis of analyses) {
+    perimeter += analysis.arcLength ?? 0;
+    for (const value of analysis.curvature ?? []) if (Number.isFinite(value)) curvatures.push(Math.abs(value));
+    for (const value of analysis.torsion ?? []) if (Number.isFinite(value)) torsions.push(Math.abs(value));
+  }
+  const box = bbox3(spatial.flatMap((curve) => curve.points));
+  return {
+    curveCount: spatial.length,
+    pointCount: spatial.reduce((sum, curve) => sum + curve.points.length, 0),
+    closed: spatial.every((curve) => curve.closed),
+    perimeter: finite(perimeter),
+    bbox: {
+      minX: finite(box.minX), minY: finite(box.minY), minZ: finite(box.minZ),
+      maxX: finite(box.maxX), maxY: finite(box.maxY), maxZ: finite(box.maxZ),
+      width: finite(box.width), height: finite(box.height), depth: finite(box.depth),
+      aspect: box.height > EPS ? finite(box.width / box.height) : 0,
+      diagonal: finite(box.diagonal),
+    },
+    curvature: distribution(curvatures),
+    torsion: distribution(torsions),
+  };
+}
+
+function distribution(values) {
+  if (!values.length) return { mean: 0, p95: 0, max: 0 };
+  values.sort((a, b) => a - b);
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return {
+    mean: finite(mean),
+    p95: finite(values[Math.min(values.length - 1, Math.floor(values.length * 0.95))]),
+    max: finite(values[values.length - 1]),
   };
 }
 

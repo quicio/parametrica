@@ -94,13 +94,16 @@ test('all six helix variations load, evaluate and are distinct', async ({ page }
 test('projection changes the rendered view without re-evaluating geometry', async ({ page }) => {
   await loadPreset(page, 'Básica');
   await openSection(page, 'View');
-  await page.evaluate(() => { window.__helixEvaluation = window.__parametrica.evaluation; });
+  await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    window.__helixGeometry = evaluation.layers[0].geometry;
+  });
   const before = await canvasFingerprint(page);
 
   await page.locator('.view-projection').selectOption({ label: 'XZ · Alzado' });
   await page.waitForTimeout(350);
   expect(await page.evaluate(() => window.__parametrica.document.view.projection)).toBe('xz');
-  expect(await page.evaluate(() => window.__parametrica.evaluation === window.__helixEvaluation)).toBe(true);
+  expect(await page.evaluate(() => window.__parametrica.evaluation.layers[0].geometry === window.__helixGeometry)).toBe(true);
 
   const after = await canvasFingerprint(page);
   const delta = Math.abs(after.lit - before.lit) +

@@ -12,7 +12,7 @@ import './generators/index.js';
 import './operators/index.js';
 import './render/passes/index.js';
 
-import { App } from './core/App.js';
+import { App } from './application/App.js';
 
 const app = new App({
   canvasContainer: document.getElementById('canvas-container'),
