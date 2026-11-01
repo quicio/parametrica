@@ -42,6 +42,7 @@ import { FakeDialogService } from '../src/ui/dialogs.js';
 import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.js';
 import { validateGeometry, validateMesh, validateSolid } from '../src/geometry/validate.js';
 import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.js';
+import { tessellateSurface, surfaceArea } from '../src/geometry/surfaceTessellation.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
@@ -214,6 +215,11 @@ console.log(`4. generators (${Generators.list().length})`);
     const doc = createDocument(def.id);
     evalOK(doc, `generator ${def.id}`);
     const { curves } = evaluateDocument(doc, { time: 0 });
+    if (def.capabilities?.geometryKind === 'surface') {
+      assert(curves.length > 0, `${def.id}: emits compatibility wireframe curves`);
+      assert(curves.some((curve) => curve.closed), `${def.id}: closed axes emit closed wireframe curves`);
+      continue;
+    }
     const expectedClosed = def.domain(schemaDefaults(def.params)).closed;
     assert(curves[0].closed === expectedClosed, `${def.id}: closure flag matches domain`);
   }
@@ -2030,7 +2036,7 @@ console.log('27. registry contracts');
   assert(badHook, 'registry rejects non-function hooks');
 
   for (const def of Generators.list()) {
-    assert(typeof def.sample === 'function', `generator ${def.id} has sample`);
+    assert(typeof def.sample === 'function' || typeof def.generate === 'function', `generator ${def.id} has sample or generate`);
   }
   for (const def of Operators.list()) {
     assert(typeof def.apply === 'function', `operator ${def.id} has apply`);
@@ -2189,6 +2195,57 @@ console.log('29. world geometry contracts');
   const cached = evaluateDocument(helixDoc, { time: 0, bypassCache: false });
   const uncached = evaluateDocument(helixDoc, { time: 0, bypassCache: true });
   assert(JSON.stringify(cached.curves.map((c) => c.points)) === JSON.stringify(uncached.curves.map((c) => c.points)), 'cache-on and cache-off project equivalent curves');
+}
+
+/* ——— 30. parametric surfaces ——— */
+console.log('30. parametric surfaces');
+{
+  const doc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 16, samplesV: 8, fit: 300 } },
+  });
+  const first = evaluateDocument(doc, { time: 0 });
+  assert(first.errors.length === 0, 'parametric-surface evaluates without errors');
+  assert(first.geometry.length === 1 && first.geometry[0].kind === 'surface', 'parametric-surface emits Surface geometry');
+  assert(first.meshes.length === 1, 'surface tessellates to one Mesh');
+  const mesh = first.meshes[0];
+  assert(mesh.faces.length === 16 * 8 * 2, `surface tessellation triangle count (${mesh.faces.length})`);
+  assert(mesh.vertices.length === 16 * 8, 'closed torus welds seam vertices');
+  assert(mesh.normals.length === mesh.vertices.length, 'mesh has one normal per vertex');
+  assert(mesh.normals.every((n) => Math.abs(Math.hypot(n.x, n.y, n.z) - 1) < 1e-6), 'vertex normals are unit vectors');
+  assert(mesh.faceNormals.length === mesh.faces.length, 'mesh has one face normal per face');
+  assert(validateMesh(mesh).ok, 'closed surface mesh passes topology validation');
+  assert(surfaceArea(first.geometry[0]) > 0, 'surface area is positive');
+
+  const surfaceDescriptor = computeDescriptor(doc, first.curves, { geometry: first.geometry });
+  assert(surfaceDescriptor.spatial === true, 'surface descriptor is spatial');
+  assert(surfaceDescriptor.world.surfaceCount === 1, 'descriptor records the surface count');
+  assert(surfaceDescriptor.world.area > 0, 'descriptor records surface area');
+
+  const worldSurface = first.geometry[0];
+  const worldMesh = first.meshes[0];
+  doc.view.camera.yaw += 0.8;
+  const second = evaluateDocument(doc, { time: 0 });
+  assert(second.geometry[0] === worldSurface, 'camera changes reuse cached Surface');
+  assert(second.meshes[0] === worldMesh, 'camera changes reuse cached Mesh');
+  assert(JSON.stringify(second.renderMeshes[0].vertices.map((p) => [p.x, p.y])) !== JSON.stringify(first.renderMeshes[0].vertices.map((p) => [p.x, p.y])), 'camera changes reproject mesh vertices');
+
+  doc.view.projection = 'xz';
+  const ortho = evaluateDocument(doc, { time: 0 });
+  assert(ortho.geometry[0] === worldSurface, 'orthographic view keeps Surface');
+  assert(ortho.viewProjection === 'xz', 'surface view projection is recorded');
+  assert(ortho.renderMeshes[0].vertices.every((p) => p.depthAlpha === 1), 'orthographic surface disables camera fade');
+
+  const openDoc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 8, samplesV: 10, closedU: false, closedV: false } },
+  });
+  const open = evaluateDocument(openDoc, { time: 0 });
+  assert(open.geometry[0].domain.closedU === false, 'open surface preserves closure flags');
+  assert(open.meshes[0].vertices.length === 8 * 10, 'open surface mesh keeps all samples');
+
+  const direct = tessellateSurface(open.geometry[0]);
+  assert(direct.faces.length === 7 * 9 * 2, 'open surface tessellation excludes no cell');
+  assert(RenderPasses.has('surface-fill') && RenderPasses.has('surface-wireframe'), 'surface render passes are registered');
+  assert(first.curves.length > 0, 'surface emits wireframe curves for stroke compatibility');
 }
 
 /* ——— Snapshots ——— */

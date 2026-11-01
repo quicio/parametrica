@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1367 checks)
+npm test             # node-only verification suite (1400 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (71 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (72 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -75,14 +75,14 @@ leaving your machine.
 ## Architecture
 
 ```
-generators/  (23 registered)  one file each, self-registered
+generators/  (24 registered)  one file each, self-registered
 operators/   (36 registered)  geometry/ + topology/, each Curve[] → Curve[]
 math/               safe Pratt-parser expression engine + seeded simplex noise
 sampling/           uniform + adaptive + arc-length resampling + bbox helpers
 analysis/           differential geometry: tangents, normals, curvature, inflections
 lab/                descriptor, hash, sensitivity, notebook, exploration and diffs
 ai/                 deterministic offline narration and suggestion rules
-render/             p5 surface, artboard/palettes, thumbnails, projections and 12 passes
+render/             p5 surface, artboard/palettes, thumbnails, projections and 14 passes
 viz/                toggleable diagnostic overlays
 animation/          AnimatableValue + timeline resolution (keyframes/easing)
 mutation/           parameter-space mutation with full evaluation validation
@@ -182,15 +182,15 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1367 checks across 29 groups (expression
-engine, noise determinism, splines, all 23 registered generators,
+Runs `test/lab.smoke.mjs` — 1400 checks across 30 groups (expression
+engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
 performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
-panel modes). The whole core is
+panel modes, parametric surfaces). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (71 tests) against a Vite server started by Playwright itself.
+suite (72 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -213,17 +213,17 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 ## What ships in v0.1.0
 
-- **23 generators** registered and tested (parametric, polar, custom,
+- **24 generators** registered and tested (parametric, polar, custom,
   lissajous, rose, superformula, fourier, trochoids (hypo/epi/spirograph),
   harmonic-oscillator, noise-field, catmull-rom, bezier, cubic-spline,
   bilateral-spline, lorenz, clifford, dejong, aizawa, concentric-ellipses,
-  parametric-3d, generalized helix)
+  parametric-3d, generalized helix, parametric-surface)
 - **36 operators** across geometry (transform, symmetry, kaleidoscope,
   resample, offset, deform, project, stroke, boolean) and topology
   (radial/linear arrays, repeat, voronoi, skeleton, medial-axis,
   ribbons, centerline)
 - **4 analysis overlays** (inflections, sample points, ruler, bbox)
-- **12 render passes** (stroke, points, wireframe, control polygon,
+- **14 render passes** (stroke, points, wireframe, control polygon,
   gradient wireframe, tangents, normals, curvature heatmap, negative space,
   signed distance, topology, epicycles)
 - **Animation transport** with time-driven AnimatableValue expressions

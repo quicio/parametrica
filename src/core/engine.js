@@ -17,7 +17,9 @@ import { analyzeAll } from '../analysis/differential.js';
 import { analyzeGeometry } from '../geometry/analysis.js';
 import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
 import { validateGeometry } from '../geometry/validate.js';
-import { projectionForGeometry, projectWorldCurves } from '../view/projection.js';
+import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '../view/projection.js';
+import { tessellateSurface } from '../geometry/surfaceTessellation.js';
+import { isSurface } from '../geometry/contracts.js';
 
 const STAGE_CACHE = new WeakMap();
 const ANALYSIS_CACHE = new WeakMap();
@@ -43,6 +45,9 @@ export function evaluateDocument(document, options = {}) {
     return evaluateLayers(document, options);
   }
   const generatorDef = Generators.get(document.generator.id);
+  if (typeof generatorDef.generate === 'function' && generatorDef.capabilities?.geometryKind === 'surface') {
+    return evaluateSurfaceDocument(document, options, generatorDef);
+  }
   if (typeof generatorDef.generate === 'function' && supportsSpatial(generatorDef)) {
     return evaluateSpatialDocument(document, options, generatorDef);
   }
@@ -174,7 +179,121 @@ export function evaluateDocument(document, options = {}) {
 
 const WORLD_CACHE = new WeakMap();
 const VIEW_CACHE = new WeakMap();
+const SURFACE_CACHE = new WeakMap();
+const MESH_CACHE = new WeakMap();
+const MESH_VIEW_CACHE = new WeakMap();
 const WORLD_CACHE_VERSION = 1;
+
+function evaluateSurfaceDocument(document, options, generatorDef) {
+  const t0 = now();
+  const time = options.time ?? document.animation?.time ?? 0;
+  const seed = document.seed ?? 1;
+  const quality = options.quality ?? {};
+  const errors = [];
+  const scope = createStdlib(seed);
+  const ctx = { time, seed, scope, quality, document, timeline: document.animation?.timeline ?? null, layerIndex: options.layerIndex ?? 0 };
+  const params = resolveParams(generatorDef.params, document.generator.params, document.generator.mods, {
+    ...ctx, stagePath: 'generator.params',
+  }, tagErrors(errors, 'generator', 0));
+  const signature = JSON.stringify([WORLD_CACHE_VERSION, seed, time, quality, generatorDef.id, worldParamView(params), document.generator.mods]);
+  const cacheKey = options.cacheKey ?? document;
+  let surfaces;
+  const cached = options.bypassCache ? null : SURFACE_CACHE.get(cacheKey);
+  if (cached?.signature === signature) {
+    surfaces = cached.surfaces;
+  } else {
+    surfaces = runGuarded(() => generatorDef.generate(params, ctx), errors, 'generator', 0) ?? [];
+    surfaces = sanitizeGeometry(surfaces, errors, 'generator', 0).filter((item) => isSurface(item));
+    if (!errors.length && !options.bypassCache) SURFACE_CACHE.set(cacheKey, { signature, surfaces });
+  }
+
+  let meshes = MESH_CACHE.get(surfaces);
+  if (!meshes) {
+    meshes = surfaces.map((surface) => {
+      try {
+        return tessellateSurface(surface);
+      } catch (error) {
+        errors.push({ stage: 'generator', index: 0, message: error.message });
+        return null;
+      }
+    }).filter(Boolean);
+    if (!errors.length) MESH_CACHE.set(surfaces, meshes);
+  }
+
+  const projection = projectionForGeometry(surfaces, document.view?.projection ?? '3d');
+  const viewSignature = JSON.stringify([WORLD_CACHE_VERSION, projection, document.view?.camera ?? null, Number(params.fit) || 0]);
+  let meshViews = MESH_VIEW_CACHE.get(meshes);
+  if (!meshViews || meshViews.signature !== viewSignature) {
+    const projected = projectWorldMeshes(meshes, {
+      camera: document.view?.camera,
+      projection,
+      fit: Number(params.fit) || 0,
+    });
+    meshViews = { signature: viewSignature, meshes: projected, curves: meshWireframeCurves(projected) };
+    MESH_VIEW_CACHE.set(meshes, meshViews);
+  }
+  const curves = enforceBudget(meshViews.curves);
+  const pointCount = totalPoints(curves);
+  const stats = {
+    evalMs: now() - t0,
+    analysisMs: 0,
+    stageTimes: [],
+    curveCount: curves.length,
+    pointCount,
+    peakPoints: pointCount,
+    arcLength: Math.round(arcLengthAll(curves)),
+    worldPointCount: geometryPointCount(surfaces),
+  };
+  const result = {
+    curves,
+    meshes,
+    renderMeshes: meshViews.meshes,
+    geometry: surfaces,
+    worldBBox: bboxGeometry(surfaces),
+    viewProjection: projection,
+    appliedProjection: projection,
+    errors,
+    stats,
+    bbox: bboxAll(curves),
+  };
+  let analysis = null;
+  Object.defineProperty(result, 'analysis', {
+    enumerable: true, configurable: true,
+    get() { if (!analysis) analysis = cachedAnalysis(curves); return analysis; },
+  });
+  let worldAnalysis = null;
+  Object.defineProperty(result, 'worldAnalysis', {
+    enumerable: true, configurable: true,
+    get() { if (!worldAnalysis) worldAnalysis = analyzeGeometry(surfaces); return worldAnalysis; },
+  });
+  return result;
+}
+
+function meshWireframeCurves(meshes) {
+  const curves = [];
+  for (const mesh of meshes) {
+    const rows = mesh.meta?.gridRows;
+    const cols = mesh.meta?.gridCols;
+    if (!rows || !cols) continue;
+    for (let u = 0; u < rows; u++) {
+      const points = [];
+      for (let v = 0; v < cols; v++) {
+        const point = mesh.vertices[u * cols + v];
+        if (point) points.push({ x: point.x, y: point.y });
+      }
+      if (points.length >= 2) curves.push({ id: `${mesh.id}-row-${u}`, points, closed: Boolean(mesh.meta?.closedV), meta: { source: 'surface-wireframe', meshId: mesh.id } });
+    }
+    for (let v = 0; v < cols; v++) {
+      const points = [];
+      for (let u = 0; u < rows; u++) {
+        const point = mesh.vertices[u * cols + v];
+        if (point) points.push({ x: point.x, y: point.y });
+      }
+      if (points.length >= 2) curves.push({ id: `${mesh.id}-col-${v}`, points, closed: Boolean(mesh.meta?.closedU), meta: { source: 'surface-wireframe', meshId: mesh.id } });
+    }
+  }
+  return curves;
+}
 
 function evaluateSpatialDocument(document, options, generatorDef) {
   const t0 = now();
@@ -364,14 +483,22 @@ function sanitizeGeometry(geometry, errors, stage, index) {
 }
 
 function geometryPointCount(geometry) {
-  return geometry.reduce((total, item) => total + (item.points?.length ?? 0), 0);
+  return geometry.reduce((total, item) => {
+    if (item.points) return total + item.points.length;
+    if (item.vertices) return total + item.vertices.length;
+    if (item.grid?.points) return total + item.grid.points.flat().length;
+    return total;
+  }, 0);
 }
 
 function bboxGeometry(geometry) {
   let minX = Infinity; let minY = Infinity; let minZ = Infinity;
   let maxX = -Infinity; let maxY = -Infinity; let maxZ = -Infinity;
   for (const item of geometry) {
-    for (const point of item.points ?? []) {
+    const points = item.points
+      ?? item.vertices
+      ?? (item.grid?.points ? item.grid.points.flat() : []);
+    for (const point of points) {
       if (point.x < minX) minX = point.x;
       if (point.y < minY) minY = point.y;
       if (point.z < minZ) minZ = point.z;
@@ -455,6 +582,8 @@ function evaluateLayers(document, options = {}) {
       operators: layer.operators,
       curves,
       geometry: evaluation.geometry ?? null,
+      meshes: evaluation.meshes ?? [],
+      renderMeshes: evaluation.renderMeshes ?? [],
       appliedProjection: evaluation.appliedProjection ?? null,
       viewProjection: evaluation.viewProjection ?? null,
       worldBBox: evaluation.worldBBox ?? null,
@@ -495,8 +624,12 @@ function evaluateLayers(document, options = {}) {
     ? (document.view?.projection ?? '3d')
     : null;
   const worldGeometry = layerResults.flatMap((layer) => layer.geometry ?? []);
+  const meshes = layerResults.flatMap((layer) => layer.meshes ?? []);
+  const renderMeshes = layerResults.flatMap((layer) => layer.renderMeshes ?? []);
   const result = {
     curves: capped,
+    meshes,
+    renderMeshes,
     geometry: worldGeometry,
     worldBBox: worldGeometry.length ? bboxGeometry(worldGeometry) : null,
     errors,

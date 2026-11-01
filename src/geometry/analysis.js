@@ -2,7 +2,8 @@
  * geometry/analysis.js — world-space analysis for geometry contracts.
  */
 
-import { isCurve2D, isCurve3D } from './contracts.js';
+import { isCurve2D, isCurve3D, isSurface } from './contracts.js';
+import { surfaceArea } from './surfaceTessellation.js';
 import { analyzeCurve } from '../analysis/differential.js';
 
 export function analyzeCurve3D(points, closed = false) {
@@ -52,6 +53,18 @@ export function analyzeGeometry(geometry) {
   return geometry.map((item) => {
     if (isCurve3D(item)) return analyzeCurve3D(item.points, item.closed);
     if (isCurve2D(item)) return { ...analyzeCurve(item.points, item.closed), kind: 'analysis2d' };
+    if (isSurface(item)) {
+      const points = item.grid.points.flat();
+      return {
+        kind: 'analysis-surface',
+        area: surfaceArea(item),
+        bbox: bbox3(points),
+        closedU: Boolean(item.domain?.closedU),
+        closedV: Boolean(item.domain?.closedV),
+        rows: item.grid.rows,
+        cols: item.grid.cols,
+      };
+    }
     return { kind: 'unsupported', geometryKind: item.kind };
   });
 }

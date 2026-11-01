@@ -77,7 +77,7 @@ export function createSurface({ id, domain, grid, meta = {} }) {
   };
 }
 
-export function createMesh({ id, vertices, faces, normals = null, uvs = null, meta = {} }) {
+export function createMesh({ id, vertices, faces, normals = null, faceNormals = null, uvs = null, meta = {} }) {
   return {
     kind: GEOMETRY_KIND.MESH,
     id,
@@ -85,6 +85,7 @@ export function createMesh({ id, vertices, faces, normals = null, uvs = null, me
     vertices,
     faces,
     normals,
+    faceNormals,
     uvs,
     meta,
   };

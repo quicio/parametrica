@@ -7,3 +7,4 @@ import './gradient.js';
 import './vectors.js';
 import './fields.js';
 import './epicycles.js';
+import './surface.js';

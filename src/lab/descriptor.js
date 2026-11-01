@@ -137,22 +137,30 @@ export function computeDescriptor(document, curves, { hash = true, layers = null
 
 function worldDescriptor(geometry) {
   if (!Array.isArray(geometry) || !geometry.length) return null;
-  const spatial = geometry.filter((item) => item?.kind === 'curve3d');
+  const spatial = geometry.filter((item) => ['curve3d', 'surface', 'mesh'].includes(item?.kind));
   if (!spatial.length) return null;
   const analyses = analyzeGeometry(spatial);
   let perimeter = 0;
+  let area = 0;
   const curvatures = [];
   const torsions = [];
   for (const analysis of analyses) {
     perimeter += analysis.arcLength ?? 0;
+    area += analysis.area ?? 0;
     for (const value of analysis.curvature ?? []) if (Number.isFinite(value)) curvatures.push(Math.abs(value));
     for (const value of analysis.torsion ?? []) if (Number.isFinite(value)) torsions.push(Math.abs(value));
   }
-  const box = bbox3(spatial.flatMap((curve) => curve.points));
+  const points = spatial.flatMap((item) => (
+    item.points ?? item.vertices ?? (item.grid?.points ? item.grid.points.flat() : [])
+  ));
+  const box = bbox3(points);
   return {
-    curveCount: spatial.length,
-    pointCount: spatial.reduce((sum, curve) => sum + curve.points.length, 0),
-    closed: spatial.every((curve) => curve.closed),
+    curveCount: spatial.filter((item) => item.kind === 'curve3d').length,
+    surfaceCount: spatial.filter((item) => item.kind === 'surface').length,
+    meshCount: spatial.filter((item) => item.kind === 'mesh').length,
+    pointCount: points.length,
+    closed: spatial.every((item) => item.closed || (item.domain?.closedU && item.domain?.closedV)),
+    area: finite(area),
     perimeter: finite(perimeter),
     bbox: {
       minX: finite(box.minX), minY: finite(box.minY), minZ: finite(box.minZ),

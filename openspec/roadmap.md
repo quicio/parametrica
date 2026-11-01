@@ -103,7 +103,7 @@ extraction and conversion to a Fourier document.
 
 | Capability | State |
 |---|---|
-| 23 generators / 36 operators / 12 render passes | shipped |
+| 24 generators / 36 operators / 14 render passes | shipped |
 | Expression engine, adaptive sampling, seeded noise | shipped |
 | Single document = generator + operator stack | shipped |
 | Mutation, presets, SVG/PNG/JSON export | shipped |

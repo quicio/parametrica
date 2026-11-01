@@ -1,0 +1,15 @@
+name: parametric-surfaces
+description: >
+  Next geometry slice after the world/view foundation: a parametric surface
+  generator, deterministic surface tessellation to indexed meshes, mesh-aware
+  RenderScene items, analysis/cache integration and compatibility with existing
+  curve documents. No solids, CSG, Three.js or STL/3MF implementation yet.
+status: proposed
+created: 2026-11-01
+capabilities:
+  - parametric-surface-generator
+  - surface-tessellation
+  - surface-rendering
+  - surface-pipeline
+  - surface-compatibility
+skip_specs: false

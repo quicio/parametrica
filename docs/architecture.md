@@ -95,7 +95,7 @@ src/
 │   ├── projection.js             camera/orthographic world projection
 │   └── cameraController.js       orbit/zoom state transitions
 │
-├── generators/                   23 registered models across 16 modules
+├── generators/                   24 registered models across 17 modules
 │   ├── index.js                  side-effect imports
 │   ├── helpers.js                compatibility facade for focused helpers
 │   ├── context.js                compileOrThrow / makeScope
@@ -115,6 +115,7 @@ src/
 │   ├── concentricEllipses.js     multi-curve families
 │   ├── parametric3D.js           projected x/y/z curves
 │   ├── helix.js                  generalized helix + true 3D metadata
+│   ├── parametricSurface.js      x(u,v), y(u,v), z(u,v) world Surface
 │   └── bilateralSpline.js        v1 legacy, preserved
 │
 ├── operators/
@@ -384,7 +385,7 @@ should never produce a form that breaks at `time = 0.5`.
 
 ### Why per-stage caching?
 
-Slider drags fire 60 times per second. Re-evaluating 23 generators +
+Slider drags fire 60 times per second. Re-evaluating 24 generators +
 36 operators from scratch on every drag is wasteful. The cache keys
 on `(seed, time, quality, camera, stage.id, stage.params, stage.mods,
 stage.enabled)` JSON-stringified. A slider drag invalidates exactly one
@@ -452,7 +453,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 1 | expression engine | precedence, right-assoc, unary, stdlib, error spans, perturbation |
 | 2 | noise determinism | same seed = identical field, different seed ≠ same field |
 | 3 | splines | Catmull-Rom → Bézier conversion, cubic spline |
-| 4 | generators | evalOK over all 23 registered models + variations |
+| 4 | generators | evalOK over all 24 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
 | 7 | built-in presets | all 26 built-in presets evaluate to non-degenerate forms |

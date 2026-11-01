@@ -2,7 +2,8 @@
  * geometry/relations.js — explicit conversions between geometry kinds.
  */
 
-import { createCurve3D, createMesh, createSolid } from './contracts.js';
+import { createCurve3D, createSolid } from './contracts.js';
+import { tessellateSurface } from './surfaceTessellation.js';
 import { validateMesh, validateSolid } from './validate.js';
 
 export function liftCurve2D(curve) {
@@ -15,24 +16,7 @@ export function liftCurve2D(curve) {
 }
 
 export function surfaceToMesh(surface, { id = surface.id } = {}) {
-  const rows = surface.grid.points;
-  const rowCount = rows.length;
-  const colCount = rows[0]?.length ?? 0;
-  const vertices = [];
-  const faces = [];
-  for (let u = 0; u < rowCount; u++) {
-    for (let v = 0; v < colCount; v++) {
-      vertices.push({ ...rows[u][v] });
-    }
-  }
-  const at = (u, v) => u * colCount + v;
-  for (let u = 0; u < rowCount - 1; u++) {
-    for (let v = 0; v < colCount - 1; v++) {
-      faces.push([at(u, v), at(u + 1, v), at(u + 1, v + 1)]);
-      faces.push([at(u, v), at(u + 1, v + 1), at(u, v + 1)]);
-    }
-  }
-  return createMesh({ id, vertices, faces, meta: { ...surface.meta, source: 'surface-tessellation' } });
+  return tessellateSurface(surface, { id });
 }
 
 export function meshToSolid(mesh, { id = mesh.id, tolerance = 1e-6 } = {}) {

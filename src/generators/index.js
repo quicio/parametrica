@@ -19,3 +19,4 @@ import './attractors.js';
 import './concentricEllipses.js';
 import './parametric3D.js';
 import './helix.js';
+import './parametricSurface.js';

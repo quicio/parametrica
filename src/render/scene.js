@@ -16,12 +16,13 @@ export function createRenderScene({ artboard, view, layers, overlays = [], meta 
   };
 }
 
-export function createRenderLayer({ id, name, style, curves, bbox, appliedProjection = null }) {
+export function createRenderLayer({ id, name, style, curves, meshes = [], bbox, appliedProjection = null }) {
   return {
     id,
     name,
     style,
     curves,
+    meshes,
     bbox,
     appliedProjection,
   };

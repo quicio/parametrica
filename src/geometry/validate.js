@@ -119,6 +119,9 @@ export function validateMesh(value) {
   if (value.normals && (!Array.isArray(value.normals) || value.normals.length !== vertices.length)) {
     errors.push('mesh normals must match the vertex count');
   }
+  if (value.faceNormals && (!Array.isArray(value.faceNormals) || value.faceNormals.length !== faces.length)) {
+    errors.push('mesh faceNormals must match the face count');
+  }
   if (value.uvs && (!Array.isArray(value.uvs) || value.uvs.length !== vertices.length)) {
     errors.push('mesh uvs must match the vertex count');
   }

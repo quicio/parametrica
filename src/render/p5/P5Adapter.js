@@ -292,6 +292,7 @@ export class P5Adapter extends Renderer {
         const layerData = {
           ...data,
           curves: group.curves,
+          meshes: group.meshes ?? [],
           bbox: group.bbox,
           view: { ...doc.view, style: group.style ?? doc.view.style },
         };
