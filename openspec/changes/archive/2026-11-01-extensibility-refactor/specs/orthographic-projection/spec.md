@@ -17,6 +17,12 @@ back to the camera view and the selector SHALL be disabled with an explanation.
 - **WHEN** a projected spatial document is replaced by a 2D preset
 - **THEN** `view.projection` resets to `3d`
 
+#### Scenario: Spatial generator
+
+- **WHEN** the active generator declares `capabilities.spatial = true`
+- **THEN** the projection selector is enabled
+- **AND** the view layer consumes world `Curve3D` coordinates
+
 #### Scenario: New spatial generator
 
 - **WHEN** a new generator declares `capabilities.spatial = true`
@@ -26,3 +32,8 @@ back to the camera view and the selector SHALL be disabled with an explanation.
 
 - **WHEN** an SVG is exported from a 2D document with a stale projected view
 - **THEN** the SVG uses the camera geometry
+
+#### Scenario: Orthographic export
+
+- **WHEN** an SVG is exported from an active orthographic view
+- **THEN** it uses the same projected world geometry as the canvas

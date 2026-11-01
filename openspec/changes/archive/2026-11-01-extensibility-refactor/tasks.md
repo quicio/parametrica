@@ -109,12 +109,12 @@
 - [x] 10.2 Update README, SPEC, architecture and OpenSpec inventories.
 - [x] 10.3 Run `npm run check` and the full Playwright suite.
 - [x] 10.4 Verify document, preset, notebook, SVG, PNG and session round-trips.
-- [ ] 10.5 Archive this change after acceptance.
+- [x] 10.5 Archive this change after acceptance.
 
 ## Verification results
 
 - `npm run lint`: 0 errors.
-- `npm test`: 1345/1345 checks, including registry contracts and extensibility boundaries.
+- `npm test`: 1367/1367 checks, including registry contracts and extensibility boundaries.
 - `npm run build`: succeeds.
 - `npm run test:e2e`: 71/71 tests.
 - `openspec validate --changes`: valid.
