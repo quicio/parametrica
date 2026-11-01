@@ -1,0 +1,13 @@
+name: preset-library
+description: >
+  Visual preset library: deterministic derived previews, persistent favorites
+  and recent presets, thumbnail rows and accessible filters. No document
+  format change, no network and no filled previews.
+status: proposed
+created: 2026-11-01
+capabilities:
+  - preset-previews
+  - preset-usage
+  - preset-browser
+skip_specs: false
+schema: spec-driven
