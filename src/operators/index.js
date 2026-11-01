@@ -10,5 +10,6 @@ import './geometry/symmetry.js';
 import './geometry/project.js';
 import './geometry/stroke.js';
 import './geometry/boolean.js';
+import './geometry/expressionClip.js';
 import './topology/repeat.js';
 import './topology/voronoi.js';

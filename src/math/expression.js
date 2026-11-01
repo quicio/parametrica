@@ -7,6 +7,8 @@
  *
  * Supports:
  *   arithmetic:  + - * / ^ %   (^ right-associative, unary minus)
+ *   comparison:  < <= > >= == !=   (result 1/0)
+ *   boolean:     && || !             (result 1/0)
  *   calls:       sin(t), clamp(x, 0, 1), noise(x, y)
  *   constants:   pi tau e phi
  *   programs:    `k = 3; x = sin(k*t) + 0.25*sin(11*t)`  (multi-statement)
@@ -89,6 +91,28 @@ export function tokenize(source) {
       tokens.push({ type: TOKEN.OP, value: ch, start: i, end: i + 1 });
       i++; continue;
     }
+    if (ch === '<' || ch === '>') {
+      const value = src[i + 1] === '=' ? ch + '=' : ch;
+      tokens.push({ type: TOKEN.OP, value, start: i, end: i + value.length });
+      i += value.length; continue;
+    }
+    if (ch === '=' && src[i + 1] === '=') {
+      tokens.push({ type: TOKEN.OP, value: '==', start: i, end: i + 2 });
+      i += 2; continue;
+    }
+    if (ch === '!') {
+      const value = src[i + 1] === '=' ? '!=' : '!';
+      tokens.push({ type: TOKEN.OP, value, start: i, end: i + value.length });
+      i += value.length; continue;
+    }
+    if (ch === '&' && src[i + 1] === '&') {
+      tokens.push({ type: TOKEN.OP, value: '&&', start: i, end: i + 2 });
+      i += 2; continue;
+    }
+    if (ch === '|' && src[i + 1] === '|') {
+      tokens.push({ type: TOKEN.OP, value: '||', start: i, end: i + 2 });
+      i += 2; continue;
+    }
     if (ch === '(') { tokens.push({ type: TOKEN.LPAREN, start: i, end: i + 1 }); i++; continue; }
     if (ch === ')') { tokens.push({ type: TOKEN.RPAREN, start: i, end: i + 1 }); i++; continue; }
     if (ch === ',') { tokens.push({ type: TOKEN.COMMA, start: i, end: i + 1 }); i++; continue; }
@@ -104,7 +128,15 @@ export function tokenize(source) {
 
 /* ———————————————— Parser (Pratt) ———————————————— */
 
-const BINARY_PRECEDENCE = { '+': 2, '-': 2, '*': 3, '/': 3, '%': 3, '^': 4 };
+const BINARY_PRECEDENCE = {
+  '||': 1,
+  '&&': 2,
+  '==': 3, '!=': 3,
+  '<': 4, '<=': 4, '>': 4, '>=': 4,
+  '+': 5, '-': 5,
+  '*': 6, '/': 6, '%': 6,
+  '^': 7,
+};
 
 function parse(tokens) {
   let pos = 0;
@@ -165,6 +197,10 @@ function parse(tokens) {
     if (token.type === TOKEN.OP && token.value === '+') {
       return parseExpression(BINARY_PRECEDENCE['^']);
     }
+    if (token.type === TOKEN.OP && token.value === '!') {
+      const arg = parseExpression(BINARY_PRECEDENCE['^']);
+      return { type: 'unary', op: '!', arg, start: token.start, end: arg.end };
+    }
 
     if (token.type === TOKEN.LPAREN) {
       const inner = parseExpression(0);
@@ -222,8 +258,10 @@ function evaluateNode(node, scope) {
       throw e;
     }
 
-    case 'unary':
-      return -evaluateNode(node.arg, scope);
+    case 'unary': {
+      const value = evaluateNode(node.arg, scope);
+      return node.op === '!' ? (value ? 0 : 1) : -value;
+    }
 
     case 'binary': {
       const l = evaluateNode(node.left, scope);
@@ -235,6 +273,14 @@ function evaluateNode(node, scope) {
         case '/': return l / r;
         case '%': return ((l % r) + r) % r;
         case '^': return Math.pow(l, r);
+        case '<': return l < r ? 1 : 0;
+        case '<=': return l <= r ? 1 : 0;
+        case '>': return l > r ? 1 : 0;
+        case '>=': return l >= r ? 1 : 0;
+        case '==': return l === r ? 1 : 0;
+        case '!=': return l !== r ? 1 : 0;
+        case '&&': return l && r ? 1 : 0;
+        case '||': return l || r ? 1 : 0;
         default: return NaN;
       }
     }

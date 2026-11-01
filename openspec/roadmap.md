@@ -103,7 +103,7 @@ extraction and conversion to a Fourier document.
 
 | Capability | State |
 |---|---|
-| 22 generators / 31 operators / 11 render passes | shipped |
+| 23 generators / 36 operators / 12 render passes | shipped |
 | Expression engine, adaptive sampling, seeded noise | shipped |
 | Single document = generator + operator stack | shipped |
 | Mutation, presets, SVG/PNG/JSON export | shipped |
@@ -123,6 +123,7 @@ extraction and conversion to a Fourier document.
 | Evolution: parent selection, crossover, structural mutation, lineage | shipped (2026-10-24) |
 | Helix Lab: generalized helix, orthographic views, gradient wireframe | shipped (2026-10-24) |
 | Technical debt: ESLint, CodeMirror, lazy p5, session recovery | shipped (2026-10-24) |
+| UI clarity: workspace modes, accordions, progressive params, status | shipped (2026-10-24) |
 
 ### Foundation contracts (this phase)
 
@@ -140,6 +141,31 @@ extraction and conversion to a Fourier document.
 |---|---|
 | `palette-system` | Color by metric, palettes, presets |
 | `plotter-export` | Plotter-ready SVG and line tests |
+| `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
+| `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
+
+### Optional future direction — reusable instrument UI
+
+**Status:** idea only. Not scheduled, no OpenSpec change, no commitment.
+
+A sibling instrument (for example a synthesizer that creates and visualises
+waves) could reuse the same Swiss-instrument shell without sharing the
+geometry engine. The extraction would be staged:
+
+1. `packages/ui`: design tokens, mode bar, accordions, status line,
+   essential/advanced disclosure, CodeMirror host and notices.
+2. `packages/lab-core`: history, session snapshots and preset storage with
+   injected sanitizers/schemas.
+3. A sibling repo consumes the packages with its own audio engine, patch
+   schema, oscilloscope/spectrum visualisers and WAV export.
+
+Parametrica remains the first consumer and keeps its geometry-specific
+engine, generators, operators and widgets. The current single-app layout is
+not moved into a monorepo until a second app actually exists.
+
+**Risks:** splitting the mixed `style.css`, over-abstracting domain widgets,
+and maintaining two consumers before the synth has a stable patch model.
+
 
 ---
 
@@ -536,7 +562,9 @@ Ideas kept out of the current phases:
 - video export with audio;
 - AI style transfer from reference images;
 - natural-language document generation;
-- mobile-specific layout beyond responsive panel.
+- mobile-specific layout beyond responsive panel;
+- reusable instrument UI package and a synthesizer sibling project
+  (tracked as an optional idea above, not a committed phase).
 
 ---
 

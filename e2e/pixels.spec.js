@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dragSlider } from './helpers.js';
+import { dragSlider, openSection } from './helpers.js';
 
 /** Grab a downscaled pixel fingerprint of the canvas (fast + stable). */
 async function canvasFingerprint(page) {
@@ -102,6 +102,7 @@ test('FIT SIZE change visibly alters the canvas', async ({ page }) => {
 });
 
 test('x(t) equation change visibly alters the canvas', async ({ page }) => {
+  await openSection(page, 'Equations');
   const before = await canvasFingerprint(page);
   const field = page.locator('.expr-field').filter({ hasText: 'x(t)' }).first();
   const input = field.locator('.cm-content');

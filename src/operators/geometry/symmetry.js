@@ -40,6 +40,55 @@ Operators.register({
 });
 
 Operators.register({
+  id: 'kaleidoscope',
+  name: 'Kaleidoscope',
+  category: 'geometry',
+  params: {
+    folds: { label: 'Folds', type: TYPE.NUMBER, min: 2, max: 24, step: 1, default: 6 },
+    angle: { label: 'Angle Offset (°)', type: TYPE.NUMBER, min: -360, max: 360, step: 1, default: 0 },
+    reflect: { label: 'Mirror Sectors', type: TYPE.BOOLEAN, default: true },
+    cx: { label: 'Center X', type: TYPE.NUMBER, min: -500, max: 500, step: 1, default: 0 },
+    cy: { label: 'Center Y', type: TYPE.NUMBER, min: -500, max: 500, step: 1, default: 0 },
+  },
+  apply(curves, p) {
+    const folds = Math.max(1, Math.round(p.folds));
+    const step = (Math.PI * 2) / folds;
+    const offset = (Number(p.angle) || 0) * (Math.PI / 180);
+    const cx = Number(p.cx) || 0;
+    const cy = Number(p.cy) || 0;
+    const out = [];
+    for (let fold = 0; fold < folds; fold++) {
+      const a = offset + fold * step;
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
+      for (const c of curves) {
+        out.push({
+          ...c,
+          id: opId(),
+          points: c.points.map((pt) => {
+            const dx = pt.x - cx;
+            const dy = pt.y - cy;
+            return { ...pt, x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+          }),
+        });
+        if (p.reflect) {
+          out.push({
+            ...c,
+            id: opId(),
+            points: c.points.map((pt) => {
+              const dx = pt.x - cx;
+              const dy = -(pt.y - cy);
+              return { ...pt, x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+            }),
+          });
+        }
+      }
+    }
+    return out;
+  },
+});
+
+Operators.register({
   id: 'optical-correction',
   name: 'Optical Correction',
   category: 'geometry',

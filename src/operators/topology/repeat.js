@@ -39,28 +39,109 @@ Operators.register({
   },
 });
 
+const DEG = Math.PI / 180;
+
 Operators.register({
   id: 'radial-repeat',
-  name: 'Radial Repeat',
+  name: 'Radial Repeat (legacy)',
   category: 'topology',
+  hidden: true,
   params: {
     count: { label: 'Copies', type: TYPE.NUMBER, min: 2, max: 48, step: 1, default: 6 },
     radius: { label: 'Orbit Radius', type: TYPE.NUMBER, min: 0, max: 600, step: 1, default: 0 },
     rotateCopies: { label: 'Rotate Copies', type: TYPE.BOOLEAN, default: true },
   },
   apply(curves, p) {
+    return radialArray(curves, {
+      count: p.count,
+      radius: p.radius,
+      rotateCopies: p.rotateCopies,
+      sweep: 360,
+      startAngle: 0,
+      cx: 0,
+      cy: 0,
+    });
+  },
+});
+
+Operators.register({
+  id: 'radial-array',
+  name: 'Radial Array',
+  category: 'topology',
+  params: {
+    count: { label: 'Copies', type: TYPE.NUMBER, min: 2, max: 48, step: 1, default: 8 },
+    sweep: { label: 'Sweep (°)', type: TYPE.NUMBER, min: -720, max: 720, step: 1, default: 360,
+             doc: 'Total angle covered by the copies. 360 distributes them evenly around a full turn.' },
+    startAngle: { label: 'Start Angle (°)', type: TYPE.NUMBER, min: -360, max: 360, step: 1, default: 0 },
+    radius: { label: 'Orbit Radius', type: TYPE.NUMBER, min: 0, max: 600, step: 1, default: 0 },
+    cx: { label: 'Center X', type: TYPE.NUMBER, min: -500, max: 500, step: 1, default: 0 },
+    cy: { label: 'Center Y', type: TYPE.NUMBER, min: -500, max: 500, step: 1, default: 0 },
+    rotateCopies: { label: 'Rotate Copies', type: TYPE.BOOLEAN, default: true },
+  },
+  apply(curves, p) {
+    return radialArray(curves, p);
+  },
+});
+
+function radialArray(curves, p) {
+  const count = Math.max(1, Math.round(p.count));
+  const sweep = Number(p.sweep ?? 360);
+  const full = Math.abs(sweep) >= 360 - 1e-9;
+  const step = full ? sweep / count : sweep / Math.max(1, count - 1);
+  const start = Number(p.startAngle ?? 0) * DEG;
+  const radius = Number(p.radius) || 0;
+  const cx = Number(p.cx) || 0;
+  const cy = Number(p.cy) || 0;
+  const out = [];
+  for (let k = 0; k < count; k++) {
+    const a = start + k * step * DEG;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    const ox = cx + Math.cos(a) * radius;
+    const oy = cy + Math.sin(a) * radius;
+    for (const c of curves) {
+      out.push(transform(c, (pt) => {
+        const dx = pt.x - cx;
+        const dy = pt.y - cy;
+        const x = p.rotateCopies ? dx * cos - dy * sin : dx;
+        const y = p.rotateCopies ? dx * sin + dy * cos : dy;
+        return { ...pt, x: ox + x, y: oy + y };
+      }));
+    }
+  }
+  return out;
+}
+
+Operators.register({
+  id: 'linear-array',
+  name: 'Linear Array',
+  category: 'topology',
+  params: {
+    count: { label: 'Copies', type: TYPE.NUMBER, min: 1, max: 64, step: 1, default: 5 },
+    spacing: { label: 'Spacing', type: TYPE.NUMBER, min: -400, max: 400, step: 1, default: 60 },
+    angle: { label: 'Direction (°)', type: TYPE.NUMBER, min: -180, max: 180, step: 1, default: 0 },
+    rotateStep: { label: 'Rotate / Copy (°)', type: TYPE.NUMBER, min: -180, max: 180, step: 0.1, default: 0 },
+    scaleStep: { label: 'Scale / Copy', type: TYPE.NUMBER, min: 0.5, max: 1.5, step: 0.01, default: 1 },
+  },
+  apply(curves, p) {
+    const count = Math.max(1, Math.round(p.count));
+    const dir = Number(p.angle) * DEG;
+    const dx = Math.cos(dir) * p.spacing;
+    const dy = Math.sin(dir) * p.spacing;
+    const center = (count - 1) / 2;
     const out = [];
-    for (let k = 0; k < p.count; k++) {
-      const a = (k / p.count) * Math.PI * 2;
-      const cos = Math.cos(a); const sin = Math.sin(a);
-      const ox = Math.cos(a) * p.radius;
-      const oy = Math.sin(a) * p.radius;
+    for (let k = 0; k < count; k++) {
+      const offset = k - center;
+      const a = Number(p.rotateStep) * DEG * k;
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
+      const s = Math.pow(p.scaleStep, k);
       for (const c of curves) {
-        out.push(transform(c, (pt) => {
-          const x = p.rotateCopies ? pt.x * cos - pt.y * sin : pt.x;
-          const y = p.rotateCopies ? pt.x * sin + pt.y * cos : pt.y;
-          return { ...pt, x: x + ox, y: y + oy };
-        }));
+        out.push(transform(c, (pt) => ({
+          ...pt,
+          x: (pt.x * cos - pt.y * sin) * s + dx * offset,
+          y: (pt.x * sin + pt.y * cos) * s + dy * offset,
+        })));
       }
     }
     return out;

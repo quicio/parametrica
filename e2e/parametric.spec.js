@@ -19,7 +19,7 @@
 import { test, expect } from '@playwright/test';
 import {
   docParams, evalState, controller, typeInto,
-  expectSliderChangesDoc, toggleCheckbox,
+  expectSliderChangesDoc, toggleCheckbox, openSection,
 } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
@@ -70,23 +70,29 @@ test('typing a value into t min updates the document', async ({ page }) => {
 });
 
 test('typing t max and t min inverts the domain and evaluation reacts', async ({ page }) => {
-  // The screenshot bug: user typed t0=57 > t1=-24. With the slider range
-  // now clamped to ±4π (~±12.57), typing 57 clamps to 4π and typing -24
-  // clamps to -4π. The domain still evaluates forward (swap) — the
-  // slider range prevents the 13-period tangle entirely.
+  // Typed values may exceed the slider range. t0=57.09 is accepted; the
+  // negative t1 clamps to its hard minimum of 0. The sampler still
+  // normalizes the inverted domain and evaluation stays finite.
   await typeInto(page, 't min', '57.09');
   await typeInto(page, 't max', '-24.58');
   const params = await docParams(page);
-  // t0=57 clamps to +2π (t0 range ±2π); t1=-24.58 clamps to 0 (t1 range 0..4π).
-  expect(params.t0).toBeCloseTo(2 * Math.PI * 2, 1);
+  expect(params.t0).toBeCloseTo(57.09, 1);
   expect(params.t1).toBeCloseTo(0, 1);
   const state = await evalState(page);
   // No crash, no NaN points.
   expect(state.errors).toBe(0);
   const f = state.first;
   expect(Number.isFinite(f.x) && Number.isFinite(f.y)).toBe(true);
-  // The domain [−4π, 4π] spans 4 periods — still sane point count.
   expect(state.pts).toBeLessThanOrEqual(700);
+});
+
+test('typing a high sample count above the slider range is accepted', async ({ page }) => {
+  await typeInto(page, 'Samples', '20000');
+  const params = await docParams(page);
+  expect(params.samples).toBe(20000);
+  const state = await evalState(page);
+  expect(state.errors).toBe(0);
+  expect(state.pts).toBeLessThanOrEqual(20000);
 });
 
 test('adaptive sampling checkbox toggles the doc', async ({ page }) => {
@@ -107,6 +113,7 @@ test('editing x(t) expression re-evaluates the curve', async ({ page }) => {
   const before = await evalState(page);
   // The equation fields are custom ExpressionField widgets (.expr-field),
   // not lil-gui controllers.
+  await openSection(page, 'Equations');
   const field = page.locator('.expr-field').filter({ hasText: 'x(t)' }).first();
   const input = field.locator('.cm-content');
   await input.fill('2*cos(5*t)');
@@ -119,6 +126,7 @@ test('editing x(t) expression re-evaluates the curve', async ({ page }) => {
 });
 
 test('mutate produces a valid changed document', async ({ page }) => {
+  await openSection(page, 'Mutation');
   const before = JSON.stringify(await docParams(page));
   await page.locator('button:has-text("MUTATE")').click();
   await page.waitForTimeout(300);

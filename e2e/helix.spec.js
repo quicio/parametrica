@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { dragSlider } from './helpers.js';
+import { dragSlider, openSection } from './helpers.js';
 
 const HELIX_PRESETS = [
   'Básica',
@@ -93,6 +93,7 @@ test('all six helix variations load, evaluate and are distinct', async ({ page }
 
 test('projection changes the rendered view without re-evaluating geometry', async ({ page }) => {
   await loadPreset(page, 'Básica');
+  await openSection(page, 'View');
   await page.evaluate(() => { window.__helixEvaluation = window.__parametrica.evaluation; });
   const before = await canvasFingerprint(page);
 
@@ -109,6 +110,7 @@ test('projection changes the rendered view without re-evaluating geometry', asyn
 
 test('camera drag works in 3D and is inert in orthographic projections', async ({ page }) => {
   await loadPreset(page, 'Básica');
+  await openSection(page, 'View');
   const canvas = page.locator('#canvas-container canvas');
   const box = await canvas.boundingBox();
 
@@ -152,6 +154,7 @@ test('radial modulation slider changes the helix and the canvas', async ({ page 
 
 test('gradient wireframe renders colored geometry', async ({ page }) => {
   await loadPreset(page, 'Básica');
+  await openSection(page, 'View');
   expect(await coloredPixelCount(page)).toBe(0);
   const gradient = page.locator('.mode-toggle', { hasText: 'Gradient Wireframe' }).locator('input');
   await gradient.check();

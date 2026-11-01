@@ -45,13 +45,18 @@ export function clampNumber(schemaEntry, value) {
   let v = Number(value);
   if (!Number.isFinite(v)) v = Number(s.default);
   if (!Number.isFinite(v)) return 0;
-  if (typeof s.min === 'number') v = Math.max(s.min, v);
-  if (typeof s.max === 'number') v = Math.min(s.max, v);
-  if (s.step) v = Math.round(v / s.step) * s.step;
+  // Slider bounds (`min`/`max`) can be narrower than the values accepted
+  // by typing. `hardMin`/`hardMax` widen the storage/evaluation range
+  // without making the slider unusable.
+  const lo = typeof s.hardMin === 'number' ? s.hardMin : s.min;
+  const hi = typeof s.hardMax === 'number' ? s.hardMax : s.max;
+  if (typeof lo === 'number') v = Math.max(lo, v);
+  if (typeof hi === 'number') v = Math.min(hi, v);
+  if (s.step && s.snap !== false) v = Math.round(v / s.step) * s.step;
   // Snapping can push a value just past a bound when bounds are not
   // multiples of step; clamp once more.
-  if (typeof s.min === 'number') v = Math.max(s.min, v);
-  if (typeof s.max === 'number') v = Math.min(s.max, v);
+  if (typeof lo === 'number') v = Math.max(lo, v);
+  if (typeof hi === 'number') v = Math.min(hi, v);
   return Number(v.toFixed(5));
 }
 

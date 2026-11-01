@@ -98,6 +98,7 @@ export class App {
     this.timelineRecorder?.(this.document.animation.time);
     this.scheduleHistory();
     this.evaluate();
+    this.controls?.refreshStatus?.();
     this.scheduleSessionSave();
   }
 
@@ -433,6 +434,9 @@ export class App {
 
   setGenerator(id) {
     if (!Generators.has(id)) return;
+    if (id !== 'helix' && id !== 'parametric-3d' && this.document.view.projection !== '3d') {
+      this.document.view.projection = '3d';
+    }
     this.document.generator = {
       id,
       params: schemaDefaults(Generators.get(id).params),
@@ -563,6 +567,7 @@ export class App {
       next = ((next % timeline.duration) + timeline.duration) % timeline.duration;
     }
     this.document.animation.time = next;
+    this.controls?.syncTimeRange?.(next);
     this.evaluate();
   }
 
@@ -584,6 +589,11 @@ export class App {
     this.document.layers = doc.layers;
     this.document.activeLayer = doc.activeLayer ?? 0;
     Object.assign(this.document.view, doc.view);
+    const active = this.document.layers?.[this.document.activeLayer ?? 0];
+    const projectable = active?.generator?.id === 'helix' || active?.generator?.id === 'parametric-3d';
+    if (!projectable && this.document.view.projection !== '3d') {
+      this.document.view.projection = '3d';
+    }
     Object.assign(this.document.animation, doc.animation);
     attachLayerAliases(this.document);
     this.syncActiveStyle();

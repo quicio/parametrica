@@ -42,6 +42,7 @@ Generators.register({
     const nodes = proceduralNodes({ count: p.points, radius: p.radius, wobble: p.wobble, seed: p.seed, golden: false });
     const segments = catmullRomToBezier(nodes, { tension: p.tension, closed: p.closed });
     const points = bezierToPoints(segments, p.samplesPer, { dropLast: p.closed });
+    if (p.closed && points.length > 1) points.push({ ...points[0] });
     return [{
       id: genId('cr'), points, closed: p.closed,
       meta: { source: 'catmull-rom', controlPoints: nodes },
@@ -68,6 +69,7 @@ Generators.register({
     const nodes = proceduralNodes({ count: p.nodes, radius: p.radius, wobble: p.spread, seed: p.seed, golden: true });
     const segments = catmullRomToBezier(nodes, { tension: 1 - p.curl, closed: p.closed });
     const points = bezierToPoints(segments, p.samplesPer, { dropLast: p.closed });
+    if (p.closed && points.length > 1) points.push({ ...points[0] });
     return [{
       id: genId('bezier'), points, closed: p.closed,
       meta: { source: 'bezier', controlPoints: nodes },
@@ -91,6 +93,7 @@ Generators.register({
   sample(p) {
     const nodes = proceduralNodes({ count: p.nodes, radius: p.radius, wobble: p.wobble, seed: p.seed, golden: false });
     const points = cubicSplinePoints(nodes, { closed: p.closed, perSegment: p.samplesPer });
+    if (p.closed && points.length > 1) points.push({ ...points[0] });
     return [{
       id: genId('cs'), points, closed: p.closed,
       meta: { source: 'cubic-spline', controlPoints: nodes },

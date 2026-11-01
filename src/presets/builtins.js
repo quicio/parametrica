@@ -42,7 +42,13 @@ export const BUILT_IN_PRESETS = {
   Spirograph: () =>
     createDocument('spirograph', {
       name: 'Spirograph',
-      generator: { params: {} },
+      generator: {
+        params: {
+          R1: 250, r1: 90, d1: 130, mode1: 'hypo',
+          R2: 150, r2: 45, d2: 80, mode2: 'epi',
+          mix: 0.45, samples: 3000, fit: 340,
+        },
+      },
     }),
 
   Butterfly: () =>
@@ -76,6 +82,57 @@ export const BUILT_IN_PRESETS = {
     createDocument('hypotrochoid', {
       name: 'Hypotrochoid',
       generator: { params: { R: 210, r: 63, d: 130 } },
+    }),
+
+  // ——— Ornamental pattern library ———
+
+  'Guilloché': () =>
+    createDocument('hypotrochoid', {
+      name: 'Guilloché',
+      generator: { params: { R: 260, r: 91, d: 168, samples: 3600, adaptive: true, fit: 360 } },
+      operators: [
+        { id: 'offset', enabled: true, params: { distance: 2.5, copies: 5 }, mods: {} },
+        { id: 'rotate', enabled: true, params: { angle: 8, cx: 0, cy: 0 }, mods: {} },
+      ],
+    }),
+
+  'Geometric Flower': () =>
+    createDocument('rose', {
+      name: 'Geometric Flower',
+      generator: { params: { n: 6, d: 1, radius: 320, phase: 0, samples: 2200, fit: 340 } },
+      operators: [
+        { id: 'offset', enabled: true, params: { distance: 4, copies: 3 }, mods: {} },
+        { id: 'rotate', enabled: true, params: { angle: 15, cx: 0, cy: 0 }, mods: {} },
+      ],
+    }),
+
+  'Radial Mandala': () =>
+    createDocument('hypotrochoid', {
+      name: 'Radial Mandala',
+      generator: { params: { R: 270, r: 105, d: 150, samples: 3600, fit: 320 } },
+      operators: [
+        { id: 'radial-array', enabled: true, params: { count: 12, sweep: 360, radius: 150, rotateCopies: true }, mods: {} },
+        { id: 'offset', enabled: true, params: { distance: 2.5, copies: 2 }, mods: {} },
+      ],
+    }),
+
+  'Interference Patterns': () =>
+    createDocument('lissajous', {
+      name: 'Interference Patterns',
+      generator: { params: { a: 9, b: 11, delta: PI / 2, ampX: 1, ampY: 1, size: 340, samples: 2600 } },
+      operators: [
+        { id: 'linear-array', enabled: true, params: { count: 9, spacing: 4, angle: 45, rotateStep: 0.35 }, mods: {} },
+      ],
+    }),
+
+  'Orbital Patterns': () =>
+    createDocument('epitrochoid', {
+      name: 'Orbital Patterns',
+      generator: { params: { R: 120, r: 30, d: 78, samples: 2600, fit: 300 } },
+      operators: [
+        { id: 'radial-array', enabled: true, params: { count: 6, sweep: 360, radius: 130, rotateCopies: true }, mods: {} },
+        { id: 'offset', enabled: true, params: { distance: 2, copies: 2 }, mods: {} },
+      ],
     }),
 
   'Fourier Capsule': () =>

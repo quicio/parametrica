@@ -4,7 +4,7 @@
 
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
-import { genId, postProcess, isClosedPolyline, TAU } from './helpers.js';
+import { genId, postProcess, isClosedPolyline, lissajousTurns, TAU } from './helpers.js';
 import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 
 Generators.register({
@@ -22,15 +22,21 @@ Generators.register({
     adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
 
-  domain: () => ({ t0: 0, t1: TAU, closed: true }),
+  domain: (p) => ({ t0: 0, t1: TAU * lissajousTurns(p.a, p.b), closed: true }),
 
   sample(p) {
+    const turns = lissajousTurns(p.a, p.b);
+    const t1 = TAU * turns;
     const fn = (t) => ({ x: p.ampX * Math.sin(p.a * t + p.delta), y: p.ampY * Math.sin(p.b * t) });
     const points = p.adaptive
-      ? sampleAdaptive(fn, 0, TAU, { minSteps: Math.min(256, p.samples), samples: p.samples })
-      : sampleUniform(fn, 0, TAU, p.samples);
+      ? sampleAdaptive(fn, 0, t1, {
+        minSteps: Math.min(768, p.samples),
+        samples: p.samples,
+        maxDepth: 8,
+      })
+      : sampleUniform(fn, 0, t1, p.samples);
     return postProcess([{
-      id: genId('lissajous'), points, closed: isClosedPolyline(points), meta: { source: 'lissajous' },
+      id: genId('lissajous'), points, closed: isClosedPolyline(points), meta: { source: 'lissajous', turns },
     }], { fit: p.size });
   },
 });

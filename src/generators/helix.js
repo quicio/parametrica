@@ -28,7 +28,7 @@ Generators.register({
   params: {
     theta0: {
       label: 'Start θ', type: TYPE.NUMBER,
-      min: -TAU, max: TAU, step: 0.05, default: 0,
+      min: -TAU, max: TAU, step: 0.05, snap: false, default: 0,
       doc: 'Parameter at the start of the curve.',
     },
     turns: {

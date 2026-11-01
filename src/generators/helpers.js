@@ -3,7 +3,9 @@
  */
 
 import { compileExpression } from '../math/expression.js';
-import { sampleUniform, sampleAdaptive, fitCurves, centerCurves } from '../sampling/sampling.js';
+import {
+  sampleUniform, sampleAdaptive, fitCurves, centerCurves, splitCurveAtDiscontinuities,
+} from '../sampling/sampling.js';
 
 let id = 0;
 export const genId = (prefix) => `${prefix}-${id++}`;
@@ -46,19 +48,40 @@ export function sampleParametric(fnX, fnY, { t0, t1, samples, adaptive, scope })
     scope.theta = t;
     const x = fnX(scope);
     const y = fnY(scope);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      throw new Error(`non-finite point at t=${t.toFixed(4)}`);
-    }
+    // Non-finite samples become breaks, not fatal errors: the splitter
+    // removes the offending point and keeps the finite runs on each side.
     return { x, y };
   };
   return adaptive
-    ? sampleAdaptive(fn, a, b, { minSteps: Math.min(256, samples), samples })
+    ? sampleAdaptive(fn, a, b, { minSteps: Math.min(512, samples), samples, maxDepth: 8 })
     : sampleUniform(fn, a, b, samples);
 }
 
-/** Apply fit/center post-processing when the generator asks for it. */
+/** Apply discontinuity splitting + fit/center post-processing. */
 export function postProcess(curves, { fit = 0, center = true }) {
-  let out = curves;
+  let out = [];
+  for (const curve of curves) {
+    const split = splitCurveAtDiscontinuities(curve.points, { closed: Boolean(curve.closed) });
+    if (!split.segments.length) continue;
+    if (split.segments.length === 1) {
+      out.push({
+        ...curve,
+        points: split.segments[0],
+        closed: split.closed,
+        meta: split.broken ? { ...(curve.meta ?? {}), discontinuity: true } : (curve.meta ?? {}),
+      });
+    } else {
+      split.segments.forEach((points, index) => {
+        out.push({
+          ...curve,
+          id: `${curve.id ?? 'curve'}-s${index}`,
+          points,
+          closed: false,
+          meta: { ...(curve.meta ?? {}), discontinuity: true, segment: index },
+        });
+      });
+    }
+  }
   if (fit > 0) out = fitCurves(out, fit);
   else if (center) out = centerCurves(out);
   return out;
@@ -79,6 +102,64 @@ export function isClosedPolyline(points, eps = 1e-6) {
 
 /** TAU shortcut for schema defaults. */
 export const TAU = Math.PI * 2;
+
+export function gcd(a, b) {
+  a = Math.abs(Math.round(a));
+  b = Math.abs(Math.round(b));
+  while (b) [a, b] = [b, a % b];
+  return a || 1;
+}
+
+export function lcm(a, b) {
+  return Math.abs(a * b) / gcd(a, b);
+}
+
+/**
+ * Smallest denominator q such that `value ≈ p/q` within tolerance.
+ * Returns 0 when the value is not rational at this resolution. Used to
+ * derive the exact period of Lissajous and trochoid families without
+ * hard-coding a per-preset turn count.
+ */
+export function rationalDenominator(value, { maxDenominator = 64, tolerance = 1e-7 } = {}) {
+  const x = Math.abs(Number(value));
+  if (!Number.isFinite(x)) return 0;
+  if (x < tolerance) return 0;
+  for (let d = 1; d <= maxDenominator; d++) {
+    const p = Math.round(x * d);
+    if (p === 0) continue;
+    if (Math.abs(x - p / d) <= tolerance * Math.max(1, x)) return d;
+  }
+  return 0;
+}
+
+/**
+ * Number of 2π turns after which a trochoid closes.
+ * The rolling angle is (R∓r)/r, so the period is the denominator of
+ * that ratio in lowest terms (the ring term repeats every turn).
+ */
+export function trochoidTurns(R, r, mode = 'hypo', { maxTurns = 128 } = {}) {
+  const wheel = Math.abs(Number(r));
+  if (!Number.isFinite(wheel) || wheel < 1e-9) return 1;
+  const ring = Math.abs(Number(R));
+  const ratio = (mode === 'epi' ? ring + wheel : ring - wheel) / wheel;
+  const denominator = rationalDenominator(ratio, { maxDenominator: maxTurns });
+  return Math.min(maxTurns, denominator || 1);
+}
+
+/** Common 2π turn count for sin(a·t + δ), sin(b·t). */
+export function lissajousTurns(a, b, { maxTurns = 64 } = {}) {
+  const da = rationalDenominator(a, { maxDenominator: maxTurns });
+  const db = rationalDenominator(b, { maxDenominator: maxTurns });
+  if (!da || !db) return 1;
+  return Math.min(maxTurns, lcm(da, db));
+}
+
+/** 2π turn count for a rose r = cos((n/d)·θ + phase). */
+export function roseTurns(n, d = 1, { maxTurns = 64 } = {}) {
+  const numer = Math.round(Math.abs(Number(n)) || 1);
+  const denom = Math.round(Math.abs(Number(d)) || 1);
+  return Math.min(maxTurns, denom / gcd(numer, denom));
+}
 
 /**
  * Compose a Curve[] from a per-sample function that gets called `count`

@@ -7,6 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { openSection } from './helpers.js';
 
 async function boot(page) {
   await page.goto('/');
@@ -34,6 +35,7 @@ test('Fourier preset builds the harmonics editor and evaluates', async ({ page }
   expect(state.id).toBe('fourier');
   expect(state.curves).toBeGreaterThan(0);
   expect(state.errors).toBe(0);
+  await openSection(page, 'Harmonics');
   await expect(page.locator('.harmonics-editor')).toBeVisible();
   expect(await page.locator('.harmonics-editor input').count()).toBeGreaterThan(6);
 });
@@ -41,6 +43,7 @@ test('Fourier preset builds the harmonics editor and evaluates', async ({ page }
 test('editing a harmonic row updates the document', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Fourier Capsule'));
   await page.waitForTimeout(200);
+  await openSection(page, 'Harmonics');
 
   const firstTable = page.locator('.harmonics-editor .harm-table').first();
   const firstRow = firstTable.locator('.harm-row').nth(1);
@@ -56,6 +59,7 @@ test('editing a harmonic row updates the document', async ({ page }) => {
 });
 
 test('render modes stay an array when toggled', async ({ page }) => {
+  await openSection(page, 'View');
   const points = page.locator('.mode-toggle', { hasText: 'Points' }).locator('input');
   await points.check();
   await page.waitForTimeout(200);
@@ -72,6 +76,7 @@ test('render modes stay an array when toggled', async ({ page }) => {
 });
 
 test('curvature pass lazily computes differential analysis', async ({ page }) => {
+  await openSection(page, 'View');
   const curvature = page.locator('.mode-toggle', { hasText: 'Curvature Heatmap' }).locator('input');
   await curvature.check();
   await page.waitForTimeout(250);
@@ -91,6 +96,7 @@ test('curvature pass lazily computes differential analysis', async ({ page }) =>
 });
 
 test('invalid equation produces an inline, keyed error', async ({ page }) => {
+  await openSection(page, 'Equations');
   const field = page.locator('.expr-field').first();
   const input = field.locator('.cm-content');
   await input.fill('sin(3*t');
@@ -122,15 +128,17 @@ test('seed control changes the document and telemetry', async ({ page }) => {
 });
 
 test('built-in preset names are rejected with a visible notice', async ({ page }) => {
-  const name = page.locator('.controller', { hasText: 'Name' }).locator('input');
+  const presets = await openSection(page, 'Presets');
+  const name = presets.locator('.controller', { hasText: 'Name' }).locator('input');
   await name.fill('Lissajous 3:5');
-  await page.locator('.controller', { hasText: 'Save Preset' }).locator('button').click();
+  await presets.locator('.controller', { hasText: 'Save Preset' }).locator('button').click();
   await page.waitForTimeout(200);
   await expect(page.locator('#notice')).toHaveClass(/visible/);
   await expect(page.locator('#notice')).toContainText('built-in');
 });
 
 test('analysis panel shows metrics and parameter influence', async ({ page }) => {
+  await openSection(page, 'Analysis');
   await expect(page.locator('.panel-h', { hasText: 'Analysis' })).toBeVisible();
   await page.waitForTimeout(700);
 
@@ -153,6 +161,7 @@ test('parameter documentation is exposed on controls', async ({ page }) => {
 });
 
 test('notebook saves, compares and survives reload', async ({ page }) => {
+  await openSection(page, 'Notebook');
   await expect(page.locator('.panel-h', { hasText: 'Notebook' })).toBeVisible();
   const name = page.locator('.notebook-name');
   await name.fill('Slice A');
@@ -182,6 +191,7 @@ test('notebook saves, compares and survives reload', async ({ page }) => {
 });
 
 test('notebook restores a checkpoint through history', async ({ page }) => {
+  await openSection(page, 'Notebook');
   await page.locator('.notebook-name').fill('Before');
   await page.locator('.notebook-save').click();
   await page.waitForTimeout(400);
@@ -199,6 +209,7 @@ test('notebook restores a checkpoint through history', async ({ page }) => {
 test('explore generates a 1D strip and adopts a candidate', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Explore');
   await expect(page.locator('.panel-h', { hasText: 'Explore' })).toBeVisible();
   await expect(page.locator('.explore-axis')).toHaveValue('generator.params.a');
 
@@ -217,6 +228,7 @@ test('explore generates a 1D strip and adopts a candidate', async ({ page }) => 
 test('explore respects a locked parameter during randomize', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Explore');
   await page.locator('.explore-scope summary').click();
   const lockB = page.locator('.explore-scope-row[data-path="generator.params.b"] .explore-lock');
   await lockB.click();
@@ -235,10 +247,11 @@ test('explore respects a locked parameter during randomize', async ({ page }) =>
 test('explore keeps the panel scroll and focus when randomizing/adopting', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Explore');
   await page.evaluate(() => {
     const ui = document.querySelector('#ui');
-    const panel = document.querySelector('.explore-panel');
-    ui.scrollTop = Math.max(0, panel.offsetTop - 60);
+    ui.style.paddingBottom = '800px';
+    ui.scrollTop = 40;
   });
   const before = await page.evaluate(() => document.querySelector('#ui').scrollTop);
   expect(before).toBeGreaterThan(0);
@@ -260,6 +273,7 @@ test('explore keeps the panel scroll and focus when randomizing/adopting', async
 });
 
 test('artboard and style controls update the document and canvas', async ({ page }) => {
+  await openSection(page, 'Artboard');
   await expect(page.locator('.panel-h', { hasText: 'Artboard' })).toBeVisible();
 
   const preset = page.locator('.artboard-row', { hasText: 'Preset' }).locator('select');
@@ -294,6 +308,7 @@ test('artboard and style controls update the document and canvas', async ({ page
 test('explore generates a 2D grid and adopts a cell', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Explore');
   await page.locator('.explore-mode').selectOption('grid');
   await page.locator('.explore-generate-grid').click();
   await page.waitForTimeout(700);
@@ -313,6 +328,7 @@ test('explore generates a 2D grid and adopts a cell', async ({ page }) => {
 test('explore morphs between two captured parameter states', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Explore');
   await page.locator('.explore-mode').selectOption('morph');
   await page.locator('.explore-capture-a').click();
   await page.evaluate(() => {
@@ -335,6 +351,7 @@ test('explore morphs between two captured parameter states', async ({ page }) =>
 test('layers add, style, hide and reorder independently', async ({ page }) => {
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
+  await openSection(page, 'Layers');
   await expect(page.locator('.panel-h', { hasText: 'Layers' })).toBeVisible();
   expect(await page.locator('.layer-row').count()).toBe(1);
 
@@ -343,12 +360,14 @@ test('layers add, style, hide and reorder independently', async ({ page }) => {
   expect(await page.locator('.layer-row').count()).toBe(2);
   expect(await page.evaluate(() => window.__parametrica.document.layers.length)).toBe(2);
 
+  await openSection(page, 'Artboard');
   await page.locator('.artboard-palette select').selectOption('signal');
   await page.waitForTimeout(250);
   let styles = await page.evaluate(() => window.__parametrica.document.layers.map((l) => l.style.stroke.color));
   expect(styles[0]).toBe('#ffffff');
   expect(styles[1]).toBe('#e30613');
 
+  await openSection(page, 'Layers');
   await page.locator('.layer-row').first().locator('.layer-name').click();
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.__parametrica.document.activeLayer)).toBe(0);
@@ -380,6 +399,7 @@ test('layers add, style, hide and reorder independently', async ({ page }) => {
 });
 
 test('timeline adds tracks/keyframes and exports a frame zip', async ({ page }) => {
+  await openSection(page, 'Timeline');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await expect(page.locator('.panel-h', { hasText: 'Timeline' })).toBeVisible();
@@ -410,6 +430,7 @@ test('timeline adds tracks/keyframes and exports a frame zip', async ({ page }) 
 });
 
 test('timeline records a parameter change at the playhead', async ({ page }) => {
+  await openSection(page, 'Timeline');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await page.locator('.timeline-track-select').selectOption('generator.params.a');
@@ -434,6 +455,7 @@ test('timeline records a parameter change at the playhead', async ({ page }) => 
 });
 
 test('offline advisor compares a checkpoint and applies a suggestion', async ({ page }) => {
+  await openSection(page, 'Notebook');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await page.locator('.notebook-name').fill('Advisor baseline');
@@ -446,6 +468,7 @@ test('offline advisor compares a checkpoint and applies a suggestion', async ({ 
   });
   await page.waitForTimeout(300);
 
+  await openSection(page, 'Advisor');
   await expect(page.locator('.panel-h', { hasText: 'Advisor' })).toBeVisible();
   await page.locator('.advisor-analyze').click();
   await page.waitForTimeout(500);
@@ -464,6 +487,7 @@ test('offline advisor compares a checkpoint and applies a suggestion', async ({ 
 });
 
 test('llm advisor uses a fake provider, cache and privacy copy', async ({ page }) => {
+  await openSection(page, 'Advisor');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await expect(page.locator('.advisor-privacy')).toContainText('No descriptor');
@@ -478,6 +502,7 @@ test('llm advisor uses a fake provider, cache and privacy copy', async ({ page }
 });
 
 test('llm advisor debounces edits and never analyzes during playback', async ({ page }) => {
+  await openSection(page, 'Advisor');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await page.selectOption('.advisor-provider', 'fake');
@@ -515,6 +540,7 @@ test('llm advisor debounces edits and never analyzes during playback', async ({ 
 });
 
 test('llm advisor discloses network payload and falls back offline', async ({ page }) => {
+  await openSection(page, 'Advisor');
   await page.route('http://localhost:8000/**', (route) => route.abort());
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
@@ -532,6 +558,7 @@ test('llm advisor discloses network payload and falls back offline', async ({ pa
 });
 
 test('image input traces a local circle into a Fourier document', async ({ page }) => {
+  await openSection(page, 'Image');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   const before = await page.evaluate(() => window.__parametrica.document.generator.id);
@@ -569,6 +596,7 @@ test('image input traces a local circle into a Fourier document', async ({ page 
 });
 
 test('image input reports when no contour passes the threshold', async ({ page }) => {
+  await openSection(page, 'Image');
   const before = await page.evaluate(() => JSON.stringify(window.__parametrica.document));
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
@@ -589,6 +617,7 @@ test('image input reports when no contour passes the threshold', async ({ page }
 });
 
 test('evolution breeds checkpoints and keeps generation lineage', async ({ page }) => {
+  await openSection(page, 'Notebook');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   await page.locator('.notebook-name').fill('Parent A');
@@ -607,6 +636,7 @@ test('evolution breeds checkpoints and keeps generation lineage', async ({ page 
   await page.waitForTimeout(400);
   await expect(page.locator('.notebook-item')).toHaveCount(2);
 
+  await openSection(page, 'Evolution');
   await expect(page.locator('.evolution-parent-check')).toHaveCount(2);
   await expect(page.locator('.evolution-generate')).toBeEnabled();
   await page.locator('.evolution-generate').click();
@@ -638,13 +668,14 @@ test('evolution breeds checkpoints and keeps generation lineage', async ({ page 
 });
 
 test('saving presets does not duplicate the Presets section', async ({ page }) => {
+  const presets = await openSection(page, 'Presets');
   const headingCount = () => page.locator('.panel-h', { hasText: 'Presets' }).count();
   expect(await headingCount()).toBe(1);
 
   for (const presetName of ['UI Regression Preset A', 'UI Regression Preset B']) {
-    const name = page.locator('.controller', { hasText: 'Name' }).locator('input');
+    const name = presets.locator('.controller', { hasText: 'Name' }).locator('input');
     await name.fill(presetName);
-    const save = page.locator('.controller', { hasText: 'Save Preset' }).locator('button');
+    const save = presets.locator('.controller', { hasText: 'Save Preset' }).locator('button');
     await save.click();
     await page.waitForTimeout(250);
   }

@@ -396,10 +396,12 @@ function sanitizeOperators(raw) {
   for (const entry of raw.slice(0, 32)) {
     if (!entry || !Operators.has(entry.id)) continue;
     const def = Operators.get(entry.id);
+    const params = sanitizeParams(def.params, entry.params);
+    if (typeof def.migrateParams === 'function') def.migrateParams(params, entry.params);
     out.push({
       id: entry.id,
       enabled: entry.enabled !== false,
-      params: sanitizeParams(def.params, entry.params),
+      params,
       mods: sanitizeMods(entry.mods),
     });
   }

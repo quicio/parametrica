@@ -7,7 +7,7 @@
  */
 
 import { APP_ID } from '../core/document.js';
-import { projectCurves } from '../render/projection.js';
+import { projectCurves, projectionFor } from '../render/projection.js';
 
 export class Exporter {
   constructor(app) {
@@ -73,8 +73,8 @@ export class Exporter {
     const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
-    const projection = doc.view.projection ?? '3d';
     const evaluation = this.app.evaluation;
+    const projection = projectionFor(evaluation.curves, doc.view.projection ?? '3d');
     const layers = projection === '3d'
       ? evaluation.layers
       : evaluation.layers?.map((layer) => ({

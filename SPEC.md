@@ -183,14 +183,14 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 | `bezier` | Procedural cubic Bézier chains (control polygon derived from params, never hand-edited) | segments, spread, curl, symmetry | t ∈ [0,1] |
 || `catmull-rom` | Catmull-Rom (v1 spline, generalized) | points, tension, alpha | t ∈ [0,1] |
 || `cubic-spline` | Natural cubic through procedural nodes | nodes, distribution | t ∈ [0,1] |
-|| `lissajous` | x=sin(a·t+δ), y=sin(b·t) | a, b, delta, phase2, amp | t ∈ [0,2π] |
-|| `rose` | r=cos(k·θ), k=n/d | n, d, radius, phase | θ ∈ [0, 2π·d] |
+|| `lissajous` | x=A·sin(a·t+δ), y=B·sin(b·t) | a, b, delta, ampX, ampY | t ∈ [0,2π·turns], turns derived from a/b |
+|| `rose` | r=R·cos((n/d)·θ+φ) | n, d, radius, phase | θ ∈ [0, 2π·d/gcd(n,d)] |
 || `superformula` | Gielis: r(θ) = (‖cos(mθ/4)/a‖^n2 + ‖sin(mθ/4)/b‖^n3)^(−1/n1) | m, n1, n2, n3, a, b, radius | θ ∈ [0,2π] |
 || `polar` | **r(θ) = expression** | expression, turns, domain | user |
 || `parametric` | **x(t), y(t) = expressions** | exprX, exprY, domain, closed | user |
 || `fourier` | x(t)=Σ, y(t)=Σ harmonic tables | see §7 | t ∈ [0,2π] |
-|| `hypotrochoid` | Spirograph inside | R, r, d, turns | t ∈ [0, 2π·k] |
-|| `epitrochoid` | Spirograph outside | R, r, d, turns | t ∈ [0, 2π·k] |
+|| `hypotrochoid` | Spirograph inside | R, r, d, rotations (0 = auto) | t ∈ [0, 2π·k], k derived from (R−r)/r |
+|| `epitrochoid` | Spirograph outside | R, r, d, rotations (0 = auto) | t ∈ [0, 2π·k], k derived from (R+r)/r |
 || `harmonic-oscillator` | Damped/coupled oscillators x=Σ Aᵢe^(−λᵢt)·sin(ωᵢt+φᵢ) | terms[], damping, coupling | t ∈ [0,T] |
 || `noise-field` | Integral curve through seeded simplex flow field | seed, scale, steps, stepSize | parametric |
 || `custom` | Free multi-line equations with intermediate variables (`a = …; x = …`) | source, domain | user |
@@ -305,9 +305,10 @@ the active passes.
 `document.view.projection` is `3d | xy | xz | yz`. The engine keeps full 3D
 points (`x3`, `y3`, `h3`) and the renderer drops the perpendicular axis at
 draw time, fitting the projected bbox with the generator `fit` value. No
-re-evaluation occurs on view switch. `view.colorRamp` is an optional array
-of 2–6 hex colors for the gradient pass; the default is yellow → purple →
-blue.
+re-evaluation occurs on view switch. Orthographic views are only available
+for 3D generators; 2D curves have `h3 = 0` and fall back to the camera view
+instead of collapsing to a line. `view.colorRamp` is an optional array of
+2–6 hex colors for the gradient pass; the default is yellow → purple → blue.
 
 ## 12. Animation
 
@@ -337,10 +338,11 @@ Generates endless families of mathematically related glyphs.
 Mathematical presets, each a complete Parametrica document (with
 `app: 'parametrica'`):
 
-Lissajous 3:5 · Golden Rose · Infinity · Spirograph · Butterfly ·
-Superformula Star · Superformula Flower · Hypotrochoid ·
-Fourier Capsule · Fourier Butterfly · Helix Lab (Básica, Radio Variable,
-Paso Variable, Ondulada, Doble Hélice, Cónica).
+Lissajous 3:5 · Golden Rose · Infinity · Spirograph · Guilloché ·
+Geometric Flower · Radial Mandala · Interference Patterns ·
+Orbital Patterns · Butterfly · Superformula Star · Superformula Flower ·
+Hypotrochoid · Fourier Capsule · Fourier Butterfly · Helix Lab (Básica,
+Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica).
 
 v1 Glyph Lab presets migrate automatically → `bilateral-spline` documents
 through the dual-format read (§4.4).
@@ -374,7 +376,8 @@ Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
 Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
-Session recovery with debounced local snapshots · Helix Lab
+Form/Look/Explore/Keep panel modes with persisted accordions and essential/
+advanced parameters · Session recovery with debounced local snapshots · Helix Lab
 (generalized helix, orthographic projections, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
@@ -470,7 +473,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 | MS | Scope | Status | Evidence |
 |---|---|---|---|
 | **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
-| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 23 generators registered, 31 operators, `analysis/differential.js`, 4 overlays |
+| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 23 generators registered, 36 operators, `analysis/differential.js`, 4 overlays |
 | **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 12 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
 | **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space and ZIP frame-sequence export | Source tree + `e2e` |
 

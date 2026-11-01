@@ -25,8 +25,8 @@ Generators.register({
       default: 'k = 3\nx = sin(k*t) + 0.25*sin(11*t)\ny = cos(2*t) - 0.4*cos(7*t)',
       doc: 'Multi-line program. Must assign x and y (or r for polar).',
     },
-    t0: { label: 't min', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, default: 0 },
-    t1: { label: 't max', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, default: TAU },
+    t0: { label: 't min', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, snap: false, default: 0 },
+    t1: { label: 't max', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, snap: false, default: TAU },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 700 },
     adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
     closed: { label: 'Closed', type: TYPE.BOOLEAN, default: true },
@@ -46,9 +46,6 @@ Generators.register({
       scope.r = undefined;
       program(scope);
       if (typeof scope.x === 'number' && typeof scope.y === 'number') {
-        if (!Number.isFinite(scope.x) || !Number.isFinite(scope.y)) {
-          throw new Error(`non-finite point at t=${t.toFixed(4)}`);
-        }
         return { x: scope.x, y: scope.y };
       }
       if (typeof scope.r === 'number') {
@@ -57,7 +54,11 @@ Generators.register({
       throw new Error('program must assign x and y (or r)');
     };
     const points = params.adaptive
-      ? sampleAdaptive(fn, params.t0, params.t1, { minSteps: Math.min(256, params.samples), samples: params.samples })
+      ? sampleAdaptive(fn, params.t0, params.t1, {
+        minSteps: Math.min(512, params.samples),
+        samples: params.samples,
+        maxDepth: 8,
+      })
       : sampleUniform(fn, params.t0, params.t1, params.samples);
     const curve = { id: genId('custom'), points, closed: params.closed, meta: { source: 'custom' } };
     return postProcess([curve], params);

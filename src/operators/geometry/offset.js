@@ -10,6 +10,7 @@
 import { Operators } from '../../core/registry.js';
 import { TYPE } from '../../core/schema.js';
 import { bbox } from '../../sampling/sampling.js';
+import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.js';
 
 let id = 0;
 const opId = () => `off-${id++}`;
@@ -17,7 +18,8 @@ const opId = () => `off-${id++}`;
 /** Offset a polyline by signed distance d (positive = left of travel). */
 export function offsetPoints(points, d, closed) {
   const n = points.length;
-  if (n < 2 || d === 0) return points.map((p) => ({ ...p }));
+  const dynamic = typeof d === 'function';
+  if (n < 2 || (!dynamic && d === 0)) return points.map((p) => ({ ...p }));
 
   const seg = (i) => {
     const a = points[i];
@@ -41,11 +43,14 @@ export function offsetPoints(points, d, closed) {
     // miter length, clamped
     const dot = Math.max(0.35, mx * n0.x + my * n0.y);
     const k = Math.min(4, 1 / dot);
-    if (!closed && (i === 0 || i === n - 1)) {
+    const distance = dynamic ? Number(d(points[i], i)) : d;
+    if (!Number.isFinite(distance) || distance === 0) {
+      out[i] = { ...points[i] };
+    } else if (!closed && (i === 0 || i === n - 1)) {
       const nn = i === 0 ? n0 : n1;
-      out[i] = { ...points[i], x: points[i].x + nn.x * d, y: points[i].y + nn.y * d };
+      out[i] = { ...points[i], x: points[i].x + nn.x * distance, y: points[i].y + nn.y * distance };
     } else {
-      out[i] = { ...points[i], x: points[i].x + mx * d * k, y: points[i].y + my * d * k };
+      out[i] = { ...points[i], x: points[i].x + mx * distance * k, y: points[i].y + my * distance * k };
     }
   }
   return out;
@@ -69,13 +74,26 @@ Operators.register({
   category: 'geometry',
   params: {
     distance: { label: 'Distance', type: TYPE.NUMBER, min: -120, max: 120, step: 0.5, default: 10 },
+    distanceExpr: {
+      label: 'Distance Expr', type: TYPE.EXPRESSION, default: '',
+      doc: 'Optional per-point distance added to Distance. Uses x, y, i, n and time.',
+    },
     copies: { label: 'Copies', type: TYPE.NUMBER, min: 1, max: 12, step: 1, default: 1 },
   },
-  apply(curves, p) {
+  apply(curves, p, ctx) {
+    const expr = compileOptionalExpression(p.distanceExpr, 'offset distance', 'distanceExpr');
+    const scope = expr ? makeExpressionScope(ctx) : null;
     const out = curves.map((c) => ({ ...c, id: opId() }));
     for (let k = 1; k <= p.copies; k++) {
       for (const c of curves) {
-        out.push({ ...c, id: opId(), points: offsetPoints(c.points, p.distance * k, c.closed) });
+        let distance = p.distance * k;
+        if (expr) {
+          distance = (pt, i) => {
+            const extra = evaluatePointExpression(expr, scope, pt, i, c.points.length) ?? 0;
+            return p.distance * k + extra;
+          };
+        }
+        out.push({ ...c, id: opId(), points: offsetPoints(c.points, distance, c.closed) });
       }
     }
     return out;

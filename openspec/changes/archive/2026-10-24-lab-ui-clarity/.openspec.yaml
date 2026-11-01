@@ -1,0 +1,12 @@
+name: lab-ui-clarity
+description: >
+  Reduce inspector overload with workspace modes, persisted accordions,
+  essential/advanced parameter disclosure and active-context status.
+status: proposed
+created: 2026-10-24
+capabilities:
+  - panel-modes
+  - progressive-parameters
+  - context-status
+  - orthographic-projection
+skip_specs: false

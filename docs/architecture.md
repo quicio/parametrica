@@ -148,11 +148,11 @@ src/
 │   └── zip.js                    frame-sequence ZIP writer
 │
 ├── ui/
-│   ├── Controls.js               instrument panel
+│   ├── Controls.js               mode bar, accordions and instrument panel
 │   └── widgets/
 │       ├── ExpressionField.js    CodeMirror 6 math editor
 │       ├── HarmonicsEditor.js    Fourier table editor
-│       ├── OperatorStack.js      add/remove/reorder/toggle operators
+│       ├── OperatorStack.js      add/reorder/toggle + Clone ×3 operators
 │       ├── LabPanel.js           metrics + parameter-influence panel
 │       ├── NotebookPanel.js      checkpoints, thumbnails and A/B compare
 │       ├── ExplorePanel.js       axis, scope, strip and candidate adoption
@@ -338,7 +338,7 @@ should never produce a form that breaks at `time = 0.5`.
 ### Why per-stage caching?
 
 Slider drags fire 60 times per second. Re-evaluating 23 generators +
-31 operators from scratch on every drag is wasteful. The cache keys
+36 operators from scratch on every drag is wasteful. The cache keys
 on `(seed, time, quality, camera, stage.id, stage.params, stage.mods,
 stage.enabled)` JSON-stringified. A slider drag invalidates exactly one
 stage and everything downstream.
@@ -429,7 +429,16 @@ for `renderer.readyPromise` before touching the canvas.
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
 
-1152 checks total.
+1157 checks total.
+
+### Panel behavior
+
+The inspector is split into Form, Look, Explore and Keep modes. Sections are
+accordions persisted under `parametrica.ui.v1`; Generator and Parameters open
+by default. Technical generator parameters sit behind an Advanced disclosure.
+The sticky status line reports the active layer, hidden state, generator,
+operator counts, modulation, timeline tracks and projection. Orthographic
+projection is disabled for 2D generators and falls back to the camera view.
 
 ### Quality gates
 

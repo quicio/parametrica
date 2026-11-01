@@ -13,7 +13,7 @@ import { TYPE } from '../core/schema.js';
 import { OVERLAYS } from '../viz/overlays.js';
 import { ExpressionField } from './widgets/ExpressionField.js';
 import { HarmonicsEditor } from './widgets/HarmonicsEditor.js';
-import { OperatorStack, bindStageParams } from './widgets/OperatorStack.js';
+import { OperatorStack, bindStageParams, bindStageMods, applyHardBounds } from './widgets/OperatorStack.js';
 import { normalizeModes, toggleMode } from './widgets/modeToggles.js';
 import { LabPanel } from './widgets/LabPanel.js';
 import { NotebookPanel } from './widgets/NotebookPanel.js';
@@ -23,6 +23,20 @@ import { ImagePanel } from './widgets/ImagePanel.js';
 import { EvolutionPanel } from './widgets/EvolutionPanel.js';
 import { ExplorePanel } from './widgets/ExplorePanel.js';
 import { ARTBOARD_PRESETS, PALETTES, paletteById } from '../render/palettes.js';
+
+const UI_STATE_KEY = 'parametrica.ui.v1';
+const DEFAULT_OPEN = new Set(['generator', 'parameters']);
+const MODES = [
+  { id: 'form', label: 'Form' },
+  { id: 'look', label: 'Look' },
+  { id: 'explore', label: 'Explore' },
+  { id: 'keep', label: 'Keep' },
+];
+const ADVANCED_PARAM_KEYS = new Set([
+  'samples', 'adaptive', 'closed', 'fit', 'size', 't0', 't1', 'theta0',
+  'depthOcclusion', 'depthAttenuation', 'skip', 'dt', 'steps', 'stepSize',
+  'duration', 'fps', 'maxSteps', 'minSteps',
+]);
 
 export class Controls {
   /** @param {object} app  @param {HTMLElement} container */
@@ -35,24 +49,178 @@ export class Controls {
     this.sectionGuis = [];
     this.presetState = { selected: '', name: '' };
     this.presetSelect = null;
+    this.uiState = loadUiState();
+    this.sectionEls = new Map();
+    this.mode = this.uiState.mode;
+    this.modeBar = null;
+    this.statusEl = null;
+    this.statusText = null;
+    this.statusShow = null;
+    this.advancedToggle = null;
 
     this.build();
   }
 
   /* ———————— layout ———————— */
 
-  section(title) {
+  section(title, { mode = 'form', id = null, open = undefined } = {}) {
+    const sectionId = id ?? slugify(title);
     const el = document.createElement('section');
     el.className = 'panel-section';
-    const h = document.createElement('div');
-    h.className = 'panel-h';
-    h.textContent = title;
-    el.appendChild(h);
+    el.dataset.mode = mode;
+    el.dataset.sectionId = sectionId;
+    el.id = `panel-section-${sectionId}`;
+
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'panel-h';
+    header.setAttribute('aria-controls', `${el.id}-body`);
+    const titleEl = document.createElement('span');
+    titleEl.className = 'panel-h-title';
+    titleEl.textContent = title;
+    const caret = document.createElement('span');
+    caret.className = 'panel-h-caret';
+    caret.setAttribute('aria-hidden', 'true');
+    caret.textContent = '⌄';
+    header.append(titleEl, caret);
+    header.addEventListener('click', () => this.toggleSection(sectionId));
+
     const body = document.createElement('div');
     body.className = 'panel-body';
-    el.appendChild(body);
+    body.id = `${el.id}-body`;
+    el.append(header, body);
     this.container.appendChild(el);
+
+    const saved = this.uiState.sections[sectionId];
+    const isOpen = typeof saved === 'boolean' ? saved : (open ?? DEFAULT_OPEN.has(sectionId));
+    const meta = { id: sectionId, el, body, header, mode };
+    this.sectionEls.set(sectionId, meta);
+    this.applySectionOpen(meta, isOpen);
     return body;
+  }
+
+  applySectionOpen(meta, open) {
+    meta.body.hidden = !open;
+    meta.el.classList.toggle('open', open);
+    meta.header.setAttribute('aria-expanded', String(open));
+  }
+
+  toggleSection(sectionId) {
+    const meta = this.sectionEls.get(sectionId);
+    if (!meta) return;
+    const open = meta.header.getAttribute('aria-expanded') !== 'true';
+    this.uiState.sections[sectionId] = open;
+    this.applySectionOpen(meta, open);
+    this.saveUiState();
+  }
+
+  buildModeBar() {
+    const header = document.createElement('div');
+    header.className = 'panel-header';
+
+    const bar = document.createElement('div');
+    bar.className = 'panel-modes';
+    bar.setAttribute('role', 'tablist');
+    bar.setAttribute('aria-label', 'Panel workspace');
+    for (const mode of MODES) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'panel-mode';
+      button.dataset.mode = mode.id;
+      button.setAttribute('role', 'tab');
+      button.textContent = mode.label;
+      button.addEventListener('click', () => this.setMode(mode.id, { resetScroll: true }));
+      bar.appendChild(button);
+    }
+
+    const status = document.createElement('div');
+    status.className = 'panel-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const text = document.createElement('span');
+    text.className = 'panel-status-text';
+    const show = document.createElement('button');
+    show.type = 'button';
+    show.className = 'panel-status-show';
+    show.textContent = 'Show layer';
+    show.hidden = true;
+    show.addEventListener('click', () => {
+      const index = this.app.document.activeLayer ?? 0;
+      this.app.setLayerVisible(index, true);
+    });
+    status.append(text, show);
+
+    header.append(bar, status);
+    this.container.appendChild(header);
+    this.modeBar = bar;
+    this.statusEl = status;
+    this.statusText = text;
+    this.statusShow = show;
+  }
+
+  setMode(modeId, { resetScroll = false } = {}) {
+    if (!MODES.some((mode) => mode.id === modeId)) modeId = 'form';
+    this.mode = modeId;
+    this.uiState.mode = modeId;
+    if (this.modeBar) {
+      for (const button of this.modeBar.querySelectorAll('.panel-mode')) {
+        const active = button.dataset.mode === modeId;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+      }
+    }
+    for (const meta of this.sectionEls.values()) {
+      meta.el.hidden = meta.mode !== modeId;
+    }
+    this.saveUiState();
+    if (resetScroll) this.container.scrollTop = 0;
+    this.refreshStatus();
+  }
+
+  refreshStatus() {
+    if (!this.statusEl || !this.statusText) return;
+    const doc = this.app.document;
+    const layers = doc.layers ?? [];
+    const index = Math.max(0, Math.min(layers.length - 1, doc.activeLayer ?? 0));
+    const layer = layers[index];
+    if (!layer) {
+      this.statusText.textContent = 'No active layer';
+      this.statusShow.hidden = true;
+      return;
+    }
+    const visible = layer.visible !== false;
+    const generator = Generators.get(layer.generator.id);
+    const operators = layer.operators ?? [];
+    const disabled = operators.filter((op) => !op.enabled).length;
+    const mods = countMods(layer.generator) + operators.reduce((sum, op) => sum + countMods(op), 0);
+    const tracks = (doc.animation?.timeline?.tracks ?? [])
+      .filter((track) => (track.layer ?? 0) === index).length;
+    const projection = doc.view?.projection ?? '3d';
+    const parts = [
+      `Layer ${index + 1}/${layers.length}`,
+      layer.name,
+      visible ? 'visible' : 'hidden',
+      generator?.name ?? layer.generator.id,
+      `${operators.length} op${operators.length === 1 ? '' : 's'}${disabled ? ` · ${disabled} off` : ''}`,
+    ];
+    if (mods) parts.push(`${mods} mod${mods === 1 ? '' : 's'}`);
+    if (tracks) parts.push(`${tracks} track${tracks === 1 ? '' : 's'}`);
+    if (projection !== '3d') parts.push(`view ${projection.toUpperCase()}`);
+    this.statusText.textContent = parts.join(' · ');
+    this.statusEl.classList.toggle('hidden-layer', !visible);
+    this.statusShow.hidden = visible;
+  }
+
+  saveUiState() {
+    try {
+      localStorage.setItem(UI_STATE_KEY, JSON.stringify({
+        mode: this.mode,
+        sections: this.uiState.sections,
+        advancedParams: Boolean(this.uiState.advancedParams),
+      }));
+    } catch {
+      // UI state is optional; blocked storage must not break the panel.
+    }
   }
 
   makeGui(body) {
@@ -95,6 +263,13 @@ export class Controls {
     this.imagePanel = null;
     this.evolutionPanel = null;
     this.container.innerHTML = '';
+    this.sectionEls = new Map();
+    this.modeBar = null;
+    this.statusEl = null;
+    this.statusText = null;
+    this.statusShow = null;
+    this.advancedToggle = null;
+    this.buildModeBar();
 
     this.buildLayersSection();
     this.buildGeneratorSection();
@@ -115,6 +290,8 @@ export class Controls {
     this.buildEvolutionSection();
     this.buildPresetsSection();
     this.buildExportSection();
+    this.setMode(this.uiState.mode, { resetScroll: false });
+    this.refreshStatus();
 
     this.container.scrollTop = previousScroll;
     // Focus and layout can both trigger an implicit scroll after the
@@ -139,7 +316,7 @@ export class Controls {
   /* ———————— sections ———————— */
 
   buildLayersSection() {
-    const body = this.section('Layers');
+    const body = this.section('Layers', { id: 'layers', mode: 'form' });
     const layers = this.app.document.layers ?? [];
     const bar = document.createElement('div');
     bar.className = 'layers-bar';
@@ -202,7 +379,7 @@ export class Controls {
   }
 
   buildGeneratorSection() {
-    const gui = this.makeGui(this.section('Generator'));
+    const gui = this.makeGui(this.section('Generator', { id: 'generator', mode: 'form' }));
     const options = {};
     for (const def of Generators.list()) options[def.name] = def.id;
     const proxy = { id: this.app.document.generator.id };
@@ -212,14 +389,59 @@ export class Controls {
   }
 
   buildParamsSection() {
-    const gui = this.makeGui(this.section('Parameters'));
+    const body = this.section('Parameters', { id: 'parameters', mode: 'form' });
     const gen = Generators.get(this.app.document.generator.id);
     const stage = this.app.document.generator;
-    const plain = Object.entries(gen.params).filter(([, s]) =>
-      [TYPE.NUMBER, TYPE.BOOLEAN, TYPE.SELECT].includes(s.type));
-    if (plain.length) {
-      bindStageParams(gui, Object.fromEntries(plain), stage, () => this.app.rebuild());
+    const plain = Object.entries(gen.params).filter(([, schema]) =>
+      [TYPE.NUMBER, TYPE.BOOLEAN, TYPE.SELECT].includes(schema.type));
+    if (!plain.length) return;
+    const numericSchema = Object.fromEntries(
+      Object.entries(gen.params).filter(([, schema]) => schema.type === TYPE.NUMBER),
+    );
+
+    const essential = [];
+    const advanced = [];
+    for (const entry of plain) {
+      if (isAdvancedParam(entry[0], entry[1])) advanced.push(entry);
+      else essential.push(entry);
     }
+
+    if (essential.length) {
+      const essentialGui = this.makeGui(body);
+      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => this.app.rebuild(), { mods: false });
+    }
+
+    if (advanced.length) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'advanced-toggle';
+      const wrap = document.createElement('div');
+      wrap.className = 'advanced-params';
+      const advancedGui = this.makeGui(wrap);
+      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => this.app.rebuild(), { mods: false });
+      body.append(toggle, wrap);
+      this.advancedToggle = toggle;
+
+      const apply = (open, persist = true) => {
+        wrap.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = `${open ? '▾' : '▸'} Advanced parameters (${advanced.length})`;
+        if (persist) {
+          this.uiState.advancedParams = open;
+          this.saveUiState();
+        }
+      };
+      toggle.addEventListener('click', () => {
+        apply(wrap.hidden);
+      });
+      // When every control is advanced, open the group so the panel is
+      // not an empty section with a single toggle. Do not persist this
+      // automatic default into other generators.
+      apply(essential.length === 0 ? true : Boolean(this.uiState.advancedParams), essential.length !== 0);
+    }
+
+    const modsGui = this.makeGui(body);
+    bindStageMods(modsGui, numericSchema, stage, () => this.app.rebuild());
   }
 
   buildEquationsSection() {
@@ -228,7 +450,7 @@ export class Controls {
       [TYPE.EXPRESSION, TYPE.SOURCE].includes(s.type));
     if (!exprEntries.length) return;
 
-    const body = this.section('Equations');
+    const body = this.section('Equations', { id: 'equations', mode: 'form' });
     const stage = this.app.document.generator;
     for (const [key, s] of exprEntries) {
       const field = new ExpressionField({
@@ -250,7 +472,7 @@ export class Controls {
     const gen = Generators.get(this.app.document.generator.id);
     const hasHarmonics = Object.keys(gen.params).some((k) => k === 'harmonicsX' || k === 'harmonicsY');
     if (!hasHarmonics) return;
-    const body = this.section('Harmonics');
+    const body = this.section('Harmonics', { id: 'harmonics', mode: 'form' });
     this.harmonicsEditor = new HarmonicsEditor({
       getRows: (axis) => this.app.document.generator.params[axis] ?? [],
       onChange: (axis, rows) => {
@@ -262,14 +484,18 @@ export class Controls {
   }
 
   buildOperatorsSection() {
-    const body = this.section('Operators');
-    this.operatorStack = new OperatorStack(this.app, body, () => this.app.rebuild(), () => this.app.rebuildAll());
+    const body = this.section('Operators', { id: 'operators', mode: 'form' });
+    this.operatorStack = new OperatorStack(this.app);
+    body.appendChild(this.operatorStack.el);
   }
 
   buildViewSection() {
-    const body = this.section('View');
+    const body = this.section('View', { id: 'view', mode: 'look' });
     const gui = this.makeGui(body);
     const view = this.app.document.view;
+    const generatorId = this.app.activeLayer?.generator?.id;
+    const canProject = generatorId === 'helix' || generatorId === 'parametric-3d';
+    if (!canProject && view.projection !== '3d') view.projection = '3d';
     view.projection ??= '3d';
     const projection = gui
       .add(view, 'projection', {
@@ -281,6 +507,14 @@ export class Controls {
       .name('Projection');
     projection.domElement.classList.add('view-projection-row');
     projection.$widget?.querySelector?.('select')?.classList.add('view-projection');
+    if (!canProject) {
+      projection.disable();
+      projection.domElement.title = 'Orthographic views require a 3-D generator';
+      const hint = document.createElement('div');
+      hint.className = 'panel-hint';
+      hint.textContent = 'Orthographic views require a 3-D generator (Helix or Parametric 3D). 2-D curves stay in the camera view.';
+      body.appendChild(hint);
+    }
     gui.add(view, 'guides').name('CAD Guides').onChange(() => this.app.rebuild());
 
     // Render modes are a multi-select, but lil-gui's option controller
@@ -320,7 +554,7 @@ export class Controls {
   }
 
   buildArtboardSection() {
-    const body = this.section('Artboard');
+    const body = this.section('Artboard', { id: 'artboard', mode: 'look' });
     const view = this.app.document.view;
     const ab = view.artboard;
     const st = view.style;
@@ -509,28 +743,51 @@ export class Controls {
   }
 
   buildImageSection() {
-    const body = this.section('Image');
+    const body = this.section('Image', { id: 'image', mode: 'look' });
     this.imagePanel = new ImagePanel(this.app);
     body.appendChild(this.imagePanel.el);
   }
 
   buildAnimationSection() {
-    const gui = this.makeGui(this.section('Animation'));
+    const gui = this.makeGui(this.section('Animation', { id: 'animation', mode: 'look' }));
     const a = this.app.document.animation;
     gui.add(a, 'playing').name('Play').onChange(() => this.app.rebuild());
     gui.add(a, 'speed', 0.05, 4, 0.05).name('Speed').onChange(() => {});
-    gui.add(a, 'time', 0, 12.5664, 0.01).name('Time').onChange((t) => this.app.setTime(t)).listen();
+    const time = gui.add(a, 'time', 0, 12.5664, 0.01)
+      .name('Time')
+      .onChange((t) => this.app.setTime(t))
+      .listen();
+    applyHardBounds(time, { snap: false, hardMin: 0, hardMax: 1000000 });
+    this.timeController = time;
+    this.timeBaseMax = 12.5664;
+    this.syncTimeRange(a.time);
     gui.add({ reset: () => this.app.resetTime() }, 'reset').name('Reset Time');
   }
 
+  /**
+   * Keep the time playhead moving past 4π without turning the slider into
+   * a million-unit control. The visible range grows with the current time,
+   * so the knob always has somewhere to advance while the early range stays
+   * precise.
+   */
+  syncTimeRange(value) {
+    if (!this.timeController) return;
+    const base = this.timeBaseMax ?? 12.5664;
+    const n = Number(value);
+    const max = Math.max(base, (Number.isFinite(n) ? n : 0) + base);
+    if (Math.abs((this.timeController._max ?? base) - max) < 1e-6) return;
+    this.timeController.max(max);
+    this.timeController.updateDisplay();
+  }
+
   buildTimelineSection() {
-    const body = this.section('Timeline');
+    const body = this.section('Timeline', { id: 'timeline', mode: 'look' });
     this.timelinePanel = new TimelinePanel(this.app);
     body.appendChild(this.timelinePanel.el);
   }
 
   buildMutationSection() {
-    const gui = this.makeGui(this.section('Mutation'));
+    const gui = this.makeGui(this.section('Mutation', { id: 'mutation', mode: 'explore' }));
     const btn = gui.add({ mutate: () => this.app.mutate() }, 'mutate').name('Mutate');
     btn.domElement.classList.add('gl-accent');
     gui.add({ undo: () => this.app.undo() }, 'undo').name('Undo (⌘Z)');
@@ -543,31 +800,31 @@ export class Controls {
   }
 
   buildAnalysisSection() {
-    const body = this.section('Analysis');
+    const body = this.section('Analysis', { id: 'analysis', mode: 'explore' });
     this.labPanel = new LabPanel(this.app);
     body.appendChild(this.labPanel.el);
   }
 
   buildNotebookSection() {
-    const body = this.section('Notebook');
+    const body = this.section('Notebook', { id: 'notebook', mode: 'keep' });
     this.notebookPanel = new NotebookPanel(this.app);
     body.appendChild(this.notebookPanel.el);
   }
 
   buildAdvisorSection() {
-    const body = this.section('Advisor');
+    const body = this.section('Advisor', { id: 'advisor', mode: 'explore' });
     this.advisorPanel = new AdvisorPanel(this.app);
     body.appendChild(this.advisorPanel.el);
   }
 
   buildExploreSection() {
-    const body = this.section('Explore');
+    const body = this.section('Explore', { id: 'explore', mode: 'explore' });
     this.explorePanel = new ExplorePanel(this.app);
     body.appendChild(this.explorePanel.el);
   }
 
   buildEvolutionSection() {
-    const body = this.section('Evolution');
+    const body = this.section('Evolution', { id: 'evolution', mode: 'explore' });
     this.evolutionPanel = new EvolutionPanel(this.app);
     body.appendChild(this.evolutionPanel.el);
   }
@@ -575,7 +832,7 @@ export class Controls {
   buildPresetsSection() {
     // Reuse the section on GUI-only rebuilds; otherwise every save would
     // append an empty "Presets" section.
-    const body = this.presetSectionBody ?? this.section('Presets');
+    const body = this.presetSectionBody ?? this.section('Presets', { id: 'presets', mode: 'keep' });
     this.presetSectionBody = body;
     body.replaceChildren();
     this.presetsGui = this.makeGui(body);
@@ -622,7 +879,7 @@ export class Controls {
   }
 
   buildExportSection() {
-    const gui = this.makeGui(this.section('Export'));
+    const gui = this.makeGui(this.section('Export', { id: 'export', mode: 'keep' }));
     const ex = this.app.exporter;
     gui.add({ svg: () => ex.exportSVG() }, 'svg').name('Export SVG');
     gui.add({ png: () => ex.exportPNG() }, 'png').name('Export PNG');
@@ -649,6 +906,7 @@ export class Controls {
     this.operatorStack?.refresh?.();
     this.advisorPanel?.refresh?.();
     this.evolutionPanel?.refresh?.();
+    this.refreshStatus();
   }
 
   /** Refresh displayed values after a non-structural parameter adoption. */
@@ -664,9 +922,11 @@ export class Controls {
     this.advisorPanel?.refresh?.();
     this.explorePanel?.refresh?.();
     this.evolutionPanel?.refresh?.();
+    this.refreshStatus();
   }
 
   showErrors(errors) {
+    this.operatorStack?.setErrors?.(errors);
     if (!this.expressionFields.size) return;
     // route errors by stage index + key. Stage 0 = generator.
     const byKey = new Map();
@@ -693,4 +953,34 @@ function layerButton(label, title, onClick, disabled = false) {
     onClick();
   });
   return button;
+}
+
+
+function isAdvancedParam(key, schema) {
+  return schema?.advanced === true || ADVANCED_PARAM_KEYS.has(key);
+}
+
+function countMods(stage) {
+  if (!stage?.mods) return 0;
+  return Object.values(stage.mods).filter((value) => typeof value === 'string' && value.trim()).length;
+}
+
+function slugify(title) {
+  return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function loadUiState() {
+  const fallback = { mode: 'form', sections: {}, advancedParams: false };
+  try {
+    const raw = localStorage.getItem(UI_STATE_KEY);
+    if (!raw) return fallback;
+    const data = JSON.parse(raw);
+    return {
+      mode: MODES.some((mode) => mode.id === data?.mode) ? data.mode : 'form',
+      sections: data?.sections && typeof data.sections === 'object' ? data.sections : {},
+      advancedParams: data?.advancedParams === true,
+    };
+  } catch {
+    return fallback;
+  }
 }

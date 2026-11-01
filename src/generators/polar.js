@@ -19,7 +19,7 @@ Generators.register({
       default: '2 + cos(5*theta)',
       doc: 'radius as a function of theta (and time).',
     },
-    theta0: { label: 'θ min', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, default: 0 },
+    theta0: { label: 'θ min', type: TYPE.NUMBER, min: -200, max: 200, step: 0.01, snap: false, default: 0 },
     turns: { label: 'Turns', type: TYPE.NUMBER, min: 1, max: 64, step: 1, default: 1 },
     samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 12000, step: 1, default: 900 },
     adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
@@ -37,11 +37,15 @@ Generators.register({
       scope.t = theta;
       scope.theta = theta;
       const r = fnR(scope);
-      if (!Number.isFinite(r)) throw new Error(`non-finite radius at θ=${theta.toFixed(4)}`);
+      // A pole becomes a break in the polyline instead of killing the curve.
       return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
     };
     const points = params.adaptive
-      ? sampleAdaptive(fn, params.theta0, t1, { minSteps: Math.min(256, params.samples), samples: params.samples })
+      ? sampleAdaptive(fn, params.theta0, t1, {
+        minSteps: Math.min(512, params.samples),
+        samples: params.samples,
+        maxDepth: 8,
+      })
       : sampleUniform(fn, params.theta0, t1, params.samples);
     const curve = { id: genId('polar'), points, closed: params.closed, meta: { source: 'polar' } };
     return postProcess([curve], params);

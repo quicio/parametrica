@@ -14,8 +14,29 @@ import { centerCurves, fitCurves } from '../sampling/sampling.js';
  * @param {{fit?:number}} options  fit semantics match the 3D generator: 0 = center only
  * @returns {Array} projected copies (or the input array in 3D mode)
  */
+/** Does this geometry actually carry true 3D coordinates? */
+export function supportsOrthographic(curves) {
+  if (!Array.isArray(curves)) return false;
+  for (const curve of curves) {
+    const point = curve?.points?.[0];
+    if (point && Number.isFinite(point.x3) && Number.isFinite(point.y3) && Number.isFinite(point.h3)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Orthographic views only make sense for curves with true 3D metadata.
+ * A 2D curve has z=0, so XZ/YZ would collapse it to a flat line; fall back
+ * to the camera view instead of showing an apparently empty canvas.
+ */
+export function projectionFor(curves, projection = '3d') {
+  return projection === '3d' || supportsOrthographic(curves) ? projection : '3d';
+}
+
 export function projectCurves(curves, projection = '3d', { fit = 0 } = {}) {
-  if (!Array.isArray(curves) || projection === '3d') return curves;
+  if (!Array.isArray(curves) || projection === '3d' || !supportsOrthographic(curves)) return curves;
   const projected = curves.map((curve) => ({
     ...curve,
     points: curve.points.map((point) => projectPoint(point, projection)),

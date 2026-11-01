@@ -17,11 +17,12 @@ import '../src/operators/index.js';
 import '../src/render/passes/index.js';
 
 import { Generators, Operators, RenderPasses } from '../src/core/registry.js';
+import { trochoidTurns, lissajousTurns, roseTurns } from '../src/generators/helpers.js';
 import { compileExpression, evaluate, perturbLiterals } from '../src/math/expression.js';
 import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
-import { sampleAdaptive } from '../src/sampling/sampling.js';
+import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
 import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP } from '../src/core/document.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults } from '../src/core/schema.js';
@@ -48,7 +49,8 @@ import { PresetManager } from '../src/presets/PresetManager.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter } from '../src/export/Exporter.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
-import { projectCurves, projectPoint, gradientAxisValue } from '../src/render/projection.js';
+import { warpExpressions } from '../src/operators/geometry/deform.js';
+import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 
 let failures = 0;
@@ -89,6 +91,9 @@ console.log('1. expression engine');
   assert(Math.abs(evaluate('mod(-3, 7)', scope()).value - 4) < 1e-12, 'mod wraps positive');
   assert(evaluate('k = 3; k * t', { ...scope(), t: 2 }).value === 6, 'program with assignment');
   assert(Math.abs(evaluate('clamp(lerp(0, 10, 0.5), 0, 4)', scope()).value - 4) < 1e-12, 'stdlib composition');
+  assert(evaluate('2 < 3 && 4 >= 4', scope()).value === 1, 'comparison and boolean operators');
+  assert(evaluate('!(2 > 3)', scope()).value === 1, 'boolean not operator');
+  assert(evaluate('x^2 + y^2 < 25', { ...scope(), x: 3, y: 4 }).value === 0, 'strict comparison boundary');
   assert(!compileExpression('1 +* 2').ok, 'syntax error reported');
   assert(!compileExpression('foo(t)').ok === false, 'unknown fn is runtime error, not compile error');
   const runtimeErr = evaluate('foo(t)', { ...scope(), t: 1 });
@@ -171,6 +176,32 @@ console.log(`4. generators (${Generators.list().length})`);
   for (const id of expected) {
     assert(Generators.has(id), `generator "${id}" registered`);
   }
+  const hypotrochoid = Generators.get('hypotrochoid');
+  const hypoParams = { ...schemaDefaults(hypotrochoid.params), R: 240, r: 90 };
+  assert(Object.prototype.hasOwnProperty.call(hypotrochoid.params, 'rotations'), 'hypotrochoid exposes rotations');
+  assert(Math.abs(hypotrochoid.domain(hypoParams).t1 - Math.PI * 6) < 1e-9, 'hypotrochoid T adapts to its 3-turn period');
+  const epitrochoid = Generators.get('epitrochoid');
+  const epiParams = { ...schemaDefaults(epitrochoid.params), R: 120, r: 30 };
+  assert(Math.abs(epitrochoid.domain(epiParams).t1 - Math.PI * 2) < 1e-9, 'epitrochoid T adapts to its period');
+
+  const longDomain = createDocument('parametric', {
+    generator: { params: { exprX: 'cos(t)', exprY: 'sin(t)', t0: 0, t1: 100 } },
+  });
+  assert(longDomain.generator.params.t1 === 100, 'parametric t max accepts values beyond 4π');
+  const longEval = evaluateDocument(longDomain, { time: 0 });
+  assert(longEval.errors.length === 0 && longEval.curves.length === 1, 'long parametric domain evaluates');
+
+  const hiRes = createDocument('parametric', {
+    generator: { params: { samples: 20000, adaptive: false } },
+  });
+  assert(hiRes.generator.params.samples === 20000, 'parametric samples accept typed values above the slider range');
+  assert(evaluateDocument(hiRes, { time: 0 }).stats.pointCount === 20000, '20k parametric samples evaluate exactly');
+
+  const exactDuration = createDocument('harmonic-oscillator', {
+    generator: { params: { duration: 19.37 } },
+  });
+  assert(exactDuration.generator.params.duration === 19.37, 'harmonic duration preserves exact typed values');
+  assert(evaluateDocument(exactDuration, { time: 0 }).errors.length === 0, 'exact duration evaluates');
   for (const def of Generators.list()) {
     const doc = createDocument(def.id);
     evalOK(doc, `generator ${def.id}`);
@@ -235,6 +266,13 @@ console.log('5. operators');
 
   assert(apply('mirror', { axis: 'vertical', keepOriginal: true }).length === base.length * 2, 'mirror doubles curves');
   assert(apply('radial-repeat', { count: 5 }).length === base.length * 5, 'radial-repeat multiplies');
+  assert(apply('radial-array', { count: 7 }).length === base.length * 7, 'radial-array multiplies');
+  assert(apply('linear-array', { count: 6 }).length === base.length * 6, 'linear-array multiplies');
+  assert(apply('kaleidoscope', { folds: 5, reflect: true }).length === base.length * 10, 'kaleidoscope mirrors each fold');
+  assert(apply('kaleidoscope', { folds: 5, reflect: false }).length === base.length * 5, 'kaleidoscope can omit mirrors');
+  const radial = apply('radial-array', { count: 4, sweep: 360, radius: 100, rotateCopies: false });
+  assert(radial.length === base.length * 4, 'radial-array count');
+  assert(Math.abs(radial[1].points[0].y - base[0].points[0].y) > 1, 'radial-array places copies around the orbit');
   assert(apply('grid-repeat', { cols: 3, rows: 2 }).length === base.length * 6, 'grid-repeat multiplies');
   assert(apply('duplicate', { count: 4 }).length === base.length * 4, 'duplicate multiplies');
 
@@ -261,8 +299,53 @@ console.log('5. operators');
   const vor = apply('voronoi', { samplePoints: 60 });
   assert(vor.length > 10 && vor.every((c) => c.closed), 'voronoi yields closed cells');
 
-  const warped = apply('warp', { exprX: 'x*1.5', exprY: 'y' });
-  assert(warped[0].points.length === base[0].points.length, 'warp preserves count');
+  const warped = apply('warp', { mode: 'manual', exprX: 'x*1.5', exprY: 'y' });
+  assert(warped[0].points.length === base[0].points.length, 'manual warp preserves count');
+
+  const defaultWarp = warpExpressions({ ampX: 40, ampY: 0, freqX: 1, freqY: 1, interference: 0, phase: 0 });
+  assert(defaultWarp.x === 'x + 40*sin(y/60)', `warp default X equation (${defaultWarp.x})`);
+  assert(defaultWarp.y === 'y', `warp default Y equation (${defaultWarp.y})`);
+  const acidWarp = warpExpressions({ ampX: 60, ampY: 30, freqX: 2, freqY: 1.5, interference: 20, phase: 90 });
+  assert(/sin/.test(acidWarp.x) && /cos/.test(acidWarp.y), 'warp controls generate both equations');
+  assert(/\+ 1\.5708/.test(acidWarp.x), 'warp phase is converted from degrees to radians');
+
+  const autoWarp = apply('warp', { mode: 'auto', ampX: 60, ampY: 30, freqX: 2, freqY: 1.5, interference: 20, phase: 90 });
+  assert(autoWarp[0].points.length === base[0].points.length, 'auto warp preserves count');
+  assert(autoWarp[0].points.some((pt, i) => pt.x !== base[0].points[i].x || pt.y !== base[0].points[i].y), 'auto warp changes geometry');
+
+  const migratedWarp = createDocument('superformula', {
+    operators: [{
+      id: 'warp', enabled: true,
+      params: { exprX: 'x + 10*sin(y/30)', exprY: 'y' },
+      mods: {},
+    }],
+  });
+  assert(migratedWarp.operators[0].params.mode === 'manual', 'warp documents without mode migrate to manual');
+
+  const exprRotate = apply('rotate', { angle: 0, angleExpr: '60' });
+  const rotatedPoint = base[0].points[0];
+  const exprRotatedPoint = exprRotate[0].points[0];
+  const a60 = Math.PI / 3;
+  assert(
+    Math.abs(exprRotatedPoint.x - (rotatedPoint.x * Math.cos(a60) - rotatedPoint.y * Math.sin(a60))) < 1e-6,
+    'rotate angle expression is evaluated per point',
+  );
+
+  const exprScale = apply('scale', { sx: 1, sy: 1, scaleExpr: '2' });
+  assert(Math.abs(exprScale[0].points[0].x - base[0].points[0].x * 2) < 1e-6, 'scale expression multiplies points');
+  assert(Math.abs(exprScale[0].points[0].y - base[0].points[0].y * 2) < 1e-6, 'scale expression applies uniformly');
+
+  const exprOffset = apply('offset', { distance: 0, copies: 1, distanceExpr: '12' });
+  const offsetCopy = exprOffset[exprOffset.length - 1];
+  assert(offsetCopy.points[0].x !== base[0].points[0].x || offsetCopy.points[0].y !== base[0].points[0].y,
+    'offset distance expression displaces points');
+
+  const displaced = apply('expression-displace', { exprX: '10', exprY: '-5' });
+  assert(Math.abs(displaced[0].points[0].x - (base[0].points[0].x + 10)) < 1e-9, 'displace expression adds dx');
+  assert(Math.abs(displaced[0].points[0].y - (base[0].points[0].y - 5)) < 1e-9, 'displace expression adds dy');
+
+  const exprClipped = apply('expression-clip', { expr: 'x > 0', invert: false });
+  assert(exprClipped.length > 0 && exprClipped.every((c) => c.points.every((pt) => pt.x > 0)), 'clip expression keeps only matching points');
 
   const clipped = apply('clip', { shape: 'circle', radius: 100 });
   assert(clipped.every((c) => c.points.every((q) => Math.hypot(q.x, q.y) <= 100.5)), 'clip circle bounds points');
@@ -411,6 +494,9 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
     assert(doc, `preset "${name}" loads`);
     evalOK(doc, `preset "${name}"`);
   }
+  for (const name of ['Spirograph', 'Guilloché', 'Geometric Flower', 'Radial Mandala', 'Interference Patterns', 'Orbital Patterns']) {
+    assert(pm.isBuiltIn(name), `ornamental preset "${name}" is present`);
+  }
   assert(pm.delete('Infinity') === false, 'built-ins immutable');
 }
 
@@ -510,6 +596,26 @@ console.log('11. sampling');
   assert(Math.abs(inv[0].x - Math.cos(tAtFirst)) < 1e-6, `inverted domain starts at t1 (${inv[0].x.toFixed(4)} ≈ ${Math.cos(tAtFirst).toFixed(4)})`);
   const tAtLast = 57.09;
   assert(Math.abs(inv[inv.length - 1].x - Math.cos(tAtLast)) < 1e-6, `inverted domain ends at t0 (${inv[inv.length - 1].x.toFixed(4)} ≈ ${Math.cos(tAtLast).toFixed(4)})`);
+
+  // Exact periods for the mathematical families.
+  assert(trochoidTurns(240, 90, 'hypo') === 3, 'hypotrochoid 240/90 closes after 3 turns');
+  assert(trochoidTurns(120, 30, 'epi') === 1, 'epitrochoid 120/30 closes after 1 turn');
+  assert(lissajousTurns(3, 5) === 1, 'integer Lissajous closes after one turn');
+  assert(lissajousTurns(1.25, 5) === 4, 'fractional Lissajous derives four turns');
+  assert(roseTurns(8, 3) === 3, 'rose n/d period is the reduced denominator');
+  assert(roseTurns(4, 2) === 1, 'reducible rose n/d is reduced first');
+
+  // Discontinuities become separate open strokes, never artificial chords.
+  const jump = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 1000, y: 0 }, { x: 1001, y: 0 }];
+  const jumped = splitCurveAtDiscontinuities(jump, { closed: false });
+  assert(jumped.segments.length === 2 && jumped.broken, 'large jump splits a polyline into two strokes');
+  const hole = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: NaN, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }];
+  const holed = splitCurveAtDiscontinuities(hole, { closed: false });
+  assert(holed.segments.length === 2, 'non-finite sample splits the curve around the pole');
+  const square = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+  assert(splitCurveAtDiscontinuities(square, { closed: true }).closed === true, 'implicit closing seam stays closed');
+  const arc = Array.from({ length: 101 }, (_, i) => ({ x: Math.cos(i / 100), y: Math.sin(i / 100) }));
+  assert(splitCurveAtDiscontinuities(arc, { closed: true }).closed === false, 'a chord spanning many samples is not a closure');
 }
 
 /* ——— 12. Performance budget ——— */
@@ -604,7 +710,7 @@ console.log('13. reliability regressions');
   clampDoc.generator.params.adaptive = false;
   clampDoc.generator.mods.samples = '50000';
   const clampEval = evaluateDocument(clampDoc, { time: 0 });
-  assert(clampEval.stats.pointCount === 8000, `samples modulation clamps to schema max (got ${clampEval.stats.pointCount})`);
+  assert(clampEval.stats.pointCount === POINT_LIMITS.perCurve, `samples modulation clamps to the 50k engine budget (got ${clampEval.stats.pointCount})`);
   assert(clampEval.errors.length === 0, 'clamped modulation is not an error');
 
   const nonFinite = createDocument('parametric');
@@ -686,10 +792,17 @@ console.log('13. reliability regressions');
   });
   assert(evaluateDocument(closed35, { time: 0 }).curves[0].closed === true, '3:5 Lissajous is closed');
 
-  const openLissajous = createDocument('lissajous', {
+  const fracLissajous = createDocument('lissajous', {
     generator: { params: { a: 1.25, b: 5, samples: 400, adaptive: false } },
   });
-  assert(evaluateDocument(openLissajous, { time: 0 }).curves[0].closed === false, 'fractional Lissajous is open');
+  const fracEval = evaluateDocument(fracLissajous, { time: 0 });
+  assert(fracEval.curves[0].closed === true, 'fractional Lissajous closes after its auto period');
+  assert(fracEval.curves[0].meta.turns === 4, 'fractional Lissajous derives 4 turns');
+
+  const openParametric = createDocument('parametric', {
+    generator: { params: { exprX: 'cos(t)', exprY: 'sin(t)', t0: 0, t1: 1, closed: true } },
+  });
+  assert(evaluateDocument(openParametric, { time: 0 }).curves[0].closed === false, 'partial domain is detected as open');
 
   const openSuper = createDocument('superformula', {
     generator: { params: { m: 5, a: 1, b: 2, samples: 400, adaptive: false } },
@@ -1731,11 +1844,16 @@ console.log('25. helix lab');
   assert(xz.x === 3 && xz.y === -5, 'xz keeps x/z');
   assert(yz.x === -4 && yz.y === -5, 'yz keeps y/z');
   assert(xy.depthAlpha === 1, 'orthographic projections disable camera fade');
-
   const fake = [{ points: [
     { x: 0, y: 0, x3: 0, y3: 0, h3: 0 },
     { x: 0, y: 0, x3: 10, y3: 0, h3: 0 },
   ] }];
+  const flat2D = [{ points: [{ x: 3, y: 4 }, { x: 5, y: 6 }] }];
+  assert(!supportsOrthographic(flat2D), '2D curves do not support orthographic views');
+  assert(supportsOrthographic(fake), '3D metadata enables orthographic views');
+  assert(projectionFor(flat2D, 'xz') === '3d', '2D projections fall back to the camera view');
+  assert(projectionFor(fake, 'xz') === 'xz', '3D projections stay selected');
+  assert(projectCurves(flat2D, 'xz') === flat2D, '2D projection leaves geometry untouched');
   const fitted = projectCurves(fake, 'xz', { fit: 100 });
   const fx = fitted[0].points.map((point) => point.x);
   assert(Math.abs(Math.max(...fx) - Math.min(...fx) - 100) < 1e-6, 'projection fit scales the projected bbox');

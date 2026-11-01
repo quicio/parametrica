@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openSection } from './helpers.js';
 
 async function waitForApp(page) {
   await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
@@ -11,6 +12,7 @@ test('formula editor uses CodeMirror highlighting and p5 loads lazily', async ({
   expect(await page.evaluate(() => window.__parametrica.renderer.ready)).toBe(true);
   await expect(page.locator('#canvas-container canvas')).toBeVisible();
 
+  await openSection(page, 'Equations');
   const field = page.locator('.expr-field').first();
   await expect(field.locator('.cm-editor')).toBeVisible();
   await expect(field.locator('.cm-content')).toHaveAttribute('contenteditable', 'true');

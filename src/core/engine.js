@@ -13,7 +13,7 @@ import { Generators, Operators } from './registry.js';
 import { resolveParams } from '../animation/animatable.js';
 import { createStdlib } from '../math/stdlib.js';
 import { analyzeAll } from '../analysis/differential.js';
-import { bboxAll } from '../sampling/sampling.js';
+import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
 
 const MAX_POINTS_PER_CURVE = 50_000;
 const MAX_TOTAL_POINTS = 200_000;
@@ -318,22 +318,31 @@ function tagErrors(errors, stage, index) {
   return proxy;
 }
 
-/** Drop degenerate/non-finite curves, normalize shape. */
+/** Drop degenerate curves, split discontinuities, normalize closure. */
 function sanitizeCurves(curves) {
   if (!Array.isArray(curves)) return [];
   const out = [];
   for (const c of curves) {
     if (!c || !Array.isArray(c.points) || c.points.length < 2) continue;
-    let finite = true;
-    for (const p of c.points) {
-      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) { finite = false; break; }
+    const split = splitCurveAtDiscontinuities(c.points, { closed: Boolean(c.closed) });
+    const segments = split.segments;
+    if (!segments.length) continue;
+    if (segments.length === 1) {
+      out.push({
+        id: c.id ?? nextId(),
+        points: segments[0],
+        closed: split.closed,
+        meta: split.broken ? { ...(c.meta ?? {}), discontinuity: true } : (c.meta ?? {}),
+      });
+      continue;
     }
-    if (!finite) continue;
-    out.push({
-      id: c.id ?? nextId(),
-      points: c.points,
-      closed: Boolean(c.closed),
-      meta: c.meta ?? {},
+    segments.forEach((points, index) => {
+      out.push({
+        id: `${c.id ?? nextId()}-s${index}`,
+        points,
+        closed: false,
+        meta: { ...(c.meta ?? {}), discontinuity: true, segment: index },
+      });
     });
   }
   return out;

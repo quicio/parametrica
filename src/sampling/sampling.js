@@ -132,6 +132,101 @@ function distanceToChord(p, a, b) {
   return Math.hypot(p.x - cx, p.y - cy);
 }
 
+/**
+ * Split a sampled polyline where consecutive points are too far apart to
+ * belong to the same continuous stroke.
+ *
+ * Two sources of breaks are handled:
+ *  - non-finite samples (poles such as tan(t), complex radii, …);
+ *  - a gap much larger than the local sampling step (a jump across a
+ *    discontinuity that still produced finite endpoints).
+ *
+ * The result keeps every continuous run as its own open polyline. A curve
+ * only stays closed when it had no break and its last point really lands on
+ * its first point.
+ */
+export function splitCurveAtDiscontinuities(points, {
+  closed = false,
+  gapRatio = 10,
+  minGapFraction = 0.02,
+} = {}) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return { segments: [], closed: false, broken: false };
+  }
+
+  // First pass: cut at non-finite samples.
+  const runs = [];
+  let run = [];
+  let sawNonFinite = false;
+  for (const point of points) {
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      run.push(point);
+    } else {
+      sawNonFinite = true;
+      if (run.length >= 2) runs.push(run);
+      run = [];
+    }
+  }
+  if (run.length >= 2) runs.push(run);
+  if (!runs.length) return { segments: [], closed: false, broken: sawNonFinite };
+
+  // Second pass: split runs at disproportionate jumps.
+  const out = [];
+  let broken = sawNonFinite;
+  for (const current of runs) {
+    const diag = bbox(current).diagonal;
+    if (current.length < 3 || diag < EPS) {
+      out.push(current);
+      continue;
+    }
+    const lengths = [];
+    for (let i = 1; i < current.length; i++) {
+      const d = Math.hypot(current[i].x - current[i - 1].x, current[i].y - current[i - 1].y);
+      if (d > EPS) lengths.push(d);
+    }
+    if (lengths.length < 2) {
+      out.push(current);
+      continue;
+    }
+    const sorted = [...lengths].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const threshold = Math.max(median * gapRatio, diag * minGapFraction, EPS);
+
+    let start = 0;
+    for (let i = 1; i < current.length; i++) {
+      const d = Math.hypot(current[i].x - current[i - 1].x, current[i].y - current[i - 1].y);
+      if (d > threshold) {
+        const piece = current.slice(start, i);
+        if (piece.length >= 2) out.push(piece);
+        start = i;
+        broken = true;
+      }
+    }
+    const tail = current.slice(start);
+    if (tail.length >= 2) out.push(tail);
+  }
+
+  if (!out.length) return { segments: [], closed: false, broken: true };
+  const first = out[0];
+  const last = out[out.length - 1];
+  const box = bbox(out.flat());
+  const gap = Math.hypot(last[last.length - 1].x - first[0].x, last[last.length - 1].y - first[0].y);
+  // A closed curve does not have to repeat its first point: many operators
+  // and spline samplers leave the closing segment implicit. Accept that
+  // when the seam is no larger than a normal sampling step; a chord that
+  // spans hundreds of steps is a genuinely open curve.
+  const seamLengths = [];
+  for (let i = 1; i < first.length; i++) {
+    const d = Math.hypot(first[i].x - first[i - 1].x, first[i].y - first[i - 1].y);
+    if (d > EPS) seamLengths.push(d);
+  }
+  seamLengths.sort((a, b) => a - b);
+  const step = seamLengths.length ? seamLengths[Math.floor(seamLengths.length / 2)] : 0;
+  const tolerance = Math.max(1e-7, box.diagonal * 1e-5, step * 4);
+  const closes = closed && out.length === 1 && gap <= tolerance;
+  return { segments: out, closed: closes, broken: broken || (closed && !closes) };
+}
+
 /** Cumulative arc-length table for a polyline. */
 export function arcLengthTable(points, closed = false) {
   const n = points.length;

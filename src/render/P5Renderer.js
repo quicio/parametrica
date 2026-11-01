@@ -11,7 +11,7 @@
 import { RenderPasses } from '../core/registry.js';
 import { bboxAll } from '../sampling/sampling.js';
 import { drawOverlays } from '../viz/overlays.js';
-import { projectCurves } from './projection.js';
+import { projectCurves, projectionFor } from './projection.js';
 
 /** Wrap an angle into the half-open interval (-π, π]. */
 function wrapPi(angle) {
@@ -300,7 +300,7 @@ export class P5Renderer {
       // or overlay actually uses tangents/normals/curvature/inflections.
       const analysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
       const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
-      const projection = doc.view.projection ?? '3d';
+      const projection = projectionFor(evaluation.curves, doc.view.projection ?? '3d');
       const sourceGroups = Array.isArray(evaluation.layers) && evaluation.layers.length
         ? evaluation.layers.filter((layer) => layer.visible !== false && layer.curves.length)
         : [{ curves: evaluation.curves, style: doc.view.style, bbox: evaluation.bbox, generator: doc.generator }];

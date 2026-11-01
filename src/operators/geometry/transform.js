@@ -6,10 +6,12 @@
 import { Operators } from '../../core/registry.js';
 import { TYPE } from '../../core/schema.js';
 import { fitCurves } from '../../sampling/sampling.js';
+import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.js';
 
 let id = 0;
 const opId = (p) => `${p}-${id++}`;
 const clone = (c, points) => ({ ...c, id: opId('tf'), points });
+const DEG = Math.PI / 180;
 
 Operators.register({
   id: 'mirror',
@@ -38,14 +40,21 @@ Operators.register({
   category: 'geometry',
   params: {
     angle: { label: 'Angle (°)', type: TYPE.NUMBER, min: -360, max: 360, step: 0.5, default: 45 },
+    angleExpr: {
+      label: 'Angle Expr (°)', type: TYPE.EXPRESSION, default: '',
+      doc: 'Optional per-point angle added to Angle. Uses x, y, i, n and time.',
+    },
     cx: { label: 'Center X', type: TYPE.NUMBER, min: -400, max: 400, step: 1, default: 0 },
     cy: { label: 'Center Y', type: TYPE.NUMBER, min: -400, max: 400, step: 1, default: 0 },
   },
-  apply(curves, p) {
-    const a = (p.angle * Math.PI) / 180;
-    const cos = Math.cos(a);
-    const sin = Math.sin(a);
-    return curves.map((c) => clone(c, c.points.map((pt) => {
+  apply(curves, p, ctx) {
+    const expr = compileOptionalExpression(p.angleExpr, 'rotate angle', 'angleExpr');
+    const scope = expr ? makeExpressionScope(ctx) : null;
+    return curves.map((c) => clone(c, c.points.map((pt, i) => {
+      const extra = evaluatePointExpression(expr, scope, pt, i, c.points.length) ?? 0;
+      const a = (p.angle + extra) * DEG;
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
       const dx = pt.x - p.cx;
       const dy = pt.y - p.cy;
       return { ...pt, x: p.cx + dx * cos - dy * sin, y: p.cy + dx * sin + dy * cos };
@@ -60,9 +69,18 @@ Operators.register({
   params: {
     sx: { label: 'Scale X', type: TYPE.NUMBER, min: 0.05, max: 4, step: 0.01, default: 1 },
     sy: { label: 'Scale Y', type: TYPE.NUMBER, min: 0.05, max: 4, step: 0.01, default: 1 },
+    scaleExpr: {
+      label: 'Scale Expr (×)', type: TYPE.EXPRESSION, default: '',
+      doc: 'Optional per-point uniform multiplier applied on top of Scale X/Y. Uses x, y, i, n and time.',
+    },
   },
-  apply(curves, p) {
-    return curves.map((c) => clone(c, c.points.map((pt) => ({ ...pt, x: pt.x * p.sx, y: pt.y * p.sy }))));
+  apply(curves, p, ctx) {
+    const expr = compileOptionalExpression(p.scaleExpr, 'scale factor', 'scaleExpr');
+    const scope = expr ? makeExpressionScope(ctx) : null;
+    return curves.map((c) => clone(c, c.points.map((pt, i) => {
+      const factor = evaluatePointExpression(expr, scope, pt, i, c.points.length) ?? 1;
+      return { ...pt, x: pt.x * p.sx * factor, y: pt.y * p.sy * factor };
+    })));
   },
 });
 

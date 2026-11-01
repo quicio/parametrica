@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1152 checks)
+npm test             # node-only verification suite (1157 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (57 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (62 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -43,11 +43,11 @@ leaving your machine.
 
 | Surface | What you can do |
 |---|---|
-| **Generator** | Choose a mathematical model — parametric equations, polar, Fourier, superformula, lissajous, trochoids, spirograph, noise fields, harmonic oscillators, custom multi-line programs |
+| **Generator** | Choose a mathematical model — parametric equations, polar, Fourier, superformula, lissajous, rose, hypotrochoid/epitrochoid, spirograph, noise fields, harmonic oscillators, custom multi-line programs |
 | **Parameters** | Schema-built panel that swaps when you change generator. Numbers, booleans, selects |
 | **Equations** | Live text fields for `x(t)`, `y(t)`, `r(θ)`, or free-form `custom` programs. Errors surface inline |
 | **Harmonics** | Interactive Fourier tables with add/remove/reorder rows |
-| **Operators** | Stack of pure `Curve[] → Curve[]` stages — transform, symmetry, resample, offset, deform, project, stroke, boolean, repeat, voronoi. Reorder, toggle, add |
+| **Operators** | Stack of pure `Curve[] → Curve[]` stages — rotate, scale, offset, radial/linear arrays, kaleidoscope, symmetry, resample, deform, project, stroke, boolean, voronoi. Reorder, toggle, add |
 | **View** | Multiple render passes stack (curve, points, normals/tangents, curvature heatmap, epicycles, wireframe). Overlays: inflections, sample points, ruler, bbox |
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
@@ -60,7 +60,7 @@ leaving your machine.
 
 1. **Equations** — edit `x(t)` and `y(t)` in the Equations panel. The
    canvas updates as you type.
-2. **Operators** — add `radial repeat (n=8)` from the Operators section.
+2. **Operators** — add `Radial Array (n=8)` from the Operators section.
    The form radiates symmetrically.
 3. **Animation** — set a parameter to `{ expr: "3 + 2*sin(time)" }` via
    the modulator field (or use the `time` variable directly inside an
@@ -76,7 +76,7 @@ leaving your machine.
 
 ```
 generators/  (23 registered)  one file each, self-registered
-operators/   (31 registered)  geometry/ + topology/, each Curve[] → Curve[]
+operators/   (36 registered)  geometry/ + topology/, each Curve[] → Curve[]
 math/               safe Pratt-parser expression engine + seeded simplex noise
 sampling/           uniform + adaptive + arc-length resampling + bbox helpers
 analysis/           differential geometry: tangents, normals, curvature, inflections
@@ -182,14 +182,15 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1152 checks across 26 groups (expression
+Runs `test/lab.smoke.mjs` — 1157 checks across 26 groups (expression
 engine, noise determinism, splines, all 23 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
 performance budget, reliability regressions, offline and optional LLM
-advisors, image contour tracing, evolution, helix projections, session recovery). The whole core is
+advisors, image contour tracing, evolution, helix projections, session recovery,
+panel modes). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (57 tests) against a Vite server started by Playwright itself.
+suite (62 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -217,9 +218,10 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
   harmonic-oscillator, noise-field, catmull-rom, bezier, cubic-spline,
   bilateral-spline, lorenz, clifford, dejong, aizawa, concentric-ellipses,
   parametric-3d, generalized helix)
-- **31 operators** across geometry (transform, symmetry, resample,
-  offset, deform, project, stroke, boolean) and topology (repeat,
-  voronoi, skeleton, medial-axis, ribbons, centerline)
+- **36 operators** across geometry (transform, symmetry, kaleidoscope,
+  resample, offset, deform, project, stroke, boolean) and topology
+  (radial/linear arrays, repeat, voronoi, skeleton, medial-axis,
+  ribbons, centerline)
 - **4 analysis overlays** (inflections, sample points, ruler, bbox)
 - **12 render passes** (stroke, points, wireframe, control polygon,
   gradient wireframe, tangents, normals, curvature heatmap, negative space,
@@ -237,8 +239,10 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Image input** with local underlay, threshold preview, largest-contour tracing and editable Fourier documents
 - **Evolution** with parent selection, numeric crossover, structural mutation and generation lineage
 - **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views and a height-gradient wireframe
+- **Clone ×3** quick action via the Grid Repeat operator (side-by-side copies remain editable)
 - **CodeMirror formula editor** with math-aware highlighting and inline errors
 - **Session recovery** with local autosave and an explicit Restore/Dismiss banner
+- **Panel clarity** with Form/Look/Explore/Keep modes, persisted accordions, essential/advanced parameters, layer warnings and a Clone ×3 operator
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)

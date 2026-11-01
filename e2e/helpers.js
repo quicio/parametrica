@@ -8,6 +8,28 @@
  * revealed: the panel shows a value but the document didn't change.
  */
 
+/** Activate a workspace mode (Form, Look, Explore, Keep). */
+export async function openMode(page, mode) {
+  const button = page.locator(`.panel-mode[data-mode="${mode}"]`);
+  if ((await button.getAttribute('aria-selected')) !== 'true') await button.click();
+}
+
+/**
+ * Reveal an inspector section: switch to its workspace mode and expand it.
+ * Works regardless of the persisted accordion state.
+ */
+export async function openSection(page, title) {
+  const section = page.locator('.panel-section', {
+    has: page.locator('.panel-h', { hasText: title }),
+  }).first();
+  const mode = await section.getAttribute('data-mode');
+  if (mode) await openMode(page, mode);
+  const header = section.locator('.panel-h');
+  if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click();
+  await section.scrollIntoViewIfNeeded();
+  return section;
+}
+
 /** Grab the app handle exposed on window (set by main.js). */
 export function getApp(page) {
   return page.evaluate(() => window.__parametrica);
@@ -36,7 +58,7 @@ export function evalState(page) {
  * "Modulate (time)" text field that shares the same label.
  */
 export async function controller(page, label) {
-  const names = page.locator(`.controller .name:has-text("${label}")`);
+  const names = page.locator(`.controller:visible .name:has-text("${label}")`);
   const count = await names.count();
   if (count === 1) return names.locator('..');
   // Multiple matches: prefer the one whose widget contains a .slider.
@@ -54,6 +76,7 @@ export async function controller(page, label) {
 export async function dragSlider(page, label, fraction) {
   const ctrl = await controller(page, label);
   const slider = ctrl.locator('.slider');
+  await slider.scrollIntoViewIfNeeded();
   const box = await slider.boundingBox();
   if (!box) throw new Error(`slider "${label}" has no box`);
   const cx = box.x + box.width * fraction;
