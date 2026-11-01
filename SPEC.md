@@ -336,13 +336,28 @@ Generates endless families of mathematically related glyphs.
 ## 14. Presets
 
 Mathematical presets, each a complete Parametrica document (with
-`app: 'parametrica'`):
+`app: 'parametrica'`). The library is grouped into:
 
-Lissajous 3:5 · Golden Rose · Infinity · Spirograph · Guilloché ·
-Geometric Flower · Radial Mandala · Interference Patterns ·
-Orbital Patterns · Butterfly · Superformula Star · Superformula Flower ·
-Hypotrochoid · Fourier Capsule · Fourier Butterfly · Helix Lab (Básica,
-Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica).
+- **Curves:** Lissajous 3:5, Golden Rose, Infinity, Spirograph, Butterfly,
+  Superformula Star, Superformula Flower, Hypotrochoid.
+- **Patterns:** Guilloché, Geometric Flower, Radial Mandala, Interference
+  Patterns, Orbital Patterns.
+- **Fourier:** Fourier Capsule, Fourier Butterfly.
+- **Attractors:** Lorenz Butterfly, Clifford Web, De Jong Filament,
+  Aizawa Torus.
+- **3D curves:** Helix (Isometric), Spiral Helix, Cone (Projected).
+- **Surfaces:** Torus, Sphere, Hyperbolic Saddle, Wave Sheet, Helicoid,
+  Catenoid, Enneper Surface, Möbius Band, Seashell.
+- **Helix Lab:** Básica, Radio Variable, Paso Variable, Ondulada,
+  Doble Hélice, Cónica.
+- **Legacy/classical:** Vesica Prime (v1), Vesica Piscis, Three Ellipses.
+
+The browser provides accent-insensitive search, derived preview thumbnails,
+favorites and recent presets. Previews are computed from the preset document
+at `time = 0` with a fixed wireframe profile, cached by content hash and never
+stored inside the preset JSON. Favorites and recents live in workspace
+metadata (`parametrica.presets.meta.v1`), are pruned against the current
+catalog and never travel with an exported document.
 
 v1 Glyph Lab presets migrate automatically → `bilateral-spline` documents
 through the dual-format read (§4.4).

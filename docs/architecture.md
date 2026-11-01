@@ -168,7 +168,9 @@ src/
 │   └── MutationEngine.js         parameter-space perturbation
 │
 ├── presets/
-│   ├── PresetManager.js          built-ins + user storage + JSON I/O
+│   ├── PresetManager.js          built-ins, user storage, usage meta + previews
+│   ├── preview.js                deterministic preview key + rasteriser
+│   ├── catalog.js                categories, descriptions and tags
 │   └── builtins.js               40 built-in mathematical families
 │
 ├── export/
@@ -446,7 +448,7 @@ for `renderer.readyPromise` before touching the canvas.
 
 ### What the suite covers
 
-26 groups in `test/lab.smoke.mjs`:
+31 groups in `test/lab.smoke.mjs`:
 
 | # | Group | What it verifies |
 |---|---|---|
@@ -476,8 +478,13 @@ for `renderer.readyPromise` before touching the canvas.
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
+| 27 | registry contracts | every registry exposes the expected contract and metadata |
+| 28 | extensibility boundaries | adding modules through registries does not require central edits |
+| 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions and analysis |
+| 30 | parametric surfaces | surface generation, seam welding, normals, projection, caches and render passes |
+| 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1157 checks total.
+1549 checks total.
 
 ### Panel behavior
 

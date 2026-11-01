@@ -24,12 +24,15 @@ import { Controls } from '../ui/Controls.js';
 import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
+import { renderPresetPreview } from '../presets/preview.js';
 import { DialogService } from '../ui/dialogs.js';
 
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
     this.telemetryEl = telemetryEl;
-    this.presets = new PresetManager();
+    this.presets = new PresetManager(globalThis.localStorage ?? null, {
+      renderPreview: renderPresetPreview,
+    });
     this.mutator = new MutationEngine();
     this.dialogs = new DialogService();
     this.document = createDocument('parametric');
@@ -616,6 +619,8 @@ export class App {
   applyPreset(name) {
     const doc = this.presets.get(name);
     if (!doc) return;
+    // Record before the rebuild so the Recent filter is current immediately.
+    this.presets.markUsed(name);
     this.adoptDocument(doc);
   }
 

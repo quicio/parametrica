@@ -112,6 +112,7 @@ export class Controls {
     this.uiState.sections[sectionId] = open;
     this.applySectionOpen(meta, open);
     this.saveUiState();
+    if (sectionId === 'presets' && open) this.presetPanel?.resume?.();
   }
 
   buildModeBar() {
@@ -243,6 +244,7 @@ export class Controls {
     for (const gui of this.sectionGuis) gui.destroy();
     this.sectionGuis = [];
     this.presetsGui = null;
+    this.presetPanel?.destroy?.();
     this.presetPanel = null;
     this.presetSectionBody = null;
     for (const field of this.expressionFields.values()) field.destroy?.();
@@ -834,10 +836,14 @@ export class Controls {
     // append an empty "Presets" section.
     const body = this.presetSectionBody ?? this.section('Presets', { id: 'presets', mode: 'keep' });
     this.presetSectionBody = body;
+    this.presetPanel?.destroy?.();
     body.replaceChildren();
 
     this.presetPanel = new PresetPanel(this.app, this.presetFilter);
     body.append(this.presetPanel.el);
+    if (this.sectionEls.get('presets')?.header.getAttribute('aria-expanded') === 'true') {
+      requestAnimationFrame(() => this.presetPanel?.resume?.());
+    }
 
     const actions = document.createElement('div');
     actions.className = 'preset-actions-label';
@@ -872,6 +878,7 @@ export class Controls {
         if (this.app.presets.delete(this.presetState.selected)) {
           this.presetState.selected = '';
           this.rebuildPresetsSection();
+          this.presetPanel?.focusFilter?.();
         } else if (this.app.presets.isBuiltIn(this.presetState.selected)) {
           this.app.notify?.('Built-in presets cannot be deleted', 'error');
         }

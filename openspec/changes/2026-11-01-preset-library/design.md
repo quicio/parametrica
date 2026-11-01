@@ -91,11 +91,12 @@ a runtime path for user presets.
 
 ```txt
 previewKey(document) =
-  sha256Hex(PREVIEW_VERSION + ':' + canonicalStringify(document))
+  sha256Hex(PREVIEW_VERSION + ':' + canonicalStringify(contentView(document)))
 ```
 
-`sha256Hex` and `canonicalStringify` already live in `src/lab/hash.js`.
-The cache stores `{ hash, dataUrl }` per preset name.
+`contentView` removes generated layer ids (`layers[].id`), which are allocation
+counters rather than content. `sha256Hex` and `canonicalStringify` already live
+in `src/lab/hash.js`. The cache stores `{ hash, dataUrl }` per preset name.
 
 - **Built-ins:** memory only. They are regenerated lazily each session; this
   keeps `localStorage` small and guarantees the preview matches the current

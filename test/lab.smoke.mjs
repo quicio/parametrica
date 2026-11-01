@@ -54,7 +54,8 @@ import { traceImageData, otsuThreshold, binarize, grayscale, simplifyRDP, resamp
 import { createGeneration, nextGeneration, isChildValid, describeStructuralChange, MAX_CHILDREN, MAX_PARENTS } from '../src/lab/evolution.js';
 import { numericParameterRefs, refKey, schemaForRef, stageForRef, pathForRef } from '../src/lab/parameters.js';
 import { MutationEngine } from '../src/mutation/MutationEngine.js';
-import { PresetManager } from '../src/presets/PresetManager.js';
+import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/PresetManager.js';
+import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter } from '../src/export/Exporter.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
@@ -519,7 +520,8 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
   assert(entries.every((entry) => entry.category && entry.description), 'every preset has a category and description');
   const categories = pm.categories();
   assert(categories[0].id === 'all' && categories[0].count === entries.length, 'All category counts every preset');
-  assert(categories.every((category) => category.id === 'all' || category.count > 0), 'empty categories are hidden');
+  assert(categories.every((category) => category.id === 'all' || category.id === 'favorites' || category.count > 0), 'empty categories are hidden except Favorites');
+  assert(categories.some((category) => category.id === 'favorites' && category.count === 0), 'Favorites is always available');
   assert(categories.some((category) => category.id === 'surfaces' && category.count === 9), 'surface category lists nine presets');
   assert(pm.search('catenoid').length === 1, 'search matches preset names');
   assert(pm.search('minimal').length >= 3, 'search matches tags and descriptions');
@@ -2281,6 +2283,126 @@ console.log('30. parametric surfaces');
   assert(direct.faces.length === 7 * 9 * 2, 'open surface tessellation excludes no cell');
   assert(RenderPasses.has('surface-fill') && RenderPasses.has('surface-wireframe'), 'surface render passes are registered');
   assert(first.curves.length > 0, 'surface emits wireframe curves for stroke compatibility');
+}
+
+/* ——— 31. preset library ——— */
+console.log('31. preset library');
+{
+  class MemoryStorage {
+    constructor() { this.map = new Map(); }
+    getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
+    setItem(key, value) { this.map.set(key, String(value)); }
+    removeItem(key) { this.map.delete(key); }
+  }
+
+  const storage = new MemoryStorage();
+  const pm = new PresetManager(storage);
+  assert(pm.categories().some((category) => category.id === 'favorites' && category.count === 0), 'favorites filter is always present');
+  assert(!pm.categories().some((category) => category.id === 'recent'), 'recent filter is hidden when empty');
+
+  assert(pm.toggleFavorite('Torus') === true, 'starring adds a favorite');
+  assert(pm.isFavorite('Torus'), 'favorite state is reported');
+  assert(pm.favoriteEntries().length === 1 && pm.favoriteEntries()[0].name === 'Torus', 'favorites list contains the preset');
+  assert(pm.toggleFavorite('Torus') === false, 'unstarring removes a favorite');
+  assert(!pm.isFavorite('Torus'), 'unfavorite state is reported');
+  assert(pm.toggleFavorite('Does Not Exist') === false, 'unknown presets cannot be favorited');
+
+  pm.toggleFavorite('Sphere');
+  pm.toggleFavorite('Torus');
+  const reloaded = new PresetManager(storage);
+  assert(reloaded.isFavorite('Torus') && reloaded.isFavorite('Sphere'), 'favorites survive a reload');
+  assert(reloaded.favoriteEntries().map((entry) => entry.name).join(',') === 'Torus,Sphere', 'favorites keep catalog order');
+
+  assert(!reloaded.categories().some((category) => category.id === 'recent'), 'recent hidden before first use');
+  assert(reloaded.markUsed('Torus', 1000) === true, 'mark recent for a known preset');
+  assert(reloaded.markUsed('Sphere', 2000) === true, 'mark a second recent');
+  assert(reloaded.markUsed('Torus', 3000) === true, 're-marking moves a recent to the front');
+  assert(reloaded.recentEntries().map((entry) => entry.name).join(',') === 'Torus,Sphere', 'recents are most-recent-first and deduped');
+  const recentNames = ['Torus', 'Sphere', 'Catenoid', 'Helicoid', 'Seashell', 'Enneper Surface', 'Möbius Band', 'Wave Sheet', 'Hyperbolic Saddle', 'Sphere'];
+  recentNames.forEach((name, index) => reloaded.markUsed(name, 5000 + index));
+  assert(reloaded.recentEntries().length === RECENT_LIMIT, `recents cap at ${RECENT_LIMIT}`);
+  assert(reloaded.recentEntries()[0].name === 'Sphere', 'recents keep the most recent first under the cap');
+  assert(reloaded.markUsed('Does Not Exist', 9000) === false, 'unknown presets cannot be recent');
+
+  const recentStorage = new MemoryStorage();
+  const recents = new PresetManager(recentStorage);
+  recents.markUsed('Torus', 10);
+  recents.markUsed('Sphere', 20);
+  const recentsReloaded = new PresetManager(recentStorage);
+  assert(recentsReloaded.recentEntries().map((entry) => entry.name).join(',') === 'Sphere,Torus', 'recents survive a reload');
+
+  const pruneStorage = new MemoryStorage();
+  pruneStorage.setItem(META_STORAGE_KEY, JSON.stringify({
+    version: 1,
+    favorites: ['Torus', 'Ghost', 'Torus'],
+    recent: [
+      { name: 'Ghost', at: 1 },
+      { name: 'Torus', at: 2 },
+      { name: 'Torus', at: 3 },
+      { name: 'Sphere', at: 'nope' },
+    ],
+    previews: { Ghost: { hash: 'x', dataUrl: 'data:image/png;base64,AAAA' } },
+  }));
+  const pruned = new PresetManager(pruneStorage);
+  assert(pruned.favoriteEntries().map((entry) => entry.name).join(',') === 'Torus', 'unknown favorites are pruned');
+  assert(pruned.recentEntries().map((entry) => entry.name).join(',') === 'Torus', 'unknown, duplicate and invalid recents are pruned');
+
+  const corruptStorage = new MemoryStorage();
+  corruptStorage.setItem(META_STORAGE_KEY, '{broken');
+  const corrupt = new PresetManager(corruptStorage);
+  assert(corrupt.favoriteEntries().length === 0 && corrupt.recentEntries().length === 0, 'corrupt metadata starts empty');
+  assert(corrupt.get('Torus') !== null, 'presets still load after corrupt metadata');
+
+  const failingStorage = {
+    getItem() { return null; },
+    setItem() { throw new Error('quota'); },
+  };
+  const failing = new PresetManager(failingStorage);
+  assert(failing.toggleFavorite('Torus') === true, 'favorites work when storage fails');
+  assert(failing.markUsed('Torus') === true, 'recents work when storage fails');
+  assert(failing.isFavorite('Torus') && failing.recentEntries().length === 1, 'session usage state survives storage failure');
+
+  const torus = pm.get('Torus');
+  const sphere = pm.get('Sphere');
+  assert(PREVIEW_SIZE === 96, 'preview source size is 96');
+  assert(PREVIEW_MAX_CHARS === 24_000, 'preview persistence cap is 24k');
+  assert(PREVIEW_VERSION >= 1, 'preview profile is versioned');
+  assert(previewKey(torus) === previewKey(pm.get('Torus')), 'preview key is stable for identical documents');
+  assert(previewKey(torus) !== previewKey(sphere), 'preview key changes with the document');
+
+  let renders = 0;
+  const previewStorage = new MemoryStorage();
+  const fakeUrl = 'data:image/png;base64,FAKE';
+  const withPreview = new PresetManager(previewStorage, {
+    renderPreview: () => { renders++; return fakeUrl; },
+  });
+  assert(withPreview.preview('Torus') === null, 'nothing is cached before generation');
+  assert(withPreview.ensurePreview('Torus') === fakeUrl, 'ensurePreview returns a rendered thumbnail');
+  assert(renders === 1, 'preview renderer runs once');
+  assert(withPreview.ensurePreview('Torus') === fakeUrl && renders === 1, 'cached preview is reused');
+  assert(withPreview.preview('Torus') === fakeUrl, 'preview cache is readable');
+
+  withPreview.save('My Torus', withPreview.get('Torus'));
+  assert(withPreview.ensurePreview('My Torus') === fakeUrl, 'user preset preview is generated');
+  assert(withPreview.preview('My Torus') === fakeUrl, 'user preset preview is cached');
+  const persisted = JSON.parse(previewStorage.getItem(META_STORAGE_KEY));
+  assert(persisted.previews['My Torus']?.dataUrl === fakeUrl, 'user preview is persisted');
+  assert(!persisted.previews.Torus, 'built-in preview is not persisted');
+  const previewReloaded = new PresetManager(previewStorage);
+  assert(previewReloaded.preview('My Torus') === fakeUrl, 'user preview survives a reload');
+  assert(previewReloaded.preview('Torus') === null, 'built-in preview is session-only');
+  previewReloaded.save('My Torus', previewReloaded.get('Sphere'));
+  assert(previewReloaded.preview('My Torus') === null, 'overwriting a user preset evicts its preview');
+
+  const cleanup = new PresetManager(new MemoryStorage(), { renderPreview: () => fakeUrl });
+  cleanup.save('Disposable', cleanup.get('Torus'));
+  cleanup.toggleFavorite('Disposable');
+  cleanup.markUsed('Disposable', 1);
+  cleanup.ensurePreview('Disposable');
+  assert(cleanup.delete('Disposable') === true, 'user preset is deleted');
+  assert(!cleanup.isFavorite('Disposable'), 'delete removes the favorite');
+  assert(cleanup.recentEntries().length === 0, 'delete removes the recent');
+  assert(cleanup.preview('Disposable') === null, 'delete removes the preview');
 }
 
 /* ——— Snapshots ——— */

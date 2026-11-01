@@ -1,0 +1,63 @@
+/**
+ * presets/preview.js — deterministic preset thumbnails.
+ *
+ * Previews are derived from the preset document, never from the live figure or
+ * the active theme. Evaluation is bypass-cached and the result is rasterised
+ * with the existing DOM-only polyline thumbnail helper.
+ */
+
+import { evaluateDocument } from '../core/engine.js';
+import { curvesDataURL } from '../render/thumbnail.js';
+import { canonicalStringify, sha256Hex } from '../lab/hash.js';
+
+export const PREVIEW_VERSION = 1;
+export const PREVIEW_SIZE = 96;
+export const PREVIEW_MAX_CHARS = 24_000;
+
+const PREVIEW_PROFILE = {
+  size: PREVIEW_SIZE,
+  background: '#050505',
+  stroke: '#e8e8e8',
+  strokeWeight: 1.25,
+};
+
+/**
+ * Layer ids are generated sequentially at document creation, so they are not
+ * content. Strip them before hashing to keep the key stable across instances.
+ */
+function previewDocument(document) {
+  if (!document || typeof document !== 'object' || !Array.isArray(document.layers)) {
+    return document;
+  }
+  return {
+    ...document,
+    layers: document.layers.map((layer) => {
+      if (!layer || typeof layer !== 'object') return layer;
+      const { id: _id, ...rest } = layer;
+      return rest;
+    }),
+  };
+}
+
+/** Stable cache key for a preset document at the current preview profile. */
+export function previewKey(document) {
+  return sha256Hex(`${PREVIEW_VERSION}:${canonicalStringify(previewDocument(document))}`);
+}
+
+/**
+ * Browser-only renderer. Returns a PNG data URL or null when the preset has no
+ * drawable curves or evaluation fails.
+ */
+export function renderPresetPreview(document) {
+  if (!document || typeof document !== 'object') return null;
+  try {
+    const evaluation = evaluateDocument(document, { time: 0, bypassCache: true });
+    if (evaluation.errors?.length || !evaluation.curves?.length) return null;
+    return curvesDataURL(evaluation.curves, {
+      ...PREVIEW_PROFILE,
+      bounds: evaluation.bbox ?? null,
+    });
+  } catch {
+    return null;
+  }
+}

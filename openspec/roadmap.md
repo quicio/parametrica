@@ -107,6 +107,7 @@ extraction and conversion to a Fourier document.
 | Expression engine, adaptive sampling, seeded noise | shipped |
 | Single document = generator + operator stack | shipped |
 | Mutation, presets, SVG/PNG/JSON export | shipped |
+| Preset library: previews, favorites, recents, grouped search | shipped (2026-11-01) |
 | Undo/redo, seed control, visible notices | shipped |
 | Lazy analysis, per-stage budgets | shipped |
 | Node test suite + Playwright e2e + CI | shipped |
