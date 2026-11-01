@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1400 checks)
+npm test             # node-only verification suite (1501 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (72 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (73 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -51,7 +51,7 @@ leaving your machine.
 | **View** | Multiple render passes stack (curve, points, normals/tangents, curvature heatmap, epicycles, wireframe). Overlays: inflections, sample points, ruler, bbox |
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
-| **Presets** | Built-in mathematical families + user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
+| **Presets** | Grouped, searchable library of built-in mathematical families plus user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
 | **Export** | SVG (clean paths + embedded Parametrica document), PNG (HiDPI), JSON, clipboard |
 
 ---
@@ -169,8 +169,22 @@ No central config to update.
 | Superformula Flower | `superformula` | Gielis petal configuration |
 | Fourier Capsule | `fourier` | closed shape from harmonic series |
 | Fourier Butterfly | `fourier` | open shape from harmonic series |
+| Lorenz / Clifford / De Jong / Aizawa | attractors | chaotic sample clouds |
+| Helix (Isometric), Spiral Helix, Cone | `parametric-3d` | projected 3D curves |
+| Torus | `parametric-surface` | closed U/V torus |
+| Sphere | `parametric-surface` | azimuth × polar patch |
+| Hyperbolic Saddle | `parametric-surface` | z = u² − v² |
+| Wave Sheet | `parametric-surface` | orthogonal sine patch |
+| Helicoid | `parametric-surface` | minimal screw surface |
+| Catenoid | `parametric-surface` | minimal surface of revolution |
+| Enneper Surface | `parametric-surface` | self-intersecting minimal surface |
+| Möbius Band | `parametric-surface` | half-twisted strip |
+| Seashell | `parametric-surface` | logarithmic spiral tube |
 | Vesica Prime (v1) | `bilateral-spline` | legacy v1 generator, preserved |
 | Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
+
+The library is grouped into Curves, Patterns, Fourier, Attractors, 3D Curves,
+Surfaces, Helix Lab and Legacy; user saves appear under My Presets.
 
 ---
 
@@ -182,7 +196,7 @@ No central config to update.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1400 checks across 30 groups (expression
+Runs `test/lab.smoke.mjs` — 1501 checks across 30 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -190,7 +204,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (72 tests) against a Vite server started by Playwright itself.
+suite (73 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 

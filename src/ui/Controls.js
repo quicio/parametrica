@@ -25,6 +25,7 @@ import { AdvisorPanel } from './widgets/AdvisorPanel.js';
 import { ImagePanel } from './widgets/ImagePanel.js';
 import { EvolutionPanel } from './widgets/EvolutionPanel.js';
 import { ExplorePanel } from './widgets/ExplorePanel.js';
+import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PALETTES, paletteById } from '../render/palettes.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
@@ -46,7 +47,8 @@ export class Controls {
     this.operatorStack = null;
     this.sectionGuis = [];
     this.presetState = { selected: '', name: '' };
-    this.presetSelect = null;
+    this.presetFilter = { query: '', category: 'all' };
+    this.presetPanel = null;
     this.uiState = loadUiState();
     this.sectionEls = new Map();
     this.mode = this.uiState.mode;
@@ -240,10 +242,8 @@ export class Controls {
 
     for (const gui of this.sectionGuis) gui.destroy();
     this.sectionGuis = [];
-    // the preset select controller died with its GUI above — never
-    // destroy it twice (NotFoundError on removeChild)
-    this.presetSelect = null;
     this.presetsGui = null;
+    this.presetPanel = null;
     this.presetSectionBody = null;
     for (const field of this.expressionFields.values()) field.destroy?.();
     this.expressionFields = new Map();
@@ -835,12 +835,24 @@ export class Controls {
     const body = this.presetSectionBody ?? this.section('Presets', { id: 'presets', mode: 'keep' });
     this.presetSectionBody = body;
     body.replaceChildren();
+
+    this.presetPanel = new PresetPanel(this.app, this.presetFilter);
+    body.append(this.presetPanel.el);
+
+    const actions = document.createElement('div');
+    actions.className = 'preset-actions-label';
+    actions.textContent = 'Save current figure';
+    body.append(actions);
+
     this.presetsGui = this.makeGui(body);
 
     const names = this.app.presets.names();
-    if (!this.presetState.selected && names.length) this.presetState.selected = names[0];
+    if (names.includes(this.app.document.name)) {
+      this.presetState.selected = this.app.document.name;
+    } else if (!this.presetState.selected && names.length) {
+      this.presetState.selected = names[0];
+    }
 
-    this.presetsGui.add(this.presetState, 'selected', names).name('Library').onChange((n) => this.app.applyPreset(n));
     this.presetsGui.add(this.presetState, 'name').name('Name');
     this.presetsGui.add({
       save: () => {

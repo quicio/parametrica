@@ -259,6 +259,161 @@ export const BUILT_IN_PRESETS = {
       },
     }),
 
+  // ——— Parametric surfaces ———
+
+  Torus: () =>
+    createDocument('parametric-surface', {
+      name: 'Torus',
+      generator: {
+        params: {
+          exprX: '(2 + cos(v))*cos(u)',
+          exprY: '(2 + cos(v))*sin(u)',
+          exprZ: 'sin(v)',
+          u0: 0, u1: 2 * PI,
+          v0: 0, v1: 2 * PI,
+          samplesU: 64, samplesV: 32,
+          closedU: true, closedV: true,
+          fit: 340,
+        },
+      },
+    }),
+
+  Sphere: () =>
+    createDocument('parametric-surface', {
+      name: 'Sphere',
+      generator: {
+        params: {
+          exprX: '1.6*sin(v)*cos(u)',
+          exprY: '1.6*sin(v)*sin(u)',
+          exprZ: '1.6*cos(v)',
+          u0: 0, u1: 2 * PI,
+          v0: 0.04, v1: PI - 0.04,
+          samplesU: 64, samplesV: 32,
+          closedU: true, closedV: false,
+          fit: 330,
+        },
+      },
+    }),
+
+  'Hyperbolic Saddle': () =>
+    createDocument('parametric-surface', {
+      name: 'Hyperbolic Saddle',
+      generator: {
+        params: {
+          exprX: 'u',
+          exprY: 'v',
+          exprZ: '0.35*(u^2 - v^2)',
+          u0: -2.2, u1: 2.2,
+          v0: -2.2, v1: 2.2,
+          samplesU: 44, samplesV: 44,
+          closedU: false, closedV: false,
+          fit: 340,
+        },
+      },
+    }),
+
+  'Wave Sheet': () =>
+    createDocument('parametric-surface', {
+      name: 'Wave Sheet',
+      generator: {
+        params: {
+          exprX: 'u',
+          exprY: 'v',
+          exprZ: '0.5*sin(2*u)*cos(2*v)',
+          u0: -PI, u1: PI,
+          v0: -PI, v1: PI,
+          samplesU: 56, samplesV: 56,
+          closedU: false, closedV: false,
+          fit: 340,
+        },
+      },
+    }),
+
+  Helicoid: () =>
+    createDocument('parametric-surface', {
+      name: 'Helicoid',
+      generator: {
+        params: {
+          exprX: 'v*cos(u)',
+          exprY: 'v*sin(u)',
+          exprZ: '0.55*u',
+          u0: 0, u1: 2 * PI,
+          v0: -1.2, v1: 1.2,
+          samplesU: 64, samplesV: 24,
+          closedU: true, closedV: false,
+          fit: 330,
+        },
+      },
+    }),
+
+  Catenoid: () =>
+    createDocument('parametric-surface', {
+      name: 'Catenoid',
+      generator: {
+        params: {
+          exprX: 'cosh(v)*cos(u)',
+          exprY: 'cosh(v)*sin(u)',
+          exprZ: 'v',
+          u0: 0, u1: 2 * PI,
+          v0: -1.1, v1: 1.1,
+          samplesU: 64, samplesV: 24,
+          closedU: true, closedV: false,
+          fit: 330,
+        },
+      },
+    }),
+
+  'Enneper Surface': () =>
+    createDocument('parametric-surface', {
+      name: 'Enneper Surface',
+      generator: {
+        params: {
+          exprX: '0.55*(u - u^3/3 + u*v^2)',
+          exprY: '0.55*(v - v^3/3 + v*u^2)',
+          exprZ: '0.55*(u^2 - v^2)',
+          u0: -1.8, u1: 1.8,
+          v0: -1.8, v1: 1.8,
+          samplesU: 44, samplesV: 44,
+          closedU: false, closedV: false,
+          fit: 340,
+        },
+      },
+    }),
+
+  'Möbius Band': () =>
+    createDocument('parametric-surface', {
+      name: 'Möbius Band',
+      generator: {
+        params: {
+          exprX: '(1.7 + 0.5*v*cos(u/2))*cos(u)',
+          exprY: '(1.7 + 0.5*v*cos(u/2))*sin(u)',
+          exprZ: '0.5*v*sin(u/2)',
+          u0: 0, u1: 2 * PI,
+          v0: -1, v1: 1,
+          samplesU: 64, samplesV: 16,
+          closedU: false, closedV: false,
+          fit: 330,
+        },
+      },
+    }),
+
+  Seashell: () =>
+    createDocument('parametric-surface', {
+      name: 'Seashell',
+      generator: {
+        params: {
+          exprX: '0.45*e^(0.11*v)*(1 + 0.55*cos(u))*cos(v)',
+          exprY: '0.45*e^(0.11*v)*(1 + 0.55*cos(u))*sin(v)',
+          exprZ: '0.45*e^(0.11*v)*(0.55*sin(u) + 0.28*v)',
+          u0: 0, u1: 2 * PI,
+          v0: 0, v1: 4 * PI,
+          samplesU: 48, samplesV: 48,
+          closedU: true, closedV: false,
+          fit: 330,
+        },
+      },
+    }),
+
   // ——— Helix Lab variations ———
 
   'Básica': () =>

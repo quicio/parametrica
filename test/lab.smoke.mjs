@@ -512,6 +512,41 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
     assert(pm.isBuiltIn(name), `ornamental preset "${name}" is present`);
   }
   assert(pm.delete('Infinity') === false, 'built-ins immutable');
+
+  // Catalog: every built-in is discoverable, grouped and described.
+  const entries = pm.entries();
+  assert(entries.length === Object.keys(BUILT_IN_PRESETS).length, 'catalog lists every built-in preset');
+  assert(entries.every((entry) => entry.category && entry.description), 'every preset has a category and description');
+  const categories = pm.categories();
+  assert(categories[0].id === 'all' && categories[0].count === entries.length, 'All category counts every preset');
+  assert(categories.every((category) => category.id === 'all' || category.count > 0), 'empty categories are hidden');
+  assert(categories.some((category) => category.id === 'surfaces' && category.count === 9), 'surface category lists nine presets');
+  assert(pm.search('catenoid').length === 1, 'search matches preset names');
+  assert(pm.search('minimal').length >= 3, 'search matches tags and descriptions');
+  assert(pm.search('parametric-surface').length >= 9, 'search matches the generator id');
+
+  // Surface preset family.
+  const surfaceNames = [
+    'Torus', 'Sphere', 'Hyperbolic Saddle', 'Wave Sheet', 'Helicoid',
+    'Catenoid', 'Enneper Surface', 'Möbius Band', 'Seashell',
+  ];
+  for (const name of surfaceNames) {
+    assert(pm.isBuiltIn(name), `surface preset "${name}" is present`);
+    const doc = pm.get(name);
+    assert(doc.generator.id === 'parametric-surface', `surface preset "${name}" uses parametric-surface`);
+    const evaluation = evaluateDocument(doc, { time: 0 });
+    assert(evaluation.errors.length === 0, `surface preset "${name}" evaluates`);
+    assert(evaluation.geometry[0]?.kind === 'surface', `surface preset "${name}" emits a Surface`);
+    assert(evaluation.meshes[0]?.faces.length > 0, `surface preset "${name}" tessellates`);
+  }
+
+  // User presets are discoverable in their own category.
+  const userPm = new PresetManager(null);
+  userPm.save('My Torus', pm.get('Torus'));
+  const userEntry = userPm.entries().find((entry) => entry.name === 'My Torus');
+  assert(userEntry && userEntry.builtIn === false && userEntry.category === 'user', 'user presets join the catalog');
+  assert(userPm.categories().some((category) => category.id === 'user' && category.count === 1), 'user category reports its count');
+  assert(userPm.search('torus').some((entry) => entry.name === 'My Torus'), 'search includes user presets');
 }
 
 /* ——— 8. Mutation ——— */

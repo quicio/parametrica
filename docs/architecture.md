@@ -169,7 +169,7 @@ src/
 │
 ├── presets/
 │   ├── PresetManager.js          built-ins + user storage + JSON I/O
-│   └── builtins.js               26 built-in mathematical families
+│   └── builtins.js               40 built-in mathematical families
 │
 ├── export/
 │   ├── Exporter.js               SVG (path-embedded document) · PNG · JSON
@@ -456,7 +456,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 4 | generators | evalOK over all 24 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
-| 7 | built-in presets | all 26 built-in presets evaluate to non-degenerate forms |
+| 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
 | 9 | SVG export | output is well-formed, document is embedded |
 | 10 | animation | time-driven resolution, deterministic across time |

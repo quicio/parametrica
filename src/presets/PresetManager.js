@@ -8,14 +8,99 @@
  */
 
 import { BUILT_IN_PRESETS } from './builtins.js';
+import { CATEGORY_USER, PRESET_CATEGORIES, presetInfo } from './catalog.js';
 import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.js';
 
 const STORAGE_KEY = 'parametrica.presets.v0';
 
+function normalizeText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 export class PresetManager {
+  #generatorCache = new Map();
+
   constructor(storage = globalThis.localStorage ?? null) {
     this.storage = storage ?? null;
     this.user = this.#load();
+  }
+
+  /**
+   * Catalog entries for the preset browser: built-ins plus user presets.
+   * Built-in documents are only instantiated once per name to read the
+   * generator id; descriptions and categories come from `catalog.js`.
+   */
+  entries() {
+    const builtIns = Object.keys(BUILT_IN_PRESETS).map((name) => {
+      const info = presetInfo(name);
+      return {
+        name,
+        builtIn: true,
+        category: info.category,
+        description: info.description,
+        tags: info.tags,
+        generator: this.#generatorFor(name),
+      };
+    });
+    const user = Object.keys(this.user).sort().map((name) => {
+      const doc = this.user[name];
+      return {
+        name,
+        builtIn: false,
+        category: CATEGORY_USER.id,
+        description: 'Saved from this workspace.',
+        tags: ['user', doc.generator?.id ?? ''],
+        generator: doc.generator?.id ?? 'unknown',
+      };
+    });
+    return [...builtIns, ...user];
+  }
+
+  /** Category chips with live counts. Empty categories are hidden. */
+  categories() {
+    const entries = this.entries();
+    const counts = new Map();
+    for (const entry of entries) {
+      counts.set(entry.category, (counts.get(entry.category) ?? 0) + 1);
+    }
+    const all = { id: 'all', label: 'All', hint: 'Every preset', count: entries.length };
+    const groups = PRESET_CATEGORIES.map((category) => ({
+      ...category,
+      count: counts.get(category.id) ?? 0,
+    }));
+    if (counts.get(CATEGORY_USER.id)) {
+      groups.push({ ...CATEGORY_USER, count: counts.get(CATEGORY_USER.id) });
+    }
+    return [all, ...groups.filter((category) => category.count > 0)];
+  }
+
+  /** Case- and accent-insensitive search across names, descriptions, tags and generators. */
+  search(query) {
+    const needle = normalizeText(query);
+    const entries = this.entries();
+    if (!needle) return entries;
+    return entries.filter((entry) => (
+      normalizeText(entry.name).includes(needle)
+      || normalizeText(entry.description).includes(needle)
+      || normalizeText(entry.category).includes(needle)
+      || normalizeText(entry.generator).includes(needle)
+      || entry.tags.some((tag) => normalizeText(tag).includes(needle))
+    ));
+  }
+
+  #generatorFor(name) {
+    if (!this.#generatorCache.has(name)) {
+      try {
+        this.#generatorCache.set(name, BUILT_IN_PRESETS[name]().generator.id);
+      } catch {
+        this.#generatorCache.set(name, 'unknown');
+      }
+    }
+    return this.#generatorCache.get(name);
   }
 
   #load() {
