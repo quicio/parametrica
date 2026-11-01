@@ -9,14 +9,14 @@
  * Run: npm test   (runs after the v1 suite)
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import '../src/generators/index.js';
 import '../src/operators/index.js';
 import '../src/render/passes/index.js';
 
-import { Generators, Operators, RenderPasses } from '../src/core/registry.js';
+import { Registry, Generators, Operators, RenderPasses } from '../src/core/registry.js';
 import { trochoidTurns, lissajousTurns, roseTurns } from '../src/generators/helpers.js';
 import { compileExpression, evaluate, perturbLiterals } from '../src/math/expression.js';
 import { createStdlib } from '../src/math/stdlib.js';
@@ -34,6 +34,11 @@ import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
 import { computeDescriptor } from '../src/lab/descriptor.js';
 import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.js';
 import { Notebook, sanitizeCheckpoint, INBOX_PROJECT_ID } from '../src/lab/notebook.js';
+import { NotebookWorkspace } from '../src/lab/workspace.js';
+import { MemoryNotebookRepository, migrateNotebook } from '../src/lab/notebookRepository.js';
+import { supportsSpatial } from '../src/core/capabilities.js';
+import { ParamTypes } from '../src/ui/params/ParamRegistry.js';
+import { FakeDialogService } from '../src/ui/dialogs.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
@@ -1976,6 +1981,114 @@ console.log('26. session recovery');
   const full = new SessionStore({ storage });
   assert(full.save(doc) === false, 'quota failures do not throw');
   assert(/quota/.test(full.lastError), 'quota failures are reported');
+}
+
+/* ——— 27. registry contracts ——— */
+console.log('27. registry contracts');
+{
+  const local = new Registry('generator');
+  let duplicate = false;
+  local.register({ id: 'sample-stage', name: 'Sample', category: 'test', params: {}, sample: () => [] });
+  try {
+    local.register({ id: 'sample-stage', name: 'Again', category: 'test', params: {}, sample: () => [] });
+  } catch (error) {
+    duplicate = /duplicate/.test(error.message);
+  }
+  assert(duplicate, 'registry rejects duplicate ids');
+
+  let missingSample = false;
+  try {
+    new Registry('generator').register({ id: 'broken', name: 'Broken', category: 'test', params: {} });
+  } catch (error) {
+    missingSample = /missing sample/.test(error.message);
+  }
+  assert(missingSample, 'registry rejects a generator without sample');
+
+  let unknownType = false;
+  try {
+    new Registry('operator').register({
+      id: 'broken-op', name: 'Broken', category: 'test',
+      params: { x: { type: 'mystery', default: 1 } }, apply: () => [],
+    });
+  } catch (error) {
+    unknownType = /unknown type/.test(error.message);
+  }
+  assert(unknownType, 'registry rejects unknown parameter types');
+
+  let badHook = false;
+  try {
+    new Registry('generator').register({
+      id: 'bad-hook', name: 'Bad Hook', category: 'test', params: {},
+      sample: () => [], previewParams: 42,
+    });
+  } catch (error) {
+    badHook = /hook "previewParams"/.test(error.message);
+  }
+  assert(badHook, 'registry rejects non-function hooks');
+
+  for (const def of Generators.list()) {
+    assert(typeof def.sample === 'function', `generator ${def.id} has sample`);
+  }
+  for (const def of Operators.list()) {
+    assert(typeof def.apply === 'function', `operator ${def.id} has apply`);
+  }
+  for (const def of RenderPasses.list()) {
+    assert(typeof def.draw === 'function', `render pass ${def.id} has draw`);
+  }
+}
+
+/* ——— 28. extensibility boundaries ——— */
+console.log('28. extensibility boundaries');
+{
+  assert(supportsSpatial(Generators.get('helix')) === true, 'helix declares spatial capability');
+  assert(supportsSpatial(Generators.get('parametric-3d')) === true, 'parametric-3d declares spatial capability');
+  assert(supportsSpatial(Generators.get('lissajous')) === false, 'lissajous remains planar');
+
+  for (const type of ['number', 'boolean', 'select', 'expression', 'source', 'harmonics']) {
+    assert(ParamTypes.has(type), `param type ${type} is registered`);
+  }
+  assert(ParamTypes.get('number').modulatable === true, 'number params are modulatable');
+  assert(ParamTypes.get('select').bindable === true, 'select params are bindable');
+
+  const repo = new MemoryNotebookRepository();
+  const docA = createDocument('lissajous');
+  const evalA = evaluateDocument(docA, { time: 0 });
+  const descriptorA = computeDescriptor(docA, evalA.curves);
+  const notebook = new Notebook({ repository: repo, now: () => 3000 });
+  notebook.add({ id: 'repo-1', name: 'Repo checkpoint', document: docA, descriptor: descriptorA });
+  const reloaded = new Notebook({ repository: repo, now: () => 3000 });
+  assert(reloaded.get('repo-1')?.name === 'Repo checkpoint', 'memory repository round-trips');
+
+  const migrated = migrateNotebook({ version: 1, checkpoints: [] });
+  assert(migrated.version === 2 && Array.isArray(migrated.projects), 'migration returns a current snapshot');
+  let badMigration = false;
+  try { migrateNotebook({ nope: true }); } catch { badMigration = true; }
+  assert(badMigration, 'migration rejects unknown notebook shapes');
+
+  const project = reloaded.createProject('Workspace project');
+  const series = reloaded.createSeries(project.id, 'Workspace series');
+  const workspace = new NotebookWorkspace(reloaded);
+  workspace.setProject(project.id);
+  workspace.setSeries(series.id);
+  assert(workspace.target.projectId === project.id, 'workspace owns the active project');
+  assert(workspace.target.seriesId === series.id, 'workspace owns the active series');
+  reloaded.removeSeries(series.id);
+  assert(workspace.target.seriesId === null, 'workspace clears a deleted series');
+  reloaded.removeProject(project.id);
+  assert(workspace.target.projectId === INBOX_PROJECT_ID, 'workspace falls back to Inbox');
+
+  const coreDir = new URL('../src/core/', import.meta.url);
+  for (const file of readdirSync(coreDir)) {
+    if (!file.endsWith('.js') || file === 'App.js') continue;
+    const source = readFileSync(new URL(file, coreDir), 'utf8');
+    assert(!/from ['"][^'"]*\/ui\//.test(source), `core/${file} does not import UI modules`);
+  }
+
+  const fake = new FakeDialogService({ prompts: ['Project A'], confirms: [true, false] });
+  const promptResult = await fake.prompt({ title: 'Name' });
+  assert(promptResult === 'Project A', 'fake dialog returns queued prompt values');
+  assert(await fake.confirm({ title: 'Delete' }) === true, 'fake dialog returns queued confirmations');
+  assert(await fake.confirm({ title: 'Cancel' }) === false, 'fake dialog can cancel');
 }
 
 /* ——— Snapshots ——— */

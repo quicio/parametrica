@@ -2363,3 +2363,74 @@ textarea:focus-visible {
   border-left: 2px solid var(--hairline);
   margin: 4px 12px 6px;
 }
+
+/* ——— Dialogs ——— */
+
+.parametrica-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.parametrica-dialog {
+  width: min(360px, calc(100vw - 32px));
+  background: #080808;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
+  padding: 16px;
+}
+
+.parametrica-dialog-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+
+.parametrica-dialog-message {
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.parametrica-dialog-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.parametrica-dialog-input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px;
+  outline: none;
+}
+
+.parametrica-dialog-input:focus { border-color: var(--swiss-red); }
+
+.parametrica-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.parametrica-dialog-confirm { border-color: var(--swiss-red); color: var(--swiss-red); }

@@ -14,12 +14,27 @@ export class NotebookPanel {
     this.app = app;
     this.selectedA = null;
     this.selectedB = null;
-    this.activeProjectId = INBOX_PROJECT_ID;
-    this.activeSeriesId = null;
+    this.workspace = app.notebookWorkspace;
     this.el = document.createElement('div');
     this.el.className = 'notebook-panel';
     this.build();
     this.refresh();
+  }
+
+  get activeProjectId() {
+    return this.workspace.activeProjectId;
+  }
+
+  set activeProjectId(projectId) {
+    this.workspace.setProject(projectId);
+  }
+
+  get activeSeriesId() {
+    return this.workspace.activeSeriesId;
+  }
+
+  set activeSeriesId(seriesId) {
+    this.workspace.setSeries(seriesId);
   }
 
   build() {
@@ -159,19 +174,12 @@ export class NotebookPanel {
 
   syncOrganization() {
     const notebook = this.app.notebook;
-    notebook.ensureInbox();
+    this.workspace.ensure();
     const projects = notebook.projects;
-    if (!projects.some((project) => project.id === this.activeProjectId)) {
-      this.activeProjectId = projects[0]?.id ?? INBOX_PROJECT_ID;
-      this.activeSeriesId = null;
-    }
     this.projectSelect.replaceChildren(...projects.map((project) => option(project.id, project.name)));
     this.projectSelect.value = this.activeProjectId;
 
     const series = notebook.seriesFor(this.activeProjectId);
-    if (this.activeSeriesId && !series.some((entry) => entry.id === this.activeSeriesId)) {
-      this.activeSeriesId = null;
-    }
     this.seriesSelect.replaceChildren(
       option('', 'Sin serie'),
       ...series.map((entry) => option(entry.id, entry.name)),
@@ -213,8 +221,10 @@ export class NotebookPanel {
     return group;
   }
 
-  newProject() {
-    const name = window.prompt('Project name', 'New project');
+  async newProject() {
+    const name = await this.app.dialogs.prompt({
+      title: 'New project', label: 'Project name', value: 'New project', confirmText: 'Create',
+    });
     if (name === null) return;
     const project = this.app.notebook.createProject(name);
     if (!project) {
@@ -229,10 +239,12 @@ export class NotebookPanel {
     this.setStatus(`Created project “${project.name}”`);
   }
 
-  renameProject() {
+  async renameProject() {
     const project = this.app.notebook.getProject(this.activeProjectId);
     if (!project) return;
-    const name = window.prompt('Rename project', project.name);
+    const name = await this.app.dialogs.prompt({
+      title: 'Rename project', label: 'Project name', value: project.name, confirmText: 'Rename',
+    });
     if (name === null) return;
     const renamed = this.app.notebook.renameProject(project.id, name);
     if (!renamed) {
@@ -243,11 +255,16 @@ export class NotebookPanel {
     this.setStatus(`Renamed to “${renamed.name}”`);
   }
 
-  deleteProject() {
+  async deleteProject() {
     if (this.activeProjectId === INBOX_PROJECT_ID) return;
     const project = this.app.notebook.getProject(this.activeProjectId);
     if (!project) return;
-    if (!window.confirm(`Delete “${project.name}”? Its creations move to Inbox.`)) return;
+    const confirmed = await this.app.dialogs.confirm({
+      title: 'Delete project?',
+      message: `Delete “${project.name}”? Its creations move to Inbox.`,
+      confirmText: 'Delete',
+    });
+    if (!confirmed) return;
     if (!this.app.notebook.removeProject(project.id)) {
       this.setStatus('Could not delete project', true);
       return;
@@ -260,10 +277,12 @@ export class NotebookPanel {
     this.setStatus(`Deleted project “${project.name}”`);
   }
 
-  newSeries() {
+  async newSeries() {
     const project = this.app.notebook.getProject(this.activeProjectId);
     if (!project) return;
-    const name = window.prompt('Series name', 'New series');
+    const name = await this.app.dialogs.prompt({
+      title: 'New series', label: 'Series name', value: 'New series', confirmText: 'Create',
+    });
     if (name === null) return;
     const series = this.app.notebook.createSeries(project.id, name);
     if (!series) {
@@ -275,8 +294,10 @@ export class NotebookPanel {
     this.setStatus(`Created series “${series.name}”`);
   }
 
-  renameSeries(series) {
-    const name = window.prompt('Rename series', series.name);
+  async renameSeries(series) {
+    const name = await this.app.dialogs.prompt({
+      title: 'Rename series', label: 'Series name', value: series.name, confirmText: 'Rename',
+    });
     if (name === null) return;
     const renamed = this.app.notebook.renameSeries(series.id, name);
     if (!renamed) {
@@ -287,8 +308,13 @@ export class NotebookPanel {
     this.setStatus(`Renamed series to “${renamed.name}”`);
   }
 
-  deleteSeries(series) {
-    if (!window.confirm(`Delete series “${series.name}”? Its creations stay in the project.`)) return;
+  async deleteSeries(series) {
+    const confirmed = await this.app.dialogs.confirm({
+      title: 'Delete series?',
+      message: `Delete series “${series.name}”? Its creations stay in the project.`,
+      confirmText: 'Delete',
+    });
+    if (!confirmed) return;
     if (!this.app.notebook.removeSeries(series.id)) {
       this.setStatus('Could not delete series', true);
       return;
@@ -394,8 +420,13 @@ export class NotebookPanel {
     }
   }
 
-  remove(cp) {
-    if (!window.confirm(`Delete “${cp.name}”?`)) return;
+  async remove(cp) {
+    const confirmed = await this.app.dialogs.confirm({
+      title: 'Delete creation?',
+      message: `Delete “${cp.name}”?`,
+      confirmText: 'Delete',
+    });
+    if (!confirmed) return;
     if (this.app.notebook.remove(cp.id)) {
       if (this.selectedA === cp.id) this.selectedA = null;
       if (this.selectedB === cp.id) this.selectedB = null;

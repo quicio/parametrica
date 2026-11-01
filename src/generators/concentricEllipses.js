@@ -33,9 +33,9 @@ Generators.register({
       default: 'pair',
       doc: 'pair: ellipses mirror around x=0 (vesica). chain: each offset right. centered: all share one center.',
     },
-    samples:   { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 500 },
-    closed:    { label: 'Closed', type: TYPE.BOOLEAN, default: true },
-    fit:       { label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 340,
+    samples: { advanced: true, label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 500 },
+    closed: { advanced: true, label: 'Closed', type: TYPE.BOOLEAN, default: true },
+    fit: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 340,
                  doc: '0 = keep native scale.' },
   },
 

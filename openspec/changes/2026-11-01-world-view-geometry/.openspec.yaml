@@ -1,0 +1,18 @@
+name: world-view-geometry
+description: >
+  Phase 2 architecture for Parametrica: separate world geometry from camera and
+  rendering, introduce typed geometry contracts (Curve2D, Curve3D, Surface,
+  Mesh, Solid), define world/view operator spaces, decouple p5 from application
+  state, and prepare the incremental path to surfaces, meshes, solids and
+  fabrication exports without changing document v3.
+status: proposed
+created: 2026-11-01
+capabilities:
+  - geometry-contracts
+  - world-view-separation
+  - operator-spaces
+  - render-scene-separation
+  - geometry-pipeline
+  - geometry-compatibility
+  - fabrication-contracts
+skip_specs: false

@@ -30,8 +30,8 @@ Generators.register({
   params: {
     harmonicsX: { label: 'x(t) harmonics', type: TYPE.HARMONICS, default: DEFAULT_X },
     harmonicsY: { label: 'y(t) harmonics', type: TYPE.HARMONICS, default: DEFAULT_Y },
-    samples: { label: 'Samples', type: TYPE.NUMBER, min: 64, max: 8000, step: 1, default: 900 },
-    size: { label: 'Fit Size', type: TYPE.NUMBER, min: 40, max: 800, step: 1, default: 340 },
+    samples: { advanced: true, label: 'Samples', type: TYPE.NUMBER, min: 64, max: 8000, step: 1, default: 900 },
+    size: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 40, max: 800, step: 1, default: 340 },
   },
 
   domain: () => ({ t0: 0, t1: TAU, closed: true }),

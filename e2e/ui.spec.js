@@ -192,14 +192,16 @@ test('notebook saves, compares and survives reload', async ({ page }) => {
 
 test('notebook groups creations by project and series', async ({ page }) => {
   await openSection(page, 'Notebook');
-  page.once('dialog', (dialog) => dialog.accept('Ácido'));
   await page.locator('.notebook-org button[title="New project"]').click();
+  await page.locator('.parametrica-dialog-input').fill('Ácido');
+  await page.locator('.parametrica-dialog-confirm').click();
   await page.waitForTimeout(300);
   const projectId = await page.locator('.notebook-project').inputValue();
   expect(projectId).not.toBe('inbox');
 
-  page.once('dialog', (dialog) => dialog.accept('Rosetas'));
   await page.locator('.notebook-org button[title="New series"]').click();
+  await page.locator('.parametrica-dialog-input').fill('Rosetas');
+  await page.locator('.parametrica-dialog-confirm').click();
   await page.waitForTimeout(300);
   const seriesId = await page.locator('.notebook-series').inputValue();
   expect(seriesId).not.toBe('');

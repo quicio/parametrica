@@ -158,7 +158,9 @@ Import direction:
 core  ← UI
 core  ← render/export
 generators/operators ← math/sampling
-UI may import core and widgets; core must not import UI.
+UI may import core and widgets; runtime core modules must not import UI.
+`App.js` is the composition root and is the only core file allowed to import
+UI modules.
 ```
 
 ### D11: Incremental migration, no big-bang

@@ -9,11 +9,14 @@
 
 import GUI from 'lil-gui';
 import { Generators, RenderPasses } from '../core/registry.js';
+import { supportsSpatial } from '../core/capabilities.js';
 import { TYPE } from '../core/schema.js';
 import { OVERLAYS } from '../viz/overlays.js';
 import { ExpressionField } from './widgets/ExpressionField.js';
 import { HarmonicsEditor } from './widgets/HarmonicsEditor.js';
-import { OperatorStack, bindStageParams, bindStageMods, applyHardBounds } from './widgets/OperatorStack.js';
+import { OperatorStack } from './widgets/OperatorStack.js';
+import { bindStageParams, bindStageMods } from './params/StageEditor.js';
+import { applyHardBounds } from './params/ParamRegistry.js';
 import { normalizeModes, toggleMode } from './widgets/modeToggles.js';
 import { LabPanel } from './widgets/LabPanel.js';
 import { NotebookPanel } from './widgets/NotebookPanel.js';
@@ -32,11 +35,6 @@ const MODES = [
   { id: 'explore', label: 'Explore' },
   { id: 'keep', label: 'Keep' },
 ];
-const ADVANCED_PARAM_KEYS = new Set([
-  'samples', 'adaptive', 'closed', 'fit', 'size', 't0', 't1', 'theta0',
-  'depthOcclusion', 'depthAttenuation', 'skip', 'dt', 'steps', 'stepSize',
-  'duration', 'fps', 'maxSteps', 'minSteps',
-]);
 
 export class Controls {
   /** @param {object} app  @param {HTMLElement} container */
@@ -402,7 +400,7 @@ export class Controls {
     const essential = [];
     const advanced = [];
     for (const entry of plain) {
-      if (isAdvancedParam(entry[0], entry[1])) advanced.push(entry);
+      if (isAdvancedParam(entry[1])) advanced.push(entry);
       else essential.push(entry);
     }
 
@@ -494,7 +492,8 @@ export class Controls {
     const gui = this.makeGui(body);
     const view = this.app.document.view;
     const generatorId = this.app.activeLayer?.generator?.id;
-    const canProject = generatorId === 'helix' || generatorId === 'parametric-3d';
+    const generator = generatorId && Generators.has(generatorId) ? Generators.get(generatorId) : null;
+    const canProject = Boolean(generator && supportsSpatial(generator));
     if (!canProject && view.projection !== '3d') view.projection = '3d';
     view.projection ??= '3d';
     const projection = gui
@@ -956,8 +955,8 @@ function layerButton(label, title, onClick, disabled = false) {
 }
 
 
-function isAdvancedParam(key, schema) {
-  return schema?.advanced === true || ADVANCED_PARAM_KEYS.has(key);
+function isAdvancedParam(schema) {
+  return schema?.advanced === true;
 }
 
 function countMods(stage) {

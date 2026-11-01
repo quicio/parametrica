@@ -9,11 +9,13 @@
 
 import { createDocument, sanitizeDocument, createLayer, attachLayerAliases } from './document.js';
 import { Generators, Operators } from './registry.js';
+import { supportsSpatial } from './capabilities.js';
 import { evaluateDocument } from './engine.js';
 import { schemaDefaults } from './schema.js';
 import { History } from './history.js';
 import { SessionStore } from './session.js';
 import { Notebook } from '../lab/notebook.js';
+import { NotebookWorkspace } from '../lab/workspace.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
 import { applySuggestionToDocument } from '../ai/offline.js';
@@ -22,12 +24,14 @@ import { Controls } from '../ui/Controls.js';
 import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
+import { DialogService } from '../ui/dialogs.js';
 
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
     this.telemetryEl = telemetryEl;
     this.presets = new PresetManager();
     this.mutator = new MutationEngine();
+    this.dialogs = new DialogService();
     this.document = createDocument('parametric');
 
     // UI-only reference state: never serialised with the document.
@@ -46,6 +50,7 @@ export class App {
     document.body.appendChild(this.noticeEl);
 
     this.notebook = new Notebook();
+    this.notebookWorkspace = new NotebookWorkspace(this.notebook);
     if (this.notebook.lastError) {
       this.notify(`Notebook storage: ${this.notebook.lastError}`, 'error');
     }
@@ -165,8 +170,9 @@ export class App {
       }
       thumbnail = thumbnail ?? this.renderer?.thumbnailDataURL?.() ?? null;
     }
-    const targetProject = projectId ?? this.controls?.notebookPanel?.activeProjectId ?? null;
-    const targetSeries = seriesId ?? this.controls?.notebookPanel?.activeSeriesId ?? null;
+    const target = this.notebookWorkspace.target;
+    const targetProject = projectId ?? target.projectId;
+    const targetSeries = seriesId ?? target.seriesId;
     const cp = this.notebook.add({
       name,
       document: source,
@@ -440,7 +446,7 @@ export class App {
 
   setGenerator(id) {
     if (!Generators.has(id)) return;
-    if (id !== 'helix' && id !== 'parametric-3d' && this.document.view.projection !== '3d') {
+    if (!supportsSpatial(Generators.get(id)) && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
     }
     this.document.generator = {
@@ -596,7 +602,7 @@ export class App {
     this.document.activeLayer = doc.activeLayer ?? 0;
     Object.assign(this.document.view, doc.view);
     const active = this.document.layers?.[this.document.activeLayer ?? 0];
-    const projectable = active?.generator?.id === 'helix' || active?.generator?.id === 'parametric-3d';
+    const projectable = active?.generator && supportsSpatial(Generators.get(active.generator.id));
     if (!projectable && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
     }

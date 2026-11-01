@@ -25,8 +25,9 @@ Generators.register({
   id: 'helix',
   name: 'Helix (generalized)',
   category: '3d',
+  capabilities: { spatial: true, projection: '3d', supportsFit: true, supportsClosed: true },
   params: {
-    theta0: {
+    theta0: { advanced: true, 
       label: 'Start θ', type: TYPE.NUMBER,
       min: -TAU, max: TAU, step: 0.05, snap: false, default: 0,
       doc: 'Parameter at the start of the curve.',
@@ -86,17 +87,17 @@ Generators.register({
       min: 1, max: MAX_STRANDS, step: 1, default: 1,
       doc: '2 interleaves a second helix at half a turn.',
     },
-    samples: {
+    samples: { advanced: true, 
       label: 'Samples', type: TYPE.NUMBER,
       min: 64, max: 8000, step: 1, default: 1800,
     },
-    adaptive: {
+    adaptive: { advanced: true, 
       label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true,
     },
-    closed: {
+    closed: { advanced: true, 
       label: 'Closed', type: TYPE.BOOLEAN, default: false,
     },
-    fit: {
+    fit: { advanced: true, 
       label: 'Fit Size', type: TYPE.NUMBER,
       min: 0, max: 800, step: 1, default: 340,
       doc: '0 = keep native scale.',

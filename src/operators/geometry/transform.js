@@ -89,7 +89,7 @@ Operators.register({
   name: 'Normalize',
   category: 'geometry',
   params: {
-    size: { label: 'Fit Size', type: TYPE.NUMBER, min: 20, max: 800, step: 1, default: 340 },
+    size: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 20, max: 800, step: 1, default: 340 },
   },
   apply(curves, p) {
     return fitCurves(curves, p.size);

@@ -44,7 +44,8 @@ src/
 ├── core/
 │   ├── App.js                    composition root (holds document, evaluation)
 │   ├── engine.js                 evaluate(document, ctx) → result (v3 layers)
-│   ├── registry.js               Generators / Operators / RenderPasses
+│   ├── registry.js               validated Generators / Operators / RenderPasses
+│   ├── capabilities.js           declarative spatial/projection capabilities
 │   ├── schema.js                 parameter schema + TYPE enum + clamping
 │   ├── history.js                bounded undo/redo snapshots
 │   ├── session.js                debounced local session snapshots
@@ -54,10 +55,12 @@ src/
 │   ├── expression.js             Pratt parser + evaluator (NO eval/Function)
 │   ├── stdlib.js                 pi, tau, sin/cos/lerp/clamp/noise/…
 │   ├── noise.js                  seeded simplex noise (mulberry32 PRNG)
+│   ├── periods.js                gcd/lcm and exact closing periods
 │   └── curves.js                 Catmull-Rom → Bézier helpers
 │
 ├── sampling/
-│   └── sampling.js               uniform / adaptive / arc-length resample
+│   ├── sampling.js               uniform / adaptive / arc-length resample
+│   └── parametric.js             sampleParametric / postProcess / closure
 │
 ├── analysis/
 │   ├── differential.js           tangents, normals, curvature, inflections
@@ -67,7 +70,9 @@ src/
 │   ├── hash.js                   canonical JSON + pure SHA-256
 │   ├── descriptor.js             deterministic figure descriptor (v1)
 │   ├── sensitivity.js            ±delta parameter influence
-│   ├── notebook.js               checkpoints, lineage and persistence
+│   ├── notebook.js               checkpoints, projects, series and lineage
+│   ├── notebookRepository.js     repository boundary + versioned migration
+│   ├── workspace.js              active project/series save target
 │   ├── parameters.js             shared ParameterRef helpers
 │   ├── exploration.js            Solo/Lock, sweeps and seeded randomize
 │   ├── evolution.js              crossover, structural mutation and lineage
@@ -75,7 +80,9 @@ src/
 │
 ├── generators/                   23 registered models across 16 modules
 │   ├── index.js                  side-effect imports
-│   ├── helpers.js                compileOrThrow, makeScope, sampleParametric, isClosedPolyline
+│   ├── helpers.js                compatibility facade for focused helpers
+│   ├── context.js                compileOrThrow / makeScope
+│   ├── compose.js                composeCurves / multi-curve generators
 │   ├── parametric.js             x(t), y(t)
 │   ├── polar.js                  r(θ)
 │   ├── custom.js                 multi-line programs
@@ -112,6 +119,7 @@ src/
 │   ├── P5Renderer.js             lazy p5 sketch, animation clock, pass composer
 │   ├── thumbnail.js              plain-canvas candidate previews
 │   ├── projection.js             render-time xy/xz/yz orthographic views
+│   ├── camera3d.js               shared cameraFrom / project3D
 │   ├── palettes.js               artboard presets and color pairs
 │   └── passes/
 │       ├── core.js               stroke / points / wireframe
@@ -149,10 +157,14 @@ src/
 │
 ├── ui/
 │   ├── Controls.js               mode bar, accordions and instrument panel
+│   ├── dialogs.js                injectable prompt / confirm service
+│   ├── params/
+│   │   ├── ParamRegistry.js      number / boolean / select / expression types
+│   │   └── StageEditor.js        shared binding, modulation and expressions
 │   └── widgets/
 │       ├── ExpressionField.js    CodeMirror 6 math editor
 │       ├── HarmonicsEditor.js    Fourier table editor
-│       ├── OperatorStack.js      add/reorder/toggle + Clone ×3 operators
+│       ├── OperatorStack.js      add/reorder/toggle operators + expressions
 │       ├── LabPanel.js           metrics + parameter-influence panel
 │       ├── NotebookPanel.js      checkpoints, thumbnails and A/B compare
 │       ├── ExplorePanel.js       axis, scope, strip and candidate adoption
@@ -165,6 +177,21 @@ src/
 └── geometry/                     v1 Catmull-Rom + Mirror + OpticalCorrection
                                   (used only by bilateral-spline generator)
 ```
+
+### Extension points
+
+```
+New generator        → register a definition with params + capabilities + sample
+New operator         → register params + apply; expression/source fields are automatic
+New parameter type   → ParamRegistry.register(type) + editor binding
+New storage backend  → NotebookRepository (load/save/clear)
+New spatial model    → capabilities.spatial = true (no core id checks)
+```
+
+Registries validate definitions at load time. Generator hooks
+(`previewParams`, `syncParams`, `onExpressionChange`, `migrateParams`) are
+invoked generically by the StageEditor. `src/core` must never import UI
+widgets; panels consume the workspace and dialog services.
 
 ---
 

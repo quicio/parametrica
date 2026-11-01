@@ -48,14 +48,16 @@ import { compileOrThrow, makeScope, sampleParametric, postProcess } from './help
 Generators.register({
   id: 'mything',                                    // unique id
   name: 'My Thing',                                  // human-readable
+  category: 'lab',
+  capabilities: { spatial: false, supportsFit: true },
   params: {
     expr: {
       label: 'r(θ)', type: TYPE.EXPRESSION,
       default: 'sin(3*theta) * 100',
       doc: 'Optional help text shown in the panel.',
     },
-    samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, default: 500 },
-    closed:  { label: 'Closed', type: TYPE.BOOLEAN, default: true },
+    samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, default: 500, advanced: true },
+    closed:  { label: 'Closed', type: TYPE.BOOLEAN, default: true, advanced: true },
   },
 
   domain: (p) => ({ t0: 0, t1: Math.PI * 2, closed: p.closed }),
@@ -75,6 +77,18 @@ Generators.register({
   },
 });
 ```
+
+### Extension rules
+
+- Declare `capabilities` instead of relying on id checks in core/UI.
+- Mark technical params with `advanced: true`; the panel reads the schema.
+- New parameter types are added through `src/ui/params/ParamRegistry.js`.
+- Shared hooks (`previewParams`, `syncParams`, `onExpressionChange`,
+  `migrateParams`) are validated at registration and invoked by the shared
+  StageEditor.
+- Prefer the focused helpers (`math/periods.js`, `sampling/parametric.js`,
+  `render/camera3d.js`) for new code; `generators/helpers.js` is a
+  compatibility facade.
 
 ### Register the module
 

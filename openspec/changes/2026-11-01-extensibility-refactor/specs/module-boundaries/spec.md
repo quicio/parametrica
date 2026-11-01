@@ -26,8 +26,10 @@ The dependency direction SHALL be documented and enforced.
 
 #### Scenario: Core independence
 
-- **WHEN** any file under `src/core` is loaded in Node
+- **WHEN** any runtime module under `src/core` is loaded in Node
 - **THEN** it does not import UI widgets, DOM panels or lil-gui
+- **AND** the composition root `App.js` is the only core file allowed to
+  import UI modules
 
 #### Scenario: UI may depend on core
 

@@ -35,15 +35,15 @@ import { TAU } from './helpers.js';
  * finite range; wildly bad values would otherwise produce NaN cascades.
  */
 const ATTRACTOR_BASE_PARAMS = {
-  samples:     { label: 'Samples', type: TYPE.NUMBER, min: 100,    max: 30000, step: 100, default: 6000 },
+  samples: { advanced: true, label: 'Samples', type: TYPE.NUMBER, min: 100,    max: 30000, step: 100, default: 6000 },
   trajectories:{ label: 'Trajectories', type: TYPE.NUMBER, min: 1,   max: 24,    step: 1,   default: 1,
                  doc: 'Independent starting points. Each becomes its own curve.' },
-  dt:          { label: 'Step Size', type: TYPE.NUMBER, min: 0.0001, max: 0.2,  step: 0.0001, default: 0.005 },
-  skip:        { label: 'Skip (transient)', type: TYPE.NUMBER, min: 0, max: 20000, step: 50, default: 2000,
+  dt: { advanced: true, label: 'Step Size', type: TYPE.NUMBER, min: 0.0001, max: 0.2,  step: 0.0001, default: 0.005 },
+  skip: { advanced: true, label: 'Skip (transient)', type: TYPE.NUMBER, min: 0, max: 20000, step: 50, default: 2000,
                  doc: 'Iterations discarded at the start (let the system settle on the attractor).' },
   seed:        { label: 'Seed', type: TYPE.NUMBER, min: 0, max: 9999, step: 1, default: 1,
                  doc: 'Different seeds pick different starting points for multi-trajectory mode.' },
-  fit:         { label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 360,
+  fit: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 360,
                  doc: '0 = keep native scale.' },
 };
 

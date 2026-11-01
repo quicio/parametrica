@@ -40,6 +40,7 @@ Generators.register({
   id: 'parametric-3d',
   name: 'Parametric 3D (projected)',
   category: '3d',
+  capabilities: { spatial: true, projection: '3d', supportsFit: true, supportsClosed: true },
   params: {
     exprX: {
       label: 'x(t)', type: TYPE.EXPRESSION,
@@ -56,11 +57,11 @@ Generators.register({
       default: '0.2*t',
       doc: '3D z-coordinate as a function of t.',
     },
-    t0:    { label: 't min', type: TYPE.NUMBER, min: -2 * TAU, max: 2 * TAU, step: 0.05, snap: false, default: 0,
+    t0: { advanced: true, label: 't min', type: TYPE.NUMBER, min: -2 * TAU, max: 2 * TAU, step: 0.05, snap: false, default: 0,
              doc: 'Start of the parameter domain. Range ±2π; type larger values by hand.' },
-    t1:    { label: 't max', type: TYPE.NUMBER, min: 0, max: 4 * TAU, step: 0.05, snap: false, default: TAU * 3,
+    t1: { advanced: true, label: 't max', type: TYPE.NUMBER, min: 0, max: 4 * TAU, step: 0.05, snap: false, default: TAU * 3,
              doc: 'End of the parameter domain. Range 0..4π; type larger values by hand.' },
-    samples: { label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 600 },
+    samples: { advanced: true, label: 'Samples', type: TYPE.NUMBER, min: 32, max: 8000, step: 1, default: 600 },
 
     // yaw/pitch/fov used to live as generator params; they moved to
     // document.view.camera so they can be driven by canvas drag and
@@ -68,17 +69,17 @@ Generators.register({
     // a built-in isometric if view.camera is absent (only happens for
     // malformed documents — sanitized docs always have it).
 
-    depthOcclusion: {
+    depthOcclusion: { advanced: true, 
       label: 'Depth Fade', type: TYPE.BOOLEAN,
       default: true,
       doc: 'Modulate stroke alpha by depth so closer curves read brighter.',
     },
-    depthAttenuation: {
+    depthAttenuation: { advanced: true, 
       label: 'Fade Strength', type: TYPE.NUMBER,
       min: 0, max: 1, step: 0.01,
       default: 0.55,
     },
-    fit: { label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 340,
+    fit: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 340,
            doc: '0 = keep native scale.' },
   },
 

@@ -25,8 +25,8 @@ Generators.register({
     a: { label: 'a', type: TYPE.NUMBER, min: 0.1, max: 4, step: 0.01, default: 1 },
     b: { label: 'b', type: TYPE.NUMBER, min: 0.1, max: 4, step: 0.01, default: 1 },
     radius: { label: 'Radius', type: TYPE.NUMBER, min: 20, max: 600, step: 1, default: 280 },
-    samples: { label: 'Samples', type: TYPE.NUMBER, min: 64, max: 12000, step: 1, default: 1000 },
-    adaptive: { label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
+    samples: { advanced: true, label: 'Samples', type: TYPE.NUMBER, min: 64, max: 12000, step: 1, default: 1000 },
+    adaptive: { advanced: true, label: 'Adaptive Sampling', type: TYPE.BOOLEAN, default: true },
   },
 
   domain: () => ({ t0: 0, t1: TAU, closed: true }),

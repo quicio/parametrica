@@ -48,7 +48,7 @@ Operators.register({
   name: 'Skeleton',
   category: 'topology',
   params: {
-    samples: { label: 'Boundary Samples', type: TYPE.NUMBER, min: 40, max: 500, step: 10, default: 160 },
+    samples: { advanced: true, label: 'Boundary Samples', type: TYPE.NUMBER, min: 40, max: 500, step: 10, default: 160 },
     prune: { label: 'Prune Length', type: TYPE.NUMBER, min: 0, max: 120, step: 1, default: 18 },
     prunePasses: { label: 'Prune Passes', type: TYPE.NUMBER, min: 0, max: 6, step: 1, default: 2 },
   },
@@ -62,7 +62,7 @@ Operators.register({
   name: 'Medial Axis',
   category: 'topology',
   params: {
-    samples: { label: 'Boundary Samples', type: TYPE.NUMBER, min: 40, max: 500, step: 10, default: 200 },
+    samples: { advanced: true, label: 'Boundary Samples', type: TYPE.NUMBER, min: 40, max: 500, step: 10, default: 200 },
     prune: { label: 'Prune Length', type: TYPE.NUMBER, min: 0, max: 120, step: 1, default: 6 },
     prunePasses: { label: 'Prune Passes', type: TYPE.NUMBER, min: 0, max: 6, step: 1, default: 1 },
   },

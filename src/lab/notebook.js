@@ -9,6 +9,7 @@
 
 import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
 import { documentDiff, descriptorDiff } from './diff.js';
+import { LocalNotebookRepository, migrateNotebook } from './notebookRepository.js';
 
 export const NOTEBOOK_VERSION = 2;
 export const NOTEBOOK_STORAGE_KEY = 'parametrica.notebook.v1';
@@ -27,10 +28,12 @@ export const MAX_GENERATION = 1_000_000;
 export class Notebook {
   constructor({
     storage = globalThis.localStorage ?? null,
+    repository = null,
     now = () => Date.now(),
     limit = MAX_CHECKPOINTS,
   } = {}) {
     this.storage = storage;
+    this.repository = repository ?? new LocalNotebookRepository(storage, NOTEBOOK_STORAGE_KEY);
     this.now = now;
     this.limit = Math.max(1, Math.floor(limit));
     this.items = [];
@@ -46,16 +49,13 @@ export class Notebook {
     this.projects = [];
     this.series = [];
     this.lastError = null;
-    if (!this.storage) return this.items;
     try {
-      const raw = this.storage.getItem(NOTEBOOK_STORAGE_KEY);
+      const raw = this.repository.load();
       if (!raw) return this.items;
-      const data = JSON.parse(raw);
-      const list = Array.isArray(data) ? data : data?.checkpoints;
-      if (!Array.isArray(list)) return this.items;
-
-      const rawProjects = Array.isArray(data?.projects) ? data.projects : [];
-      const rawSeries = Array.isArray(data?.series) ? data.series : [];
+      const data = migrateNotebook(raw);
+      const list = data.checkpoints;
+      const rawProjects = data.projects;
+      const rawSeries = data.series;
       this.projects = uniqueById(rawProjects
         .map((project, index) => sanitizeProject(project, index, this.now))
         .filter(Boolean));
@@ -100,10 +100,8 @@ export class Notebook {
 
   persist() {
     this.lastError = null;
-    if (!this.storage) return false;
     try {
-      this.storage.setItem(NOTEBOOK_STORAGE_KEY, JSON.stringify(this.toJSON()));
-      return true;
+      return this.repository.save(this.toJSON()) !== false;
     } catch (error) {
       this.lastError = error.message;
       return false;
