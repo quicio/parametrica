@@ -190,6 +190,66 @@ test('notebook saves, compares and survives reload', async ({ page }) => {
   expect(await page.locator('.notebook-item .notebook-thumb img').count()).toBe(2);
 });
 
+test('notebook groups creations by project and series', async ({ page }) => {
+  await openSection(page, 'Notebook');
+  page.once('dialog', (dialog) => dialog.accept('Ácido'));
+  await page.locator('.notebook-org button[title="New project"]').click();
+  await page.waitForTimeout(300);
+  const projectId = await page.locator('.notebook-project').inputValue();
+  expect(projectId).not.toBe('inbox');
+
+  page.once('dialog', (dialog) => dialog.accept('Rosetas'));
+  await page.locator('.notebook-org button[title="New series"]').click();
+  await page.waitForTimeout(300);
+  const seriesId = await page.locator('.notebook-series').inputValue();
+  expect(seriesId).not.toBe('');
+
+  await page.locator('.notebook-name').fill('Roseta 01');
+  await page.locator('.notebook-save').click();
+  await page.waitForTimeout(500);
+
+  await expect(page.locator('.notebook-item')).toHaveCount(1);
+  await expect(page.locator('.notebook-group-title', { hasText: 'Rosetas' })).toBeVisible();
+  await expect(page.locator('.notebook-group-count').first()).toHaveText('1');
+  const stored = await page.evaluate(() => {
+    const notebook = window.__parametrica.notebook;
+    const cp = notebook.items.at(-1);
+    return { projectName: notebook.getProject(cp.projectId)?.name, seriesName: notebook.getSeries(cp.seriesId)?.name };
+  });
+  expect(stored).toEqual({ projectName: 'Ácido', seriesName: 'Rosetas' });
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
+  await openSection(page, 'Notebook');
+  await page.locator('.notebook-project').selectOption({ label: 'Ácido' });
+  await expect(page.locator('.notebook-item')).toHaveCount(1);
+  await expect(page.locator('.notebook-group-title', { hasText: 'Rosetas' })).toBeVisible();
+});
+
+test('manual notebook saves keep their own model without false lineage', async ({ page }) => {
+  await openSection(page, 'Notebook');
+  await page.evaluate(() => window.__parametrica.setGenerator('helix'));
+  await page.waitForTimeout(300);
+  await page.locator('.notebook-name').fill('Helix base');
+  await page.locator('.notebook-save').click();
+  await page.waitForTimeout(400);
+
+  await page.evaluate(() => window.__parametrica.setGenerator('lissajous'));
+  await page.waitForTimeout(300);
+  await page.locator('.notebook-name').fill('Lissajous test');
+  await page.locator('.notebook-save').click();
+  await page.waitForTimeout(400);
+
+  const saved = await page.evaluate(() => {
+    const notebook = window.__parametrica.notebook;
+    const cp = notebook.items.at(-1);
+    return { generator: cp.document.generator.id, parentId: cp.parentId };
+  });
+  expect(saved).toEqual({ generator: 'lissajous', parentId: null });
+  await expect(page.locator('.notebook-item-meta').first()).toContainText('Lissajous');
+  await expect(page.locator('.notebook-item-meta').first()).not.toContainText('parent:');
+});
+
 test('notebook restores a checkpoint through history', async ({ page }) => {
   await openSection(page, 'Notebook');
   await page.locator('.notebook-name').fill('Before');
@@ -648,7 +708,7 @@ test('evolution breeds checkpoints and keeps generation lineage', async ({ page 
   await expect(page.locator('.evolution-status')).toContainText('Kept');
   await expect(page.locator('.notebook-item')).toHaveCount(3);
   await expect(page.locator('.notebook-item-meta').first()).toContainText('G1');
-  await expect(page.locator('.notebook-item-meta').first()).toContainText('↳');
+  await expect(page.locator('.notebook-item-meta').first()).toContainText('parent:');
 
   const kept = await page.evaluate(() => {
     const cp = window.__parametrica.notebook.items.at(-1);

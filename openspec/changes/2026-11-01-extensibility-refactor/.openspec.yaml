@@ -1,0 +1,17 @@
+name: extensibility-refactor
+description: >
+  Architectural hardening pass: stage capabilities, parameter type registry,
+  registry contracts, notebook workspace/persistence boundaries, injectable
+  dialogs and module-boundary cleanup so new integrations and parameter types
+  can be added without editing core or UI special cases.
+status: proposed
+created: 2026-11-01
+capabilities:
+  - stage-capabilities
+  - parameter-registry
+  - registry-contracts
+  - notebook-workspace
+  - notebook-persistence
+  - ui-dialogs
+  - module-boundaries
+skip_specs: false

@@ -141,6 +141,8 @@ export class App {
     document = null,
     descriptor = null,
     thumbnail = null,
+    projectId = null,
+    seriesId = null,
   } = {}) {
     let source = this.document;
     let capturedDescriptor = descriptor;
@@ -163,14 +165,18 @@ export class App {
       }
       thumbnail = thumbnail ?? this.renderer?.thumbnailDataURL?.() ?? null;
     }
+    const targetProject = projectId ?? this.controls?.notebookPanel?.activeProjectId ?? null;
+    const targetSeries = seriesId ?? this.controls?.notebookPanel?.activeSeriesId ?? null;
     const cp = this.notebook.add({
       name,
       document: source,
       descriptor: capturedDescriptor,
       thumbnail,
-      parentId: parentId ?? this.notebook.latest()?.id ?? null,
+      parentId,
       parents,
       generation,
+      projectId: targetProject,
+      seriesId: targetSeries,
     });
     this.controls?.evolutionPanel?.refresh?.();
     if (this.notebook.lastError) {

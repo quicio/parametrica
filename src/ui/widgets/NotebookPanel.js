@@ -1,15 +1,21 @@
 /**
  * NotebookPanel.js — keep, compare and recover lab checkpoints.
  *
- * The panel is intentionally simple: a name + save row, a newest-first list
- * with thumbnails and A/B selectors, and a comparison drawer.
+ * The panel is intentionally simple: a name + save row, a project/series
+ * selector, a grouped list with thumbnails and A/B selectors, and a
+ * comparison drawer.
  */
+
+import { INBOX_PROJECT_ID } from '../../lab/notebook.js';
+import { Generators } from '../../core/registry.js';
 
 export class NotebookPanel {
   constructor(app) {
     this.app = app;
     this.selectedA = null;
     this.selectedB = null;
+    this.activeProjectId = INBOX_PROJECT_ID;
+    this.activeSeriesId = null;
     this.el = document.createElement('div');
     this.el.className = 'notebook-panel';
     this.build();
@@ -34,6 +40,41 @@ export class NotebookPanel {
     this.saveBtn.addEventListener('click', () => this.save());
 
     top.append(this.nameInput, this.saveBtn);
+
+    const org = document.createElement('div');
+    org.className = 'notebook-org';
+    const projectLabel = document.createElement('span');
+    projectLabel.className = 'notebook-org-label';
+    projectLabel.textContent = 'Proyecto';
+    this.projectSelect = document.createElement('select');
+    this.projectSelect.className = 'notebook-project';
+    this.projectSelect.setAttribute('aria-label', 'Active project');
+    this.projectSelect.addEventListener('change', () => {
+      this.activeProjectId = this.projectSelect.value;
+      this.activeSeriesId = null;
+      this.selectedA = null;
+      this.selectedB = null;
+      this.refresh();
+    });
+    this.projectAddBtn = orgButton('+', 'New project', () => this.newProject());
+    this.projectRenameBtn = orgButton('✎', 'Rename project', () => this.renameProject());
+    this.projectDeleteBtn = orgButton('×', 'Delete project', () => this.deleteProject());
+
+    const seriesLabel = document.createElement('span');
+    seriesLabel.className = 'notebook-org-label';
+    seriesLabel.textContent = 'Serie';
+    this.seriesSelect = document.createElement('select');
+    this.seriesSelect.className = 'notebook-series';
+    this.seriesSelect.setAttribute('aria-label', 'Active series');
+    this.seriesSelect.addEventListener('change', () => {
+      this.activeSeriesId = this.seriesSelect.value || null;
+    });
+    this.seriesAddBtn = orgButton('+', 'New series', () => this.newSeries());
+
+    org.append(
+      projectLabel, this.projectSelect, this.projectAddBtn, this.projectRenameBtn, this.projectDeleteBtn,
+      seriesLabel, this.seriesSelect, this.seriesAddBtn,
+    );
 
     const tools = document.createElement('div');
     tools.className = 'notebook-tools';
@@ -74,36 +115,210 @@ export class NotebookPanel {
     this.compareEl = document.createElement('div');
     this.compareEl.className = 'notebook-compare-view';
 
-    this.el.append(top, tools, this.statusEl, this.listEl, this.compareEl);
+    this.el.append(top, org, tools, this.statusEl, this.listEl, this.compareEl);
   }
 
   refresh() {
-    const items = [...this.app.notebook.items].reverse();
-    if (!items.length) {
-      this.statusEl.textContent = 'No checkpoints yet';
+    const notebook = this.app.notebook;
+    this.syncOrganization();
+    const project = notebook.getProject(this.activeProjectId);
+    const projectItems = notebook.items
+      .filter((cp) => cp.projectId === this.activeProjectId)
+      .slice()
+      .reverse();
+
+    if (!projectItems.length) {
+      this.statusEl.textContent = project ? `No creations in “${project.name}”` : 'No checkpoints yet';
       this.statusEl.classList.remove('error');
-      this.selectedA = null;
-      this.selectedB = null;
     } else {
-      if (!this.selectedA || !this.app.notebook.get(this.selectedA)) this.selectedA = items[0].id;
-      if (!this.selectedB || this.selectedB === this.selectedA || !this.app.notebook.get(this.selectedB)) {
-        this.selectedB = items[1]?.id ?? null;
+      if (!this.selectedA || !notebook.get(this.selectedA)) this.selectedA = projectItems[0].id;
+      if (!this.selectedB || this.selectedB === this.selectedA || !notebook.get(this.selectedB)) {
+        this.selectedB = projectItems[1]?.id ?? null;
       }
-      this.statusEl.textContent = `${items.length} checkpoint${items.length === 1 ? '' : 's'}`;
+      this.statusEl.textContent = `${projectItems.length} creation${projectItems.length === 1 ? '' : 's'} · ${project.name}`;
       this.statusEl.classList.remove('error');
     }
 
     this.listEl.replaceChildren();
-    for (const cp of items) this.listEl.appendChild(this.renderItem(cp));
+    const groups = new Map();
+    for (const series of notebook.seriesFor(this.activeProjectId)) {
+      groups.set(series.id, { series, items: [] });
+    }
+    groups.set(null, { series: null, items: [] });
+    for (const cp of projectItems) {
+      const key = cp.seriesId && groups.has(cp.seriesId) ? cp.seriesId : null;
+      groups.get(key).items.push(cp);
+    }
+    for (const [key, group] of groups) {
+      if (key === null && !group.items.length) continue;
+      this.listEl.appendChild(this.renderGroup(group));
+    }
     this.renderCompare();
     this.app.controls?.evolutionPanel?.refresh?.();
+  }
+
+  syncOrganization() {
+    const notebook = this.app.notebook;
+    notebook.ensureInbox();
+    const projects = notebook.projects;
+    if (!projects.some((project) => project.id === this.activeProjectId)) {
+      this.activeProjectId = projects[0]?.id ?? INBOX_PROJECT_ID;
+      this.activeSeriesId = null;
+    }
+    this.projectSelect.replaceChildren(...projects.map((project) => option(project.id, project.name)));
+    this.projectSelect.value = this.activeProjectId;
+
+    const series = notebook.seriesFor(this.activeProjectId);
+    if (this.activeSeriesId && !series.some((entry) => entry.id === this.activeSeriesId)) {
+      this.activeSeriesId = null;
+    }
+    this.seriesSelect.replaceChildren(
+      option('', 'Sin serie'),
+      ...series.map((entry) => option(entry.id, entry.name)),
+    );
+    this.seriesSelect.value = this.activeSeriesId ?? '';
+
+    const inbox = this.activeProjectId === INBOX_PROJECT_ID;
+    this.projectRenameBtn.disabled = inbox;
+    this.projectDeleteBtn.disabled = inbox;
+  }
+
+  renderGroup({ series, items }) {
+    const group = document.createElement('div');
+    group.className = 'notebook-group';
+    const head = document.createElement('div');
+    head.className = 'notebook-group-head';
+    const title = document.createElement('div');
+    title.className = 'notebook-group-title';
+    title.textContent = series ? series.name : 'Sin serie';
+    const count = document.createElement('span');
+    count.className = 'notebook-group-count';
+    count.textContent = String(items.length);
+    head.append(title, count);
+    if (series) {
+      head.append(
+        orgButton('✎', 'Rename series', () => this.renameSeries(series)),
+        orgButton('×', 'Delete series', () => this.deleteSeries(series)),
+      );
+    }
+    group.appendChild(head);
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'lab-hint';
+      empty.textContent = 'No creations';
+      group.appendChild(empty);
+      return group;
+    }
+    for (const cp of items) group.appendChild(this.renderItem(cp));
+    return group;
+  }
+
+  newProject() {
+    const name = window.prompt('Project name', 'New project');
+    if (name === null) return;
+    const project = this.app.notebook.createProject(name);
+    if (!project) {
+      this.setStatus('Could not create project', true);
+      return;
+    }
+    this.activeProjectId = project.id;
+    this.activeSeriesId = null;
+    this.selectedA = null;
+    this.selectedB = null;
+    this.refresh();
+    this.setStatus(`Created project “${project.name}”`);
+  }
+
+  renameProject() {
+    const project = this.app.notebook.getProject(this.activeProjectId);
+    if (!project) return;
+    const name = window.prompt('Rename project', project.name);
+    if (name === null) return;
+    const renamed = this.app.notebook.renameProject(project.id, name);
+    if (!renamed) {
+      this.setStatus('Could not rename project', true);
+      return;
+    }
+    this.refresh();
+    this.setStatus(`Renamed to “${renamed.name}”`);
+  }
+
+  deleteProject() {
+    if (this.activeProjectId === INBOX_PROJECT_ID) return;
+    const project = this.app.notebook.getProject(this.activeProjectId);
+    if (!project) return;
+    if (!window.confirm(`Delete “${project.name}”? Its creations move to Inbox.`)) return;
+    if (!this.app.notebook.removeProject(project.id)) {
+      this.setStatus('Could not delete project', true);
+      return;
+    }
+    this.activeProjectId = INBOX_PROJECT_ID;
+    this.activeSeriesId = null;
+    this.selectedA = null;
+    this.selectedB = null;
+    this.refresh();
+    this.setStatus(`Deleted project “${project.name}”`);
+  }
+
+  newSeries() {
+    const project = this.app.notebook.getProject(this.activeProjectId);
+    if (!project) return;
+    const name = window.prompt('Series name', 'New series');
+    if (name === null) return;
+    const series = this.app.notebook.createSeries(project.id, name);
+    if (!series) {
+      this.setStatus('Could not create series', true);
+      return;
+    }
+    this.activeSeriesId = series.id;
+    this.refresh();
+    this.setStatus(`Created series “${series.name}”`);
+  }
+
+  renameSeries(series) {
+    const name = window.prompt('Rename series', series.name);
+    if (name === null) return;
+    const renamed = this.app.notebook.renameSeries(series.id, name);
+    if (!renamed) {
+      this.setStatus('Could not rename series', true);
+      return;
+    }
+    this.refresh();
+    this.setStatus(`Renamed series to “${renamed.name}”`);
+  }
+
+  deleteSeries(series) {
+    if (!window.confirm(`Delete series “${series.name}”? Its creations stay in the project.`)) return;
+    if (!this.app.notebook.removeSeries(series.id)) {
+      this.setStatus('Could not delete series', true);
+      return;
+    }
+    if (this.activeSeriesId === series.id) this.activeSeriesId = null;
+    this.refresh();
+    this.setStatus(`Deleted series “${series.name}”`);
+  }
+
+  moveHere(cp) {
+    const targetSeries = this.activeSeriesId;
+    const moved = this.app.notebook.moveCheckpoint(cp.id, {
+      projectId: this.activeProjectId,
+      seriesId: targetSeries,
+    });
+    if (!moved) {
+      this.setStatus('Could not move creation', true);
+      return;
+    }
+    this.refresh();
+    this.setStatus(`Moved “${cp.name}”`);
   }
 
   save() {
     const name = this.nameInput.value.trim() || this.app.document.name;
     try {
-      const previous = this.selectedA ?? this.app.notebook.latest()?.id ?? null;
-      const cp = this.app.saveCheckpoint(name, { parentId: previous });
+      const cp = this.app.saveCheckpoint(name, {
+        projectId: this.activeProjectId,
+        seriesId: this.activeSeriesId,
+      });
       if (!cp) return;
       this.selectedB = this.selectedA;
       this.selectedA = cp.id;
@@ -144,10 +359,13 @@ export class NotebookPanel {
     const parentNames = parentIds
       .map((id) => this.app.notebook.get(id)?.name)
       .filter(Boolean);
+    const generatorId = cp.document.generator?.id;
+    const model = generatorId && Generators.has(generatorId) ? Generators.get(generatorId).name : '';
     meta.textContent = [
+      model,
       formatDate(cp.createdAt),
       cp.generation > 0 ? `G${cp.generation}` : '',
-      parentNames.length ? `↳ ${parentNames.join(', ')}` : (parent ? `↳ ${parent.name}` : ''),
+      parentNames.length ? `parent: ${parentNames.join(', ')}` : (parent ? `parent: ${parent.name}` : ''),
       cp.tags.length ? cp.tags.map((tag) => `#${tag}`).join(' ') : '',
     ].filter(Boolean).join(' · ');
     if (parentNames.length) meta.title = `Parents: ${parentNames.join(', ')}`;
@@ -158,6 +376,7 @@ export class NotebookPanel {
     actions.append(
       actionButton('A', 'Select A', () => { this.selectedA = cp.id; this.refresh(); }, cp.id === this.selectedA),
       actionButton('B', 'Select B', () => { this.selectedB = cp.id; this.refresh(); }, cp.id === this.selectedB),
+      actionButton('Move', 'Move to selected project / series', () => this.moveHere(cp)),
       actionButton('Restore', 'Restore checkpoint', () => this.restore(cp)),
       actionButton('Delete', 'Delete checkpoint', () => this.remove(cp)),
     );
@@ -288,6 +507,22 @@ function actionButton(label, title, onClick, selected = false) {
   if (selected) button.classList.add('active');
   button.addEventListener('click', onClick);
   return button;
+}
+
+function orgButton(label, title, onClick) {
+  const button = document.createElement('button');
+  button.className = 'notebook-icon';
+  button.textContent = label;
+  button.title = title;
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+function option(value, label) {
+  const el = document.createElement('option');
+  el.value = value;
+  el.textContent = label;
+  return el;
 }
 
 function diffTitle(text) {

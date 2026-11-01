@@ -33,7 +33,7 @@ import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.js';
 import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
 import { computeDescriptor } from '../src/lab/descriptor.js';
 import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.js';
-import { Notebook, sanitizeCheckpoint } from '../src/lab/notebook.js';
+import { Notebook, sanitizeCheckpoint, INBOX_PROJECT_ID } from '../src/lab/notebook.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
@@ -1034,6 +1034,29 @@ console.log('15. lab notebook');
   assert(updated.name === 'B updated' && updated.tags[0] === 'kept', 'checkpoint metadata update');
   assert(notebook.remove('cp-b'), 'remove checkpoint');
   assert(notebook.items.length === 1 && notebook.get('cp-a'), 'remove keeps the other checkpoint');
+
+  const hierarchyStorage = new MemoryStorage();
+  const hierarchy = new Notebook({ storage: hierarchyStorage, now: () => 2000 });
+  assert(hierarchy.projects.length === 1 && hierarchy.projects[0].id === INBOX_PROJECT_ID, 'notebook starts with Inbox');
+  const project = hierarchy.createProject('Encargo');
+  const series = hierarchy.createSeries(project.id, 'Rosetas');
+  assert(project && series && hierarchy.seriesFor(project.id).length === 1, 'project and series are created');
+  const nested = hierarchy.add({
+    id: 'nested-1', name: 'Roseta 01', document: docA, descriptor: descriptorA,
+    projectId: project.id, seriesId: series.id,
+  });
+  assert(nested.projectId === project.id && nested.seriesId === series.id, 'checkpoint stores its hierarchy');
+  const hierarchyReload = new Notebook({ storage: hierarchyStorage, now: () => 2000 });
+  assert(hierarchyReload.getProject(project.id)?.name === 'Encargo', 'projects persist');
+  assert(hierarchyReload.getSeries(series.id)?.name === 'Rosetas', 'series persist');
+  assert(hierarchyReload.get('nested-1')?.projectId === project.id, 'checkpoint project persists');
+  hierarchyReload.moveCheckpoint('nested-1', { projectId: INBOX_PROJECT_ID });
+  assert(hierarchyReload.get('nested-1').seriesId === null, 'moving to Inbox clears the series');
+  hierarchyReload.removeSeries(series.id);
+  assert(hierarchyReload.seriesFor(project.id).length === 0, 'deleting a series removes it');
+  hierarchyReload.removeProject(project.id);
+  assert(hierarchyReload.getProject(project.id) === null, 'deleting a project removes it');
+  assert(hierarchyReload.get('nested-1').projectId === INBOX_PROJECT_ID, 'project deletion moves creations to Inbox');
 
   assert(documentDiff(docA, docB).some((d) => d.path === 'generator.params.radius'), 'documentDiff path shape');
   assert(descriptorDiff(descriptorA, descriptorB).every((d) => d.path !== 'documentHash'), 'descriptorDiff excludes hash');
