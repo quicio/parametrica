@@ -456,6 +456,7 @@ console.log('6. documents');
   assert(typeof defaultDoc.view.camera.pitch === 'number', 'default view.camera.pitch is number');
   assert(typeof defaultDoc.view.camera.fov === 'number', 'default view.camera.fov is number');
   assert(defaultDoc.view.layout === 'single', 'default view uses the single layout');
+  assert(defaultDoc.view.colorMetric === 'auto', 'default gradient metric is auto');
   const quadView = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Quad View',
     generator: { id: 'helix', params: {} },
@@ -468,6 +469,18 @@ console.log('6. documents');
     operators: [], view: { layout: 'grid' }, animation: {},
   });
   assert(badLayout.view.layout === 'single', 'unknown layout falls back to single');
+  const metricView = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Metric View',
+    generator: { id: 'helix', params: {} },
+    operators: [], view: { colorMetric: 'curvature' }, animation: {},
+  });
+  assert(metricView.view.colorMetric === 'curvature', 'color metric survives sanitization');
+  const badMetric = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Bad Metric',
+    generator: { id: 'helix', params: {} },
+    operators: [], view: { colorMetric: 'bogus' }, animation: {},
+  });
+  assert(badMetric.view.colorMetric === 'auto', 'unknown color metric falls back to auto');
   // Partial camera in raw: only the set key is honored, others default.
   const partialCam = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Partial Camera',
@@ -2206,6 +2219,22 @@ console.log('25. helix lab');
   const tilted = [{ points: [{ x3: 0, y3: 0, h3: 2 }, { x3: 0, y3: 0, h3: 8 }] }];
   const tiltedRange = gradientRange(tilted, 'xz');
   assert(tiltedRange.min === 2 && tiltedRange.max === 8, 'gradient range follows h3');
+  const metricCurve = [{
+    points: [
+      { x: 0, y: 0, x3: 0, y3: 0, h3: 2 },
+      { x: 3, y: 4, x3: 3, y3: 4, h3: 8 },
+      { x: 6, y: 0, x3: 6, y3: 0, h3: 2 },
+    ],
+  }];
+  const heightRange = gradientRange(metricCurve, '3d', 'height');
+  assert(heightRange.min === 2 && heightRange.max === 8, 'height metric range');
+  const radiusRange = gradientRange(metricCurve, '3d', 'radius');
+  assert(radiusRange.min === 0 && radiusRange.max === 6, 'radius metric range');
+  const metricAnalysis = { perCurve: [{ curvatures: new Float64Array([1, 3, 1]) }] };
+  const curvatureRange = gradientRange(metricCurve, '3d', 'curvature', metricAnalysis);
+  assert(curvatureRange.min === 1 && curvatureRange.max === 3, 'curvature metric range');
+  const arcRange = gradientRange(metricCurve, '3d', 'arc');
+  assert(arcRange.min === 0 && Math.abs(arcRange.max - 10) < 1e-6, 'arc-length metric range');
 
   const helixNames = ['Básica', 'Radio Variable', 'Paso Variable', 'Ondulada', 'Doble Hélice', 'Cónica'];
   for (const name of helixNames) {

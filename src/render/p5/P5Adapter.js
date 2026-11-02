@@ -21,7 +21,9 @@ const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);
 /** Does any active layer pass need differential geometry? */
 function needsLayerAnalysis(view) {
   const modes = Array.isArray(view?.modes) ? view.modes : [];
-  return modes.some((m) => ANALYSIS_MODES.has(m));
+  if (modes.some((m) => ANALYSIS_MODES.has(m))) return true;
+  return modes.includes('gradient-wireframe')
+    && (view?.colorMetric === 'curvature' || view?.colorMetric === 'arc');
 }
 
 /** Does the current view read differential geometry at all? */

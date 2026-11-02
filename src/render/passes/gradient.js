@@ -27,19 +27,51 @@ export function rampColor(ramp, t) {
   ];
 }
 
-export function gradientRange(curves, projection) {
+export function gradientRange(curves, projection, metric = 'auto', analysis = null) {
+  const effective = effectiveMetric(metric, analysis);
   let min = Infinity;
   let max = -Infinity;
-  for (const curve of curves) {
-    for (const point of curve.points) {
-      const value = gradientAxisValue(point, projection);
+  curves.forEach((curve, index) => {
+    for (const value of metricSeries(curve, index, projection, effective, analysis)) {
       if (!Number.isFinite(value)) continue;
       if (value < min) min = value;
       if (value > max) max = value;
     }
-  }
+  });
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 1 };
   return { min, max };
+}
+
+function effectiveMetric(metric, analysis) {
+  if (metric === 'curvature' && !analysis?.perCurve?.length) return 'auto';
+  return ['height', 'radius', 'curvature', 'arc'].includes(metric) ? metric : 'auto';
+}
+
+function metricSeries(curve, index, projection, metric, analysis) {
+  const points = curve.points ?? [];
+  if (metric === 'arc') {
+    const values = new Array(points.length);
+    let total = 0;
+    values[0] = 0;
+    for (let i = 1; i < points.length; i++) {
+      total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      values[i] = total;
+    }
+    return values;
+  }
+  const curvatures = analysis?.perCurve?.[index]?.curvatures;
+  return points.map((point, pointIndex) => metricValue(point, pointIndex, projection, metric, curvatures));
+}
+
+function metricValue(point, index, projection, metric, curvatures) {
+  if (metric === 'height') return Number.isFinite(point.h3) ? point.h3 : point.y;
+  if (metric === 'radius') {
+    const x = Number.isFinite(point.x3) ? point.x3 : point.x;
+    const y = Number.isFinite(point.y3) ? point.y3 : point.y;
+    return Math.hypot(x, y);
+  }
+  if (metric === 'curvature') return Math.abs(curvatures?.[index] ?? 0);
+  return gradientAxisValue(point, projection);
 }
 
 RenderPasses.register({
@@ -47,31 +79,34 @@ RenderPasses.register({
   name: 'Gradient Wireframe',
   group: 'color',
   description: 'Color ramp by height or radius.',
-  draw(p, { curves, view }) {
+  draw(p, { curves, view, analysis }) {
     if (!curves.length) return;
     const style = view.style ?? {};
     const stroke = style.stroke ?? {};
     const width = Number.isFinite(stroke.width) ? stroke.width : view.strokeWeight;
     const alpha = Math.round(clamp01(stroke.opacity) * 255);
     const projection = view.projection ?? '3d';
+    const metric = effectiveMetric(view.colorMetric, analysis);
     const ramp = Array.isArray(view.colorRamp) && view.colorRamp.length >= 2
       ? view.colorRamp
       : DEFAULT_COLOR_RAMP;
-    const { min, max } = gradientRange(curves, projection);
+    const { min, max } = gradientRange(curves, projection, metric, analysis);
     const span = max - min || 1;
     const buckets = Array.from({ length: BUCKETS }, () => []);
+    const series = curves.map((curve, index) => metricSeries(curve, index, projection, metric, analysis));
 
-    for (const curve of curves) {
+    curves.forEach((curve, curveIndex) => {
       const points = curve.points;
+      const values = series[curveIndex];
       const edges = curve.closed ? points.length : points.length - 1;
       for (let i = 0; i < edges; i++) {
         const a = points[i];
         const b = points[(i + 1) % points.length];
-        const value = (gradientAxisValue(a, projection) + gradientAxisValue(b, projection)) / 2;
+        const value = (values[i] + values[(i + 1) % points.length]) / 2;
         const bucket = Math.max(0, Math.min(BUCKETS - 1, Math.floor(((value - min) / span) * (BUCKETS - 1))));
         buckets[bucket].push(a, b);
       }
-    }
+    });
 
     p.noFill();
     p.strokeWeight(width);

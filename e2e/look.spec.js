@@ -90,6 +90,11 @@ test('color ramp is editable and independent from palettes', async ({ page }) =>
   const ramp = await page.evaluate(() => window.__parametrica.document.view.colorRamp);
   expect(Array.isArray(ramp)).toBe(true);
 
+  const metric = render.locator('.controller', { hasText: 'Gradient metric' }).locator('select');
+  await metric.selectOption('Curvature');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__parametrica.document.view.colorMetric)).toBe('curvature');
+
   const style = await openSection(page, 'Style');
   await style.locator('.artboard-palette select').selectOption('paper');
   await page.waitForTimeout(250);

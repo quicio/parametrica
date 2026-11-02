@@ -398,7 +398,8 @@ Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions
 and essential/advanced parameters; Look split into Camera, Canvas, Style,
 Render and Overlays; Ingest owns Image; Perform owns Animation, Timeline and
 temporal export · Session recovery with debounced local snapshots · Helix Lab
-(generalized helix, orthographic projections, quad view, gradient wireframe) ·
+(generalized helix, orthographic projections, quad view, metric-aware
+gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
 prompts, validated responses, caching and privacy disclosure · Local image
@@ -512,7 +513,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
-geometry. The remaining deferred items (color-by-metric palettes,
+geometry. The remaining deferred items (custom palette editor/per-layer metrics,
 hole-aware tracing and MAKE/fabrication) are future
 work outside the v0.1.0 scope.
 

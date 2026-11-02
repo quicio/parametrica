@@ -1010,6 +1010,14 @@ export class Controls {
       body.appendChild(groupEl);
     }
     this.modeToggles = modeInputs;
+    const metricGui = this.makeGui(body);
+    metricGui.add(view, 'colorMetric', {
+      Auto: 'auto',
+      Height: 'height',
+      Radius: 'radius',
+      Curvature: 'curvature',
+      'Arc length': 'arc',
+    }).name('Gradient metric').onChange(() => this.app.rebuild());
     this.buildRampEditor(body);
   }
 
