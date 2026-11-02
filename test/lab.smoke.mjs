@@ -63,7 +63,7 @@ import { warpExpressions } from '../src/operators/geometry/deform.js';
 import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
 import { project3D } from '../src/view/camera.js';
 import { zoomCamera } from '../src/view/cameraController.js';
-import { projectWorldCurves, projectWorldMeshes } from '../src/view/projection.js';
+import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 
 let failures = 0;
@@ -2316,12 +2316,19 @@ console.log('29. world geometry contracts');
       { x: 0, y: 0, z: 0.5 }, { x: 0, y: 1, z: 1 },
     ],
   }];
-  const split = projectWorldCurves(crossing, { camera: nearCam, fit: 0 });
+  const split = projectCameraCurveSegments(crossing[0], nearCam);
   assert(split.length === 2, 'camera clipping splits a curve into visible runs');
   assert(split.every((curve) => curve.points.length >= 2 && curve.closed === false), 'clipped runs stay open and usable');
   assert(
     split.flatMap((curve) => curve.points).every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
     'clipped curve coordinates stay finite',
+  );
+  const farCurve = [{ id: 'far', points: [{ x: 0, y: 0, z: -1000 }, { x: 1, y: 0, z: -1000 }] }];
+  const safeProjection = projectWorldCurves(farCurve, { camera: nearCam, fit: 0 });
+  assert(
+    safeProjection[0]?.points.length === 2 &&
+    safeProjection[0].points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+    'scene distance keeps far geometry in front of the camera',
   );
 
   const plane = createMesh({
@@ -2334,12 +2341,25 @@ console.log('29. world geometry contracts');
     ],
     faces: [[0, 1, 3, 2], [4, 6, 7, 5], [0, 2, 6, 4], [1, 5, 7, 3]],
   });
-  const projectedPlane = projectWorldMeshes([plane], { camera: nearCam, fit: 100 })[0];
+  const projectedPlane = projectMesh(plane, { camera: nearCam, fit: 100 });
   assert(projectedPlane.vertices.slice(0, 4).every(Boolean), 'visible mesh vertices project');
   assert(projectedPlane.vertices.slice(4).every((point) => point === null), 'hidden mesh vertices are clipped');
   assert(
     projectedPlane.vertices.filter(Boolean).every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
     'visible mesh coordinates stay finite',
+  );
+  const farPlane = createMesh({
+    id: 'far-plane',
+    vertices: [
+      { x: 0, y: 0, z: -1000 }, { x: 1, y: 0, z: -1000 },
+      { x: 0, y: 1, z: -1000 }, { x: 1, y: 1, z: -1000 },
+    ],
+    faces: [[0, 1, 2], [1, 3, 2]],
+  });
+  const farProjection = projectWorldMeshes([farPlane], { camera: nearCam, fit: 100 })[0];
+  assert(
+    farProjection.vertices.every((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y)),
+    'scene distance keeps far meshes in front of the camera',
   );
 
   const shapes = [];

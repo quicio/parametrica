@@ -207,13 +207,14 @@ test('orthographic views are gated to 3D documents', async ({ page }) => {
   await expect(page.locator('.view-projection')).toBeDisabled();
 });
 
-test('camera clipping avoids radial spark artifacts near the camera', async ({ page }) => {
+test('camera distance guard avoids radial spark artifacts near the camera', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__parametrica.applyPreset('Enneper Surface'));
   await page.waitForTimeout(300);
   await page.evaluate(() => {
     window.__parametrica.document.view.camera.fov = 1.5;
-    window.__parametrica.rebuild();
+    // Bypass the rebuild self-heal to exercise the projection guard itself.
+    window.__parametrica.evaluate();
   });
   await page.waitForTimeout(300);
   const state = await page.evaluate(() => {
@@ -228,7 +229,7 @@ test('camera clipping avoids radial spark artifacts near the camera', async ({ p
         curve.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))),
     };
   });
-  expect(state.hidden).toBeGreaterThan(0);
+  expect(state.hidden).toBe(0);
   expect(state.finite).toBe(true);
   expect(state.curvesFinite).toBe(true);
   expect(state.max).toBeLessThan(1000);
@@ -242,4 +243,13 @@ test('camera clipping avoids radial spark artifacts near the camera', async ({ p
     return app.document.view.camera.fov;
   });
   expect(restoredFov).toBe(10);
+
+  const healedFov = await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.camera.fov = 1.5;
+    app.evaluate();
+    app.rebuild();
+    return app.document.view.camera.fov;
+  });
+  expect(healedFov).toBe(10);
 });

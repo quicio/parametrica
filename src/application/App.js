@@ -26,6 +26,7 @@ import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
 import { renderPresetPreview } from '../presets/preview.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
+import { MIN_CAMERA_FOV } from '../view/cameraController.js';
 import { DialogService } from '../ui/dialogs.js';
 
 export class App {
@@ -108,6 +109,11 @@ export class App {
 
   /** Evaluate pipeline + telemetry + error routing. Single funnel. */
   rebuild() {
+    // Self-heal documents/sessions saved before the near-plane camera fix.
+    const camera = this.document.view?.camera;
+    if (camera && Number.isFinite(camera.fov) && camera.fov < MIN_CAMERA_FOV) {
+      camera.fov = MIN_CAMERA_FOV;
+    }
     this.timelineRecorder?.(this.document.animation.time);
     this.scheduleHistory();
     this.evaluate();

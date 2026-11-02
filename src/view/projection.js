@@ -16,6 +16,29 @@ export function projectionForGeometry(geometry, projection = '3d') {
   return projection === '3d' || supportsOrthographicGeometry(geometry) ? projection : '3d';
 }
 
+/**
+ * Pull the camera back far enough that ordinary scene geometry stays in
+ * front of it. The document camera has no position: fov is its distance to
+ * the projection plane, so a large or scaled figure can otherwise surround
+ * the camera and collapse into clipped radial lines.
+ */
+function cameraForScene(camera, pointLists) {
+  const cam = camera ?? cameraFrom(null);
+  let radius = 0;
+  for (const points of pointLists) {
+    for (const point of points ?? []) {
+      const x = Number(point?.x);
+      const y = Number(point?.y);
+      const z = Number(point?.z);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const distance = Math.hypot(x, y, Number.isFinite(z) ? z : 0);
+      if (distance > radius) radius = distance;
+    }
+  }
+  const minimum = radius * 1.1;
+  return cam.fov >= minimum ? cam : { ...cam, fov: minimum };
+}
+
 export function projectWorldCurves(curves, {
   camera = null,
   projection = '3d',
@@ -24,7 +47,8 @@ export function projectWorldCurves(curves, {
   depthStrength = 0.55,
 } = {}) {
   if (!Array.isArray(curves) || projection === '3d') {
-    const projected = curves.flatMap((curve) => projectCameraCurveSegments(curve, camera, { depthFade, depthStrength }));
+    const safeCamera = cameraForScene(camera, curves.map((curve) => curve.points));
+    const projected = curves.flatMap((curve) => projectCameraCurveSegments(curve, safeCamera, { depthFade, depthStrength }));
     return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
   }
   const projected = curves.map((curve) => projectOrthographicCurve(curve, projection));
@@ -121,7 +145,15 @@ export function projectWorldMeshes(meshes, {
   depthFade = true,
   depthStrength = 0.55,
 } = {}) {
-  return (meshes ?? []).map((mesh) => projectMesh(mesh, { camera, projection, fit, depthFade, depthStrength }));
+  const source = meshes ?? [];
+  const safeCamera = cameraForScene(camera, source.map((mesh) => mesh.vertices));
+  return source.map((mesh) => projectMesh(mesh, {
+    camera: safeCamera,
+    projection,
+    fit,
+    depthFade,
+    depthStrength,
+  }));
 }
 
 export function projectMesh(mesh, {
