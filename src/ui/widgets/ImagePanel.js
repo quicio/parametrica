@@ -344,8 +344,9 @@ export class ImagePanel {
         const points = result.contours.reduce((sum, contour) => sum + contour.pointCount, 0);
         const rms = result.contours.reduce((sum, contour) => sum + contour.error.relative, 0) / result.contours.length;
         this.setStatus(
-          `Found ${result.count} contours · ${points} points · ` +
-          `RMS ${(rms * 100).toFixed(2)}%`,
+          `Found ${result.count} contours` +
+          `${result.holeCount ? ` · ${result.holeCount} holes` : ''} · ` +
+          `${points} points · RMS ${(rms * 100).toFixed(2)}%`,
         );
       } else {
         this.setStatus(

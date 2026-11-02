@@ -122,8 +122,51 @@ export function traceImageContours(imageData, options = {}) {
     );
     if (result) contours.push(result);
   }
+  let holes = 0;
+  if (options.includeHoles !== false) {
+    const inverted = new Uint8Array(padded.mask.length);
+    for (let i = 0; i < inverted.length; i++) inverted[i] = padded.mask[i] ? 0 : 1;
+    const background = labelComponents(inverted, padded.width, padded.height);
+    for (const component of background) {
+      if (contours.length >= maxContours) break;
+      if (component.area < minArea) continue;
+      if (touchesBorder(component.labels, component.label, padded.width, padded.height)) continue;
+      const result = traceComponent(
+        component.labels,
+        component.label,
+        component.area,
+        padded.width,
+        padded.height,
+        options,
+      );
+      if (result) {
+        contours.push({ ...result, hole: true });
+        holes += 1;
+      }
+    }
+  }
   if (!contours.length) return { ok: false, reason: 'No connected contour was found.' };
-  return { ok: true, threshold, width, height, mask, foreground, contours, count: contours.length };
+  return {
+    ok: true,
+    threshold,
+    width,
+    height,
+    mask,
+    foreground,
+    contours,
+    count: contours.length,
+    holeCount: holes,
+  };
+}
+
+function touchesBorder(labels, label, width, height) {
+  for (let x = 0; x < width; x++) {
+    if (labels[x] === label || labels[(height - 1) * width + x] === label) return true;
+  }
+  for (let y = 0; y < height; y++) {
+    if (labels[y * width] === label || labels[y * width + width - 1] === label) return true;
+  }
+  return false;
 }
 
 function traceComponent(labels, label, area, width, height, options) {
@@ -168,7 +211,7 @@ export function buildFourierDocuments(result, { name = 'Traced contour', size = 
   });
   for (let index = 1; index < entries.length; index++) {
     first.layers.push(createLayer('fourier', {
-      name: `${name} ${index + 1}`,
+      name: entries[index].hole ? `${name} hole ${index + 1}` : `${name} ${index + 1}`,
       generator: { params: params(entries[index]) },
     }));
   }

@@ -1864,6 +1864,16 @@ console.log('23. image contour to fourier');
   assert(multiDoc.layers.length === 2 && multiDoc.activeLayer === 0, 'multi-contour apply creates one layer per contour');
   const multiEval = evaluateDocument(multiDoc, { time: 0 });
   assert(multiEval.errors.length === 0 && multiEval.curves.length === 2, 'multi-contour document evaluates');
+
+  const ring = makeImage(240, 240, (x, y) => {
+    const d = Math.hypot(x - 120, y - 120);
+    return d < 90 && d > 42;
+  });
+  const ringTrace = traceImageContours(ring, { harmonics: 16, samples: 256 });
+  assert(ringTrace.ok && ringTrace.count === 2 && ringTrace.holeCount === 1, 'ring trace detects outer contour and one hole');
+  assert(ringTrace.contours.some((entry) => entry.hole), 'hole contour is marked');
+  const ringDoc = buildFourierDocuments(ringTrace, { name: 'Ring' });
+  assert(ringDoc.layers.length === 2 && ringDoc.layers.some((layer) => /hole/i.test(layer.name)), 'hole contours become named Fourier layers');
   assert(traced.componentArea > 10_000, 'largest component keeps the silhouette area');
   assert(traced.contour.length === 512, 'contour is resampled to the requested count');
   assert(traced.reconstruction.length === 512, 'reconstruction uses the same sample count');
