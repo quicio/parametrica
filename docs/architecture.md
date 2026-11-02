@@ -489,10 +489,13 @@ for `renderer.readyPromise` before touching the canvas.
 
 ### Panel behavior
 
-The inspector is split into Form, Look, Explore and Keep modes. Sections are
-accordions persisted under `parametrica.ui.v1`; Generator and Parameters open
-by default. Look is split into Camera, Canvas, Style, Render and Overlays, with
-Image, Animation and Timeline grouped under a temporary Work label. Technical generator parameters sit behind an Advanced disclosure.
+The inspector is split into Form, Look, Explore, Perform, Ingest and Keep
+modes. Sections are accordions persisted under `parametrica.ui.v1`; Generator
+and Parameters open by default. Look is appearance/viewport only: Camera,
+Canvas, Style, Render and Overlays. Ingest owns Image; Perform owns Animation,
+Timeline, frame export and GIF export. Legacy `work` mode state is treated as
+Perform, and old `view`/`artboard` section ids map to the LOOK sections.
+Technical generator parameters sit behind an Advanced disclosure.
 The sticky status line reports the active layer, hidden state, generator,
 operator counts, modulation, timeline tracks and projection. Orthographic
 projection is disabled for 2D generators and falls back to the camera view.

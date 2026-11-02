@@ -1,8 +1,8 @@
 /**
  * Controls.js — v2 instrument panel.
  *
- * Sections: GENERATOR · PARAMETERS · EQUATIONS · HARMONICS · OPERATORS ·
- * VIEW · ANIMATION · MUTATION · PRESETS · EXPORT.
+ * Modes: FORM · LOOK · EXPLORE · PERFORM · INGEST · KEEP.
+ * Sections are built once and shown by the active mode.
  * Plain params bind through lil-gui; formulas, harmonic tables and the
  * operator stack are custom Swiss-styled components.
  */
@@ -38,10 +38,15 @@ const SECTION_ALIASES = {
   canvas: 'artboard',
   style: 'artboard',
 };
+const MODE_ALIASES = {
+  work: 'perform',
+};
 const MODES = [
   { id: 'form', label: 'Form' },
   { id: 'look', label: 'Look' },
   { id: 'explore', label: 'Explore' },
+  { id: 'perform', label: 'Perform' },
+  { id: 'ingest', label: 'Ingest' },
   { id: 'keep', label: 'Keep' },
 ];
 
@@ -59,7 +64,6 @@ export class Controls {
     this.presetPanel = null;
     this.uiState = loadUiState();
     this.sectionEls = new Map();
-    this.groupEls = [];
     this.mode = this.uiState.mode;
     this.modeBar = null;
     this.statusEl = null;
@@ -182,9 +186,6 @@ export class Controls {
     for (const meta of this.sectionEls.values()) {
       meta.el.hidden = meta.mode !== modeId;
     }
-    for (const el of this.groupEls) {
-      el.hidden = el.dataset.mode !== modeId;
-    }
     this.saveUiState();
     if (resetScroll) this.container.scrollTop = 0;
     this.refreshStatus();
@@ -278,7 +279,6 @@ export class Controls {
     this.evolutionPanel = null;
     this.container.innerHTML = '';
     this.sectionEls = new Map();
-    this.groupEls = [];
     this.modeBar = null;
     this.statusEl = null;
     this.statusText = null;
@@ -297,9 +297,6 @@ export class Controls {
     this.buildStyleSection();
     this.buildRenderSection();
     this.buildOverlaysSection();
-    this.groupLabel('Work · temporary', {
-      hint: 'Image, Animation and Timeline stay here until the Phase 2 navigation decision.',
-    });
     this.buildImageSection();
     this.buildAnimationSection();
     this.buildTimelineSection();
@@ -526,16 +523,6 @@ export class Controls {
     const body = this.section('Operators', { id: 'operators', mode: 'form' });
     this.operatorStack = new OperatorStack(this.app);
     body.appendChild(this.operatorStack.el);
-  }
-
-  groupLabel(title, { mode = 'look', hint = '' } = {}) {
-    const el = document.createElement('div');
-    el.className = 'panel-group-label';
-    el.dataset.mode = mode;
-    el.textContent = title;
-    if (hint) el.title = hint;
-    this.container.appendChild(el);
-    this.groupEls.push(el);
   }
 
   panelHint(text) {
@@ -1063,13 +1050,13 @@ export class Controls {
   }
 
   buildImageSection() {
-    const body = this.section('Image', { id: 'image', mode: 'look' });
+    const body = this.section('Image', { id: 'image', mode: 'ingest' });
     this.imagePanel = new ImagePanel(this.app);
     body.appendChild(this.imagePanel.el);
   }
 
   buildAnimationSection() {
-    const gui = this.makeGui(this.section('Animation', { id: 'animation', mode: 'look' }));
+    const gui = this.makeGui(this.section('Animation', { id: 'animation', mode: 'perform' }));
     const a = this.app.document.animation;
     gui.add(a, 'playing').name('Play').onChange(() => this.app.rebuild());
     gui.add(a, 'speed', 0.05, 4, 0.05).name('Speed').onChange(() => {});
@@ -1101,7 +1088,7 @@ export class Controls {
   }
 
   buildTimelineSection() {
-    const body = this.section('Timeline', { id: 'timeline', mode: 'look' });
+    const body = this.section('Timeline', { id: 'timeline', mode: 'perform' });
     this.timelinePanel = new TimelinePanel(this.app);
     body.appendChild(this.timelinePanel.el);
   }
@@ -1306,6 +1293,11 @@ function slugify(title) {
   return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+function resolveMode(value) {
+  if (MODES.some((mode) => mode.id === value)) return value;
+  return MODE_ALIASES[value] ?? 'form';
+}
+
 function loadUiState() {
   const fallback = { mode: 'form', sections: {}, advancedParams: false };
   try {
@@ -1313,7 +1305,7 @@ function loadUiState() {
     if (!raw) return fallback;
     const data = JSON.parse(raw);
     return {
-      mode: MODES.some((mode) => mode.id === data?.mode) ? data.mode : 'form',
+      mode: resolveMode(data?.mode),
       sections: data?.sections && typeof data.sections === 'object' ? data.sections : {},
       advancedParams: data?.advancedParams === true,
     };

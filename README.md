@@ -26,7 +26,7 @@ npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
 npm test             # node-only verification suite (1633 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (94 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (96 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (94 tests) against a Vite server started by Playwright itself.
+suite (96 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -250,16 +250,16 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Artboard & style** with palettes, stroke/fill controls and SVG/PNG export with documented fidelity
 - **2D grid & morph** for two-axis families and smooth A→B transitions
 - **Layers** with independent generators, operator stacks and styles
-- **Timeline** with keyframes, easing, recording, loop, ZIP frame export and GIF export
+- **Perform** with Animation and Timeline: keyframes, easing, recording, loop, ZIP frame export and GIF export
 - **Offline advisor** with deterministic A/B narration, suggestions, preview and apply
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure
-- **Image input** with local underlay, threshold preview, largest-contour tracing and editable Fourier documents
+- **Ingest** with local image underlay, threshold preview, largest-contour tracing and editable Fourier documents
 - **Evolution** with parent selection, numeric crossover, structural mutation and generation lineage
 - **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views and a height-gradient wireframe
 - **Clone ×3** quick action via the Grid Repeat operator (side-by-side copies remain editable)
 - **CodeMirror formula editor** with math-aware highlighting and inline errors
 - **Session recovery** with local autosave and an explicit Restore/Dismiss banner
-- **Panel clarity** with Form/Look/Explore/Keep modes, persisted accordions, essential/advanced parameters, layer warnings and a Clone ×3 operator
+- **Panel clarity** with Form/Look/Explore/Perform/Ingest/Keep modes, persisted accordions, essential/advanced parameters, layer warnings and a Clone ×3 operator
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)

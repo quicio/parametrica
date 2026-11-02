@@ -1,7 +1,9 @@
 # Auditoría de navegación y responsabilidades — Parametrica
 
 **Original:** 2026-11-01  
-**Actualización de implementación:** 2026-11-02, tras `product-hardening`  
+**Actualización de implementación:** 2026-11-02, tras `product-hardening`,
+las correcciones de auditoría, LOOK Phase 1, LOOK Phase 2, la corrección de
+cámara y GIF export.  
 **Alcance de esta revisión:** actualizar el estado real de los hallazgos. No es
 una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
@@ -9,182 +11,212 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
 ## 0. Resumen de la actualización
 
-### Defectos resueltos
+### Defectos y deudas resueltos
 
-| Hallazgo original | Estado | Solución aplicada |
+| Hallazgo | Estado | Solución aplicada |
 |---|---|---|
-| Los passes `tangents` / `normals` / `curvature` por capa usaban el análisis combinado | **Resuelto** | `evaluateLayers` expone análisis lazy por capa; `P5Adapter` mapea el análisis de la capa que dibuja. Test unitario multicapa. |
-| `style.blend` se exponía pero no se aplicaba | **Resuelto** | `P5Adapter` aplica el modo por capa y lo resetea antes de la siguiente capa/overlays. Test e2e de canvas. |
+| Los passes `tangents` / `normals` / `curvature` por capa usaban el análisis combinado | **Resuelto** | `evaluateLayers` expone análisis lazy por capa; `P5Adapter` mapea el análisis de la capa que dibuja. |
+| `style.blend` se exponía pero no se aplicaba | **Resuelto** | `P5Adapter` aplica el modo por capa y lo resetea antes de la siguiente capa/overlays. |
+| Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
+| El SVG omitía features activas sin avisar | **Resuelto con alcance** | `unsupportedSvgFeatures` avisa de gradiente, surface fill, overlays, diagnósticos y blend. La paridad SVG completa sigue pendiente. |
+| `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
+| La cámara no tenía reset explícito | **Resuelto** | Reset undoable, deshabilitado en proyección ortográfica. |
+| No había renombrado visible de capa | **Resuelto** | Acción de renombrado en Layers. |
+| Notebook mantenía `notes`/`tags` sin editor | **Resuelto** | Edición de notas y tags en Notebook. |
+| Explore randomizaba con seed interno no visible | **Resuelto** | Seed visible y reproducible. |
+| Status y telemetría duplicaban información | **Resuelto** | Status de capa/panel separado de la telemetría de evaluación. |
+| La lista de passes no tenía agrupación ni descripciones | **Resuelto** | Grupos Base/Surfaces/Color/Diagnostics y descripción por pass. |
+| LOOK mezclaba canvas global y estilo de capa | **Resuelto** | LOOK dividido en Camera, Canvas, Style, Render y Overlays, con alcance explícito. |
+| La cámara producía líneas radiales al acercarse/entrar en la geometría | **Resuelto** | Recorte de plano cercano, separación de curvas ocultas, límite de FOV y distancia de cámara según el radio de la escena. |
+| No había export GIF | **Resuelto** | Export GIF desde Timeline, con duración/FPS del timeline, 360 px máximo, 240 frames y loop según el timeline. |
+| `SPEC.md` §11 estaba desactualizado | **Resuelto** | Estado de render passes, color ramp y proyecciones actualizado. |
 
-### Defectos parciales o resueltos con alcance
+### Resuelto con alcance
 
-| Hallazgo original | Estado | Nota |
+| Hallazgo | Estado | Nota |
 |---|---|---|
-| `layer.locked` no impedía nada | **Parcial** | Se implementó **content lock**: bloquea generador, parámetros, ecuaciones/armónicos, operadores y estilo. Selección y visibilidad siguen disponibles. `rename`, `reorder`, `delete` y `duplicate` no se declaran bloqueados ni se modificaron. |
-| Los render passes aparecían como activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo` en surface fill/wireframe, epicycles, control polygon y negative space; la UI los desactiva y recalcula tras cada evaluación. Passes sin metadata se asumen aplicables. |
-| El SVG omitía features activas sin avisar | **Parcial** | `unsupportedSvgFeatures` detecta gradiente, surface fill, overlays, diagnósticos y blend; el export muestra un aviso. README/SPEC §17 documentan la limitación. La paridad SVG completa sigue pendiente. |
+| `layer.locked` no impedía nada | **Parcial: content lock** | Bloquea generador, parámetros, ecuaciones/armónicos, operadores y estilo. Rename/reorder/delete/duplicate y restauración/exploración siguen fuera del contrato. |
+| LOOK estaba sobrecargado | **Resuelto** | Phase 1 separó Camera/Canvas/Style/Render/Overlays. Phase 2 movió Image a Ingest y Animation/Timeline a Perform; el grupo Work desapareció. |
+| Export SVG no tiene paridad completa | **Parcial** | Se avisa de lo omitido; no se implementan gradientes de fill, mallas, overlays, passes diagnósticos ni blend. |
 
 ### Hallazgos que permanecen
 
-- LOOK sigue concentrando demasiadas responsabilidades; la propuesta de
-  reagrupación sigue pendiente de validación.
-- `view.colorRamp` sigue sin editor.
-- La paleta no define ni actualiza un ramp.
-- `view.strokeWeight` sigue duplicando `style.stroke.width`.
-- El renombrado de capa sigue sin UI.
-- Notebook mantiene `notes`/`tags` sin editor.
-- Explore randomiza con seed interno no visible.
-- La exportación de frames sigue en Timeline.
-- Status y telemetría siguen duplicando información.
-- La lista de passes sigue sin agrupación/descripciones más allá de la
-  aplicabilidad.
-- `SPEC.md` §11 sigue desactualizado.
-- La reorganización de LOOK y MAKE siguen fuera de alcance.
-- No hay STL/3MF, sólidos editables, CSG ni viewport 3D.
+- **Paridad SVG completa:** gradientes de fill, surface fill, overlays, passes
+  diagnósticos y blend.
+- **Secuencia SVG frame-by-frame:** hoy existen PNG ZIP y GIF; no SVG frames.
+- **Plotter-ready SVG** y pruebas de línea.
+- **Palette system / color-by-metric** más allá del color ramp actual.
+- **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
+- **Image tracing multicontorno / con huecos.**
+- **Ajustes por pass, gradientes de fill y render modes por capa.**
+- **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
+- **Notebook y Presets** siguen siendo dos bibliotecas separadas.
+- **MAKE/fabricación:** no hay autoría de sólidos, CSG, STL/3MF, unidades ni
+  preparación de impresión.
+- **Persistencia múltiple** y otras deudas arquitectónicas descritas abajo.
+
+No hay ningún cambio OpenSpec activo. Lo reciente está archivado en
+`openspec/changes/archive/`.
 
 ---
 
 ## 1. Resumen ejecutivo
 
-Parametrica mantiene cuatro modos (`FORM`, `LOOK`, `EXPLORE`, `KEEP`) y 19
-secciones construidas de una vez y ocultas por modo.
+Parametrica mantiene seis modos (`FORM`, `LOOK`, `EXPLORE`, `PERFORM`,
+`INGEST`, `KEEP`) y 22 secciones construidas una vez y ocultas por modo.
 
-La implementación `product-hardening` no cambió la navegación. Abordó cuatro
-problemas de veracidad/corrección:
+La implementación reciente cambió el mapa de LOOK y corrigió varias
+promesas falsas:
 
-1. el análisis de diagnóstico ya es por capa;
-2. `blend` ya tiene efecto;
-3. los passes no aplicables se desactivan;
-4. el export SVG avisa de lo que omite.
+1. LOOK se dividió en Camera, Canvas, Style, Render y Overlays.
+2. Image pasó a **Ingest**; Animation y Timeline pasaron a **Perform**.
+3. El grupo temporal **Work** desapareció.
+4. El color ramp ya es editable.
+5. Los passes tienen grupos, descripciones y aplicabilidad truthful.
+6. Camera reset, estilo por capa, status/telemetría y metadata de Notebook se
+   alinearon con la UI.
+7. La proyección y el render 3D dejaron de producir líneas radiales cuando la
+   cámara entraba en la geometría.
+8. Timeline exporta PNG ZIP y GIF.
 
-También introdujo un **content lock** explícito, que resuelve parcialmente el
-hallazgo de `layer.locked`: bloquea la edición de contenido, pero no las
-acciones estructurales/de identidad, que siguen siendo una decisión de producto.
-
-Siguen abiertos los problemas de organización (LOOK), las mejoras UX
-(colorRamp, cámara, fill, seed, metadata de Notebook), la deuda arquitectónica
-(estilo global vs capa, stroke width duplicado, persistencia múltiple) y toda la
-visión MAKE/fabricación.
+Siguen abiertos la paridad SVG, varias capacidades visuales/de exportación y
+toda la visión MAKE/fabricación.
 
 ---
 
 ## 2. Mapa actual de navegación
 
-Sin cambios respecto a la auditoría original:
-
 | Modo | Secciones |
 |---|---|
 | **FORM** | Layers, Generator, Parameters, Equations, Harmonics, Operators |
-| **LOOK** | View, Artboard, Image, Animation, Timeline |
+| **LOOK** | Camera, Canvas, Style, Render, Overlays |
 | **EXPLORE** | Mutation, Analysis, Advisor, Explore, Evolution |
+| **PERFORM** | Animation, Timeline |
+| **INGEST** | Image |
 | **KEEP** | Notebook, Presets, Export |
 
 Estado de navegación:
 
 - Modo y secciones abiertas se persisten en `parametrica.ui.v1`.
+- Los ids antiguos `view`/`artboard` se mapean a las nuevas secciones de LOOK.
+- El alias defensivo `work` se migra a `perform`; los ids `image`,
+  `animation` y `timeline` conservan su estado abierto/cerrado.
 - Todas las secciones se construyen en cada `Controls.build()`.
 - No hay routing, deep links ni historial de navegación.
 - `Equations` y `Harmonics` son condicionales.
-- El status del panel y la telemetría siguen duplicando información.
+- El status de capa/panel ya no duplica la telemetría de evaluación.
 
 Cambios de comportamiento dentro del mapa actual:
 
-- **View**: los toggles de render reflejan aplicabilidad y pueden desactivarse.
-- **Artboard**: el estilo de la capa activa se desactiva bajo content lock.
-- **Layers**: el botón de lock declara “Lock layer content”.
+- **Camera**: proyección, guides y reset; reset deshabilitado en ortográfica.
+- **Canvas**: artboard, tamaño, fondo y margen, marcados como globales.
+- **Style**: stroke, fill, blend y paleta de la capa activa.
+- **Render**: passes agrupados, descripciones, aplicabilidad y color ramp.
+- **Overlays**: diagnósticos globales.
+- **Layers**: content lock y renombrado visible.
+- **Notebook**: notas y tags editables.
+- **Ingest**: Image, underlay y tracing existente.
+- **Perform**: Animation, Timeline, PNG ZIP y GIF.
+- **Keep**: Notebook, Presets, Export final (SVG, PNG, JSON, clipboard).
 
 ---
 
-## 3. Inventario funcional — cambios de estado
-
-El inventario original se conserva. Esta sección enumera solo las filas cuyo
-estado cambió o que siguen siendo relevantes.
+## 3. Inventario funcional — estado actual
 
 ### FORM
 
-| Funcionalidad | Estado anterior | Estado actual | Nota |
-|---|---|---|---|
-| Bloqueo de capa | Inactivo | **Parcial: content lock** | Bloquea generador, parámetros, ecuaciones/armónicos, operadores y estilo. No bloquea rename/reorder/delete/duplicate. |
-| Renombrar capa | API sin UI | Sin cambios | Sigue sin control visible. |
-| Undo/redo y seed | En Explore | Sin cambios | Siguen fuera de Form. |
-| Operadores sobre superficies | No soportado | Sin cambios | `evaluateSurfaceDocument` sigue ignorando operadores. |
-| `setGenerator` conserva operadores | Comportamiento existente | Sin cambios | No se abordó en hardening. |
+| Funcionalidad | Estado actual | Nota |
+|---|---|---|
+| Bloqueo de capa | **Parcial: content lock** | Bloquea contenido; no rename/reorder/delete/duplicate. |
+| Renombrar capa | **Implementado** | Acción visible en Layers. |
+| Undo/redo y seed | En Explore | Siguen fuera de Form. |
+| Operadores sobre superficies | No soportado | `evaluateSurfaceDocument` sigue ignorando operadores. |
+| `setGenerator` conserva operadores | Comportamiento existente | No se abordó. |
+| Operadores de malla/sólido | No existen | La autoría sigue siendo curve-céntrica. |
 
 ### LOOK
 
-| Funcionalidad | Estado anterior | Estado actual | Nota |
-|---|---|---|---|
-| Blend | Inactivo | **Implementado** | Aplicado por capa y reseteado; PNG lo refleja. |
-| Toggles de render | Implementado, plano | **Implementado + aplicabilidad** | Los passes con `appliesTo` se desactivan cuando no aplican. Sigue sin agrupación/descripciones. |
-| Diagnóstico por capa | Bug confirmado | **Resuelto** | Cada capa usa su propio análisis. |
-| ColorRamp | Settings oculto | Sin cambios | Sigue sin editor. |
-| Paleta/ramp | Desconectados | Sin cambios | La paleta no escribe `colorRamp`. |
-| Fill | Sólido | Sin cambios | No hay gradientes ni modos nuevos. |
-| Cámara | Sin reset | Sin cambios | Sin controles explícitos de viewport. |
-| Image/Animation/Timeline | En Look | Sin cambios | La propuesta de moverlas sigue pendiente. |
-| SVG export | Silencioso | **Divulgación añadida** | Avisa de features omitidas; no hay paridad completa. |
+| Funcionalidad | Estado actual | Nota |
+|---|---|---|
+| Camera / Canvas / Style | **Separados** | Alcance global vs capa activa explícito. |
+| Blend | **Implementado** | Por capa y reseteado; PNG lo refleja. |
+| Passes de render | **Agrupados y descritos** | Aplicabilidad preservada. |
+| Diagnóstico por capa | **Resuelto** | Cada capa usa su propio análisis. |
+| Color ramp | **Editor implementado** | Global, independiente de la paleta. |
+| Paleta/ramp | **Independientes por decisión** | Aplicar paleta no cambia el ramp. |
+| Fill | Sólido | Sin gradientes ni modos nuevos. |
+| Cámara | **Reset + guardas** | Reset undoable; recorte de plano cercano y distancia de escena. |
+| Image | En **Ingest** | Underlay/tracing existente, sin cambios de capacidad. |
+| Animation/Timeline | En **Perform** | Frame ZIP y GIF siguen en Timeline. |
+| SVG export | **Subconjunto con aviso** | Paridad completa pendiente. |
 
 ### EXPLORE
 
-Sin cambios funcionales por `product-hardening`.
-
 - Mutation sigue siendo one-shot en capa activa.
-- Seed/reroll sigue en Mutation; Explore randomize sigue con seed interno.
+- Seed/reroll y randomize tienen seed visible/reproducible.
 - Analysis y Advisor siguen en Explore.
-- Evolution sigue dependiendo de Notebook.
-- Sensitivity sigue limitada a capa activa y hasta 12 parámetros.
+- Evolution depende de Notebook.
+- Sensitivity se limita a capa activa y hasta 12 parámetros.
 - No hay historial persistente de candidatos.
+- La separación conceptual Observe/Ask sigue pendiente.
+
+### INGEST
+
+- Image: underlay local, threshold preview, contour tracing y aplicación
+  Fourier existentes.
+- No se añadieron capacidades nuevas de tracing.
+
+### PERFORM
+
+- Animation: transporte de tiempo.
+- Timeline: keyframes, easing, grabación, loop, PNG ZIP y GIF.
+- Keep no duplica el export temporal.
 
 ### KEEP
 
-| Funcionalidad | Estado anterior | Estado actual | Nota |
-|---|---|---|---|
-| Export SVG | Subconjunto silencioso | **Subconjunto con aviso** | `unsupportedSvgFeatures` informa de gradiente, surface fill, overlays, diagnósticos y blend. |
-| Notebook notes/tags | Modelo sin UI | Sin cambios | Sigue sin editor. |
-| Presets/Notebook | Dos bibliotecas | Sin cambios | No se unificaron ni relacionaron. |
-| Frame export | En Timeline | Sin cambios | No se movió a Export. |
-| Fabricación | Sin implementar | Sin cambios | Solo contratos. |
+| Funcionalidad | Estado actual | Nota |
+|---|---|---|
+| Export SVG | Subconjunto con aviso | Paridad completa pendiente. |
+| Notebook notes/tags | **Editor implementado** | Notas y tags editables. |
+| Presets/Notebook | Dos bibliotecas | Siguen sin unificar/relacionar. |
+| Frame export / GIF | En Perform | No se duplica en Keep. |
+| Fabricación | Solo contratos | Sin STL/3MF ni autoría de sólidos. |
 
 ---
 
 ## 4. Diagnóstico de LOOK
 
-### Responsabilidades que siguen concentradas
+### Responsabilidades actuales
 
-LOOK sigue conteniendo cámara, canvas, estilo, render, overlays, imagen,
-animación y timeline. La reorganización Camera/Canvas/Style/Render/Overlays
-sigue como propuesta pendiente, no implementada.
+LOOK ya no mezcla canvas global y estilo de capa: Camera, Canvas, Style,
+Render y Overlays tienen contratos separados. Image, Animation y Timeline ya
+no viven en LOOK: Image está en Ingest y Animation/Timeline en Perform.
 
-### Problemas resueltos o mitigados
+### Resuelto en Phase 1
 
-- **Blend**: ya no es un control falso; se aplica por capa.
-- **Passes inertes**: los passes con `appliesTo` se desactivan cuando no
-  aplican. La UI se recalcula en cada evaluación.
-- **Diagnóstico por capa**: los passes de vectores ya no leen el análisis
-  combinado.
-- **Divergencia silenciosa en SVG**: el export avisa de las features omitidas.
+- División Camera/Canvas/Style/Render/Overlays.
+- Etiquetas de alcance global vs capa activa.
+- Reset de cámara undoable y gating ortográfico.
+- Editor de color ramp.
+- Agrupación y descripciones de passes.
+- Migración de estado UI desde `view`/`artboard`.
+- Estilo `view.style` como alias explícito de la capa activa.
 
-### Problemas que permanecen
+### Resuelto en Phase 2
 
-- `view.colorRamp` sin editor.
-- Paleta y ramp desconectados.
-- Lista plana de passes, sin grupos ni descripciones.
-- Fill limitado a sólido; sin gradientes.
-- Cámara sin reset ni controles explícitos.
-- Image/Animation/Timeline siguen en LOOK.
-- Status y telemetría duplicados.
-- `view.strokeWeight` duplicado.
-- LOOK sigue siendo la sección más sobrecargada.
-- El aviso SVG puede resultar ruidoso si hay muchos passes diagnósticos
-  activos; es una nota UX, no un defecto funcional.
+- Image → **Ingest**.
+- Animation + Timeline → **Perform**.
+- Frame ZIP y GIF export siguen en Timeline, sin duplicarse en Keep.
+- Se retiró **Work · temporary**.
+- Se adaptó la migración de UI state (`work → perform`, ids de sección
+  preservados) y los e2e.
 
-### Nuevos comportamientos detectados
+### Límites que siguen
 
-- Al cambiar la geometría, un modo activo que deja de aplicar se elimina de
-  `view.modes`; si vuelve a aplicar, el usuario debe reactivarlo.
-- Bajo content lock, el selector de paleta se desactiva porque escribe estilo
-  de capa, aunque también cambie el fondo. El fondo sigue siendo editable por
-  su control específico.
+- Fill sólido; sin gradientes ni ajustes por pass.
+- `view.modes` global; sin modos por capa.
+- Sin controles por pass más allá de activar/desactivar.
+- El aviso SVG puede ser ruidoso con muchos diagnósticos activos.
 
 ---
 
@@ -192,31 +224,23 @@ sigue como propuesta pendiente, no implementada.
 
 FORM sigue siendo autoría + composición + transformación.
 
-Cambios:
+Resuelto:
 
-- **Content lock implementado** con alcance explícito:
-  - bloquea generador, parámetros, ecuaciones/armónicos, operadores y estilo;
-  - permite selección y visibilidad;
-  - no bloquea rename, reorder, delete ni duplicate.
-- La UI desactiva controles de generador, parámetros, mods, expresiones,
-  armónicos, operadores y estilo cuando la capa activa está bloqueada.
-- `App.setGenerator`, `addOperator`, `removeOperator`, `moveOperator` y
-  `setOperatorEnabled` tienen guardas defensivas.
+- Renombrado visible de capa.
+- Content lock con guardas defensivas en generador, parámetros, ecuaciones,
+  armónicos, operadores y estilo.
 
-Problemas que permanecen:
+Pendiente:
 
-- Renombrar capa sigue sin UI.
-- El stack de operadores sigue siendo exclusivamente de curvas; las superficies
-  ignoran operadores.
-- `setGenerator` sigue conservando operadores y sobrescribiendo el nombre.
+- Decidir si el lock cubre rename/reorder/delete/duplicate.
+- Las superficies ignoran operadores.
+- `setGenerator` conserva operadores y sobrescribe el nombre.
 - Seed y undo/redo siguen en EXPLORE.
 - No hay operadores de malla/sólido.
 
 ---
 
 ## 6. Diagnóstico de EXPLORE
-
-Sin cambios por esta implementación.
 
 Sigue mezclando:
 
@@ -226,9 +250,12 @@ Sigue mezclando:
 4. exploración paramétrica 1D/2D/morph/randomize;
 5. evolución dependiente de Notebook.
 
-Siguen pendientes:
+Resuelto:
 
-- seed visible/reproducible en Explore;
+- Seed visible y reproducible en Explore.
+
+Pendiente:
+
 - historial de candidatos;
 - separación conceptual Observe/Ask;
 - mover undo/redo/seed fuera de Explore;
@@ -238,53 +265,48 @@ Siguen pendientes:
 
 ## 7. Diagnóstico de KEEP
 
-Sin cambios estructurales.
+Sigue conteniendo Notebook, Presets y Export.
 
-Sigue conteniendo:
+Resuelto:
 
-- **Notebook**: checkpoints, proyectos/series, thumbnails, linaje, A/B,
-  restauración, import/export.
-- **Presets**: catálogo built-in/user, favoritos, recientes, previews,
-  import/export de documentos.
-- **Export**: SVG, PNG, JSON, clipboard.
+- Notas y tags editables en Notebook.
+- Export SVG avisa de features omitidas.
+- GIF export existe en Timeline.
 
-Cambios:
+Pendiente:
 
-- **Export SVG** ahora declara las features que omite; ya no es silencioso.
-- El resto de la lógica de presets/notebook no cambió.
-
-Siguen pendientes:
-
-- notas/tags editables;
 - relación Notebook/Presets;
-- frame export en Export;
+- mover frame/GIF export a su ubicación final;
 - paridad SVG completa;
+- secuencia SVG frame-by-frame;
 - export de fabricación.
 
 ---
 
 ## 8. Funcionalidades transversales
 
-| Funcionalidad | Estado tras hardening | Nota |
+| Funcionalidad | Estado actual | Nota |
 |---|---|---|
-| Cámara | Sin cambios | Sin reset ni controles explícitos; sigue en historial. |
-| Proyección | Sin cambios | Global, gated por capa activa. |
-| Viewport/canvas | Sin cambios | Runtime. |
-| Artboard | Sin cambios | Global. |
-| Imagen | Sin cambios | Underlay UI-only. |
-| Export | Aviso añadido | SVG sigue siendo subconjunto; PNG fiel. |
-| Animación/Timeline | Sin cambios | Siguen en LOOK. |
-| Overlays | Sin cambios | Globales. |
-| Presets | Sin cambios | Workspace. |
-| Persistencia | Sin cambios | Múltiples stores. |
-| Configuración global | Sin cambios | UI/AI settings. |
-| Status/telemetría | Sin cambios | Siguen duplicando. |
-| History | Sin cambios | Incluye cámara/estilo. |
-| Seed | Sin cambios | Global, en Explore. |
-| Analysis | Mejora indirecta | El análisis por capa ahora es correcto para diagnósticos. |
-| Layer lock | **Nuevo content lock** | Alcance explícito de contenido. |
-| Render passes | **Aplicabilidad** | Metadatos `appliesTo` + UI. |
-| Blend | **Implementado** | Por capa, reset, PNG. |
+| Cámara | **Reset + guardas** | Reset undoable; recorte de plano cercano y distancia de escena. |
+| Proyección | Global, gated por capa activa | Sin cambios de contrato. |
+| Viewport/canvas | Global | Runtime. |
+| Artboard | Global | Canvas section. |
+| Imagen | Underlay UI-only | No entra en documentos ni export. |
+| Export | SVG con aviso; PNG fiel; GIF animado | SVG completo pendiente. |
+| Animación/Timeline | En **Perform** | PNG ZIP + GIF siguen en Timeline. |
+| Imagen | En **Ingest** | Underlay/tracing existente, UI-only. |
+| Overlays | Globales | Sin cambios. |
+| Presets | Workspace | Sin relación con Notebook. |
+| Persistencia | Múltiples stores | Deuda arquitectónica. |
+| Configuración global | UI/AI settings | Sin cambios. |
+| Status/telemetría | **Separados** | Status de capa/panel vs evaluación. |
+| History | Incluye cámara/estilo | La decisión de Camera Reset usa este historial. |
+| Seed | Global, en Explore | Ya visible. |
+| Analysis | Por capa | Correcto para diagnósticos. |
+| Layer lock | **Content lock** | Estructura/identidad fuera de alcance. |
+| Render passes | **Grupos/descripciones/aplicabilidad** | Settings por pass pendientes. |
+| Blend | **Implementado** | `screen`/`difference` requieren revisión visual. |
+| GIF export | **Implementado** | 360 px, 240 frames, loop según timeline. |
 
 ---
 
@@ -304,21 +326,20 @@ Sin cambios.
 
 ## 10. Conflictos con la visión futura
 
-Sin cambios respecto a la auditoría original:
-
 1. Documento curve-céntrico; superficies sin operadores.
 2. Renderer p5 con painter ordering, sin inspección de sólidos.
 3. Export artboard/curvas; sin fabricación.
-4. Navegación Form/Look/Explore/Keep vs modos futuros del roadmap.
+4. Navegación Form/Look/Explore/Perform/Ingest/Keep vs modos futuros del roadmap.
 5. Estilo por capa pero render global.
 6. Historial de documento completo (incluye cámara/estilo).
 7. Persistencia múltiple.
 8. Sin unidades ni tolerancias de fabricación.
 9. Presupuestos de rendimiento orientados a puntos, no a mallas/sólidos.
 10. MAKE no definido.
+11. Ingest/Perform ya tienen dueño, pero sus capacidades futuras siguen sin plan.
 
-`product-hardening` no resuelve estos conflictos; solo mejora la veracidad y
-corrección del estado actual.
+Las correcciones recientes no resuelven estos conflictos; mejoran la
+veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ---
 
@@ -326,82 +347,62 @@ corrección del estado actual.
 
 ### 11.1 Problemas confirmados — estado actual
 
-| Problema | Estado | Solución / nota |
+| Problema | Estado | Nota |
 |---|---|---|
-| Análisis combinado en passes por capa | **Resuelto** | Análisis lazy por capa + mapeo en `P5Adapter`; test multicapa. |
-| `style.blend` sin efecto | **Resuelto** | Blend por capa, reset, PNG; SVG lo declara omitido. |
-| `layer.locked` sin efecto | **Parcial** | Content lock implementado; estructura/identidad pendiente. |
-| Passes no aplicables activos | **Resuelto con alcance** | `appliesTo` + UI; passes sin metadata se asumen aplicables. |
+| Análisis combinado en passes por capa | **Resuelto** | Análisis lazy por capa + mapeo en `P5Adapter`. |
+| `style.blend` sin efecto | **Resuelto** | Blend por capa, reset, PNG. |
+| `layer.locked` sin efecto | **Parcial** | Content lock; estructura/identidad pendiente. |
+| Passes no aplicables activos | **Resuelto con alcance** | `appliesTo` + UI. |
 | SVG omite features sin avisar | **Parcial** | Aviso implementado; paridad completa pendiente. |
-| `view.colorRamp` sin UI | Pendiente | P1 UX. |
-| `view.strokeWeight` duplicado | Pendiente | P2 arquitectura. |
-| Paleta no actualiza ramp | Pendiente | P2 UX/expansión. |
-| `renameLayer` sin UI | Pendiente | P2 UX. |
-| Notebook notes/tags sin UI | Pendiente | P2 UX. |
-| Explore seed interno | Pendiente | P1 UX. |
-| Frame export en Timeline | Pendiente | P2 UX. |
-| Status/telemetría duplicados | Pendiente | P2 UX. |
-| `SPEC.md` §11 desactualizado | Pendiente | P2 docs. |
-| LOOK sobrecargado | Pendiente | Propuesta pendiente de validación. |
-| `setGenerator` conserva operadores | Sin cambios | Comportamiento existente, no abordado. |
+| `view.colorRamp` sin UI | **Resuelto** | Editor en Render. |
+| `renameLayer` sin UI | **Resuelto** | Acción en Layers. |
+| Notebook notes/tags sin UI | **Resuelto** | Editor en Notebook. |
+| Explore seed interno | **Resuelto** | Seed visible. |
+| Frame/GIF export en Timeline | **Resuelto** | Pertenece a Perform; Keep no lo duplica. |
+| Status/telemetría duplicados | **Resuelto** | Separados. |
+| LOOK sobrecargado | **Resuelto** | Phase 1 + Phase 2; LOOK es appearance/viewport. |
+| Cámara con artefactos al entrar en geometría | **Resuelto** | Plano cercano + distancia de escena + FOV mínimo. |
+| `setGenerator` conserva operadores | Sin cambios | Comportamiento existente. |
 | Superficies ignoran operadores | Sin cambios | Limitación estructural. |
 | MAKE ausente | Sin cambios | Fuera de alcance. |
 
 ### 11.2 Problemas de UX
 
-Siguen vigentes:
-
-- LOOK sigue siendo un paraguas de cámara, canvas, estilo, render, imagen,
-  animación y timeline.
-- “Artboard” sigue mezclando canvas global y estilo de capa.
-- Los passes siguen sin agrupación/descripciones; solo se añadió aplicabilidad.
-- Fill sigue enterrado y limitado a sólido.
-- Gradient Wireframe sigue sin editor de rampa.
-- Cámara sin reset.
-- Image/Animation/Timeline siguen en LOOK.
+- Fill sigue limitado a sólido.
+- No hay settings por pass ni modos por capa.
 - Notebook y Presets siguen siendo dos bibliotecas sin relación explícita.
 - Seed y undo/redo siguen en EXPLORE.
 - Analysis/Advisor siguen en EXPLORE.
-- Status/telemetría siguen duplicados.
 - Copy sigue mezclando inglés y español.
-- El content lock mejora la afordancia de lock, pero su alcance es solo
-  contenido; las acciones estructurales siguen sin protección.
+- El content lock solo cubre contenido; las acciones estructurales siguen sin
+  protección.
+- `screen`/`difference` requieren revisión visual.
 
 ### 11.3 Problemas arquitectónicos
 
-Siguen vigentes:
-
-- `view.style` es alias del estilo de la capa activa.
+- `view.style` es alias del estilo de la capa activa (decisión aceptada).
 - `view.modes` es global; el estilo es por capa.
 - El pipeline de superficies salta operadores.
 - Los passes hardcodean colores/grosores; no hay settings por pass.
 - `P5Adapter` sigue leyendo el documento para animación/artboard/underlay.
 - SVG y render p5 no comparten una descripción de escena completa.
 - Múltiples stores de persistencia.
-- Historial incluye cambios de vista.
-- `view.strokeWeight` duplicado.
-
-Mejora arquitectónica introducida:
-
-- La aplicabilidad de passes ahora tiene metadata (`appliesTo`) y una única
-  función de refresco (`refreshRenderModes`) que evita que la UI quede obsoleta.
+- Historial incluye cambios de vista (usado por Camera Reset).
+- `view.strokeWeight` es un alias sincronizado de `style.stroke.width`.
 
 ---
 
 ## 12. Oportunidades de evolución
 
-Se conservan las oportunidades originales. Cambios de énfasis:
-
-- La metadata de `appliesTo` es una base natural para agrupar/describir passes
-  y para settings por pass.
-- El blend implementado valida el camino p5; `screen`/`difference` aún
-  necesitan revisión visual.
-- El content lock deja abierta la decisión de un lock estructural/identidad.
-- La divulgación SVG permite posponer la paridad completa sin mentir al usuario.
-- Siguen como oportunidades: colorRamp editor, paleta/ramp, cámara reset,
-  seed visible, frame export, status/telemetry, layer rename, Notebook
-  notes/tags, stroke width único, style model split, per-layer modes, SVG
-  parity, Notebook/Presets relation, viewport history y MAKE.
+- **Export:** paridad SVG, SVG frames y plotter-ready SVG. Frame/GIF export
+  ya pertenece a Perform.
+- **Color:** palette system/color-by-metric más allá del ramp actual.
+- **Image:** multicontorno y huecos.
+- **Helix:** multi-viewport 3D + tres proyecciones.
+- **Composición:** relación Notebook/Presets y persistencia unificada.
+- **MAKE:** primer vertical slice de fabricación.
+- **Verificación:** `screen`/`difference` y rendimiento de aplicabilidad en
+  escenas grandes.
 
 ---
 
@@ -409,40 +410,42 @@ Se conservan las oportunidades originales. Cambios de énfasis:
 
 | Decisión | Estado actual | Qué falta |
 |---|---|---|
-| Alcance del layer lock | Content lock implementado | Decidir si rename/reorder/delete/duplicate deben incluirse. |
-| Blend | Implementado y probado con `multiply` | Validar visualmente `screen`/`difference` y coste. |
-| LOOK ownership | Propuesta Camera/Canvas/Style/Render/Overlays | Validación; decidir Image/Animation/Timeline. |
-| Cámara/proyección: documento o viewport | Sin cambios | Definir si deben persistir/entrar en historial. |
-| Estilo global vs por capa | Sin cambios | Definir si se separa `view.style` del estilo de capa. |
-| Render modes globales vs por capa | Sin cambios | Definir. |
-| Fill/ramp scope | Sin cambios | Definir global/capa/pass y relación paleta/ramp. |
-| Notebook vs Presets | Sin cambios | Unificar, relacionar o mantener separados. |
-| SVG parity | Aviso implementado | Decidir si se implementan gradientes/mallas/overlays. |
-| Historial de viewport | Sin cambios | Decidir si cámara/estilo salen del undo/redo. |
+| Alcance del layer lock | Content lock | Decidir rename/reorder/delete/duplicate. |
+| Blend | Implementado | Validar visualmente `screen`/`difference` y coste. |
+| Estilo global vs por capa | `view.style` alias aceptado | Mantener o separar en el futuro. |
+| Render modes globales vs por capa | Globales | Decidir si se vuelven por capa. |
+| Fill/ramp scope | Ramp global; fill sólido | Decidir gradientes y settings por pass. |
+| Notebook vs Presets | Separados | Unificar, relacionar o mantener. |
+| SVG parity | Aviso implementado | Decidir alcance de la paridad completa. |
 | MAKE | Sin código | Definir primer vertical slice y salida real. |
+| Persistencia | Múltiples stores | Decidir si se unifica. |
 
 ---
 
-## 14. Regresiones y problemas nuevos detectados durante la implementación
+## 14. Regresiones y verificación
 
 ### Confirmados y mitigados
 
-| Problema nuevo | Estado | Nota |
+| Problema | Estado | Nota |
 |---|---|---|
-| La UI podía construir los toggles con una evaluación antigua al aplicar presets/cambiar geometría, dejando la aplicabilidad desactualizada | **Mitigado** | `App.evaluate()` llama a `Controls.refreshRenderModes()` después de evaluar; los toggles se recalculan. |
-| Los modos activos que dejan de aplicar se eliminan de `view.modes` y no se restauran automáticamente | **Comportamiento nuevo intencional** | El usuario debe reactivar el pass si vuelve a aplicar. Es coherente con la veracidad, pero conviene documentarlo en la UI. |
-| El content lock desactiva la paleta, que también cambia el fondo global | **Efecto lateral menor** | El fondo sigue editable desde su control específico; la paleta queda desactivada porque escribe estilo de capa. |
+| Toggles de render construidos con evaluación antigua | **Mitigado** | `App.evaluate()` refresca aplicabilidad. |
+| Modos activos que dejan de aplicar se eliminan de `view.modes` | **Intencional** | El usuario debe reactivarlos si vuelven a aplicar. |
+| Content lock desactiva la paleta que también toca el fondo | **Efecto lateral menor** | El fondo tiene control propio. |
+| Cámara con líneas radiales al entrar en la geometría | **Resuelto** | Recorte de plano cercano, separación de curvas y distancia de escena. |
 
 ### Posibles, no confirmados
 
 | Riesgo | Estado | Nota |
 |---|---|---|
-| `screen` / `difference` no se validaron visualmente más allá de `multiply` | Posible | Requiere revisión manual/visual. |
-| `refreshRenderModes` se ejecuta en cada evaluación, incluido playback | Posible rendimiento | Las escrituras DOM están guardadas, pero no se midió en escenas grandes. |
-| Solo algunos passes tienen `appliesTo`; el resto se asume aplicable | Limitación | Cubre los casos confirmados por la auditoría, no todos los futuros. |
-| El content lock no cubre timeline, exploración, adopción de candidatos, presets ni restauración | Limitación documentada | El alcance es contenido editable; estos flujos siguen fuera del contrato. |
-| El aviso SVG puede ser ruidoso con muchos passes diagnósticos activos | UX | No es un fallo; puede refinarse más adelante. |
+| `screen` / `difference` sin validación visual completa | Posible | Revisión manual pendiente. |
+| `refreshRenderModes` en cada evaluación/playback | Posible rendimiento | Escrituras DOM guardadas; falta medir escenas grandes. |
+| Solo algunos passes tienen `appliesTo` | Limitación | Los futuros passes deben declararlo. |
+| El content lock no cubre timeline, exploración, presets ni restauración | Limitación documentada | Fuera del contrato de contenido. |
+| El aviso SVG puede ser ruidoso | UX | No es un fallo funcional. |
 
-No se detectaron regresiones funcionales en la suite: `npm run check`
-(1580/1580), `npm run test:e2e` (82/82) y `openspec validate --specs --strict`
-(53/53) pasan.
+### Estado de la suite
+
+- `npm run check`: lint, **1633/1633** checks y build.
+- `npm run test:e2e`: **96/96** tests.
+- `openspec validate --specs --strict`: **55/55** specs.
+- No hay cambios OpenSpec activos.

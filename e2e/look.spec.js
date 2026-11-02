@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { openSection } from './helpers.js';
+import { openSection, openMode } from './helpers.js';
 
 async function boot(page) {
   await page.goto('/');
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
 }
 
-test('LOOK exposes camera, canvas, style, render and overlays with a Work group', async ({ page }) => {
+test('LOOK exposes camera, canvas, style, render and overlays without Work', async ({ page }) => {
   await boot(page);
   const camera = await openSection(page, 'Camera');
   await expect(camera.locator('.panel-hint')).toContainText('Global viewport');
@@ -21,10 +21,33 @@ test('LOOK exposes camera, canvas, style, render and overlays with a Work group'
     .toHaveAttribute('title', /Color ramp/);
   await expect(page.locator('.panel-h', { hasText: 'View' })).toHaveCount(0);
   await expect(page.locator('.panel-h', { hasText: 'Artboard' })).toHaveCount(0);
-  await expect(page.locator('.panel-group-label', { hasText: 'Work' })).toBeVisible();
+  await expect(page.locator('.panel-group-label')).toHaveCount(0);
+  await expect(page.locator('.panel-h', { hasText: 'Image' })).toBeHidden();
+  await expect(page.locator('.panel-h', { hasText: 'Animation' })).toBeHidden();
+  await expect(page.locator('.panel-h', { hasText: 'Timeline' })).toBeHidden();
+  await expect(page.locator('.panel-mode[data-mode="ingest"]')).toBeVisible();
+  await expect(page.locator('.panel-mode[data-mode="perform"]')).toBeVisible();
+});
+
+test('Ingest and Perform own image and time tools', async ({ page }) => {
+  await boot(page);
+  await openSection(page, 'Image');
+  await expect(page.locator('.panel-mode[data-mode="ingest"]')).toHaveClass(/active/);
   await expect(page.locator('.panel-h', { hasText: 'Image' })).toBeVisible();
+  await expect(page.locator('.panel-h', { hasText: 'Camera' })).toBeHidden();
+
+  await openSection(page, 'Timeline');
+  await expect(page.locator('.panel-mode[data-mode="perform"]')).toHaveClass(/active/);
   await expect(page.locator('.panel-h', { hasText: 'Animation' })).toBeVisible();
   await expect(page.locator('.panel-h', { hasText: 'Timeline' })).toBeVisible();
+  await expect(page.locator('.timeline-export')).toBeVisible();
+  await expect(page.locator('.timeline-gif')).toBeVisible();
+
+  await openMode(page, 'keep');
+  await expect(page.locator('.panel-h', { hasText: 'Notebook' })).toBeVisible();
+  await expect(page.locator('.panel-h', { hasText: 'Presets' })).toBeVisible();
+  await expect(page.locator('.panel-h', { hasText: 'Export' })).toBeVisible();
+  await expect(page.locator('.panel-h', { hasText: 'Timeline' })).toBeHidden();
 });
 
 test('camera reset is undoable through the existing history', async ({ page }) => {
@@ -90,4 +113,28 @@ test('old view and artboard UI state maps to the new LOOK sections', async ({ pa
     }).first();
     await expect(section.locator('.panel-h')).toHaveAttribute('aria-expanded', 'true');
   }
+});
+
+
+test('legacy work mode and moved section state map to Perform and Ingest', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('parametrica.ui.v1', JSON.stringify({
+      mode: 'work',
+      sections: { image: true, animation: true, timeline: true },
+      advancedParams: false,
+    }));
+  });
+  await boot(page);
+  await expect(page.locator('.panel-mode[data-mode="perform"]')).toHaveClass(/active/);
+  for (const title of ['Animation', 'Timeline']) {
+    const section = page.locator('.panel-section', {
+      has: page.locator('.panel-h', { hasText: title }),
+    }).first();
+    await expect(section.locator('.panel-h')).toHaveAttribute('aria-expanded', 'true');
+  }
+  await openMode(page, 'ingest');
+  const image = page.locator('.panel-section', {
+    has: page.locator('.panel-h', { hasText: 'Image' }),
+  }).first();
+  await expect(image.locator('.panel-h')).toHaveAttribute('aria-expanded', 'true');
 });

@@ -394,9 +394,10 @@ Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
 Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing, frame-sequence and GIF export ·
-Form/Look/Explore/Keep panel modes with persisted accordions and essential/
-advanced parameters; Look split into Camera, Canvas, Style, Render and
-Overlays, with Image, Animation and Timeline under a temporary Work label · Session recovery with debounced local snapshots · Helix Lab
+Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions
+and essential/advanced parameters; Look split into Camera, Canvas, Style,
+Render and Overlays; Ingest owns Image; Perform owns Animation, Timeline and
+temporal export · Session recovery with debounced local snapshots · Helix Lab
 (generalized helix, orthographic projections, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
