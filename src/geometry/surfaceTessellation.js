@@ -7,7 +7,9 @@ import { validateSurface } from './validate.js';
 
 /**
  * Tessellate a Surface grid. Closed axes are welded by wrapping face indices
- * to the first unique row/column, producing a watertight closed mesh.
+ * to the first unique row/column. A reversed seam (`seamU`/`seamV` =
+ * `'reverse'`) additionally mirrors the opposite coordinate at the wrap,
+ * which produces a half-twisted but crack-free mesh (Möbius band).
  */
 export function tessellateSurface(surface, { id = surface.id, smooth = true } = {}) {
   const validation = validateSurface(surface);
@@ -21,6 +23,10 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
   const gridCols = rows[0].length;
   const closedU = Boolean(surface.domain.closedU);
   const closedV = Boolean(surface.domain.closedV);
+  const seamU = surface.domain?.seamU ?? surface.meta?.seamU ?? 'normal';
+  const seamV = surface.domain?.seamV ?? surface.meta?.seamV ?? 'normal';
+  const twistU = closedU && seamU === 'reverse';
+  const twistV = closedV && seamV === 'reverse';
   const uniqueRows = closedU ? gridRows - 1 : gridRows;
   const uniqueCols = closedV ? gridCols - 1 : gridCols;
   const uCells = closedU ? uniqueRows : uniqueRows - 1;
@@ -34,16 +40,31 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
     for (let v = 0; v < uniqueCols; v++) vertices.push({ ...rows[u][v] });
   }
   const indexOf = (u, v) => u * uniqueCols + v;
+
+  // Resolve a logical grid coordinate to the welded index. Wrapping a twisted
+  // axis mirrors the opposite coordinate, which is the topological half twist.
+  const wrap = (index, size, twist) => {
+    if (index >= 0 && index < size) return { index, flip: false };
+    return { index: ((index % size) + size) % size, flip: Boolean(twist) };
+  };
+  const corner = (u, v) => {
+    const cu = wrap(u, uniqueRows, twistU);
+    const cv = wrap(v, uniqueCols, twistV);
+    let ui = cu.index;
+    let vi = cv.index;
+    if (cu.flip) vi = uniqueCols - 1 - vi;
+    if (cv.flip) ui = uniqueRows - 1 - ui;
+    return indexOf(ui, vi);
+  };
+
   const faces = [];
   const faceNormals = [];
   for (let u = 0; u < uCells; u++) {
-    const u1 = closedU ? (u + 1) % uniqueRows : u + 1;
     for (let v = 0; v < vCells; v++) {
-      const v1 = closedV ? (v + 1) % uniqueCols : v + 1;
-      const a = indexOf(u, v);
-      const b = indexOf(u1, v);
-      const c = indexOf(u1, v1);
-      const d = indexOf(u, v1);
+      const a = corner(u, v);
+      const b = corner(u + 1, v);
+      const c = corner(u + 1, v + 1);
+      const d = corner(u, v + 1);
       faces.push([a, b, c], [a, c, d]);
       faceNormals.push(faceNormal(vertices[a], vertices[b], vertices[c]));
       faceNormals.push(faceNormal(vertices[a], vertices[c], vertices[d]));
@@ -64,6 +85,10 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
       vCells,
       closedU,
       closedV,
+      seamU,
+      seamV,
+      twistU,
+      twistV,
       gridRows: uniqueRows,
       gridCols: uniqueCols,
     },

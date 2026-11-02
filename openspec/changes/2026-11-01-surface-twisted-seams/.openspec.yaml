@@ -1,0 +1,12 @@
+name: surface-twisted-seams
+description: >
+  Twist-aware surface seam welding: reversed U/V seams share vertices, mirror
+  the opposite coordinate and render the Möbius band without a gap. Adds seam
+  modes, mesh metadata, mirrored compatibility curves and validation warnings.
+status: proposed
+created: 2026-11-01
+capabilities:
+  - parametric-surface-generator
+  - surface-tessellation
+skip_specs: false
+schema: spec-driven

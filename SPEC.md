@@ -347,7 +347,7 @@ Mathematical presets, each a complete Parametrica document (with
   Aizawa Torus.
 - **3D curves:** Helix (Isometric), Spiral Helix, Cone (Projected).
 - **Surfaces:** Torus, Sphere, Hyperbolic Saddle, Wave Sheet, Helicoid,
-  Catenoid, Enneper Surface, Möbius Band, Seashell.
+  Catenoid, Enneper Surface, Möbius Band (reversed U seam), Seashell.
 - **Helix Lab:** Básica, Radio Variable, Paso Variable, Ondulada,
   Doble Hélice, Cónica.
 - **Legacy/classical:** Vesica Prime (v1), Vesica Piscis, Three Ellipses.

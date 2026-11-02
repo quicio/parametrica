@@ -181,8 +181,8 @@ export const PRESET_META = {
   },
   'Möbius Band': {
     category: 'surfaces',
-    description: 'Half-twisted strip whose U ends meet geometrically.',
-    tags: ['surface', 'mobius', 'twist'],
+    description: 'Half-twisted strip welded across a reversed U seam.',
+    tags: ['surface', 'mobius', 'twist', 'seam'],
   },
   Seashell: {
     category: 'surfaces',

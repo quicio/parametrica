@@ -275,21 +275,81 @@ function meshWireframeCurves(meshes) {
     const rows = mesh.meta?.gridRows;
     const cols = mesh.meta?.gridCols;
     if (!rows || !cols) continue;
-    for (let u = 0; u < rows; u++) {
-      const points = [];
+    const closedU = Boolean(mesh.meta?.closedU);
+    const closedV = Boolean(mesh.meta?.closedV);
+    const twistU = Boolean(mesh.meta?.twistU);
+    const twistV = Boolean(mesh.meta?.twistV);
+    const point = (u, v) => {
+      const p = mesh.vertices[u * cols + v];
+      return p ? { x: p.x, y: p.y } : null;
+    };
+    const push = (id, points, closed, axis) => {
+      if (points.length >= 2) {
+        curves.push({
+          id,
+          points,
+          closed,
+          meta: { source: 'surface-wireframe', meshId: mesh.id, axis },
+        });
+      }
+    };
+
+    // U-direction curves: fixed v, varying u.
+    if (twistU && closedU) {
       for (let v = 0; v < cols; v++) {
-        const point = mesh.vertices[u * cols + v];
-        if (point) points.push({ x: point.x, y: point.y });
+        const mirror = cols - 1 - v;
+        if (mirror < v) continue;
+        const points = [];
+        for (let u = 0; u < rows; u++) {
+          const p = point(u, v);
+          if (p) points.push(p);
+        }
+        if (mirror !== v) {
+          for (let u = 0; u < rows; u++) {
+            const p = point(u, mirror);
+            if (p) points.push(p);
+          }
+        }
+        push(`${mesh.id}-u-${v}`, points, true, 'u');
       }
-      if (points.length >= 2) curves.push({ id: `${mesh.id}-row-${u}`, points, closed: Boolean(mesh.meta?.closedV), meta: { source: 'surface-wireframe', meshId: mesh.id } });
+    } else {
+      for (let v = 0; v < cols; v++) {
+        const points = [];
+        for (let u = 0; u < rows; u++) {
+          const p = point(u, v);
+          if (p) points.push(p);
+        }
+        push(`${mesh.id}-col-${v}`, points, closedU, 'u');
+      }
     }
-    for (let v = 0; v < cols; v++) {
-      const points = [];
+
+    // V-direction curves: fixed u, varying v.
+    if (twistV && closedV) {
       for (let u = 0; u < rows; u++) {
-        const point = mesh.vertices[u * cols + v];
-        if (point) points.push({ x: point.x, y: point.y });
+        const mirror = rows - 1 - u;
+        if (mirror < u) continue;
+        const points = [];
+        for (let v = 0; v < cols; v++) {
+          const p = point(u, v);
+          if (p) points.push(p);
+        }
+        if (mirror !== u) {
+          for (let v = 0; v < cols; v++) {
+            const p = point(mirror, v);
+            if (p) points.push(p);
+          }
+        }
+        push(`${mesh.id}-v-${u}`, points, true, 'v');
       }
-      if (points.length >= 2) curves.push({ id: `${mesh.id}-col-${v}`, points, closed: Boolean(mesh.meta?.closedU), meta: { source: 'surface-wireframe', meshId: mesh.id } });
+    } else {
+      for (let u = 0; u < rows; u++) {
+        const points = [];
+        for (let v = 0; v < cols; v++) {
+          const p = point(u, v);
+          if (p) points.push(p);
+        }
+        push(`${mesh.id}-row-${u}`, points, closedV, 'v');
+      }
     }
   }
   return curves;

@@ -40,7 +40,7 @@ import { supportsSpatial } from '../src/core/capabilities.js';
 import { ParamTypes } from '../src/ui/params/ParamRegistry.js';
 import { FakeDialogService } from '../src/ui/dialogs.js';
 import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.js';
-import { validateGeometry, validateMesh, validateSolid } from '../src/geometry/validate.js';
+import { validateGeometry, validateMesh, validateSolid, validateSurface } from '../src/geometry/validate.js';
 import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.js';
 import { tessellateSurface, surfaceArea } from '../src/geometry/surfaceTessellation.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
@@ -2251,6 +2251,7 @@ console.log('30. parametric surfaces');
   assert(mesh.normals.every((n) => Math.abs(Math.hypot(n.x, n.y, n.z) - 1) < 1e-6), 'vertex normals are unit vectors');
   assert(mesh.faceNormals.length === mesh.faces.length, 'mesh has one face normal per face');
   assert(validateMesh(mesh).ok, 'closed surface mesh passes topology validation');
+  assert(mesh.meta.twistU === false && mesh.meta.twistV === false, 'normal closed seams have no twist');
   assert(surfaceArea(first.geometry[0]) > 0, 'surface area is positive');
 
   const surfaceDescriptor = computeDescriptor(doc, first.curves, { geometry: first.geometry });
@@ -2303,10 +2304,14 @@ console.log('30. parametric surfaces');
   assert(Math.abs(lastV.y - 2) < 1e-9, 'open surface samples the V endpoint');
 
   const mobiusDoc = BUILT_IN_PRESETS['Möbius Band']();
-  const mobiusGrid = evaluateDocument(mobiusDoc, { time: 0 }).geometry[0].grid.points;
+  const mobiusEval = evaluateDocument(mobiusDoc, { time: 0 });
+  const mobiusSurface = mobiusEval.geometry[0];
+  const mobiusGrid = mobiusSurface.grid.points;
+  const mobiusMesh = mobiusEval.meshes[0];
   const firstRow = mobiusGrid[0];
   const lastRow = mobiusGrid[mobiusGrid.length - 1];
   assert(mobiusGrid.length === 65, 'Möbius band samples the closing U endpoint');
+  assert(mobiusSurface.domain.closedU === true && mobiusSurface.domain.seamU === 'reverse', 'Möbius preset uses a reversed closed U seam');
   let seamClosed = true;
   for (let v = 0; v < firstRow.length; v++) {
     const a = firstRow[v];
@@ -2314,6 +2319,14 @@ console.log('30. parametric surfaces');
     if (Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 1e-4) seamClosed = false;
   }
   assert(seamClosed, 'Möbius start and end rows meet across the half twist');
+  const mobiusValidation = validateSurface(mobiusSurface);
+  assert(mobiusValidation.ok, 'Möbius surface validates');
+  assert(!mobiusValidation.warnings.includes('reverse U seam endpoints do not meet'), 'Möbius reversed seam endpoints are consistent');
+  assert(mobiusMesh.meta.twistU === true && mobiusMesh.meta.twistV === false, 'Möbius mesh records the U twist');
+  assert(mobiusMesh.vertices.length === 64 * 17, 'Möbius seam vertices are welded');
+  assert(mobiusMesh.faces.length === 64 * 16 * 2, 'Möbius tessellates every cell');
+  assert(validateMesh(mobiusMesh).meta.manifold === true, 'Möbius welded mesh is manifold');
+  assert(mobiusEval.curves.filter((curve) => curve.closed).length === 9, 'Möbius wireframe pairs twisted U loops');
 
   assert(RenderPasses.has('surface-fill') && RenderPasses.has('surface-wireframe'), 'surface render passes are registered');
   assert(first.curves.length > 0, 'surface emits wireframe curves for stroke compatibility');

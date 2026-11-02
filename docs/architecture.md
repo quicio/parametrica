@@ -481,10 +481,10 @@ for `renderer.readyPromise` before touching the canvas.
 | 27 | registry contracts | every registry exposes the expected contract and metadata |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
 | 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions and analysis |
-| 30 | parametric surfaces | surface generation, seam welding, normals, projection, caches and render passes |
+| 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1556 checks total.
+1565 checks total.
 
 ### Panel behavior
 

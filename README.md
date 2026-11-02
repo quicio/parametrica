@@ -24,7 +24,7 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1556 checks)
+npm test             # node-only verification suite (1565 checks)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (78 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
@@ -178,7 +178,7 @@ No central config to update.
 | Helicoid | `parametric-surface` | minimal screw surface |
 | Catenoid | `parametric-surface` | minimal surface of revolution |
 | Enneper Surface | `parametric-surface` | self-intersecting minimal surface |
-| Möbius Band | `parametric-surface` | half-twisted strip |
+| Möbius Band | `parametric-surface` | half-twisted strip welded across a reversed seam |
 | Seashell | `parametric-surface` | logarithmic spiral tube |
 | Vesica Prime (v1) | `bilateral-spline` | legacy v1 generator, preserved |
 | Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
@@ -198,7 +198,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1556 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1565 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,

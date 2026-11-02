@@ -47,6 +47,16 @@ Generators.register({
     samplesV: { label: 'Samples V', type: TYPE.NUMBER, min: 8, max: 160, step: 1, default: 32 },
     closedU: { label: 'Close U', type: TYPE.BOOLEAN, default: true },
     closedV: { label: 'Close V', type: TYPE.BOOLEAN, default: true },
+    seamU: {
+      advanced: true, label: 'U seam', type: TYPE.SELECT,
+      options: ['normal', 'reverse'], default: 'normal',
+      doc: 'Normal joins v to v at the U seam; reverse joins v to -v (half twist).',
+    },
+    seamV: {
+      advanced: true, label: 'V seam', type: TYPE.SELECT,
+      options: ['normal', 'reverse'], default: 'normal',
+      doc: 'Normal joins u to u at the V seam; reverse joins u to -u (half twist).',
+    },
     fit: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 0, max: 800, step: 1, default: 340 },
   },
 
@@ -98,6 +108,8 @@ Generators.register({
         v: [params.v0, params.v1],
         closedU: Boolean(params.closedU),
         closedV: Boolean(params.closedV),
+        seamU: params.seamU,
+        seamV: params.seamV,
       },
       grid: { rows: uSamples, cols: vSamples, points },
       meta: {
@@ -106,6 +118,8 @@ Generators.register({
         cellsV: vCells,
         closedU: Boolean(params.closedU),
         closedV: Boolean(params.closedV),
+        seamU: params.seamU,
+        seamV: params.seamV,
       },
     })];
   },

@@ -63,6 +63,7 @@ function validateCurve(value, spatial) {
 
 export function validateSurface(value) {
   const errors = [];
+  const warnings = [];
   if (!value || value.kind !== GEOMETRY_KIND.SURFACE) return result(['wrong surface kind']);
   if (!Array.isArray(value.grid?.points) || value.grid.points.length < 2) {
     return result(['surface needs at least two rows']);
@@ -93,7 +94,27 @@ export function validateSurface(value) {
   if (!Array.isArray(value.domain?.u) || !Array.isArray(value.domain?.v)) {
     errors.push('surface domain must contain u and v ranges');
   }
-  return result(errors);
+  const seamU = value.domain?.seamU ?? value.meta?.seamU ?? 'normal';
+  const seamV = value.domain?.seamV ?? value.meta?.seamV ?? 'normal';
+  if (!['normal', 'reverse'].includes(seamU)) errors.push('surface seamU must be normal or reverse');
+  if (!['normal', 'reverse'].includes(seamV)) errors.push('surface seamV must be normal or reverse');
+  if (seamU === 'reverse' && !value.domain?.closedU) warnings.push('reverse U seam is ignored on an open axis');
+  if (seamV === 'reverse' && !value.domain?.closedV) warnings.push('reverse V seam is ignored on an open axis');
+  if (value.domain?.closedU && seamU === 'reverse' && cols >= 2 && rows.length >= 2) {
+    const uniqueCols = value.domain?.closedV ? cols - 1 : cols;
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    let worst = 0;
+    for (let v = 0; v < uniqueCols; v++) {
+      const a = first[v];
+      const b = last[uniqueCols - 1 - v];
+      if (!a || !b) continue;
+      const distance = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+      if (distance > worst) worst = distance;
+    }
+    if (worst > 1e-3) warnings.push('reverse U seam endpoints do not meet');
+  }
+  return result(errors, warnings);
 }
 
 export function validateMesh(value) {
