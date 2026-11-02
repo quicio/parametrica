@@ -1,0 +1,12 @@
+name: product-hardening
+description: >
+  Audit-driven hardening of the current product: truthful controls, explicit
+  state scope, layer-scoped analysis, render-pass applicability, editable
+  ramps/fills and export fidelity. No MAKE, no document v4, no navigation
+  rewrite.
+status: proposed
+created: 2026-11-02
+capabilities:
+  - ui-integrity
+skip_specs: false
+schema: spec-driven
