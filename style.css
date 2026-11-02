@@ -426,6 +426,9 @@ html, body {
   border-left-color: var(--swiss-red);
 }
 
+.expr-field.disabled { opacity: 0.45; }
+.expr-field.disabled .cm-content { cursor: not-allowed; }
+
 .expr-field.multiline .cm-content {
   min-height: 96px;
 }
@@ -445,6 +448,8 @@ html, body {
 .harmonics-editor {
   padding: 4px 12px 12px;
 }
+
+.harmonics-editor.disabled { opacity: 0.45; }
 
 .harm-table {
   margin-bottom: 12px;
@@ -561,6 +566,8 @@ html, body {
   margin-bottom: 8px;
 }
 
+.op-item.locked .op-body { opacity: 0.45; }
+
 .op-item.disabled .op-name {
   color: var(--ink-faint);
   text-decoration: line-through;
@@ -645,6 +652,13 @@ html, body {
 }
 
 .mode-toggle:hover { color: var(--ink); }
+
+.mode-toggle.inapplicable {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mode-toggle.inapplicable:hover { color: var(--ink-dim); }
 
 /* ——— Notices ——— */
 
