@@ -3,6 +3,7 @@
  */
 
 import { RenderPasses } from '../../core/registry.js';
+import { applyFill, fillGradientEnabled, setFillDepth } from '../fill.js';
 
 RenderPasses.register({
   id: 'surface-wireframe',
@@ -48,16 +49,18 @@ RenderPasses.register({
   appliesTo({ meshes = [] }) {
     return Array.isArray(meshes) && meshes.length > 0;
   },
-  draw(p, { meshes = [], view }) {
+  draw(p, { meshes = [], view, bbox }) {
     if (!meshes.length) return;
     const style = view.style ?? {};
     const fill = style.fill ?? {};
     const stroke = style.stroke ?? {};
+    const gradient = fillGradientEnabled(fill);
     const color = fill.enabled ? fill.color : stroke.color;
     const rgb = hexToRgb(color, [255, 255, 255]);
     const alpha = Math.round(clamp01(fill.enabled ? fill.opacity : Math.min(0.45, stroke.opacity ?? 0.45)) * 255);
     p.stroke(rgb[0], rgb[1], rgb[2], Math.min(alpha, 85));
     p.strokeWeight(0.4);
+    if (gradient) applyFill(p, fill, bbox, 1);
     for (const mesh of meshes) {
       const faces = [];
       for (const face of mesh.faces) {
@@ -79,7 +82,11 @@ RenderPasses.register({
       }
       faces.sort((a, b) => a.depth - b.depth);
       for (const { face, depthAlpha } of faces) {
-        p.fill(rgb[0], rgb[1], rgb[2], Math.round(alpha * clamp01(depthAlpha)));
+        if (gradient) {
+          setFillDepth(p, depthAlpha);
+        } else {
+          p.fill(rgb[0], rgb[1], rgb[2], Math.round(alpha * clamp01(depthAlpha)));
+        }
         p.beginShape();
         for (const index of face) {
           const point = mesh.vertices[index];
@@ -87,6 +94,7 @@ RenderPasses.register({
         }
         p.endShape(p.CLOSE);
       }
+      if (gradient) setFillDepth(p, 1);
     }
   },
 });

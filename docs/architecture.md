@@ -470,7 +470,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 14 | lab observer | hash vectors, descriptor metrics, symmetry, empty geometry, sensitivity ranking, shape distance |
 | 15 | lab notebook | checkpoint validation, lineage, persistence, metadata editing, import/export, thumbnail cap, diffs |
 | 16 | lab exploration | 1D sweep endpoints and determinism, Solo/Lock, seeded randomize, visible seed, candidate isolation |
-| 17 | artboard/style | defaults, authoritative layer width, legacy stroke migration, clamping, style/artboard round-trip, styled SVG |
+| 17 | artboard/style | defaults, authoritative layer width, legacy stroke migration, clamping, solid/linear/radial fill gradients, style/artboard round-trip, styled SVG |
 | 18 | grid/morph | row-major grid order/budget, deterministic grid, morph endpoints/interpolation, incompatible structures |
 | 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, layer-scoped analysis, aggregate descriptor, layered SVG |
 | 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation, GIF encoding and frame caps |
@@ -486,7 +486,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1644 checks total.
+1657 checks total.
 
 ### Panel behavior
 

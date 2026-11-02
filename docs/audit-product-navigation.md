@@ -3,7 +3,7 @@
 **Original:** 2026-11-01  
 **Actualización de implementación:** 2026-11-02, tras `product-hardening`,
 las correcciones de auditoría, LOOK Phase 1/2, la corrección de cámara, GIF
-export y SVG export fidelity.  
+export, SVG export fidelity y fill gradients.  
 **Alcance de esta revisión:** actualizar el estado real de los hallazgos. No es
 una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
@@ -19,6 +19,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | `style.blend` se exponía pero no se aplicaba | **Resuelto** | `P5Adapter` aplica el modo por capa y lo resetea antes de la siguiente capa/overlays. |
 | Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
 | El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
+| Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
 | La cámara no tenía reset explícito | **Resuelto** | Reset undoable, deshabilitado en proyección ortográfica. |
 | No había renombrado visible de capa | **Resuelto** | Acción de renombrado en Layers. |
@@ -47,7 +48,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 - **Palette system / color-by-metric** más allá del color ramp actual.
 - **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
 - **Image tracing multicontorno / con huecos.**
-- **Ajustes por pass, gradientes de fill y render modes por capa.**
+- **Ajustes por pass y render modes por capa.**
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
 - **Notebook y Presets** siguen siendo dos bibliotecas separadas.
 - **MAKE/fabricación:** no hay autoría de sólidos, CSG, STL/3MF, unidades ni
@@ -143,7 +144,7 @@ Cambios de comportamiento dentro del mapa actual:
 | Diagnóstico por capa | **Resuelto** | Cada capa usa su propio análisis. |
 | Color ramp | **Editor implementado** | Global, independiente de la paleta. |
 | Paleta/ramp | **Independientes por decisión** | Aplicar paleta no cambia el ramp. |
-| Fill | Sólido | Sin gradientes ni modos nuevos. |
+| Fill | Sólido + gradientes | Gradientes lineales/radiales con dirección, centro, radio y 2–4 colores. |
 | Cámara | **Reset + guardas** | Reset undoable; recorte de plano cercano y distancia de escena. |
 | Image | En **Ingest** | Underlay/tracing existente, sin cambios de capacidad. |
 | Animation/Timeline | En **Perform** | Frame ZIP y GIF siguen en Timeline. |
@@ -212,7 +213,7 @@ no viven en LOOK: Image está en Ingest y Animation/Timeline en Perform.
 
 ### Límites que siguen
 
-- Fill sólido; sin gradientes ni ajustes por pass.
+- Fill con gradientes lineales/radiales; sin ajustes por pass.
 - `view.modes` global; sin modos por capa.
 - Sin controles por pass más allá de activar/desactivar.
 
@@ -365,7 +366,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### 11.2 Problemas de UX
 
-- Fill sigue limitado a sólido.
+- Fill ya tiene gradientes lineales/radiales; faltan ajustes por pass.
 - No hay settings por pass ni modos por capa.
 - Notebook y Presets siguen siendo dos bibliotecas sin relación explícita.
 - Seed y undo/redo siguen en EXPLORE.
@@ -411,7 +412,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | Blend | Implementado | Validar visualmente `screen`/`difference` y coste. |
 | Estilo global vs por capa | `view.style` alias aceptado | Mantener o separar en el futuro. |
 | Render modes globales vs por capa | Globales | Decidir si se vuelven por capa. |
-| Fill/ramp scope | Ramp global; fill sólido | Decidir gradientes y settings por pass. |
+| Fill/ramp scope | Ramp global; fill sólido/gradiente | Decidir settings por pass. |
 | Notebook vs Presets | Separados | Unificar, relacionar o mantener. |
 | MAKE | Sin código | Definir primer vertical slice y salida real. |
 | Persistencia | Múltiples stores | Decidir si se unifica. |
@@ -441,7 +442,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1644/1644** checks y build.
-- `npm run test:e2e`: **97/97** tests.
-- `openspec validate --specs --strict`: **56/56** specs.
+- `npm run check`: lint, **1657/1657** checks y build.
+- `npm run test:e2e`: **98/98** tests.
+- `openspec validate --specs --strict`: **57/57** specs.
 - No hay cambios OpenSpec activos.

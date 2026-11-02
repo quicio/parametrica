@@ -98,7 +98,7 @@ export class Exporter {
           omitted?.('Signed Distance (raster-only)');
           continue;
         }
-        const ctx = new SvgContext(width, height);
+        const ctx = new SvgContext(width, height, `svg-${index}-${mode}`);
         try {
           RenderPasses.get(mode).draw(ctx, layerData);
         } catch {
@@ -119,7 +119,7 @@ export class Exporter {
 
     let overlayMarkup = '';
     if (hasOverlays(view.overlays) && allCurves.length) {
-      const ctx = new SvgContext(width, height);
+      const ctx = new SvgContext(width, height, 'svg-overlays');
       try {
         drawOverlays(ctx, {
           curves: allCurves,

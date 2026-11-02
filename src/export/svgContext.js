@@ -11,11 +11,17 @@ export class SvgUnsupportedError extends Error {}
 const CLOSE = 'close';
 const LINES = 'lines';
 
+import { resolveFillGradient } from '../core/fillGradient.js';
+
 export class SvgContext {
-  constructor(width, height) {
+  constructor(width, height, prefix = 'svg') {
     this.width = width;
     this.height = height;
     this.elements = [];
+    this.defs = [];
+    this.gradientPrefix = prefix;
+    this.gradientCounter = 0;
+    this.gradientCache = new Map();
     this.fillStyle = null;
     this.strokeStyle = { color: '#ffffff', opacity: 1 };
     this.weight = 1;
@@ -71,6 +77,31 @@ export class SvgContext {
 
   fill(...args) {
     this.fillStyle = colorArgs(args);
+    return this;
+  }
+
+  /** Fill with a resolved linear/radial gradient, emitted as SVG defs. */
+  fillGradient(gradient, bbox, opacity = 1) {
+    const spec = resolveFillGradient(gradient, bbox);
+    const key = JSON.stringify(spec);
+    let id = this.gradientCache.get(key);
+    if (!id) {
+      id = `${this.gradientPrefix}-grad-${this.gradientCounter++}`;
+      this.gradientCache.set(key, id);
+      this.defs.push(gradientMarkup(spec, id));
+    }
+    this.fillStyle = {
+      color: `url(#${id})`,
+      opacity: clamp01(opacity),
+      baseOpacity: clamp01(opacity),
+    };
+    return this;
+  }
+
+  /** Multiply the current gradient fill by a per-face depth alpha. */
+  fillDepth(depth) {
+    if (!this.fillStyle?.baseOpacity) return this;
+    this.fillStyle.opacity = this.fillStyle.baseOpacity * clamp01(depth);
     return this;
   }
 
@@ -214,7 +245,10 @@ export class SvgContext {
   }
 
   toMarkup(indent = '    ') {
-    return this.elements.map((item) => `${indent}${item}`).join('\n');
+    const defs = this.defs.length
+      ? `${indent}<defs>\n${this.defs.map((item) => `${indent}  ${item}`).join('\n')}\n${indent}</defs>\n`
+      : '';
+    return defs + this.elements.map((item) => `${indent}${item}`).join('\n');
   }
 
   emitLine(a, b, style) {
@@ -256,6 +290,21 @@ export class SvgContext {
     }
     return attrs;
   }
+}
+
+function gradientMarkup(spec, id) {
+  const stops = spec.stops.map((stop) => (
+    `<stop offset="${fmt(stop.offset)}" stop-color="${escapeAttr(stop.color)}"/>`
+  )).join('');
+  if (spec.type === 'radial') {
+    return `<radialGradient id="${escapeAttr(id)}" gradientUnits="userSpaceOnUse" cx="${fmt(spec.cx)}" cy="${fmt(spec.cy)}" r="${fmt(spec.r)}" fx="${fmt(spec.cx)}" fy="${fmt(spec.cy)}">${stops}</radialGradient>`;
+  }
+  return `<linearGradient id="${escapeAttr(id)}" gradientUnits="userSpaceOnUse" x1="${fmt(spec.x1)}" y1="${fmt(spec.y1)}" x2="${fmt(spec.x2)}" y2="${fmt(spec.y2)}">${stops}</linearGradient>`;
+}
+
+function clamp01(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
 function colorArgs(args) {

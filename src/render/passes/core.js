@@ -3,6 +3,7 @@
  */
 
 import { RenderPasses } from '../../core/registry.js';
+import { applyFill } from '../fill.js';
 
 export function traceCurve(p, curve, rgb = [255, 255, 255], baseAlpha = 255) {
   // Two paths: if the curve carries per-point depth, draw segment-by-segment
@@ -39,12 +40,11 @@ RenderPasses.register({
   name: 'Stroke',
   group: 'base',
   description: 'Primary curve stroke.',
-  draw(p, { curves, view }) {
+  draw(p, { curves, view, bbox }) {
     const style = view.style ?? {};
     const stroke = style.stroke ?? {};
     const fill = style.fill ?? {};
     const rgb = hexToRgb(stroke.color, [255, 255, 255]);
-    const fillRgb = hexToRgb(fill.color, rgb);
     const alpha = Math.round(clamp01(stroke.opacity) * 255);
     const width = Number.isFinite(stroke.width) ? stroke.width : view.strokeWeight;
     p.strokeCap(capConstant(p, stroke.cap));
@@ -55,7 +55,7 @@ RenderPasses.register({
       p.strokeWeight(width);
       if (!hasDepth) p.stroke(rgb[0], rgb[1], rgb[2], alpha);
       if (fill.enabled && c.closed && !hasDepth) {
-        p.fill(fillRgb[0], fillRgb[1], fillRgb[2], Math.round(clamp01(fill.opacity) * 255));
+        applyFill(p, fill, bbox);
       } else {
         p.noFill();
       }

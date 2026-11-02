@@ -391,7 +391,7 @@ table editor · formula editor drawer · undo/redo (50 snapshots, coalesced)
 Analysis panel with deterministic descriptor metrics and parameter influence ·
 Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
-Artboard presets, palettes, stroke/fill style and faithful export ·
+Artboard presets, palettes, stroke/fill/gradient style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing, frame-sequence and GIF export ·
 Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions
@@ -414,9 +414,10 @@ Parametrica document embedded as XML comment under
 (ParametricaDocument) · clipboard JSON.
 SVG replays the same pass draw calls as the canvas through an SVG recorder:
 stroke, points, gradient wireframe, surface fill/wireframe, diagnostics and
-overlays are represented as vector primitives. Layer blend modes use CSS
-`mix-blend-mode`. Signed Distance remains a documented raster-only omission;
-PNG is the faithful raster fallback.
+overlays are represented as vector primitives. Solid and linear/radial fill
+gradients use SVG paint definitions. Layer blend modes use CSS `mix-blend-mode`.
+Signed Distance remains a documented raster-only omission; PNG is the faithful
+raster fallback.
 Tier 2: animation frame sequences and GIF export.
 
 ---
@@ -473,8 +474,8 @@ v1 pattern extended — the entire core stays DOM-free and Node-runnable:
   comparison and persistence (unit group 15).
 - **Lab exploration:** 1D sweeps, Solo/Lock, seeded randomize and
   candidate adoption through history (unit group 16).
-- **Artboard/style:** letterboxed artboard, palette presets, stroke/fill
-  renderer and export fidelity (unit group 17).
+- **Artboard/style:** letterboxed artboard, palette presets, stroke/fill/gradient
+  renderer, linear/radial fill authoring and export fidelity (unit group 17).
 - **Grid/morph:** row-major 2D candidate maps and same-structure parameter
   morphing (unit group 18).
 - **Composition layers:** v3 layer graph, isolated evaluation and layered

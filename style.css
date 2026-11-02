@@ -735,6 +735,18 @@ html, body {
   padding: 4px;
 }
 
+.fill-gradient-stops-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fill-gradient-add {
+  align-self: flex-start;
+  font-size: 8px;
+  padding: 3px 5px;
+}
+
 .camera-reset {
   margin: 4px 12px 8px;
   width: calc(100% - 24px);

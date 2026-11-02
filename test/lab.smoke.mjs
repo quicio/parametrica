@@ -24,6 +24,7 @@ import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
 import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
+import { createDefaultFillGradient, sanitizeFillGradient, resolveFillGradient } from '../src/core/fillGradient.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults } from '../src/core/schema.js';
 import { History } from '../src/core/history.js';
@@ -661,6 +662,56 @@ console.log('9. svg export');
   const blendedEval = evaluateDocument(blended, { time: 0 });
   const blendedSvg = Exporter.buildSVG(blendedEval.curves, blended.view, { w: 900, h: 900 }, blended);
   assert(blendedSvg.includes('mix-blend-mode:multiply'), 'blend mode exports as CSS mix-blend-mode');
+
+  const gradientDoc = BUILT_IN_PRESETS['Golden Rose']();
+  gradientDoc.view.style.fill.enabled = true;
+  gradientDoc.view.style.fill.gradient = {
+    enabled: true,
+    type: 'linear',
+    angle: 45,
+    colors: ['#ff0000', '#00ff00', '#0000ff'],
+  };
+  const gradientEval = evaluateDocument(gradientDoc, { time: 0 });
+  const gradientFillSvg = Exporter.buildSVG(gradientEval.curves, gradientDoc.view, { w: 900, h: 900 }, gradientDoc);
+  assert(gradientFillSvg.includes('<linearGradient') && gradientFillSvg.includes('stop-color="#ff0000"'), 'linear fill gradient exports defs');
+  assert(gradientFillSvg.includes('fill="url(#svg-0-stroke-'), 'gradient fill paints with a URL');
+  const radialDoc = BUILT_IN_PRESETS['Golden Rose']();
+  radialDoc.view.style.fill.enabled = true;
+  radialDoc.view.style.fill.gradient = {
+    enabled: true,
+    type: 'radial',
+    centerX: 0.3,
+    centerY: 0.6,
+    radius: 0.5,
+    colors: ['#ffffff', '#000000'],
+  };
+  const radialEval = evaluateDocument(radialDoc, { time: 0 });
+  const radialFillSvg = Exporter.buildSVG(radialEval.curves, radialDoc.view, { w: 900, h: 900 }, radialDoc);
+  assert(radialFillSvg.includes('<radialGradient') && radialFillSvg.includes('r="180"'), 'radial fill gradient exports geometry');
+
+  const surfaceGradientDoc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 8, samplesV: 8, closedU: false, closedV: false, fit: 300 } },
+  });
+  surfaceGradientDoc.view.modes = ['surface-fill'];
+  surfaceGradientDoc.view.style.fill.enabled = true;
+  surfaceGradientDoc.view.style.fill.gradient = {
+    enabled: true,
+    type: 'linear',
+    angle: 30,
+    colors: ['#ff0000', '#0000ff'],
+  };
+  surfaceGradientDoc.layers[0].style = surfaceGradientDoc.view.style;
+  const surfaceGradientEval = evaluateDocument(surfaceGradientDoc, { time: 0 });
+  const surfaceGradientSvg = Exporter.buildSVG(
+    surfaceGradientEval.curves,
+    surfaceGradientDoc.view,
+    { w: 900, h: 900 },
+    surfaceGradientDoc,
+    null,
+    { meshes: surfaceGradientEval.renderMeshes },
+  );
+  assert(surfaceGradientSvg.includes('<linearGradient'), 'surface fill uses the fill gradient');
+  assert((surfaceGradientSvg.match(/fill="url\(#/g) || []).length > 10, 'surface faces reuse the gradient paint');
 
   const sdfDoc = BUILT_IN_PRESETS['Lissajous 3:5']();
   sdfDoc.view.modes = ['signed-distance'];
@@ -1311,6 +1362,34 @@ console.log('17. artboard and style');
   assert(styled.view.style.stroke.color === '#e30613' && styled.view.style.stroke.opacity === 0.5, 'stroke style round-trip');
   assert(styled.view.style.stroke.width === 3 && styled.view.strokeWeight === 3, 'style width wins and syncs legacy field');
   assert(styled.view.style.fill.enabled && styled.view.style.fill.color === '#121212', 'fill style round-trip');
+  const gradientStyle = sanitizeFillGradient({
+    enabled: true,
+    type: 'radial',
+    angle: 999,
+    centerX: -1,
+    centerY: 2,
+    radius: 9,
+    colors: ['#ff0000', 'bad', '#00ff00'],
+  });
+  assert(gradientStyle.enabled && gradientStyle.type === 'radial', 'fill gradient type round-trip');
+  assert(gradientStyle.angle === 360 && gradientStyle.centerX === 0 && gradientStyle.centerY === 1 && gradientStyle.radius === 3, 'fill gradient values clamp');
+  assert(gradientStyle.colors.join(',') === '#ff0000,#00ff00', 'fill gradient drops invalid colors');
+  assert(createDefaultFillGradient().enabled === false, 'fill gradient defaults off');
+  const linearGradient = resolveFillGradient(
+    { enabled: true, type: 'linear', angle: 0, colors: ['#ff0000', '#0000ff'] },
+    { minX: -10, minY: -5, width: 20, height: 10 },
+  );
+  assert(linearGradient.x1 === -10 && linearGradient.x2 === 10 && linearGradient.y1 === 0 && linearGradient.y2 === 0, 'linear gradient follows angle 0');
+  const verticalGradient = resolveFillGradient(
+    { enabled: true, type: 'linear', angle: 90, colors: ['#ff0000', '#0000ff'] },
+    { minX: -10, minY: -5, width: 20, height: 10 },
+  );
+  assert(Math.abs(verticalGradient.y1 + 5) < 1e-6 && Math.abs(verticalGradient.y2 - 5) < 1e-6, 'linear gradient follows angle 90');
+  const radialGradient = resolveFillGradient(
+    { enabled: true, type: 'radial', centerX: 0.25, centerY: 0.75, radius: 0.5, colors: ['#ff0000', '#0000ff'] },
+    { minX: -10, minY: -5, width: 20, height: 10 },
+  );
+  assert(radialGradient.cx === -5 && radialGradient.cy === 2.5 && radialGradient.r === 10, 'radial gradient follows bbox center and radius');
   assert(styled.view.style.blend === 'multiply', 'blend round-trip');
 
   const clamped = sanitizeDocument({

@@ -13,6 +13,7 @@ import { Generators, Operators } from './registry.js';
 import { sanitizeParams } from './schema.js';
 import { OVERLAYS } from '../viz/overlays.js';
 import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
+import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 
 export const DOCUMENT_VERSION = 3;
 
@@ -43,7 +44,7 @@ const DEFAULT_ARTBOARD = {
 
 const DEFAULT_STYLE = {
   stroke: { color: '#ffffff', width: 2, opacity: 1, cap: 'round', join: 'round' },
-  fill: { enabled: false, color: '#ffffff', opacity: 1 },
+  fill: { enabled: false, color: '#ffffff', opacity: 1, gradient: createDefaultFillGradient() },
   blend: 'normal',
 };
 
@@ -58,7 +59,10 @@ export function createDefaultArtboard() {
 export function createDefaultStyle() {
   return {
     stroke: { ...DEFAULT_STYLE.stroke },
-    fill: { ...DEFAULT_STYLE.fill },
+    fill: {
+      ...DEFAULT_STYLE.fill,
+      gradient: createDefaultFillGradient(),
+    },
     blend: DEFAULT_STYLE.blend,
   };
 }
@@ -109,7 +113,13 @@ export const DEFAULT_VIEW = Object.freeze({
   colorRamp: null,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
-    fill: Object.freeze({ ...DEFAULT_STYLE.fill }),
+    fill: Object.freeze({
+      ...DEFAULT_STYLE.fill,
+      gradient: Object.freeze({
+        ...DEFAULT_FILL_GRADIENT,
+        colors: Object.freeze([...DEFAULT_FILL_GRADIENT.colors]),
+      }),
+    }),
     blend: DEFAULT_STYLE.blend,
   }),
 });
@@ -174,6 +184,7 @@ function sanitizeStyle(raw, fallbackWidth = 2) {
       enabled: Boolean(fill.enabled),
       color: color(fill.color, DEFAULT_STYLE.fill.color),
       opacity: clamp(Number(fill.opacity), 0, 1, DEFAULT_STYLE.fill.opacity),
+      gradient: sanitizeFillGradient(fill.gradient),
     },
     blend: blends.includes(source.blend) ? source.blend : DEFAULT_STYLE.blend,
   };

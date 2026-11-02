@@ -139,3 +139,45 @@ test('SVG export visually matches the artboard for vector strokes', async ({ pag
   expect(counts.svg).toBeGreaterThan(1000);
   expect(Math.abs(counts.svg - counts.png) / counts.png).toBeLessThan(0.3);
 });
+
+
+test('fill gradients update the document, canvas and SVG', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Golden Rose'));
+  await page.waitForTimeout(300);
+  const style = await openSection(page, 'Style');
+  const canvas = page.locator('#canvas-container canvas');
+  const before = await canvas.screenshot();
+
+  const fillType = style.locator('.artboard-row', { hasText: 'Fill type' }).locator('select');
+  await fillType.selectOption('linear');
+  await page.waitForTimeout(350);
+  const after = await canvas.screenshot();
+  expect(Buffer.compare(before, after)).not.toBe(0);
+  let fill = await page.evaluate(() => window.__parametrica.document.view.style.fill);
+  expect(fill.enabled).toBe(true);
+  expect(fill.gradient.enabled).toBe(true);
+  expect(fill.gradient.type).toBe('linear');
+
+  const angle = style.locator('.artboard-row', { hasText: 'Gradient angle' }).locator('input');
+  await angle.fill('90');
+  await angle.press('Enter');
+  await page.waitForTimeout(300);
+  fill = await page.evaluate(() => window.__parametrica.document.view.style.fill);
+  expect(fill.gradient.angle).toBe(90);
+
+  await fillType.selectOption('radial');
+  await page.waitForTimeout(300);
+  fill = await page.evaluate(() => window.__parametrica.document.view.style.fill);
+  expect(fill.gradient.type).toBe('radial');
+  await style.locator('.fill-gradient-add').click();
+  await page.waitForTimeout(200);
+  expect(await style.locator('.fill-gradient-color').count()).toBe(3);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.evaluate(() => window.__parametrica.exporter.exportSVG());
+  const download = await downloadPromise;
+  const svg = readFileSync(await download.path(), 'utf8');
+  expect(svg).toContain('<radialGradient');
+  expect(svg).toContain('fill="url(#');
+});

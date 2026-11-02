@@ -28,6 +28,7 @@ import { ExplorePanel } from './widgets/ExplorePanel.js';
 import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PALETTES, paletteById } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
+import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
 const DEFAULT_OPEN = new Set(['generator', 'parameters']);
@@ -782,9 +783,36 @@ export class Controls {
     fillToggle.type = 'checkbox';
     fillToggle.checked = Boolean(st.fill.enabled);
     fillToggle.disabled = locked;
-    fillToggle.addEventListener('change', () => { st.fill.enabled = fillToggle.checked; rebuild(); });
+    fillToggle.addEventListener('change', () => {
+      st.fill.enabled = fillToggle.checked;
+      syncGradientRows();
+      rebuild();
+    });
     row('Fill', fillToggle);
-    row('Fill color', lockable(color(st.fill.color, (v) => { st.fill.color = v; })));
+
+    const gradient = st.fill.gradient ?? (st.fill.gradient = createDefaultFillGradient());
+    const fillType = select(
+      [
+        { value: 'solid', label: 'Solid' },
+        { value: 'linear', label: 'Linear' },
+        { value: 'radial', label: 'Radial' },
+      ],
+      gradient.enabled ? gradient.type : 'solid',
+      (value) => {
+        if (value === 'solid') {
+          gradient.enabled = false;
+        } else {
+          gradient.enabled = true;
+          gradient.type = value;
+          st.fill.enabled = true;
+          fillToggle.checked = true;
+        }
+        syncGradientRows();
+      },
+    );
+    row('Fill type', lockable(fillType));
+
+    const fillColorRow = row('Fill color', lockable(color(st.fill.color, (v) => { st.fill.color = v; })));
     const fillOpacity = document.createElement('input');
     fillOpacity.className = 'artboard-range';
     fillOpacity.type = 'range';
@@ -794,7 +822,88 @@ export class Controls {
     fillOpacity.value = String(st.fill.opacity);
     if (locked) fillOpacity.disabled = true;
     fillOpacity.addEventListener('input', () => { st.fill.opacity = Number(fillOpacity.value); rebuild(); });
-    row('Fill opacity', fillOpacity);
+    const fillOpacityRow = row('Fill opacity', fillOpacity);
+
+    const angleRow = row('Gradient angle', lockable(number(gradient.angle, 0, 360, 1, (v) => {
+      gradient.angle = v;
+    })));
+    const centerXRow = row('Center X', lockable(number(gradient.centerX, 0, 1, 0.01, (v) => {
+      gradient.centerX = v;
+    })));
+    const centerYRow = row('Center Y', lockable(number(gradient.centerY, 0, 1, 0.01, (v) => {
+      gradient.centerY = v;
+    })));
+    const radiusRow = row('Radius', lockable(number(gradient.radius, 0.05, 3, 0.05, (v) => {
+      gradient.radius = v;
+    })));
+
+    const stopList = document.createElement('div');
+    stopList.className = 'ramp-stops fill-gradient-stops';
+    const addStop = document.createElement('button');
+    addStop.className = 'lab-button ramp-add fill-gradient-add';
+    addStop.textContent = '+ Color';
+    addStop.disabled = locked;
+    addStop.addEventListener('click', () => {
+      if (gradient.colors.length >= FILL_GRADIENT_COLORS) return;
+      gradient.colors.push(gradient.colors[gradient.colors.length - 1] ?? '#ffffff');
+      gradient.enabled = true;
+      renderStops();
+      rebuild();
+    });
+    const stopBox = document.createElement('div');
+    stopBox.className = 'fill-gradient-stops-box';
+    stopBox.append(stopList, addStop);
+    const colorsRow = row('Gradient colors', stopBox);
+
+    const renderStops = () => {
+      stopList.replaceChildren();
+      gradient.colors.forEach((stopColor, index) => {
+        const item = document.createElement('span');
+        item.className = 'ramp-stop';
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.className = 'ramp-color fill-gradient-color';
+        input.value = stopColor;
+        input.disabled = locked;
+        input.setAttribute('aria-label', `Fill gradient color ${index + 1}`);
+        input.addEventListener('input', () => {
+          gradient.colors[index] = input.value;
+          rebuild();
+        });
+        item.appendChild(input);
+        if (gradient.colors.length > 2 && !locked) {
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'ramp-remove';
+          remove.textContent = '×';
+          remove.title = 'Remove gradient color';
+          remove.addEventListener('click', () => {
+            gradient.colors.splice(index, 1);
+            renderStops();
+            rebuild();
+          });
+          item.appendChild(remove);
+        }
+        stopList.appendChild(item);
+      });
+      addStop.disabled = locked || gradient.colors.length >= FILL_GRADIENT_COLORS;
+    };
+
+    function syncGradientRows() {
+      const showGradient = Boolean(st.fill.enabled && gradient.enabled);
+      const radial = gradient.type === 'radial';
+      angleRow.hidden = !showGradient || radial;
+      centerXRow.hidden = !showGradient || !radial;
+      centerYRow.hidden = !showGradient || !radial;
+      radiusRow.hidden = !showGradient || !radial;
+      colorsRow.hidden = !showGradient;
+      fillColorRow.hidden = showGradient;
+      fillOpacityRow.hidden = false;
+      fillType.value = gradient.enabled ? gradient.type : 'solid';
+    }
+
+    renderStops();
+    syncGradientRows();
 
     row('Blend', lockable(select(
       [{ value: 'normal', label: 'Normal' }, { value: 'multiply', label: 'Multiply' }, { value: 'screen', label: 'Screen' }, { value: 'difference', label: 'Difference' }],
