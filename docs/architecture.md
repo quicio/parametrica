@@ -484,7 +484,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1549 checks total.
+1556 checks total.
 
 ### Panel behavior
 

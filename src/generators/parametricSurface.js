@@ -61,8 +61,10 @@ Generators.register({
     const scope = makeScope(ctx);
     const uCells = Math.max(2, Math.floor(params.samplesU));
     const vCells = Math.max(2, Math.floor(params.samplesV));
-    const uSamples = params.closedU ? uCells + 1 : uCells;
-    const vSamples = params.closedV ? vCells + 1 : vCells;
+    // A cell interval needs both endpoints. Closed axes repeat the first
+    // sample at the seam; open axes keep the final endpoint as a distinct row.
+    const uSamples = uCells + 1;
+    const vSamples = vCells + 1;
     const points = [];
 
     for (let uIndex = 0; uIndex < uSamples; uIndex++) {

@@ -2277,10 +2277,44 @@ console.log('30. parametric surfaces');
   });
   const open = evaluateDocument(openDoc, { time: 0 });
   assert(open.geometry[0].domain.closedU === false, 'open surface preserves closure flags');
-  assert(open.meshes[0].vertices.length === 8 * 10, 'open surface mesh keeps all samples');
+  assert(open.geometry[0].grid.rows === 9 && open.geometry[0].grid.cols === 11, 'open surface samples both cell endpoints');
+  assert(open.meshes[0].vertices.length === 9 * 11, 'open surface mesh keeps all samples');
+  assert(open.meshes[0].faces.length === 8 * 10 * 2, 'open surface tessellates every cell');
 
   const direct = tessellateSurface(open.geometry[0]);
-  assert(direct.faces.length === 7 * 9 * 2, 'open surface tessellation excludes no cell');
+  assert(direct.faces.length === 8 * 10 * 2, 'open surface tessellation excludes no cell');
+
+  const domainDoc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        exprX: 'u', exprY: 'v', exprZ: '0',
+        u0: -1, u1: 1, v0: -2, v1: 2,
+        samplesU: 8, samplesV: 10,
+        closedU: false, closedV: false,
+      },
+    },
+  });
+  const domainGrid = evaluateDocument(domainDoc, { time: 0 }).geometry[0].grid.points;
+  const start = domainGrid[0][0];
+  const lastU = domainGrid[domainGrid.length - 1][0];
+  const lastV = domainGrid[0][domainGrid[0].length - 1];
+  assert(Math.abs(start.x + 1) < 1e-9 && Math.abs(start.y + 2) < 1e-9, 'open surface samples the first endpoint');
+  assert(Math.abs(lastU.x - 1) < 1e-9, 'open surface samples the U endpoint');
+  assert(Math.abs(lastV.y - 2) < 1e-9, 'open surface samples the V endpoint');
+
+  const mobiusDoc = BUILT_IN_PRESETS['Möbius Band']();
+  const mobiusGrid = evaluateDocument(mobiusDoc, { time: 0 }).geometry[0].grid.points;
+  const firstRow = mobiusGrid[0];
+  const lastRow = mobiusGrid[mobiusGrid.length - 1];
+  assert(mobiusGrid.length === 65, 'Möbius band samples the closing U endpoint');
+  let seamClosed = true;
+  for (let v = 0; v < firstRow.length; v++) {
+    const a = firstRow[v];
+    const b = lastRow[lastRow.length - 1 - v];
+    if (Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 1e-4) seamClosed = false;
+  }
+  assert(seamClosed, 'Möbius start and end rows meet across the half twist');
+
   assert(RenderPasses.has('surface-fill') && RenderPasses.has('surface-wireframe'), 'surface render passes are registered');
   assert(first.curves.length > 0, 'surface emits wireframe curves for stroke compatibility');
 }

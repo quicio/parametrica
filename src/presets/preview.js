@@ -10,7 +10,7 @@ import { evaluateDocument } from '../core/engine.js';
 import { curvesDataURL } from '../render/thumbnail.js';
 import { canonicalStringify, sha256Hex } from '../lab/hash.js';
 
-export const PREVIEW_VERSION = 1;
+export const PREVIEW_VERSION = 2;
 export const PREVIEW_SIZE = 96;
 export const PREVIEW_MAX_CHARS = 24_000;
 
