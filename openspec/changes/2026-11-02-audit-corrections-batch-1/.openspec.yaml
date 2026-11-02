@@ -1,0 +1,11 @@
+name: audit-corrections-batch-1
+description: >
+  First implementation-ready batch of non-LOOK audit corrections: authoritative
+  stroke width, layer rename, Notebook notes/tags, reproducible Explore seed and
+  distinct status/telemetry. LOOK work is deferred.
+status: proposed
+created: 2026-11-02
+capabilities:
+  - product-corrections
+skip_specs: false
+schema: spec-driven
