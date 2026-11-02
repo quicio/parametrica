@@ -1559,12 +1559,14 @@ console.log('19. composition layers');
   assert(Math.abs(layerAnalysis.perCurve[0].arcLength - expectedLayer.arcLength) < 1e-9, 'layer analysis matches its own curves');
   assert(layerAnalysis !== ev.analysis, 'layer analysis is distinct from combined analysis');
   const modesDoc = createDocument('parametric');
-  modesDoc.layers.push(createLayer('rose', { name: 'Points layer', modes: ['stroke', 'points'] }));
+  modesDoc.layers.push(createLayer('rose', { name: 'Points layer', modes: ['stroke', 'points'], colorMetric: 'curvature' }));
   attachLayerAliases(modesDoc);
   const modesEval = evaluateDocument(modesDoc, { time: 0 });
   assert(modesEval.layers[1].modes.join(',') === 'stroke,points', 'layer render-mode override survives evaluation');
+  assert(modesEval.layers[1].colorMetric === 'curvature', 'layer color metric survives evaluation');
   const modesRoundTrip = sanitizeDocument(JSON.parse(JSON.stringify(modesDoc)));
   assert(modesRoundTrip.layers[1].modes.join(',') === 'stroke,points', 'layer render-mode override survives round-trip');
+  assert(modesRoundTrip.layers[1].colorMetric === 'curvature', 'layer color metric survives round-trip');
   assert(ev.curves.every((c) => c.meta.layerId), 'curves carry layer ids');
   assert(ev.stats.curveCount === ev.curves.length, 'aggregate curve count');
 

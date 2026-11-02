@@ -996,6 +996,23 @@ export class Controls {
 
       row('Render passes', modeWrap);
       renderModes();
+
+      const colorMetric = select(
+        [
+          { value: 'global', label: 'Global' },
+          { value: 'auto', label: 'Auto' },
+          { value: 'height', label: 'Height' },
+          { value: 'radius', label: 'Radius' },
+          { value: 'curvature', label: 'Curvature' },
+          { value: 'arc', label: 'Arc length' },
+        ],
+        layer.colorMetric ?? 'global',
+        (value) => {
+          layer.colorMetric = value === 'global' ? null : value;
+        },
+      );
+      colorMetric.disabled = locked;
+      row('Color metric', colorMetric);
     }
 
     if (locked) {

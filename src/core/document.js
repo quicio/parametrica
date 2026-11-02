@@ -232,6 +232,7 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
     modes: Array.isArray(overrides.modes) && overrides.modes.length
       ? [...new Set(overrides.modes.filter((mode) => typeof mode === 'string'))]
       : null,
+    colorMetric: COLOR_METRICS.includes(overrides.colorMetric) ? overrides.colorMetric : null,
     generator: {
       id: generatorId,
       params: { ...sanitizeParams(generator.params, overrides.generator?.params) },
@@ -297,6 +298,7 @@ function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
     modes: Array.isArray(source.modes) && source.modes.length
       ? [...new Set(source.modes.filter((mode) => typeof mode === 'string'))]
       : null,
+    colorMetric: COLOR_METRICS.includes(source.colorMetric) ? source.colorMetric : null,
     generator: {
       id: generatorId,
       params: sanitizeParams(generator.params, source.generator?.params),

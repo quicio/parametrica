@@ -48,6 +48,7 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
       name: group.name,
       style: group.style ?? view?.style,
       modes: group.modes ?? null,
+      colorMetric: group.colorMetric ?? null,
       curves,
       meshes,
       bbox: curves.length ? bboxAll(curves) : (group.bbox ?? evaluation.bbox),

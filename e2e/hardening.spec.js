@@ -235,6 +235,16 @@ test('per-layer render passes override the global modes', async ({ page }) => {
   expect(state.layerModes).toContain('points');
   expect(state.layerModes).not.toContain('stroke');
   expect(state.globalModes).toContain('stroke');
+
+  const colorMetric = style.locator('.artboard-row', { hasText: 'Color metric' }).locator('select');
+  await colorMetric.selectOption('curvature');
+  await page.waitForTimeout(300);
+  const metrics = await page.evaluate(() => ({
+    layer: window.__parametrica.document.layers[0].colorMetric,
+    global: window.__parametrica.document.view.colorMetric,
+  }));
+  expect(metrics.layer).toBe('curvature');
+  expect(metrics.global).toBe('auto');
 });
 
 

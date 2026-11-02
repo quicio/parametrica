@@ -644,6 +644,7 @@ function evaluateLayers(document, options = {}) {
       visible: true,
       locked: Boolean(layer.locked),
       modes: Array.isArray(layer.modes) && layer.modes.length ? layer.modes : null,
+      colorMetric: layer.colorMetric ?? null,
       style: layer.style,
       generator: layer.generator,
       operators: layer.operators,

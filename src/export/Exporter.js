@@ -95,7 +95,7 @@ export class Exporter {
         bbox: layer.bbox ?? bboxAll(layerCurves),
         meshes,
         analysis: analyzeAll(layerCurves),
-        view: { ...view, style },
+        view: { ...view, style, colorMetric: layer.colorMetric ?? view.colorMetric },
         document,
         time,
       };

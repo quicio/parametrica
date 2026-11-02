@@ -25,6 +25,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Helix solo mostraba una proyección a la vez | **Resuelto** | Layout Quad: 3D + XY/XZ/YZ en canvas; SVG/plotter usan la proyección activa y avisan. |
 | Gradient Wireframe no permitía elegir la métrica de color | **Resuelto** | `view.colorMetric`: auto, altura, radio, curvatura o longitud de arco. |
 | Render modes eran globales y los passes no tenían opacidad | **Resuelto con alcance** | `layer.modes` por capa y `view.passOpacity` por pass; color/grosor por pass siguen pendientes. |
+| La métrica de color era solo global | **Resuelto** | `layer.colorMetric` con herencia de `view.colorMetric` y selector en Style. |
 | Los huecos internos se perdían al trazar | **Resuelto con alcance** | Los huecos se trazan como capas Fourier nombradas; el fill even-odd sigue pendiente. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
@@ -51,7 +52,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
-- **Custom palette editor y métricas de color por capa** más allá del ramp global.
+- **Custom palette editor** más allá de los presets actuales.
 - **Even-odd fill de huecos / jerarquía de contornos.**
 - **Color y grosor configurables por pass.**
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
@@ -398,7 +399,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 - **Export:** frame/GIF/SVG-frame export ya pertenece a Perform; los passes
   vectoriales y el SVG de plotter ya están cubiertos.
-- **Color:** editor de paletas personalizado y métricas por capa.
+- **Color:** editor de paletas personalizado.
 - **Image:** even-odd fill de huecos y jerarquía.
 - **Composición:** relación Notebook/Presets y persistencia unificada.
 - **MAKE:** primer vertical slice de fabricación.
@@ -445,7 +446,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1687/1687** checks y build.
+- `npm run check`: lint, **1689/1689** checks y build.
 - `npm run test:e2e`: **105/105** tests.
-- `openspec validate --specs --strict`: **64/64** specs.
+- `openspec validate --specs --strict`: **65/65** specs.
 - No hay cambios OpenSpec activos.

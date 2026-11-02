@@ -369,7 +369,11 @@ export class P5Adapter extends Renderer {
       const layerData = {
         curves: group.curves,
         bbox: group.bbox,
-        view: { ...view, style: group.style ?? view.style },
+        view: {
+          ...view,
+          style: group.style ?? view.style,
+          colorMetric: group.colorMetric ?? view.colorMetric,
+        },
         document: doc,
         time,
         meshes: group.meshes ?? [],
