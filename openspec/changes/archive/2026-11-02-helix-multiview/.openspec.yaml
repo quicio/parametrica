@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Add a quad canvas layout that shows the 3D camera and the three
+  orthographic projections together for spatial documents.
