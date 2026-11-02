@@ -57,7 +57,7 @@ import { MutationEngine } from '../src/mutation/MutationEngine.js';
 import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/PresetManager.js';
 import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
-import { Exporter } from '../src/export/Exporter.js';
+import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
 import { warpExpressions } from '../src/operators/geometry/deform.js';
 import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
@@ -581,6 +581,23 @@ console.log('9. svg export');
   const numbers = svg.match(/-?\d+\.?\d*/g).map(Number);
   assert(numbers.every(Number.isFinite), 'svg numbers finite');
   assert((svg.match(/-->/g) || []).length === 1, 'comment escaped');
+
+  const baseLayers = [{ visible: true, meshes: [], renderMeshes: [], style: { blend: 'normal' } }];
+  const gradientOmitted = unsupportedSvgFeatures(
+    { ...doc.view, modes: ['gradient-wireframe'], overlays: {}, style: { ...doc.view.style, blend: 'normal' } },
+    baseLayers,
+  );
+  assert(gradientOmitted.includes('Gradient Wireframe'), 'SVG omission list includes gradient wireframe');
+  const surfaceOmitted = unsupportedSvgFeatures(
+    { ...doc.view, modes: ['surface-fill'], overlays: {}, style: { ...doc.view.style, blend: 'normal' } },
+    [{ visible: true, meshes: [{}], renderMeshes: [{}], style: { blend: 'normal' } }],
+  );
+  assert(surfaceOmitted.includes('Surface Fill'), 'SVG omission list includes surface fill when meshes exist');
+  const blendOmitted = unsupportedSvgFeatures(
+    { ...doc.view, modes: ['stroke'], overlays: {}, style: { ...doc.view.style, blend: 'multiply' } },
+    null,
+  );
+  assert(blendOmitted.includes('Blend mode'), 'SVG omission list includes blend mode');
 }
 
 /* ——— 10. Animation (time flows into equations) ——— */
@@ -1302,6 +1319,11 @@ console.log('19. composition layers');
   const ev = evaluateDocument(doc, { time: 0 });
   assert(ev.layers.length === 2, 'evaluation returns both layers');
   assert(ev.curves.length === ev.layers[0].curves.length + ev.layers[1].curves.length, 'composition concatenates curves');
+  const layerAnalysis = ev.layers[1].analysis;
+  assert(layerAnalysis.perCurve.length === ev.layers[1].curves.length, 'layer analysis is scoped to its layer');
+  const expectedLayer = analyzeCurve(ev.layers[1].curves[0].points, ev.layers[1].curves[0].closed);
+  assert(Math.abs(layerAnalysis.perCurve[0].arcLength - expectedLayer.arcLength) < 1e-9, 'layer analysis matches its own curves');
+  assert(layerAnalysis !== ev.analysis, 'layer analysis is distinct from combined analysis');
   assert(ev.curves.every((c) => c.meta.layerId), 'curves carry layer ids');
   assert(ev.stats.curveCount === ev.curves.length, 'aggregate curve count');
 
@@ -2080,7 +2102,14 @@ console.log('27. registry contracts');
   }
   for (const def of RenderPasses.list()) {
     assert(typeof def.draw === 'function', `render pass ${def.id} has draw`);
+    if (def.appliesTo !== undefined) assert(typeof def.appliesTo === 'function', `render pass ${def.id} appliesTo is a function`);
   }
+  const surfaceFillPass = RenderPasses.get('surface-fill');
+  assert(surfaceFillPass.appliesTo({ meshes: [] }) === false, 'surface fill is inapplicable without meshes');
+  assert(surfaceFillPass.appliesTo({ meshes: [{}] }) === true, 'surface fill applies with meshes');
+  const epicyclesPass = RenderPasses.get('epicycles');
+  assert(epicyclesPass.appliesTo({ document: createDocument('fourier') }) === true, 'epicycles applies to Fourier documents');
+  assert(epicyclesPass.appliesTo({ document: createDocument('parametric') }) === false, 'epicycles does not apply to parametric documents');
 }
 
 /* ——— 28. extensibility boundaries ——— */

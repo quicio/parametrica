@@ -7,7 +7,40 @@
  */
 
 import { APP_ID } from '../core/document.js';
+import { RenderPasses } from '../core/registry.js';
 import { projectCurves, projectionFor } from '../render/projection.js';
+
+/**
+ * Active features the SVG builder does not represent. Used to warn instead of
+ * silently implying full render fidelity.
+ * @param {object} view
+ * @param {Array|null} layers evaluated layers (optional)
+ * @returns {string[]}
+ */
+export function unsupportedSvgFeatures(view = {}, layers = null) {
+  const modes = Array.isArray(view?.modes) ? view.modes : ['stroke'];
+  const features = [];
+  const hasMeshes = Array.isArray(layers)
+    ? layers.some((layer) => layer.visible !== false && (
+      (layer.renderMeshes?.length ?? 0) > 0 || (layer.meshes?.length ?? 0) > 0
+    ))
+    : false;
+  if (modes.includes('gradient-wireframe')) features.push('Gradient Wireframe');
+  if (modes.includes('surface-fill') && hasMeshes) features.push('Surface Fill');
+  for (const id of modes) {
+    if (id === 'stroke' || id === 'gradient-wireframe' || id === 'surface-fill') continue;
+    if (!RenderPasses.has(id)) continue;
+    features.push(RenderPasses.get(id).name);
+  }
+  if (view?.overlays && Object.values(view.overlays).some(Boolean)) features.push('Overlays');
+  const hasBlend = Array.isArray(layers)
+    ? layers.some((layer) => layer.style?.blend && layer.style.blend !== 'normal')
+    : false;
+  if (hasBlend || (view?.style?.blend && view.style.blend !== 'normal')) {
+    features.push('Blend mode');
+  }
+  return [...new Set(features)];
+}
 
 export class Exporter {
   constructor(app) {
@@ -94,6 +127,19 @@ export class Exporter {
       : projectCurves(evaluation.curves, projection, {
         fit: Number(doc.generator?.params?.fit) || 0,
       });
+    const exportLayers = evaluation.layers ?? [{
+      visible: true,
+      meshes: evaluation.meshes ?? [],
+      renderMeshes: evaluation.renderMeshes ?? [],
+      style: doc.view.style,
+    }];
+    const omitted = unsupportedSvgFeatures(doc.view, exportLayers);
+    if (omitted.length) {
+      this.app.notify?.(
+        `SVG omits: ${omitted.join(', ')}. Use PNG for full fidelity.`,
+        'info',
+      );
+    }
     const svg = Exporter.buildSVG(curves, doc.view, { w, h }, doc, layers);
     downloadFile(`parametrica-${timestamp()}.svg`, svg, 'image/svg+xml');
   }

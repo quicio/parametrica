@@ -12,6 +12,12 @@ import { bboxAll } from '../../sampling/sampling.js';
 RenderPasses.register({
   id: 'epicycles',
   name: 'Epicycles (Fourier)',
+  appliesTo({ document: doc }) {
+    if (doc?.generator?.id !== 'fourier') return false;
+    const hx = doc.generator.params?.harmonicsX ?? [];
+    const hy = doc.generator.params?.harmonicsY ?? [];
+    return hx.length + hy.length > 0;
+  },
   draw(p, { document: doc, time }) {
     if (doc.generator.id !== 'fourier') return;
     const hx = doc.generator.params.harmonicsX ?? [];

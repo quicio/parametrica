@@ -100,6 +100,9 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'control-polygon',
   name: 'Control Polygon',
+  appliesTo({ curves = [] }) {
+    return curves.some((curve) => curve.meta?.controlPoints?.length);
+  },
   draw(p, { curves }) {
     for (const c of curves) {
       const cps = c.meta?.controlPoints;

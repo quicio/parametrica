@@ -89,6 +89,9 @@ function validateDefinition(kind, definition) {
   if (kind === 'render-pass' && typeof definition.draw !== 'function') {
     throw new Error(`${label}: missing draw(p, data)`);
   }
+  if (kind === 'render-pass' && definition.appliesTo !== undefined && typeof definition.appliesTo !== 'function') {
+    throw new Error(`${label}: appliesTo must be a function`);
+  }
 }
 
 function validateId(kind, value) {

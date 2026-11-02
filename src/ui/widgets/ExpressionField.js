@@ -170,6 +170,15 @@ export class ExpressionField {
     else this.view.contentDOM.removeAttribute('aria-invalid');
   }
 
+  setDisabled(disabled) {
+    const next = Boolean(disabled);
+    this.el.classList.toggle('disabled', next);
+    this.view.contentDOM.contentEditable = next ? 'false' : 'true';
+    this.view.contentDOM.tabIndex = next ? -1 : 0;
+    if (next) this.view.contentDOM.setAttribute('aria-disabled', 'true');
+    else this.view.contentDOM.removeAttribute('aria-disabled');
+  }
+
   destroy() {
     clearTimeout(this.debounceTimer);
     this.view.destroy();

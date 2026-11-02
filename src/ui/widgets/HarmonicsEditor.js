@@ -31,6 +31,13 @@ export class HarmonicsEditor {
     this.render();
   }
 
+  setDisabled(disabled) {
+    this.el.classList.toggle('disabled', Boolean(disabled));
+    for (const control of this.el.querySelectorAll('input, button')) {
+      control.disabled = Boolean(disabled);
+    }
+  }
+
   render() {
     this.el.innerHTML = '';
     for (const axis of ['harmonicsX', 'harmonicsY']) {

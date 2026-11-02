@@ -632,7 +632,7 @@ function evaluateLayers(document, options = {}) {
       meta: { ...curve.meta, layerId: layer.id, layerName: layer.name },
     }));
     combined.push(...curves);
-    layerResults.push({
+    const layerResult = {
       id: layer.id,
       name: layer.name,
       visible: true,
@@ -650,7 +650,17 @@ function evaluateLayers(document, options = {}) {
       stats: evaluation.stats,
       bbox: evaluation.bbox,
       errors: layerErrors,
+    };
+    let layerAnalysis = null;
+    Object.defineProperty(layerResult, 'analysis', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        if (!layerAnalysis) layerAnalysis = analyzeAll(layerResult.curves);
+        return layerAnalysis;
+      },
     });
+    layerResults.push(layerResult);
     peakPoints += evaluation.stats.peakPoints ?? evaluation.stats.pointCount;
     arcLength += evaluation.stats.arcLength;
     curveCount += evaluation.stats.curveCount;

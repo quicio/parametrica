@@ -94,6 +94,10 @@ export class App {
     return this.document.layers?.[this.document.activeLayer] ?? null;
   }
 
+  get activeLayerLocked() {
+    return Boolean(this.activeLayer?.locked);
+  }
+
   syncActiveStyle() {
     const layer = this.activeLayer;
     if (!layer) return;
@@ -112,6 +116,7 @@ export class App {
 
   evaluate() {
     this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
+    this.controls?.refreshRenderModes?.();
     this.controls?.showErrors(this._evaluation.errors);
     this.updateTelemetry();
     this.controls?.labPanel?.scheduleAuto();
@@ -448,6 +453,10 @@ export class App {
   /* ———————— generator ———————— */
 
   setGenerator(id) {
+    if (this.activeLayerLocked) {
+      this.notify('Layer content is locked');
+      return;
+    }
     if (!Generators.has(id)) return;
     if (!supportsSpatial(Generators.get(id)) && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
@@ -466,6 +475,10 @@ export class App {
   /* ———————— operators ———————— */
 
   addOperator(id) {
+    if (this.activeLayerLocked) {
+      this.notify('Layer content is locked');
+      return;
+    }
     if (!Operators.has(id)) return;
     this.document.operators.push({
       id,
@@ -478,12 +491,20 @@ export class App {
   }
 
   removeOperator(index) {
+    if (this.activeLayerLocked) {
+      this.notify('Layer content is locked');
+      return;
+    }
     this.document.operators.splice(index, 1);
     this.controls.rebuildAll();
     this.rebuild();
   }
 
   moveOperator(index, dir) {
+    if (this.activeLayerLocked) {
+      this.notify('Layer content is locked');
+      return;
+    }
     const j = index + dir;
     if (j < 0 || j >= this.document.operators.length) return;
     const ops = this.document.operators;
@@ -493,6 +514,10 @@ export class App {
   }
 
   setOperatorEnabled(index, enabled) {
+    if (this.activeLayerLocked) {
+      this.notify('Layer content is locked');
+      return;
+    }
     this.document.operators[index].enabled = enabled;
     this.rebuild();
   }

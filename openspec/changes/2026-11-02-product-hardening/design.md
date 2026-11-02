@@ -35,9 +35,9 @@ declared scope.
 
 ### D2: Layer lock scope
 
-The audit confirms `layer.locked` has no effect. It does not establish that
-lock should cover rename, reorder or delete, so the minimum contract proposed
-for review is a **content lock**:
+The audit confirms `layer.locked` has no effect and does not establish that
+lock should cover rename, reorder or delete. This slice implements the minimum
+defensible **content lock**:
 
 | Action | Under content lock | Rationale |
 |---|---|---|
@@ -69,10 +69,11 @@ Decision criteria:
 4. The cost is acceptable for the current point/mesh budgets.
 5. Export behavior is explicit (PNG reflects it; SVG warns).
 
-If any criterion cannot be met, remove or disable the control instead of
-shipping a partial, unlabelled implementation. This design does not choose
-between implementing and removing; that decision requires validation against
-the criteria.
+This slice resolves the decision as **implemented**: p5 supports the four
+modes, the layer loop sets and resets the mode, the effect is visible in the
+canvas and PNG, and SVG export now reports blend as omitted. If a future backend
+cannot meet these criteria, remove or disable the control instead of shipping a
+partial, unlabelled implementation.
 
 ### D4: Layer-scoped diagnostic analysis
 

@@ -16,11 +16,23 @@ import { AnimationController } from '../../application/animationController.js';
 
 const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);
 
-/** Does the current view read differential geometry? */
-function needsAnalysis(view) {
-  if (view?.overlays?.inflections) return true;
+/** Does any active layer pass need differential geometry? */
+function needsLayerAnalysis(view) {
   const modes = Array.isArray(view?.modes) ? view.modes : [];
   return modes.some((m) => ANALYSIS_MODES.has(m));
+}
+
+/** Does the current view read differential geometry at all? */
+function needsAnalysis(view) {
+  if (view?.overlays?.inflections) return true;
+  return needsLayerAnalysis(view);
+}
+
+function blendModeConstant(p, value) {
+  if (value === 'multiply') return p.MULTIPLY;
+  if (value === 'screen') return p.SCREEN;
+  if (value === 'difference') return p.DIFFERENCE;
+  return p.BLEND;
 }
 
 import { Renderer } from '../Renderer.js';
@@ -284,7 +296,11 @@ export class P5Adapter extends Renderer {
       };
       // Differential geometry is lazy: only read it when an active pass
       // or overlay actually uses tangents/normals/curvature/inflections.
-      const analysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
+      const layerAnalysisNeeded = needsLayerAnalysis(doc.view);
+      const combinedAnalysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
+      const analysisByLayer = new Map(
+        (evaluation.layers ?? []).map((layer) => [layer.id, layer]),
+      );
       const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
       const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
 
@@ -296,16 +312,28 @@ export class P5Adapter extends Renderer {
           bbox: group.bbox,
           view: { ...doc.view, style: group.style ?? doc.view.style },
         };
-        if (analysis) layerData.analysis = analysis;
-        for (const modeId of modes) {
-          if (!RenderPasses.has(modeId)) continue;
-          p.push();
-          try {
-            RenderPasses.get(modeId).draw(p, layerData);
-          } catch (e) {
-            console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+        if (layerAnalysisNeeded) {
+          const sourceLayer = analysisByLayer.get(group.id);
+          // Single-generator evaluations have no layer list; their combined
+          // analysis is already layer-scoped.
+          layerData.analysis = sourceLayer?.analysis ?? combinedAnalysis;
+        }
+        p.push();
+        p.blendMode(blendModeConstant(p, group.style?.blend ?? doc.view.style?.blend));
+        try {
+          for (const modeId of modes) {
+            if (!RenderPasses.has(modeId)) continue;
+            p.push();
+            try {
+              RenderPasses.get(modeId).draw(p, layerData);
+            } catch (e) {
+              console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+            }
+            p.pop();
           }
+        } finally {
           p.pop();
+          p.blendMode(p.BLEND);
         }
       }
       p.push();
@@ -313,7 +341,7 @@ export class P5Adapter extends Renderer {
         ...data,
         curves: scene.layers.flatMap((layer) => layer.curves),
         bbox: scene.meta.bbox,
-        analysis,
+        analysis: combinedAnalysis,
       });
       p.pop();
     }

@@ -11,14 +11,15 @@
 import { ExpressionField } from '../widgets/ExpressionField.js';
 import { bindParamType, isBindable, isExpression, isModulatable } from './ParamRegistry.js';
 
-export function bindStageParams(gui, schema, stage, rebuild) {
+export function bindStageParams(gui, schema, stage, rebuild, { disabled = false } = {}) {
   for (const [key, entry] of Object.entries(schema)) {
     if (!isBindable(entry)) continue;
-    bindParamType({ gui, key, schema: entry, stage, rebuild });
+    const controller = bindParamType({ gui, key, schema: entry, stage, rebuild });
+    if (disabled) controller?.disable?.();
   }
 }
 
-export function bindStageMods(gui, schema, stage, rebuild) {
+export function bindStageMods(gui, schema, stage, rebuild, { disabled = false } = {}) {
   const numeric = Object.entries(schema).filter(([, entry]) => isModulatable(entry));
   if (!numeric.length) return;
   const modsFolder = gui.addFolder('Modulate (time)');
@@ -30,6 +31,7 @@ export function bindStageMods(gui, schema, stage, rebuild) {
     const doc = entry.doc ?? `Time expression for ${entry.label ?? key}.`;
     ctrl.domElement.title = doc;
     ctrl.domElement.setAttribute('aria-description', doc);
+    if (disabled) ctrl.disable();
   }
   modsFolder.close();
 }

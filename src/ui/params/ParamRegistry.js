@@ -39,6 +39,7 @@ ParamTypes.register({
       .onChange(() => rebuild(key));
     attachDoc(ctrl, schema);
     applyHardBounds(ctrl, schema);
+    return ctrl;
   },
 });
 
@@ -51,6 +52,7 @@ ParamTypes.register({
       .name(schema.label ?? key)
       .onChange(() => rebuild(key));
     attachDoc(ctrl, schema);
+    return ctrl;
   },
 });
 
@@ -63,6 +65,7 @@ ParamTypes.register({
       .name(schema.label ?? key)
       .onChange(() => rebuild(key));
     attachDoc(ctrl, schema);
+    return ctrl;
   },
 });
 
@@ -72,9 +75,8 @@ for (const id of [TYPE.EXPRESSION, TYPE.SOURCE, TYPE.HARMONICS]) {
 
 export function bindParamType(context) {
   const type = ParamTypes.get(context.schema?.type);
-  if (!type?.bind) return false;
-  type.bind(context);
-  return true;
+  if (!type?.bind) return null;
+  return type.bind(context);
 }
 
 export function isBindable(schema) {

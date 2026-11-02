@@ -7,6 +7,9 @@ import { RenderPasses } from '../../core/registry.js';
 RenderPasses.register({
   id: 'surface-wireframe',
   name: 'Surface Wireframe',
+  appliesTo({ meshes = [] }) {
+    return Array.isArray(meshes) && meshes.length > 0;
+  },
   draw(p, { meshes = [], view }) {
     if (!meshes.length) return;
     const style = view.style ?? {};
@@ -38,6 +41,9 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'surface-fill',
   name: 'Surface Fill',
+  appliesTo({ meshes = [] }) {
+    return Array.isArray(meshes) && meshes.length > 0;
+  },
   draw(p, { meshes = [], view }) {
     if (!meshes.length) return;
     const style = view.style ?? {};

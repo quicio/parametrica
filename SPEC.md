@@ -405,6 +405,9 @@ evolution with numeric crossover, structural mutation and generation lineage.
 SVG (one `<path>` per curve, clean coordinates, Parametrica document
 embedded as XML comment under `<!-- parametrica document: … -->`) ·
 PNG (HiDPI canvas) · JSON (ParametricaDocument) · clipboard JSON.
+SVG is a stroke/solid-fill subset: the exporter warns when active features
+such as gradient wireframe, surface fill, overlays, diagnostic passes or blend
+mode are omitted. PNG is the faithful raster export.
 Tier 2: animation frame sequences.
 
 ---

@@ -460,7 +460,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
 | 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
-| 9 | SVG export | output is well-formed, document is embedded |
+| 9 | SVG export | output is well-formed, document is embedded, omitted active features are reported |
 | 10 | animation | time-driven resolution, deterministic across time |
 | 11 | sampling | uniform/adaptive caps, endpoint completeness, inverted domains |
 | 12 | performance | reference document budget |
@@ -470,7 +470,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 16 | lab exploration | 1D sweep endpoints and determinism, Solo/Lock, seeded randomize, candidate isolation |
 | 17 | artboard/style | defaults, legacy stroke migration, clamping, style/artboard round-trip, styled SVG |
 | 18 | grid/morph | row-major grid order/budget, deterministic grid, morph endpoints/interpolation, incompatible structures |
-| 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, aggregate descriptor, layered SVG |
+| 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, layer-scoped analysis, aggregate descriptor, layered SVG |
 | 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation |
 | 21 | offline advisor | narration/diff, grounded suggestions, validation, clamping, candidate isolation |
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
@@ -478,13 +478,13 @@ for `renderer.readyPromise` before touching the canvas.
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
-| 27 | registry contracts | every registry exposes the expected contract and metadata |
+| 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose truthful applicability |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
 | 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions and analysis |
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1565 checks total.
+1580 checks total.
 
 ### Panel behavior
 

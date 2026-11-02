@@ -205,6 +205,7 @@ export class Controls {
       `${operators.length} op${operators.length === 1 ? '' : 's'}${disabled ? ` · ${disabled} off` : ''}`,
     ];
     if (mods) parts.push(`${mods} mod${mods === 1 ? '' : 's'}`);
+    if (layer.locked) parts.push('content locked');
     if (tracks) parts.push(`${tracks} track${tracks === 1 ? '' : 's'}`);
     if (projection !== '3d') parts.push(`view ${projection.toUpperCase()}`);
     this.statusText.textContent = parts.join(' · ');
@@ -247,6 +248,7 @@ export class Controls {
     this.presetPanel?.destroy?.();
     this.presetPanel = null;
     this.presetSectionBody = null;
+    this.modeToggles = [];
     for (const field of this.expressionFields.values()) field.destroy?.();
     this.expressionFields = new Map();
     this.harmonicsEditor = null;
@@ -352,7 +354,8 @@ export class Controls {
       const lock = document.createElement('button');
       lock.className = 'layer-icon';
       lock.textContent = layer.locked ? 'L' : '·';
-      lock.title = layer.locked ? 'Unlock layer' : 'Lock layer';
+      lock.title = layer.locked ? 'Unlock layer content' : 'Lock layer content';
+      lock.setAttribute('aria-label', lock.title);
       lock.addEventListener('click', (event) => {
         event.stopPropagation();
         const next = !layer.locked;
@@ -383,9 +386,10 @@ export class Controls {
     const options = {};
     for (const def of Generators.list()) options[def.name] = def.id;
     const proxy = { id: this.app.document.generator.id };
-    gui.add(proxy, 'id', options)
+    const control = gui.add(proxy, 'id', options)
       .name('Mathematical Model')
       .onChange((id) => this.app.setGenerator(id));
+    if (this.app.activeLayerLocked) control.disable();
   }
 
   buildParamsSection() {
@@ -408,7 +412,7 @@ export class Controls {
 
     if (essential.length) {
       const essentialGui = this.makeGui(body);
-      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => this.app.rebuild(), { mods: false });
+      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
     }
 
     if (advanced.length) {
@@ -418,7 +422,7 @@ export class Controls {
       const wrap = document.createElement('div');
       wrap.className = 'advanced-params';
       const advancedGui = this.makeGui(wrap);
-      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => this.app.rebuild(), { mods: false });
+      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
       body.append(toggle, wrap);
       this.advancedToggle = toggle;
 
@@ -441,7 +445,7 @@ export class Controls {
     }
 
     const modsGui = this.makeGui(body);
-    bindStageMods(modsGui, numericSchema, stage, () => this.app.rebuild());
+    bindStageMods(modsGui, numericSchema, stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
   }
 
   buildEquationsSection() {
@@ -464,6 +468,7 @@ export class Controls {
         },
       });
       body.appendChild(field.el);
+      if (this.app.activeLayerLocked) field.setDisabled(true);
       this.expressionFields.set(key, field);
     }
   }
@@ -481,6 +486,7 @@ export class Controls {
       },
     });
     body.appendChild(this.harmonicsEditor.el);
+    if (this.app.activeLayerLocked) this.harmonicsEditor.setDisabled(true);
   }
 
   buildOperatorsSection() {
@@ -523,16 +529,25 @@ export class Controls {
     // writes a scalar. Use one checkbox per registered pass and keep
     // view.modes an array (see modeToggles.js).
     const order = RenderPasses.ids();
-    view.modes = normalizeModes(view.modes, order);
+    const passApplies = new Map(RenderPasses.list().map((def) => [def.id, this.renderPassApplies(def)]));
+    const applicableModes = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
+    view.modes = applicableModes.length ? applicableModes : ['stroke'];
     const modesBody = document.createElement('div');
     modesBody.className = 'mode-toggles';
     const modeInputs = [];
     for (const def of RenderPasses.list()) {
+      const applies = passApplies.get(def.id) !== false;
       const row = document.createElement('label');
       row.className = 'mode-toggle';
+      row.classList.toggle('inapplicable', !applies);
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.checked = view.modes.includes(def.id);
+      input.disabled = !applies;
+      if (!applies) {
+        row.title = 'Not applicable to the current geometry';
+        row.setAttribute('aria-disabled', 'true');
+      }
       input.addEventListener('change', () => {
         const next = toggleMode(this.app.document.view.modes, def.id, input.checked, order);
         this.app.document.view.modes = next;
@@ -545,8 +560,9 @@ export class Controls {
       text.textContent = def.name;
       row.append(input, text);
       modesBody.appendChild(row);
-      modeInputs.push({ id: def.id, input });
+      modeInputs.push({ id: def.id, input, row, def });
     }
+    this.modeToggles = modeInputs;
     body.appendChild(modesBody);
 
     // overlays
@@ -555,11 +571,70 @@ export class Controls {
     }
   }
 
+  /** Keep render toggles truthful after geometry or layer changes. */
+  refreshRenderModes() {
+    if (!this.modeToggles?.length) return;
+    const view = this.app.document.view;
+    const order = RenderPasses.ids();
+    const passApplies = new Map(
+      this.modeToggles.map((entry) => [entry.id, this.renderPassApplies(entry.def)]),
+    );
+    const allowed = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
+    const nextModes = allowed.length ? allowed : ['stroke'];
+    if (nextModes.join('|') !== view.modes.join('|')) view.modes = nextModes;
+    for (const entry of this.modeToggles) {
+      const applies = passApplies.get(entry.id) !== false;
+      const checked = view.modes.includes(entry.id);
+      if (entry.input.disabled !== !applies) entry.input.disabled = !applies;
+      if (entry.input.checked !== checked) entry.input.checked = checked;
+      if (entry.row.classList.contains('inapplicable') !== !applies) {
+        entry.row.classList.toggle('inapplicable', !applies);
+      }
+      const title = applies ? '' : 'Not applicable to the current geometry';
+      if (entry.row.title !== title) entry.row.title = title;
+      const ariaDisabled = String(!applies);
+      if (entry.row.getAttribute('aria-disabled') !== ariaDisabled) {
+        entry.row.setAttribute('aria-disabled', ariaDisabled);
+      }
+    }
+  }
+
+  /** Does a render pass apply to at least one visible layer? */
+  renderPassApplies(def) {
+    if (typeof def.appliesTo !== 'function') return true;
+    const evaluation = this.app.evaluation;
+    const doc = this.app.document;
+    const layers = Array.isArray(evaluation?.layers) && evaluation.layers.length
+      ? evaluation.layers.filter((layer) => layer.visible !== false)
+      : [{
+        generator: doc.generator,
+        operators: doc.operators,
+        curves: evaluation?.curves ?? [],
+        meshes: evaluation?.meshes ?? [],
+      }];
+    return layers.some((layer) => def.appliesTo({
+      document: {
+        ...doc,
+        generator: layer.generator ?? doc.generator,
+        operators: layer.operators ?? doc.operators,
+      },
+      curves: layer.curves ?? [],
+      meshes: layer.renderMeshes ?? layer.meshes ?? [],
+      view: doc.view,
+      time: doc.animation?.time ?? 0,
+    }));
+  }
+
   buildArtboardSection() {
     const body = this.section('Artboard', { id: 'artboard', mode: 'look' });
     const view = this.app.document.view;
     const ab = view.artboard;
     const st = view.style;
+    const locked = Boolean(this.app.activeLayerLocked);
+    const lockable = (control) => {
+      if (locked) control.disabled = true;
+      return control;
+    };
     const grid = document.createElement('div');
     grid.className = 'artboard-grid';
 
@@ -665,8 +740,9 @@ export class Controls {
     marginWrap.append(margin, marginValue);
     row('Margin', marginWrap);
 
-    row('Stroke', color(st.stroke.color, (v) => { st.stroke.color = v; syncPalette(); }));
-    row('Stroke width', number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; view.strokeWeight = v; }));
+    row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; syncPalette(); })));
+    const strokeWidth = lockable(number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; view.strokeWeight = v; }));
+    row('Stroke width', strokeWidth);
     const strokeOpacity = document.createElement('input');
     strokeOpacity.className = 'artboard-range';
     strokeOpacity.type = 'range';
@@ -674,24 +750,26 @@ export class Controls {
     strokeOpacity.max = '1';
     strokeOpacity.step = '0.01';
     strokeOpacity.value = String(st.stroke.opacity);
+    if (locked) strokeOpacity.disabled = true;
     strokeOpacity.addEventListener('input', () => { st.stroke.opacity = Number(strokeOpacity.value); rebuild(); });
     row('Stroke opacity', strokeOpacity);
-    row('Cap', select(
+    row('Cap', lockable(select(
       [{ value: 'round', label: 'Round' }, { value: 'butt', label: 'Butt' }, { value: 'square', label: 'Square' }],
       st.stroke.cap, (v) => { st.stroke.cap = v; },
-    ));
-    row('Join', select(
+    )));
+    row('Join', lockable(select(
       [{ value: 'round', label: 'Round' }, { value: 'miter', label: 'Miter' }, { value: 'bevel', label: 'Bevel' }],
       st.stroke.join, (v) => { st.stroke.join = v; },
-    ));
+    )));
 
     const fillToggle = document.createElement('input');
     fillToggle.className = 'artboard-check';
     fillToggle.type = 'checkbox';
     fillToggle.checked = Boolean(st.fill.enabled);
+    fillToggle.disabled = locked;
     fillToggle.addEventListener('change', () => { st.fill.enabled = fillToggle.checked; rebuild(); });
     row('Fill', fillToggle);
-    row('Fill color', color(st.fill.color, (v) => { st.fill.color = v; }));
+    row('Fill color', lockable(color(st.fill.color, (v) => { st.fill.color = v; })));
     const fillOpacity = document.createElement('input');
     fillOpacity.className = 'artboard-range';
     fillOpacity.type = 'range';
@@ -699,16 +777,18 @@ export class Controls {
     fillOpacity.max = '1';
     fillOpacity.step = '0.01';
     fillOpacity.value = String(st.fill.opacity);
+    if (locked) fillOpacity.disabled = true;
     fillOpacity.addEventListener('input', () => { st.fill.opacity = Number(fillOpacity.value); rebuild(); });
     row('Fill opacity', fillOpacity);
 
-    row('Blend', select(
+    row('Blend', lockable(select(
       [{ value: 'normal', label: 'Normal' }, { value: 'multiply', label: 'Multiply' }, { value: 'screen', label: 'Screen' }, { value: 'difference', label: 'Difference' }],
       st.blend, (v) => { st.blend = v; },
-    ));
+    )));
 
     const paletteSelect = document.createElement('select');
     paletteSelect.className = 'artboard-input';
+    paletteSelect.disabled = locked;
     for (const palette of PALETTES) {
       const opt = document.createElement('option');
       opt.value = palette.id;
@@ -741,6 +821,12 @@ export class Controls {
     };
     const syncPalette = () => { swatch.style.background = `linear-gradient(135deg, ${ab.background} 50%, ${st.stroke.color} 50%)`; };
     syncPalette();
+    if (locked) {
+      const hint = document.createElement('div');
+      hint.className = 'panel-hint';
+      hint.textContent = 'Layer content is locked. Unlock the layer to edit stroke, fill, blend or palette.';
+      grid.appendChild(hint);
+    }
     body.appendChild(grid);
   }
 

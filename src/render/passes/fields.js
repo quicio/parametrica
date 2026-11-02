@@ -8,6 +8,9 @@ import { polylineIntersections, selfIntersections } from '../../analysis/interse
 RenderPasses.register({
   id: 'negative-space',
   name: 'Negative Space',
+  appliesTo({ curves = [] }) {
+    return curves.some((curve) => curve.closed);
+  },
   draw(p, { curves }) {
     p.noStroke();
     p.fill(255);

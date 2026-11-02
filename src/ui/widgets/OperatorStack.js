@@ -47,8 +47,10 @@ export class OperatorStack {
   renderAddRow() {
     const row = document.createElement('div');
     row.className = 'op-add-row';
+    const locked = Boolean(this.app.activeLayerLocked);
 
     const select = document.createElement('select');
+    select.disabled = locked;
     const placeholder = document.createElement('option');
     placeholder.value = '';
     placeholder.textContent = 'SELECT OPERATOR';
@@ -71,12 +73,13 @@ export class OperatorStack {
     const add = document.createElement('button');
     add.textContent = '+ ADD';
     add.disabled = true;
+    if (locked) add.title = 'Layer content is locked';
     add.addEventListener('click', () => {
       if (!select.value) return;
       this.app.addOperator(select.value);
     });
     select.addEventListener('change', () => {
-      add.disabled = !select.value;
+      add.disabled = locked || !select.value;
     });
 
     row.appendChild(select);
@@ -86,8 +89,9 @@ export class OperatorStack {
 
   renderItem(op, index) {
     const def = Operators.get(op.id);
+    const locked = Boolean(this.app.activeLayerLocked);
     const item = document.createElement('div');
-    item.className = `op-item${op.enabled ? '' : ' disabled'}`;
+    item.className = `op-item${op.enabled ? '' : ' disabled'}${locked ? ' locked' : ''}`;
 
     const head = document.createElement('div');
     head.className = 'op-head';
@@ -96,6 +100,7 @@ export class OperatorStack {
     toggle.type = 'checkbox';
     toggle.checked = op.enabled;
     toggle.title = 'Enabled';
+    toggle.disabled = locked;
     toggle.addEventListener('change', () => this.app.setOperatorEnabled(index, toggle.checked));
 
     const name = document.createElement('span');
@@ -105,8 +110,9 @@ export class OperatorStack {
     const up = iconButton('↑', 'Move up', () => this.app.moveOperator(index, -1));
     const down = iconButton('↓', 'Move down', () => this.app.moveOperator(index, 1));
     const remove = iconButton('×', 'Remove', () => this.app.removeOperator(index));
-    up.disabled = index === 0;
-    down.disabled = index === this.app.document.operators.length - 1;
+    up.disabled = locked || index === 0;
+    down.disabled = locked || index === this.app.document.operators.length - 1;
+    remove.disabled = locked;
 
     head.append(toggle, name, up, down, remove);
     item.appendChild(head);
@@ -123,8 +129,8 @@ export class OperatorStack {
     };
     if (bindable.length) {
       const gui = new GUI({ container: body, title: def.name });
-      bindStageParams(gui, Object.fromEntries(bindable), op, onChange);
-      bindStageMods(gui, def.params, op, onChange);
+      bindStageParams(gui, Object.fromEntries(bindable), op, onChange, { disabled: locked });
+      bindStageMods(gui, def.params, op, onChange, { disabled: locked });
       this.itemGuis.push(gui);
     }
 
@@ -150,6 +156,7 @@ export class OperatorStack {
             this.refreshExpressions();
           },
         });
+        if (locked) entry.field.setDisabled(true);
         wrap.appendChild(entry.field.el);
         this.itemExprFields.push(entry);
       }
