@@ -454,7 +454,7 @@ test('layers add, style, hide and reorder independently', async ({ page }) => {
 
   await page.locator('.layer-row').nth(1).locator('.layer-icon').first().click();
   await page.waitForTimeout(250);
-  await page.locator('.layer-row').nth(1).locator('.layer-icon').nth(2).click();
+  await page.locator('.layer-row').nth(1).locator('button[title="Move layer up"]').click();
   await page.waitForTimeout(400);
   const order = await page.evaluate(() => window.__parametrica.document.layers.map((l) => l.id));
   expect(order[0]).toBe(hiddenState.layerId);

@@ -14,6 +14,7 @@ export class NotebookPanel {
     this.app = app;
     this.selectedA = null;
     this.selectedB = null;
+    this.editingId = null;
     this.workspace = app.notebookWorkspace;
     this.el = document.createElement('div');
     this.el.className = 'notebook-panel';
@@ -69,6 +70,7 @@ export class NotebookPanel {
       this.activeSeriesId = null;
       this.selectedA = null;
       this.selectedB = null;
+      this.editingId = null;
       this.refresh();
     });
     this.projectAddBtn = orgButton('+', 'New project', () => this.newProject());
@@ -135,6 +137,10 @@ export class NotebookPanel {
 
   refresh() {
     const notebook = this.app.notebook;
+    if (this.editingId) {
+      const editing = notebook.get(this.editingId);
+      if (!editing || editing.projectId !== this.activeProjectId) this.editingId = null;
+    }
     this.syncOrganization();
     const project = notebook.getProject(this.activeProjectId);
     const projectItems = notebook.items
@@ -402,13 +408,73 @@ export class NotebookPanel {
     actions.append(
       actionButton('A', 'Select A', () => { this.selectedA = cp.id; this.refresh(); }, cp.id === this.selectedA),
       actionButton('B', 'Select B', () => { this.selectedB = cp.id; this.refresh(); }, cp.id === this.selectedB),
+      actionButton('Edit', 'Edit notes and tags', () => {
+        this.editingId = this.editingId === cp.id ? null : cp.id;
+        this.refresh();
+      }),
       actionButton('Move', 'Move to selected project / series', () => this.moveHere(cp)),
       actionButton('Restore', 'Restore checkpoint', () => this.restore(cp)),
       actionButton('Delete', 'Delete checkpoint', () => this.remove(cp)),
     );
 
     row.append(thumb, body, actions);
+    if (this.editingId === cp.id) row.appendChild(this.metadataEditor(cp));
     return row;
+  }
+
+  metadataEditor(cp) {
+    const box = document.createElement('div');
+    box.className = 'notebook-meta-editor';
+
+    const notesRow = document.createElement('label');
+    notesRow.className = 'notebook-meta-row';
+    const notesLabel = document.createElement('span');
+    notesLabel.className = 'notebook-meta-label';
+    notesLabel.textContent = 'Notes';
+    const notes = document.createElement('textarea');
+    notes.className = 'notebook-notes';
+    notes.maxLength = 2000;
+    notes.value = cp.notes ?? '';
+    notesRow.append(notesLabel, notes);
+
+    const tagsRow = document.createElement('label');
+    tagsRow.className = 'notebook-meta-row';
+    const tagsLabel = document.createElement('span');
+    tagsLabel.className = 'notebook-meta-label';
+    tagsLabel.textContent = 'Tags (comma separated)';
+    const tags = document.createElement('input');
+    tags.className = 'notebook-tags';
+    tags.type = 'text';
+    tags.value = cp.tags.join(', ');
+    tagsRow.append(tagsLabel, tags);
+
+    const actions = document.createElement('div');
+    actions.className = 'notebook-meta-actions';
+    const save = document.createElement('button');
+    save.className = 'notebook-action notebook-meta-save';
+    save.textContent = 'Save metadata';
+    save.addEventListener('click', () => {
+      const values = tags.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+      const updated = this.app.notebook.update(cp.id, { notes: notes.value, tags: values });
+      if (!updated) {
+        this.setStatus('Could not save checkpoint metadata', true);
+        return;
+      }
+      this.editingId = null;
+      this.refresh();
+      this.setStatus(`Metadata saved for “${updated.name}”`);
+    });
+    const cancel = document.createElement('button');
+    cancel.className = 'notebook-action notebook-meta-cancel';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', () => {
+      this.editingId = null;
+      this.refresh();
+    });
+    actions.append(save, cancel);
+
+    box.append(notesRow, tagsRow, actions);
+    return box;
   }
 
   restore(cp) {

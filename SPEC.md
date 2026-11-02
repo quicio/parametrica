@@ -269,17 +269,29 @@ equation(s), parameter values, point count, arc length, per-stage ms.
 
 ## 11. Visualization Modes (`render/passes/`)
 
-Render passes registered as of 2026-10-24:
+Render passes registered as of 2026-11-02:
 
-|| Pass id | Source | Implements |
+| Pass id | Source | Implements |
 |---|---|---|
 | `stroke` | `render/passes/core.js` | Main monoline stroke (curve) |
-| `gradient-wireframe` | `render/passes/gradient.js` | Height/radius color ramp wireframe |
 | `points` | `render/passes/core.js` | Sampled points |
-| `wireframe` | `render/passes/core.js` | Control polygon / segments |
-| `normals` / `tangents` | `render/passes/vectors.js` | Per-sample normal & tangent vectors |
-| `curvature-heatmap` | `render/passes/fields.js` | κ-magnitude heatmap along curve |
+| `wireframe` | `render/passes/core.js` | Segment wireframe |
+| `control-polygon` | `render/passes/core.js` | Spline control polygon and handles |
+| `gradient-wireframe` | `render/passes/gradient.js` | Height/radius color-ramp wireframe |
+| `tangents` | `render/passes/vectors.js` | Per-sample tangent vectors |
+| `normals` | `render/passes/vectors.js` | Per-sample normal vectors |
+| `curvature` | `render/passes/vectors.js` | κ-magnitude heatmap along the curve |
+| `negative-space` | `render/passes/fields.js` | Closed-curve negative space |
+| `signed-distance` | `render/passes/fields.js` | Cached signed-distance bands |
+| `topology` | `render/passes/fields.js` | Self/crossing intersection markers |
 | `epicycles` | `render/passes/epicycles.js` | Fourier rotating-vector visualization |
+| `surface-wireframe` | `render/passes/surface.js` | Projected mesh edges |
+| `surface-fill` | `render/passes/surface.js` | Painter-sorted mesh faces |
+
+Passes may declare `appliesTo`; the panel disables a pass when it cannot run
+on the visible geometry. Multiple passes coexist; each is an independent,
+composable render pass. Overlays are a separate layer stacked above the active
+passes.
 
 Overlays (always drawn on top, independently toggleable, in
 `viz/overlays.js`):
@@ -290,15 +302,6 @@ Overlays (always drawn on top, independently toggleable, in
 | `samplePoints` | Lightly scatter every Nth sample |
 | `ruler` | Per-curve arc-length ruler |
 | `bbox` | Bounding box of all curves |
-
-**Multiple modes coexist** — each is an independent, composable render
-pass with its own z-order. Overlays are a separate layer stacked above
-the active passes.
-
-> **Future passes (planned, not yet implemented):** `signed-distance`,
-> `offset`, `skeleton`, `negative-space`, `topology-graph`. Each is a
-> 30-line `RenderPasses.register({...})` once the supporting operator
-> (§8/§9) is in place.
 
 ### Orthographic projections
 

@@ -367,18 +367,32 @@ export class Controls {
       name.textContent = layer.name;
       name.title = layer.name;
 
+      const rename = layerButton('✎', 'Rename layer', () => this.renameLayerPrompt(index));
       const up = layerButton('↑', 'Move layer up', () => this.app.moveLayer(index, -1), index === 0);
       const down = layerButton('↓', 'Move layer down', () => this.app.moveLayer(index, 1), index === layers.length - 1);
       const duplicate = layerButton('⧉', 'Duplicate layer', () => this.app.duplicateLayer(index));
       const remove = layerButton('×', 'Remove layer', () => this.app.removeLayer(index), layers.length <= 1);
 
-      row.append(visibility, lock, name, up, down, duplicate, remove);
+      row.append(visibility, lock, name, rename, up, down, duplicate, remove);
       row.addEventListener('click', () => {
         if (index !== this.app.document.activeLayer) this.app.setActiveLayer(index);
       });
       list.appendChild(row);
     });
     body.appendChild(list);
+  }
+
+  async renameLayerPrompt(index) {
+    const layer = this.app.document.layers?.[index];
+    if (!layer) return;
+    const name = await this.app.dialogs.prompt({
+      title: 'Rename layer',
+      label: 'Layer name',
+      value: layer.name,
+      confirmText: 'Rename',
+    });
+    if (name === null) return;
+    this.app.renameLayer(index, name);
   }
 
   buildGeneratorSection() {
@@ -741,7 +755,7 @@ export class Controls {
     row('Margin', marginWrap);
 
     row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; syncPalette(); })));
-    const strokeWidth = lockable(number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; view.strokeWeight = v; }));
+    const strokeWidth = lockable(number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; }));
     row('Stroke width', strokeWidth);
     const strokeOpacity = document.createElement('input');
     strokeOpacity.className = 'artboard-range';

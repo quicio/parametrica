@@ -192,6 +192,7 @@ export class App {
       projectId: targetProject,
       seriesId: targetSeries,
     });
+    this.controls?.notebookPanel?.refresh?.();
     this.controls?.evolutionPanel?.refresh?.();
     if (this.notebook.lastError) {
       this.notify(`Saved in memory; storage failed: ${this.notebook.lastError}`, 'error');
@@ -678,10 +679,8 @@ export class App {
   updateTelemetry() {
     if (!this.telemetryEl) return;
     const e = this._evaluation;
-    const gen = Generators.get(this.document.generator.id);
     const errors = e.errors.length;
     const lines = [
-      `MODEL ${gen.name.toUpperCase()} · LAYERS ${this.document.layers?.length ?? 1} · OPS ${this.document.operators.filter((o) => o.enabled).length}`,
       `CURVES ${e.stats.curveCount} · PTS ${e.stats.pointCount} · PEAK ${e.stats.peakPoints ?? e.stats.pointCount} · LEN ${e.stats.arcLength} · EVAL ${e.stats.evalMs.toFixed(1)}MS`,
       `T ${this.document.animation.time.toFixed(2)} · SEED ${this.document.seed} · STATE ${errors ? `ERROR ×${errors}` : 'VALID'}`,
     ];

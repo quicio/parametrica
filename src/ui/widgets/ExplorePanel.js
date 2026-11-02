@@ -27,7 +27,7 @@ export class ExplorePanel {
     this.axisPath = this.preferredAxis();
     this.selectedPaths = new Set(this.axisPath ? [this.axisPath] : []);
     this.lockedPaths = new Set();
-    this.randomSeed = 1;
+    this.app.exploreSeed = Number(this.app.exploreSeed) || 1;
     this.candidates = [];
     this.mode = 'strip';
     this.gridXPath = this.axisPath;
@@ -136,6 +136,34 @@ export class ExplorePanel {
     });
     intensityRow.append(intensityLabel, this.intensity, this.intensityValue);
 
+    const seedRow = document.createElement('div');
+    seedRow.className = 'explore-row';
+    const seedLabel = document.createElement('label');
+    seedLabel.className = 'explore-label';
+    seedLabel.textContent = 'Seed';
+    this.seedInput = document.createElement('input');
+    this.seedInput.className = 'explore-seed';
+    this.seedInput.dataset.focusId = 'explore-seed';
+    this.seedInput.type = 'number';
+    this.seedInput.min = '1';
+    this.seedInput.max = '999999';
+    this.seedInput.step = '1';
+    this.seedInput.value = String(this.app.exploreSeed);
+    this.seedInput.addEventListener('change', () => {
+      this.app.exploreSeed = clampSeed(this.seedInput.value);
+      this.seedInput.value = String(this.app.exploreSeed);
+      this.setStatus(`Seed ${this.app.exploreSeed}`);
+    });
+    this.newSeedBtn = document.createElement('button');
+    this.newSeedBtn.className = 'lab-button explore-new-seed';
+    this.newSeedBtn.textContent = 'New seed';
+    this.newSeedBtn.addEventListener('click', () => {
+      this.app.exploreSeed = Math.floor(Math.random() * 999999) + 1;
+      this.seedInput.value = String(this.app.exploreSeed);
+      this.setStatus(`Seed ${this.app.exploreSeed}`);
+    });
+    seedRow.append(seedLabel, this.seedInput, this.newSeedBtn);
+
     this.scopeEl = document.createElement('details');
     this.scopeEl.className = 'explore-scope';
     this.scopeSummary = document.createElement('summary');
@@ -156,7 +184,7 @@ export class ExplorePanel {
 
     this.stripControls = document.createElement('div');
     this.stripControls.className = 'explore-mode-panel';
-    this.stripControls.append(axisRow, actions, intensityRow, this.scopeEl);
+    this.stripControls.append(axisRow, actions, intensityRow, seedRow, this.scopeEl);
 
     this.gridControls = this.buildGridControls();
     this.morphControls = this.buildMorphControls();
@@ -487,13 +515,16 @@ export class ExplorePanel {
     if (!this.selectedPaths.size) return this.setStatus('Select at least one parameter', true);
     this.setStatus('Generating random variations…');
     try {
+      const seed = clampSeed(this.app.exploreSeed);
+      this.app.exploreSeed = seed;
+      this.seedInput.value = String(seed);
       const candidates = this.session().randomize({
         intensity: Number(this.intensity.value),
         count: 6,
-        seed: this.randomSeed++,
+        seed,
       });
       this.renderCandidates(candidates);
-      this.setStatus(`${candidates.length} random variations`);
+      this.setStatus(`${candidates.length} random variations · seed ${seed}`);
     } catch (error) {
       this.setStatus(`Randomize failed: ${error.message}`, true);
     }
@@ -563,6 +594,11 @@ export class ExplorePanel {
     this.statusEl.textContent = message;
     this.statusEl.classList.toggle('error', isError);
   }
+}
+
+function clampSeed(value) {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) ? Math.min(999999, Math.max(1, n)) : 1;
 }
 
 function currentValue(document, ref) {

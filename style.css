@@ -1321,6 +1321,53 @@ textarea:focus-visible {
 .notebook-action:hover { color: var(--ink); border-color: #333; }
 .notebook-action.active { color: var(--swiss-red); border-color: var(--swiss-red); }
 
+.notebook-meta-editor {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--hairline);
+  margin-top: 3px;
+  padding-top: 5px;
+}
+
+.notebook-meta-row {
+  display: grid;
+  gap: 2px;
+}
+
+.notebook-meta-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.notebook-notes,
+.notebook-tags {
+  width: 100%;
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 4px;
+  outline: none;
+}
+
+.notebook-notes {
+  min-height: 48px;
+  resize: vertical;
+}
+
+.notebook-notes:focus,
+.notebook-tags:focus { border-color: #333; }
+
+.notebook-meta-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .notebook-compare-view { margin-top: 8px; }
 
 .notebook-ab {
@@ -1404,7 +1451,8 @@ textarea:focus-visible {
 }
 
 .explore-axis,
-.explore-steps {
+.explore-steps,
+.explore-seed {
   background: #0d0d0d;
   border: 1px solid var(--hairline);
   color: var(--ink);
@@ -1413,6 +1461,11 @@ textarea:focus-visible {
   padding: 4px 5px;
   outline: none;
   min-width: 0;
+}
+
+.explore-new-seed {
+  font-size: 8px !important;
+  padding: 4px 5px !important;
 }
 
 .explore-actions {
@@ -1726,7 +1779,7 @@ textarea:focus-visible {
 
 .layer-row {
   display: grid;
-  grid-template-columns: 18px 18px 1fr 18px 18px 18px 18px;
+  grid-template-columns: 18px 18px 1fr 18px 18px 18px 18px 18px;
   align-items: center;
   gap: 2px;
   border: 1px solid var(--hairline);

@@ -1206,6 +1206,19 @@ console.log('17. artboard and style');
   });
   assert(legacy.view.strokeWeight === 5 && legacy.view.style.stroke.width === 5, 'legacy strokeWeight migrates to style width');
 
+  const layerWidthWins = sanitizeDocument({
+    app: 'parametrica', version: 3, name: 'Layer width wins',
+    activeLayer: 0,
+    view: { strokeWeight: 9, style: { stroke: { width: 9 } } },
+    layers: [{
+      id: 'layer-1', name: 'Layer', visible: true, locked: false, seed: 1,
+      generator: { id: 'parametric', params: {}, mods: {} },
+      operators: [],
+      style: { stroke: { width: 4 } },
+    }],
+  });
+  assert(layerWidthWins.view.style.stroke.width === 4 && layerWidthWins.view.strokeWeight === 4, 'layer style width is authoritative over legacy view width');
+
   const styled = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Styled',
     generator: { id: 'parametric', params: {} },
