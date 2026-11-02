@@ -43,6 +43,13 @@ layer or the session/workspace.
 - **THEN** the UI identifies the control as global/viewport
 - **AND** it does not imply that it applies only to the active layer
 
+#### Scenario: Active-layer style alias
+
+- **WHEN** the Style section is displayed
+- **THEN** `view.style` remains the active layer's style
+- **AND** no duplicate global style is introduced
+- **AND** the section is labelled as active-layer style
+
 ### Requirement: Camera controls
 
 Camera SHALL expose projection, guides and an explicit reset action.
@@ -52,13 +59,19 @@ Camera SHALL expose projection, guides and an explicit reset action.
 - **WHEN** the user activates Reset camera in the 3D projection
 - **THEN** yaw, pitch and FOV return to the documented defaults
 - **AND** the canvas updates
-- **AND** the action follows the existing history/rebuild path
+- **AND** the action is undoable through the existing history/rebuild path
 
 #### Scenario: Orthographic view
 
 - **WHEN** the active projection is orthographic
 - **THEN** the camera reset is disabled or hidden
 - **AND** projection/guides remain available
+
+#### Scenario: Projection capability
+
+- **WHEN** the active layer is 2D
+- **THEN** orthographic projection remains gated/disabled
+- **AND** when enabled the chosen projection still applies globally
 
 ### Requirement: Render pass browser
 
@@ -92,6 +105,13 @@ Render SHALL expose the existing `view.colorRamp` setting.
 - **WHEN** the ramp is edited
 - **THEN** the UI identifies it as the current global/view ramp
 - **AND** per-layer or per-pass ramps are not implied
+
+#### Scenario: Palette independence
+
+- **WHEN** a palette is applied
+- **THEN** the color ramp is unchanged
+- **AND** editing the ramp does not change the palette
+- **AND** no implicit synchronization is introduced
 
 ### Requirement: Temporary Work group
 

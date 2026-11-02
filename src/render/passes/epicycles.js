@@ -12,6 +12,8 @@ import { bboxAll } from '../../sampling/sampling.js';
 RenderPasses.register({
   id: 'epicycles',
   name: 'Epicycles (Fourier)',
+  group: 'diagnostic',
+  description: 'Fourier rotating-vector chain.',
   appliesTo({ document: doc }) {
     if (doc?.generator?.id !== 'fourier') return false;
     const hx = doc.generator.params?.harmonicsX ?? [];

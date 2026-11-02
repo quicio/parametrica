@@ -24,11 +24,11 @@ All registered problems were reviewed. Disposition:
 | Render toggles are a flat list without groups/descriptions | **In scope (Phase 1)** |
 | `view.colorRamp` has no editor | **In scope (Phase 1)** |
 | Camera has no reset/explicit viewport controls | **In scope (Phase 1)** |
-| Palette/ramp relationship | Ramp editor in Phase 1; palette sync is a pending decision |
+| Palette/ramp relationship | Ramp editor in Phase 1; palette and ramp remain independent |
 | Projection is gated by the active layer in mixed 2D/3D documents | Out of scope; possible issue noted in the audit |
 | P5Adapter reads document state for animation/artboard/underlay | Out of scope; architecture dependency |
 | SPEC §11 render-pass list is stale | Out of scope; docs follow-up |
-| Image, Animation and Timeline live in LOOK | **Phase 2 pending decision** |
+| Image, Animation and Timeline live in LOOK | Phase 1: keep in temporary Work; Phase 2 pending |
 | Frame export lives in Timeline rather than Export | **Phase 2 pending decision** |
 | Status and telemetry duplicate information | Out of scope; global UX follow-up |
 | `view.strokeWeight` duplicates `style.stroke.width` | Out of scope; architecture dependency |
@@ -43,6 +43,20 @@ All registered problems were reviewed. Disposition:
 | Explore seed and observation/ask placement | Out of scope |
 | MAKE / solids / fabrication | Out of scope |
 | Blend, per-layer analysis and pass applicability | Already resolved by `product-hardening`; preserve |
+
+## Locked decisions
+
+1. **Style scope:** `view.style` remains an alias of the active layer style.
+   No duplicate global style is introduced. Global and layer controls are
+   labelled explicitly.
+2. **Color ramp:** `view.colorRamp` stays independent from the palette. Phase 1
+   adds an editor but no implicit or automatic palette sync.
+3. **Work tools:** Image, Animation and Timeline remain in LOOK under the
+   temporary Work group for Phase 1. No relocation happens in Phase 1.
+4. **Projection:** gating remains based on the active layer; the projection is
+   still applied globally.
+5. **Camera reset:** reset is undoable through the existing history/rebuild
+   path. No separate history mechanism is introduced.
 
 ## What Changes
 

@@ -45,6 +45,8 @@ export function gradientRange(curves, projection) {
 RenderPasses.register({
   id: 'gradient-wireframe',
   name: 'Gradient Wireframe',
+  group: 'color',
+  description: 'Color ramp by height or radius.',
   draw(p, { curves, view }) {
     if (!curves.length) return;
     const style = view.style ?? {};

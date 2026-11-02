@@ -660,6 +660,96 @@ html, body {
 
 .mode-toggle.inapplicable:hover { color: var(--ink-dim); }
 
+.panel-group-label {
+  padding: 9px 12px 4px;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.render-group {
+  padding: 0 12px 6px;
+  border-top: 1px solid #101010;
+}
+
+.render-group-h {
+  padding: 6px 0 2px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.render-mode-toggles {
+  padding: 0;
+}
+
+.ramp-editor {
+  padding: 8px 12px 4px;
+  border-top: 1px solid #101010;
+}
+
+.ramp-preview {
+  height: 11px;
+  margin: 4px 0;
+  border: 1px solid var(--hairline);
+}
+
+.ramp-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ramp-stop {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--hairline);
+  padding: 1px;
+}
+
+.ramp-color {
+  width: 25px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ramp-remove {
+  background: none;
+  border: 0;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 0 2px;
+}
+
+.ramp-remove:hover { color: var(--swiss-red); }
+
+.ramp-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ramp-actions .lab-button {
+  flex: 1 1 auto;
+  font-size: 8px;
+  padding: 4px;
+}
+
+.camera-reset {
+  margin: 4px 12px 8px;
+  width: calc(100% - 24px);
+}
+
 /* ——— Notices ——— */
 
 #notice {

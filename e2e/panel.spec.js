@@ -189,13 +189,13 @@ test('operators with optional expression parameters expose their editors', async
 test('orthographic views are gated to 3D documents', async ({ page }) => {
   await boot(page);
   await lissajous(page);
-  await openSection(page, 'View');
+  const camera = await openSection(page, 'Camera');
   await expect(page.locator('.view-projection')).toBeDisabled();
-  await expect(page.locator('.panel-hint')).toContainText('3-D generator');
+  await expect(camera.locator('.panel-hint')).toContainText('spatial active layer');
 
   await page.evaluate(() => window.__parametrica.applyPreset('Básica'));
   await page.waitForTimeout(250);
-  await openSection(page, 'View');
+  await openSection(page, 'Camera');
   await expect(page.locator('.view-projection')).toBeEnabled();
   await page.locator('.view-projection').selectOption({ label: 'XZ · Alzado' });
   await page.waitForTimeout(250);
@@ -203,6 +203,6 @@ test('orthographic views are gated to 3D documents', async ({ page }) => {
 
   await lissajous(page);
   expect(await page.evaluate(() => window.__parametrica.document.view.projection)).toBe('3d');
-  await openSection(page, 'View');
+  await openSection(page, 'Camera');
   await expect(page.locator('.view-projection')).toBeDisabled();
 });

@@ -44,6 +44,10 @@ where those tools live.
 Alternative rejected: keep one `View` and one `Artboard` section with internal
 headings. That still hides the scope boundary and preserves the overloading.
 
+Projection capability remains gated by the active layer (a 2D active layer
+cannot enable orthographic views); once enabled, the selected projection is
+applied globally to the scene. Phase 1 does not change that behavior.
+
 ### D2: Scope is stated, not inferred
 
 Each section/control declares its scope:
@@ -62,8 +66,9 @@ The style section gets an explicit “Active layer” label. Canvas and Camera a
 labeled global. The render section explains that modes are global while styles
 are per layer.
 
-This change does **not** split `view.style` from the active-layer alias or make
-render modes per layer; those remain architectural decisions.
+This change keeps `view.style` as an alias of the active layer style. It does
+not introduce a duplicate global style. Render modes remain global; per-layer
+modes are out of scope.
 
 ### D3: Render browser groups
 
@@ -92,7 +97,8 @@ Add a `Reset camera` action in Camera:
 
 - resets `view.camera.yaw`, `pitch` and `fov` to `DEFAULT_CAMERA`;
 - is disabled or hidden in orthographic projections;
-- is recorded through the existing history/rebuild path.
+- is recorded through the existing history/rebuild path, so Camera Reset is
+  undoable with the current document history.
 
 No yaw/pitch/fov sliders are added in Phase 1; the camera remains primarily
 pointer-driven.
@@ -107,9 +113,10 @@ Expose the existing `view.colorRamp`:
 - live preview;
 - writes only `view.colorRamp`.
 
-The palette/ramp relationship is **not** decided here. Palettes keep their
-current behavior; a palette ramp or automatic sync is a separate decision.
-Per-layer ramps are also out of scope.
+`view.colorRamp` remains independent from the palette. Applying a palette does
+not change the ramp, and editing the ramp does not change the palette. No
+implicit or automatic synchronization is introduced. Per-layer ramps are out of
+scope.
 
 ### D6: Temporary Work group
 
@@ -175,8 +182,6 @@ notebook, session or export formats. No document v4.
 - Phase 2: Ingest + Perform, one Work mode, or keep in LOOK?
 - Does frame export belong to Export, Perform or both?
 - Are render modes global or per layer?
-- Does camera/style belong in undo/redo?
-- Does the palette define a ramp, and is the ramp global or per layer?
 - Should fill gradients and per-pass settings be a later LOOK “appearance”
   expansion?
 - Should status/telemetry be deduplicated as part of a separate global pass?

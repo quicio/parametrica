@@ -8,7 +8,7 @@ async function boot(page) {
 
 test('stroke width has a single authoritative value', async ({ page }) => {
   await boot(page);
-  const artboard = await openSection(page, 'Artboard');
+  const artboard = await openSection(page, 'Style');
   const width = artboard.locator('.artboard-row', { hasText: 'Stroke width' }).locator('input');
   await width.fill('3.5');
   await width.press('Enter');

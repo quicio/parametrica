@@ -59,7 +59,7 @@ test('editing a harmonic row updates the document', async ({ page }) => {
 });
 
 test('render modes stay an array when toggled', async ({ page }) => {
-  await openSection(page, 'View');
+  await openSection(page, 'Render');
   const points = page.locator('.mode-toggle', { hasText: 'Points' }).locator('input');
   await points.check();
   await page.waitForTimeout(200);
@@ -76,7 +76,7 @@ test('render modes stay an array when toggled', async ({ page }) => {
 });
 
 test('curvature pass lazily computes differential analysis', async ({ page }) => {
-  await openSection(page, 'View');
+  await openSection(page, 'Render');
   const curvature = page.locator('.mode-toggle', { hasText: 'Curvature Heatmap' }).locator('input');
   await curvature.check();
   await page.waitForTimeout(250);
@@ -335,8 +335,8 @@ test('explore keeps the panel scroll and focus when randomizing/adopting', async
 });
 
 test('artboard and style controls update the document and canvas', async ({ page }) => {
-  await openSection(page, 'Artboard');
-  await expect(page.locator('.panel-h', { hasText: 'Artboard' })).toBeVisible();
+  await openSection(page, 'Canvas');
+  await expect(page.locator('.panel-h', { hasText: 'Canvas' })).toBeVisible();
 
   const preset = page.locator('.artboard-row', { hasText: 'Preset' }).locator('select');
   await preset.selectOption('portrait');
@@ -356,6 +356,7 @@ test('artboard and style controls update the document and canvas', async ({ page
   await page.waitForTimeout(250);
   expect(await page.evaluate(() => window.__parametrica.document.view.artboard.background)).toBe('#111111');
 
+  await openSection(page, 'Style');
   const palette = page.locator('.artboard-palette select');
   await palette.selectOption('paper');
   await page.waitForTimeout(250);
@@ -422,7 +423,7 @@ test('layers add, style, hide and reorder independently', async ({ page }) => {
   expect(await page.locator('.layer-row').count()).toBe(2);
   expect(await page.evaluate(() => window.__parametrica.document.layers.length)).toBe(2);
 
-  await openSection(page, 'Artboard');
+  await openSection(page, 'Style');
   await page.locator('.artboard-palette select').selectOption('signal');
   await page.waitForTimeout(250);
   let styles = await page.evaluate(() => window.__parametrica.document.layers.map((l) => l.style.stroke.color));

@@ -478,19 +478,20 @@ for `renderer.readyPromise` before touching the canvas.
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
-| 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose truthful applicability |
+| 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose group, description and truthful applicability |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
 | 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions and analysis |
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1581 checks total.
+1609 checks total.
 
 ### Panel behavior
 
 The inspector is split into Form, Look, Explore and Keep modes. Sections are
 accordions persisted under `parametrica.ui.v1`; Generator and Parameters open
-by default. Technical generator parameters sit behind an Advanced disclosure.
+by default. Look is split into Camera, Canvas, Style, Render and Overlays, with
+Image, Animation and Timeline grouped under a temporary Work label. Technical generator parameters sit behind an Advanced disclosure.
 The sticky status line reports the active layer, hidden state, generator,
 operator counts, modulation, timeline tracks and projection. Orthographic
 projection is disabled for 2D generators and falls back to the camera view.

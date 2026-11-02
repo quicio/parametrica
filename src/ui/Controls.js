@@ -27,9 +27,17 @@ import { EvolutionPanel } from './widgets/EvolutionPanel.js';
 import { ExplorePanel } from './widgets/ExplorePanel.js';
 import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PALETTES, paletteById } from '../render/palettes.js';
+import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
 const DEFAULT_OPEN = new Set(['generator', 'parameters']);
+const SECTION_ALIASES = {
+  camera: 'view',
+  render: 'view',
+  overlays: 'view',
+  canvas: 'artboard',
+  style: 'artboard',
+};
 const MODES = [
   { id: 'form', label: 'Form' },
   { id: 'look', label: 'Look' },
@@ -51,6 +59,7 @@ export class Controls {
     this.presetPanel = null;
     this.uiState = loadUiState();
     this.sectionEls = new Map();
+    this.groupEls = [];
     this.mode = this.uiState.mode;
     this.modeBar = null;
     this.statusEl = null;
@@ -91,7 +100,7 @@ export class Controls {
     el.append(header, body);
     this.container.appendChild(el);
 
-    const saved = this.uiState.sections[sectionId];
+    const saved = this.uiState.sections[sectionId] ?? this.uiState.sections[SECTION_ALIASES[sectionId]];
     const isOpen = typeof saved === 'boolean' ? saved : (open ?? DEFAULT_OPEN.has(sectionId));
     const meta = { id: sectionId, el, body, header, mode };
     this.sectionEls.set(sectionId, meta);
@@ -172,6 +181,9 @@ export class Controls {
     }
     for (const meta of this.sectionEls.values()) {
       meta.el.hidden = meta.mode !== modeId;
+    }
+    for (const el of this.groupEls) {
+      el.hidden = el.dataset.mode !== modeId;
     }
     this.saveUiState();
     if (resetScroll) this.container.scrollTop = 0;
@@ -266,6 +278,7 @@ export class Controls {
     this.evolutionPanel = null;
     this.container.innerHTML = '';
     this.sectionEls = new Map();
+    this.groupEls = [];
     this.modeBar = null;
     this.statusEl = null;
     this.statusText = null;
@@ -279,8 +292,14 @@ export class Controls {
     this.buildEquationsSection();
     this.buildHarmonicsSection();
     this.buildOperatorsSection();
-    this.buildViewSection();
-    this.buildArtboardSection();
+    this.buildCameraSection();
+    this.buildCanvasSection();
+    this.buildStyleSection();
+    this.buildRenderSection();
+    this.buildOverlaysSection();
+    this.groupLabel('Work · temporary', {
+      hint: 'Image, Animation and Timeline stay here until the Phase 2 navigation decision.',
+    });
     this.buildImageSection();
     this.buildAnimationSection();
     this.buildTimelineSection();
@@ -509,15 +528,51 @@ export class Controls {
     body.appendChild(this.operatorStack.el);
   }
 
-  buildViewSection() {
-    const body = this.section('View', { id: 'view', mode: 'look' });
-    const gui = this.makeGui(body);
+  groupLabel(title, { mode = 'look', hint = '' } = {}) {
+    const el = document.createElement('div');
+    el.className = 'panel-group-label';
+    el.dataset.mode = mode;
+    el.textContent = title;
+    if (hint) el.title = hint;
+    this.container.appendChild(el);
+    this.groupEls.push(el);
+  }
+
+  panelHint(text) {
+    const el = document.createElement('div');
+    el.className = 'panel-hint';
+    el.textContent = text;
+    return el;
+  }
+
+  buildCameraSection() {
+    const body = this.section('Camera', { id: 'camera', mode: 'look' });
     const view = this.app.document.view;
     const generatorId = this.app.activeLayer?.generator?.id;
     const generator = generatorId && Generators.has(generatorId) ? Generators.get(generatorId) : null;
     const canProject = Boolean(generator && supportsSpatial(generator));
     if (!canProject && view.projection !== '3d') view.projection = '3d';
     view.projection ??= '3d';
+
+    body.appendChild(this.panelHint(
+      canProject
+        ? 'Global viewport · projection applies to all layers.'
+        : 'Global viewport · orthographic views require a spatial active layer; projection applies globally.',
+    ));
+
+    const gui = this.makeGui(body);
+    const resetCamera = document.createElement('button');
+    resetCamera.className = 'lab-button camera-reset';
+    resetCamera.textContent = 'Reset camera';
+    resetCamera.addEventListener('click', () => this.app.resetCamera());
+    const syncReset = () => {
+      const available = canProject && view.projection === '3d';
+      resetCamera.disabled = !available;
+      resetCamera.title = available
+        ? 'Reset yaw, pitch and FOV to defaults'
+        : 'Camera reset is available in the 3D camera view';
+    };
+
     const projection = gui
       .add(view, 'projection', {
         '3D camera': '3d',
@@ -526,125 +581,134 @@ export class Controls {
         'YZ · Perfil': 'yz',
       })
       .name('Projection')
-      .onChange(() => this.app.rebuild());
+      .onChange(() => {
+        this.app.rebuild();
+        syncReset();
+      });
     projection.domElement.classList.add('view-projection-row');
     projection.$widget?.querySelector?.('select')?.classList.add('view-projection');
     if (!canProject) {
       projection.disable();
-      projection.domElement.title = 'Orthographic views require a 3-D generator';
-      const hint = document.createElement('div');
-      hint.className = 'panel-hint';
-      hint.textContent = 'Orthographic views require a 3-D generator (Helix or Parametric 3D). 2-D curves stay in the camera view.';
-      body.appendChild(hint);
+      projection.domElement.title = 'Orthographic views require a spatial active layer';
     }
     gui.add(view, 'guides').name('CAD Guides').onChange(() => this.app.rebuild());
-
-    // Render modes are a multi-select, but lil-gui's option controller
-    // writes a scalar. Use one checkbox per registered pass and keep
-    // view.modes an array (see modeToggles.js).
-    const order = RenderPasses.ids();
-    const passApplies = new Map(RenderPasses.list().map((def) => [def.id, this.renderPassApplies(def)]));
-    const applicableModes = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
-    view.modes = applicableModes.length ? applicableModes : ['stroke'];
-    const modesBody = document.createElement('div');
-    modesBody.className = 'mode-toggles';
-    const modeInputs = [];
-    for (const def of RenderPasses.list()) {
-      const applies = passApplies.get(def.id) !== false;
-      const row = document.createElement('label');
-      row.className = 'mode-toggle';
-      row.classList.toggle('inapplicable', !applies);
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.checked = view.modes.includes(def.id);
-      input.disabled = !applies;
-      if (!applies) {
-        row.title = 'Not applicable to the current geometry';
-        row.setAttribute('aria-disabled', 'true');
-      }
-      input.addEventListener('change', () => {
-        const next = toggleMode(this.app.document.view.modes, def.id, input.checked, order);
-        this.app.document.view.modes = next;
-        // Reflect the normalized state for every checkbox (disabling the
-        // last pass falls back to stroke, even if another box was clicked).
-        for (const entry of modeInputs) entry.input.checked = next.includes(entry.id);
-        this.app.rebuild();
-      });
-      const text = document.createElement('span');
-      text.textContent = def.name;
-      row.append(input, text);
-      modesBody.appendChild(row);
-      modeInputs.push({ id: def.id, input, row, def });
-    }
-    this.modeToggles = modeInputs;
-    body.appendChild(modesBody);
-
-    // overlays
-    for (const o of OVERLAYS) {
-      gui.add(view.overlays, o.id).name(o.name).onChange(() => this.app.rebuild());
-    }
+    body.appendChild(resetCamera);
+    syncReset();
   }
 
-  /** Keep render toggles truthful after geometry or layer changes. */
-  refreshRenderModes() {
-    if (!this.modeToggles?.length) return;
-    const view = this.app.document.view;
-    const order = RenderPasses.ids();
-    const passApplies = new Map(
-      this.modeToggles.map((entry) => [entry.id, this.renderPassApplies(entry.def)]),
-    );
-    const allowed = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
-    const nextModes = allowed.length ? allowed : ['stroke'];
-    if (nextModes.join('|') !== view.modes.join('|')) view.modes = nextModes;
-    for (const entry of this.modeToggles) {
-      const applies = passApplies.get(entry.id) !== false;
-      const checked = view.modes.includes(entry.id);
-      if (entry.input.disabled !== !applies) entry.input.disabled = !applies;
-      if (entry.input.checked !== checked) entry.input.checked = checked;
-      if (entry.row.classList.contains('inapplicable') !== !applies) {
-        entry.row.classList.toggle('inapplicable', !applies);
-      }
-      const title = applies ? '' : 'Not applicable to the current geometry';
-      if (entry.row.title !== title) entry.row.title = title;
-      const ariaDisabled = String(!applies);
-      if (entry.row.getAttribute('aria-disabled') !== ariaDisabled) {
-        entry.row.setAttribute('aria-disabled', ariaDisabled);
-      }
-    }
-  }
-
-  /** Does a render pass apply to at least one visible layer? */
-  renderPassApplies(def) {
-    if (typeof def.appliesTo !== 'function') return true;
-    const evaluation = this.app.evaluation;
-    const doc = this.app.document;
-    const layers = Array.isArray(evaluation?.layers) && evaluation.layers.length
-      ? evaluation.layers.filter((layer) => layer.visible !== false)
-      : [{
-        generator: doc.generator,
-        operators: doc.operators,
-        curves: evaluation?.curves ?? [],
-        meshes: evaluation?.meshes ?? [],
-      }];
-    return layers.some((layer) => def.appliesTo({
-      document: {
-        ...doc,
-        generator: layer.generator ?? doc.generator,
-        operators: layer.operators ?? doc.operators,
-      },
-      curves: layer.curves ?? [],
-      meshes: layer.renderMeshes ?? layer.meshes ?? [],
-      view: doc.view,
-      time: doc.animation?.time ?? 0,
-    }));
-  }
-
-  buildArtboardSection() {
-    const body = this.section('Artboard', { id: 'artboard', mode: 'look' });
+  buildCanvasSection() {
+    const body = this.section('Canvas', { id: 'canvas', mode: 'look' });
     const view = this.app.document.view;
     const ab = view.artboard;
+    body.appendChild(this.panelHint('Global canvas · applied to the whole document.'));
+    const grid = document.createElement('div');
+    grid.className = 'artboard-grid';
+
+    const row = (label, control) => {
+      const el = document.createElement('label');
+      el.className = 'artboard-row';
+      const name = document.createElement('span');
+      name.className = 'artboard-label';
+      name.textContent = label;
+      el.append(name, control);
+      grid.appendChild(el);
+      return el;
+    };
+    const number = (value, min, max, step, apply) => {
+      const input = document.createElement('input');
+      input.className = 'artboard-input';
+      input.type = 'number';
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      input.value = String(value);
+      input.addEventListener('change', () => {
+        const n = Math.min(max, Math.max(min, Number(input.value) || min));
+        input.value = String(n);
+        apply(n);
+        rebuild();
+      });
+      return input;
+    };
+    const color = (value, apply) => {
+      const input = document.createElement('input');
+      input.className = 'artboard-color';
+      input.type = 'color';
+      input.value = value;
+      input.addEventListener('input', () => { apply(input.value); rebuild(); });
+      return input;
+    };
+    const rebuild = () => this.app.rebuild();
+
+    const presetSelect = document.createElement('select');
+    presetSelect.className = 'artboard-input';
+    for (const preset of ARTBOARD_PRESETS) {
+      const option = document.createElement('option');
+      option.value = preset.id;
+      option.textContent = preset.name;
+      presetSelect.appendChild(option);
+    }
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = 'Custom';
+    presetSelect.appendChild(customOption);
+    const initialPreset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
+    presetSelect.value = initialPreset?.id ?? 'custom';
+    presetSelect.addEventListener('change', () => {
+      const preset = ARTBOARD_PRESETS.find((p) => p.id === presetSelect.value);
+      if (!preset) return;
+      ab.width = preset.width;
+      ab.height = preset.height;
+      sync();
+      rebuild();
+    });
+    row('Preset', presetSelect);
+
+    const widthInput = number(ab.width, 240, 4096, 1, (v) => { ab.width = v; presetSelect.value = 'custom'; });
+    const heightInput = number(ab.height, 240, 4096, 1, (v) => { ab.height = v; presetSelect.value = 'custom'; });
+    row('Width', widthInput);
+    row('Height', heightInput);
+    row('Background', color(ab.background, (v) => { ab.background = v; }));
+
+    const margin = document.createElement('input');
+    margin.className = 'artboard-range';
+    margin.type = 'range';
+    margin.min = '0';
+    margin.max = '120';
+    margin.step = '1';
+    margin.value = String(ab.margin);
+    const marginValue = document.createElement('span');
+    marginValue.className = 'artboard-value';
+    marginValue.textContent = `${ab.margin}px`;
+    margin.addEventListener('input', () => {
+      ab.margin = Number(margin.value);
+      marginValue.textContent = `${ab.margin}px`;
+      rebuild();
+    });
+    const marginWrap = document.createElement('span');
+    marginWrap.className = 'artboard-range-wrap';
+    marginWrap.append(margin, marginValue);
+    row('Margin', marginWrap);
+
+    const sync = () => {
+      widthInput.value = String(ab.width);
+      heightInput.value = String(ab.height);
+      margin.value = String(ab.margin);
+      marginValue.textContent = `${ab.margin}px`;
+      const preset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
+      presetSelect.value = preset?.id ?? 'custom';
+    };
+    sync();
+    body.appendChild(grid);
+  }
+
+  buildStyleSection() {
+    const body = this.section('Style', { id: 'style', mode: 'look' });
+    const view = this.app.document.view;
     const st = view.style;
     const locked = Boolean(this.app.activeLayerLocked);
+    const layerName = this.app.activeLayer?.name ?? 'current layer';
+    body.appendChild(this.panelHint(`Active layer · ${layerName}`));
     const lockable = (control) => {
       if (locked) control.disabled = true;
       return control;
@@ -704,57 +768,7 @@ export class Controls {
       this.app.rebuild();
     };
 
-    const presetSelect = document.createElement('select');
-    presetSelect.className = 'artboard-input';
-    for (const preset of ARTBOARD_PRESETS) {
-      const option = document.createElement('option');
-      option.value = preset.id;
-      option.textContent = preset.name;
-      presetSelect.appendChild(option);
-    }
-    const customOption = document.createElement('option');
-    customOption.value = 'custom';
-    customOption.textContent = 'Custom';
-    presetSelect.appendChild(customOption);
-    const initialPreset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
-    presetSelect.value = initialPreset?.id ?? 'custom';
-    presetSelect.addEventListener('change', () => {
-      const preset = ARTBOARD_PRESETS.find((p) => p.id === presetSelect.value);
-      if (!preset) return;
-      ab.width = preset.width;
-      ab.height = preset.height;
-      sync();
-      rebuild();
-    });
-    row('Preset', presetSelect);
-
-    const widthInput = number(ab.width, 240, 4096, 1, (v) => { ab.width = v; presetSelect.value = 'custom'; });
-    const heightInput = number(ab.height, 240, 4096, 1, (v) => { ab.height = v; presetSelect.value = 'custom'; });
-    row('Width', widthInput);
-    row('Height', heightInput);
-    row('Background', color(ab.background, (v) => { ab.background = v; syncPalette(); }));
-
-    const margin = document.createElement('input');
-    margin.className = 'artboard-range';
-    margin.type = 'range';
-    margin.min = '0';
-    margin.max = '120';
-    margin.step = '1';
-    margin.value = String(ab.margin);
-    const marginValue = document.createElement('span');
-    marginValue.className = 'artboard-value';
-    marginValue.textContent = `${ab.margin}px`;
-    margin.addEventListener('input', () => {
-      ab.margin = Number(margin.value);
-      marginValue.textContent = `${ab.margin}px`;
-      rebuild();
-    });
-    const marginWrap = document.createElement('span');
-    marginWrap.className = 'artboard-range-wrap';
-    marginWrap.append(margin, marginValue);
-    row('Margin', marginWrap);
-
-    row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; syncPalette(); })));
+    row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; })));
     const strokeWidth = lockable(number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; }));
     row('Stroke width', strokeWidth);
     const strokeOpacity = document.createElement('input');
@@ -803,6 +817,7 @@ export class Controls {
     const paletteSelect = document.createElement('select');
     paletteSelect.className = 'artboard-input';
     paletteSelect.disabled = locked;
+    paletteSelect.title = 'Palette applies the canvas background and active-layer stroke/fill.';
     for (const palette of PALETTES) {
       const opt = document.createElement('option');
       opt.value = palette.id;
@@ -811,37 +826,240 @@ export class Controls {
     }
     paletteSelect.addEventListener('change', () => {
       const palette = paletteById(paletteSelect.value);
-      ab.background = palette.background;
+      this.app.document.view.artboard.background = palette.background;
       st.stroke.color = palette.stroke;
       st.fill.color = palette.fill;
-      sync();
       rebuild();
     });
     const paletteWrap = document.createElement('span');
     paletteWrap.className = 'artboard-palette';
-    const swatch = document.createElement('span');
-    swatch.className = 'artboard-swatch';
-    paletteWrap.append(paletteSelect, swatch);
+    paletteWrap.append(paletteSelect);
     row('Palette', paletteWrap);
 
-    const sync = () => {
-      widthInput.value = String(ab.width);
-      heightInput.value = String(ab.height);
-      margin.value = String(ab.margin);
-      marginValue.textContent = `${ab.margin}px`;
-      const preset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
-      presetSelect.value = preset?.id ?? 'custom';
-      swatch.style.background = `linear-gradient(135deg, ${ab.background} 50%, ${st.stroke.color} 50%)`;
-    };
-    const syncPalette = () => { swatch.style.background = `linear-gradient(135deg, ${ab.background} 50%, ${st.stroke.color} 50%)`; };
-    syncPalette();
     if (locked) {
-      const hint = document.createElement('div');
-      hint.className = 'panel-hint';
-      hint.textContent = 'Layer content is locked. Unlock the layer to edit stroke, fill, blend or palette.';
-      grid.appendChild(hint);
+      grid.appendChild(this.panelHint('Layer content is locked. Unlock the layer to edit style.'));
     }
     body.appendChild(grid);
+  }
+
+  buildRenderSection() {
+    const body = this.section('Render', { id: 'render', mode: 'look' });
+    const view = this.app.document.view;
+    body.appendChild(this.panelHint('Global render passes · layer styles apply per layer.'));
+    const order = RenderPasses.ids();
+    const passApplies = new Map(RenderPasses.list().map((def) => [def.id, this.renderPassApplies(def)]));
+    const applicableModes = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
+    view.modes = applicableModes.length ? applicableModes : ['stroke'];
+    const modeInputs = [];
+    const groups = new Map();
+    for (const def of RenderPasses.list()) {
+      const group = def.group ?? 'diagnostic';
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(def);
+    }
+    const groupOrder = ['base', 'surface', 'color', 'diagnostic'];
+    const ordered = [
+      ...groupOrder.filter((group) => groups.has(group)).map((group) => [group, groups.get(group)]),
+      ...[...groups.entries()].filter(([group]) => !groupOrder.includes(group)),
+    ];
+    const groupLabels = {
+      base: 'Base',
+      surface: 'Surfaces',
+      color: 'Color',
+      diagnostic: 'Diagnostics',
+    };
+    for (const [group, defs] of ordered) {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'render-group';
+      const heading = document.createElement('div');
+      heading.className = 'render-group-h';
+      heading.textContent = groupLabels[group] ?? group;
+      const modesBody = document.createElement('div');
+      modesBody.className = 'mode-toggles render-mode-toggles';
+      for (const def of defs) {
+        const applies = passApplies.get(def.id) !== false;
+        const row = document.createElement('label');
+        row.className = 'mode-toggle';
+        row.classList.toggle('inapplicable', !applies);
+        row.title = applies
+          ? (def.description ?? def.name)
+          : 'Not applicable to the current geometry';
+        if (def.description) row.setAttribute('aria-description', def.description);
+        if (!applies) row.setAttribute('aria-disabled', 'true');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = view.modes.includes(def.id);
+        input.disabled = !applies;
+        input.addEventListener('change', () => {
+          const next = toggleMode(this.app.document.view.modes, def.id, input.checked, order);
+          this.app.document.view.modes = next;
+          for (const entry of modeInputs) entry.input.checked = next.includes(entry.id);
+          this.app.rebuild();
+        });
+        const text = document.createElement('span');
+        text.textContent = def.name;
+        row.append(input, text);
+        modesBody.appendChild(row);
+        modeInputs.push({ id: def.id, input, row, def });
+      }
+      groupEl.append(heading, modesBody);
+      body.appendChild(groupEl);
+    }
+    this.modeToggles = modeInputs;
+    this.buildRampEditor(body);
+  }
+
+  buildOverlaysSection() {
+    const body = this.section('Overlays', { id: 'overlays', mode: 'look' });
+    body.appendChild(this.panelHint('Global diagnostics · drawn above the active passes.'));
+    const gui = this.makeGui(body);
+    for (const o of OVERLAYS) {
+      gui.add(this.app.document.view.overlays, o.id)
+        .name(o.name)
+        .onChange(() => this.app.rebuild());
+    }
+  }
+
+  buildRampEditor(body) {
+    const view = this.app.document.view;
+    const wrap = document.createElement('div');
+    wrap.className = 'ramp-editor';
+    const head = document.createElement('div');
+    head.className = 'lab-subhead';
+    head.textContent = 'Color ramp';
+    const hint = this.panelHint('Global · Gradient Wireframe only · independent from palettes');
+    const preview = document.createElement('div');
+    preview.className = 'ramp-preview';
+    const stopsEl = document.createElement('div');
+    stopsEl.className = 'ramp-stops';
+    const actions = document.createElement('div');
+    actions.className = 'ramp-actions';
+
+    const stops = () => sanitizeColorRamp(view.colorRamp) ?? [...DEFAULT_COLOR_RAMP];
+    const paint = (list) => {
+      preview.style.background = `linear-gradient(90deg, ${list.join(', ')})`;
+    };
+    const add = document.createElement('button');
+    add.className = 'lab-button ramp-add';
+    add.textContent = '+ Add stop';
+    add.addEventListener('click', () => {
+      const next = [...stops()];
+      if (next.length >= 6) return;
+      next.push(next[next.length - 1] ?? '#ffffff');
+      view.colorRamp = next;
+      render();
+      this.app.rebuild();
+    });
+    const reset = document.createElement('button');
+    reset.className = 'lab-button ramp-reset';
+    reset.textContent = 'Reset';
+    reset.addEventListener('click', () => {
+      view.colorRamp = null;
+      render();
+      this.app.rebuild();
+    });
+    actions.append(add, reset);
+
+    function render() {
+      stopsEl.replaceChildren();
+      const list = stops();
+      list.forEach((color, index) => {
+        const item = document.createElement('span');
+        item.className = 'ramp-stop';
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.className = 'ramp-color';
+        input.value = color;
+        input.setAttribute('aria-label', `Ramp stop ${index + 1}`);
+        input.addEventListener('input', () => {
+          const next = [...stops()];
+          next[index] = input.value;
+          view.colorRamp = next;
+          paint(next);
+          reset.disabled = false;
+          this.app.rebuild();
+        });
+        item.appendChild(input);
+        if (list.length > 2) {
+          const remove = document.createElement('button');
+          remove.className = 'ramp-remove';
+          remove.textContent = '×';
+          remove.title = 'Remove stop';
+          remove.addEventListener('click', () => {
+            const next = [...stops()];
+            next.splice(index, 1);
+            view.colorRamp = next;
+            render();
+            this.app.rebuild();
+          });
+          item.appendChild(remove);
+        }
+        stopsEl.appendChild(item);
+      });
+      paint(list);
+      add.disabled = list.length >= 6;
+      reset.disabled = view.colorRamp == null;
+    }
+
+    render();
+    wrap.append(head, hint, preview, stopsEl, actions);
+    body.appendChild(wrap);
+  }
+
+  /** Keep render toggles truthful after geometry or layer changes. */
+  refreshRenderModes() {
+    if (!this.modeToggles?.length) return;
+    const view = this.app.document.view;
+    const order = RenderPasses.ids();
+    const passApplies = new Map(
+      this.modeToggles.map((entry) => [entry.id, this.renderPassApplies(entry.def)]),
+    );
+    const allowed = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
+    const nextModes = allowed.length ? allowed : ['stroke'];
+    if (nextModes.join('|') !== view.modes.join('|')) view.modes = nextModes;
+    for (const entry of this.modeToggles) {
+      const applies = passApplies.get(entry.id) !== false;
+      const checked = view.modes.includes(entry.id);
+      if (entry.input.disabled !== !applies) entry.input.disabled = !applies;
+      if (entry.input.checked !== checked) entry.input.checked = checked;
+      if (entry.row.classList.contains('inapplicable') !== !applies) {
+        entry.row.classList.toggle('inapplicable', !applies);
+      }
+      const title = applies
+        ? (entry.def.description ?? entry.def.name)
+        : 'Not applicable to the current geometry';
+      if (entry.row.title !== title) entry.row.title = title;
+      const ariaDisabled = String(!applies);
+      if (entry.row.getAttribute('aria-disabled') !== ariaDisabled) {
+        entry.row.setAttribute('aria-disabled', ariaDisabled);
+      }
+    }
+  }
+
+  /** Does a render pass apply to at least one visible layer? */
+  renderPassApplies(def) {
+    if (typeof def.appliesTo !== 'function') return true;
+    const evaluation = this.app.evaluation;
+    const doc = this.app.document;
+    const layers = Array.isArray(evaluation?.layers) && evaluation.layers.length
+      ? evaluation.layers.filter((layer) => layer.visible !== false)
+      : [{
+        generator: doc.generator,
+        operators: doc.operators,
+        curves: evaluation?.curves ?? [],
+        meshes: evaluation?.meshes ?? [],
+      }];
+    return layers.some((layer) => def.appliesTo({
+      document: {
+        ...doc,
+        generator: layer.generator ?? doc.generator,
+        operators: layer.operators ?? doc.operators,
+      },
+      curves: layer.curves ?? [],
+      meshes: layer.renderMeshes ?? layer.meshes ?? [],
+      view: doc.view,
+      time: doc.animation?.time ?? 0,
+    }));
   }
 
   buildImageSection() {

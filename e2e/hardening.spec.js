@@ -9,7 +9,7 @@ async function boot(page) {
 
 test('blend changes the rendered canvas', async ({ page }) => {
   await boot(page);
-  const artboard = await openSection(page, 'Artboard');
+  const artboard = await openSection(page, 'Style');
   const canvas = page.locator('#canvas-container canvas');
   const before = await canvas.screenshot();
   await artboard.locator('.artboard-row', { hasText: 'Blend' }).locator('select').selectOption('multiply');
@@ -30,7 +30,7 @@ test('content lock blocks edits while keeping visibility available', async ({ pa
   const generator = await openSection(page, 'Generator');
   await expect(generator.locator('select').first()).toBeDisabled();
 
-  const artboard = await openSection(page, 'Artboard');
+  const artboard = await openSection(page, 'Style');
   await expect(artboard.locator('.artboard-row', { hasText: 'Stroke width' }).locator('input')).toBeDisabled();
   await expect(artboard.locator('.artboard-row', { hasText: 'Blend' }).locator('select')).toBeDisabled();
 
@@ -49,13 +49,13 @@ test('content lock blocks edits while keeping visibility available', async ({ pa
 
 test('inapplicable render passes are disabled and applicable passes enable', async ({ page }) => {
   await boot(page);
-  let view = await openSection(page, 'View');
+  let view = await openSection(page, 'Render');
   await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input')).toBeDisabled();
   await expect(view.locator('.mode-toggle', { hasText: 'Epicycles' }).locator('input')).toBeDisabled();
 
   await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
   await page.waitForTimeout(400);
-  view = await openSection(page, 'View');
+  view = await openSection(page, 'Render');
   await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input')).not.toBeDisabled();
 });
 
@@ -63,7 +63,7 @@ test('SVG export warns about omitted surface fill', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
   await page.waitForTimeout(400);
-  const view = await openSection(page, 'View');
+  const view = await openSection(page, 'Render');
   await view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input').check();
   await page.waitForTimeout(300);
 

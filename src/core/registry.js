@@ -92,6 +92,12 @@ function validateDefinition(kind, definition) {
   if (kind === 'render-pass' && definition.appliesTo !== undefined && typeof definition.appliesTo !== 'function') {
     throw new Error(`${label}: appliesTo must be a function`);
   }
+  if (kind === 'render-pass' && definition.group !== undefined && typeof definition.group !== 'string') {
+    throw new Error(`${label}: group must be a string`);
+  }
+  if (kind === 'render-pass' && definition.description !== undefined && typeof definition.description !== 'string') {
+    throw new Error(`${label}: description must be a string`);
+  }
 }
 
 function validateId(kind, value) {

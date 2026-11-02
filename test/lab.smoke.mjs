@@ -2115,6 +2115,8 @@ console.log('27. registry contracts');
   }
   for (const def of RenderPasses.list()) {
     assert(typeof def.draw === 'function', `render pass ${def.id} has draw`);
+    assert(['base', 'surface', 'color', 'diagnostic'].includes(def.group), `render pass ${def.id} has a valid group`);
+    assert(typeof def.description === 'string' && def.description.length > 0, `render pass ${def.id} has a description`);
     if (def.appliesTo !== undefined) assert(typeof def.appliesTo === 'function', `render pass ${def.id} appliesTo is a function`);
   }
   const surfaceFillPass = RenderPasses.get('surface-fill');

@@ -395,7 +395,8 @@ Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
 Form/Look/Explore/Keep panel modes with persisted accordions and essential/
-advanced parameters · Session recovery with debounced local snapshots · Helix Lab
+advanced parameters; Look split into Camera, Canvas, Style, Render and
+Overlays, with Image, Animation and Timeline under a temporary Work label · Session recovery with debounced local snapshots · Helix Lab
 (generalized helix, orthographic projections, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded

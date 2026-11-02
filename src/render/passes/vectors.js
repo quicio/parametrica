@@ -22,6 +22,8 @@ function drawVectorField(p, curves, analysis, key, color, length = 18) {
 RenderPasses.register({
   id: 'tangents',
   name: 'Tangents',
+  group: 'diagnostic',
+  description: 'Tangent vectors at samples.',
   draw(p, { curves, analysis }) {
     drawVectorField(p, curves, analysis, 'tangents', [255, 255, 255, 140]);
   },
@@ -30,6 +32,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'normals',
   name: 'Normals',
+  group: 'diagnostic',
+  description: 'Normal vectors at samples.',
   draw(p, { curves, analysis }) {
     drawVectorField(p, curves, analysis, 'normals', [227, 6, 19, 160]);
   },
@@ -38,6 +42,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'curvature',
   name: 'Curvature Heatmap',
+  group: 'color',
+  description: 'Curvature magnitude heatmap.',
   draw(p, { curves, analysis }) {
     // normalize by 95th percentile |κ|
     const all = [];

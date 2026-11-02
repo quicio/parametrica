@@ -37,6 +37,8 @@ export function traceCurve(p, curve, rgb = [255, 255, 255], baseAlpha = 255) {
 RenderPasses.register({
   id: 'stroke',
   name: 'Stroke',
+  group: 'base',
+  description: 'Primary curve stroke.',
   draw(p, { curves, view }) {
     const style = view.style ?? {};
     const stroke = style.stroke ?? {};
@@ -65,6 +67,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'points',
   name: 'Points',
+  group: 'base',
+  description: 'Sample points along curves.',
   draw(p, { curves, view }) {
     const style = view.style ?? {};
     const stroke = style.stroke ?? {};
@@ -81,6 +85,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'wireframe',
   name: 'Wireframe',
+  group: 'diagnostic',
+  description: 'Segment wireframe.',
   draw(p, { curves, view }) {
     const style = view.style ?? {};
     const rgb = hexToRgb(style.stroke?.color, [255, 255, 255]);
@@ -100,6 +106,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'control-polygon',
   name: 'Control Polygon',
+  group: 'diagnostic',
+  description: 'Spline control polygon and handles.',
   appliesTo({ curves = [] }) {
     return curves.some((curve) => curve.meta?.controlPoints?.length);
   },

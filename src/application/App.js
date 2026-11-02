@@ -25,6 +25,7 @@ import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
 import { renderPresetPreview } from '../presets/preview.js';
+import { DEFAULT_CAMERA } from '../view/camera.js';
 import { DialogService } from '../ui/dialogs.js';
 
 export class App {
@@ -614,6 +615,14 @@ export class App {
 
   resetTime() {
     this.setTime(0);
+  }
+
+  resetCamera() {
+    const camera = this.document.view.camera;
+    camera.yaw = DEFAULT_CAMERA.yaw;
+    camera.pitch = DEFAULT_CAMERA.pitch;
+    camera.fov = DEFAULT_CAMERA.fov;
+    this.rebuild();
   }
 
   /* ———————— mutation / presets ———————— */

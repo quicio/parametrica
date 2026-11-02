@@ -8,6 +8,8 @@ import { polylineIntersections, selfIntersections } from '../../analysis/interse
 RenderPasses.register({
   id: 'negative-space',
   name: 'Negative Space',
+  group: 'diagnostic',
+  description: 'Filled closed-curve negative space.',
   appliesTo({ curves = [] }) {
     return curves.some((curve) => curve.closed);
   },
@@ -30,6 +32,8 @@ const sdfCache = { key: null, image: null };
 RenderPasses.register({
   id: 'signed-distance',
   name: 'Signed Distance',
+  group: 'diagnostic',
+  description: 'Cached signed-distance bands.',
   draw(p, { curves }) {
     const key = curves;
     if (sdfCache.key !== key) {
@@ -99,6 +103,8 @@ function pointSegmentDist2(px, py, a, b) {
 RenderPasses.register({
   id: 'topology',
   name: 'Topology (intersections)',
+  group: 'diagnostic',
+  description: 'Self/crossing intersection markers.',
   draw(p, { curves }) {
     const total = curves.reduce((s, c) => s + c.points.length, 0);
     if (total > 6000) {

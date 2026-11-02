@@ -7,6 +7,8 @@ import { RenderPasses } from '../../core/registry.js';
 RenderPasses.register({
   id: 'surface-wireframe',
   name: 'Surface Wireframe',
+  group: 'surface',
+  description: 'Projected mesh edges.',
   appliesTo({ meshes = [] }) {
     return Array.isArray(meshes) && meshes.length > 0;
   },
@@ -41,6 +43,8 @@ RenderPasses.register({
 RenderPasses.register({
   id: 'surface-fill',
   name: 'Surface Fill',
+  group: 'surface',
+  description: 'Painter-sorted mesh faces.',
   appliesTo({ meshes = [] }) {
     return Array.isArray(meshes) && meshes.length > 0;
   },
