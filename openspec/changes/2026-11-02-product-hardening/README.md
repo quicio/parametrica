@@ -1,28 +1,30 @@
 # Product hardening
 
-Audit-driven improvements for the **current** Parametrica product.
+Audit-driven, minimal hardening for the **current** Parametrica product.
 
 Read in order:
 
-1. `proposal.md` — findings, confirmed defects, recommendations, priority.
-2. `design.md` — technical approach, decisions and migration.
-3. `tasks.md` — P0/P1 implementation checklist and deferred P2 items.
-4. `specs/ui-integrity/spec.md` — behavioural contract.
+1. `proposal.md` — findings, P0/P1/P2 classification, recommendations and the
+   pending LOOK proposal.
+2. `design.md` — technical approach for the mandatory hardening only.
+3. `tasks.md` — P0 implementation checklist and verification.
+4. `specs/ui-integrity/spec.md` — behavioural contract for the hardening.
 
-Scope summary:
+Mandatory scope:
 
-- truthful controls: blend, layer lock, pass applicability;
-- explicit global/layer/viewport/workspace scope;
-- layer-scoped diagnostic analysis;
-- editable gradient ramp and connected palettes;
-- fill modes and gradient controls;
-- single authoritative stroke width;
-- export-fidelity disclosure for SVG;
-- Explore seed and Notebook metadata only as small clarity fixes.
+- layer-scoped analysis for per-layer diagnostic passes;
+- truthful blend control;
+- truthful layer lock;
+- render-pass applicability;
+- SVG export omission disclosure.
+
+Non-normative follow-ups: see the recommendation register in `proposal.md`.
+The LOOK ownership grouping is a proposal pending validation, not a task in
+this change.
 
 Out of scope:
 
 - MAKE, solids, CSG, STL/3MF;
 - document v4;
 - new renderer or 3D viewport;
-- final navigation rewrite or Notebook/Presets merge.
+- navigation rewrite or Notebook/Presets merge.
