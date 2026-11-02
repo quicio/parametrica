@@ -11,6 +11,34 @@ async function lissajous(page) {
   await page.waitForTimeout(250);
 }
 
+test('canvas fills the available width and centers the artboard', async ({ page }) => {
+  await boot(page);
+  await page.waitForTimeout(350);
+  const initial = await page.evaluate(() => {
+    const container = document.getElementById('canvas-container').getBoundingClientRect();
+    const canvas = document.querySelector('#canvas-container canvas').getBoundingClientRect();
+    return { container: { w: container.width, h: container.height }, canvas: { w: canvas.width, h: canvas.height } };
+  });
+  expect(Math.abs(initial.canvas.w - initial.container.w)).toBeLessThanOrEqual(1);
+  expect(Math.abs(initial.canvas.h - initial.container.h)).toBeLessThanOrEqual(1);
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.artboard.width = 1600;
+    app.document.view.artboard.height = 900;
+    app.rebuild();
+  });
+  await page.waitForTimeout(250);
+  const rect = await page.evaluate(() => {
+    const renderer = window.__parametrica.renderer;
+    const container = document.getElementById('canvas-container').getBoundingClientRect();
+    return { ...renderer.artboardRect(), container: { w: container.width, h: container.height } };
+  });
+  expect(Math.abs(rect.w - rect.container.w)).toBeLessThanOrEqual(1);
+  expect(Math.abs(rect.x - (rect.container.w - rect.w) / 2)).toBeLessThanOrEqual(1);
+  expect(Math.abs(rect.y - (rect.container.h - rect.h) / 2)).toBeLessThanOrEqual(1);
+});
+
 test('workspace modes and accordion state persist', async ({ page }) => {
   await boot(page);
   await expect(page.locator('.panel-mode[data-mode="form"]')).toHaveAttribute('aria-selected', 'true');

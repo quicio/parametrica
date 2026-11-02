@@ -66,6 +66,7 @@ export class P5Adapter extends Renderer {
       const { default: p5 } = await import('p5');
       this.sketch = new p5((p) => this.mount(p));
       this.ready = true;
+      requestAnimationFrame(() => this.fitToContainer());
       return this;
     } catch (error) {
       this.loadError = error;
@@ -82,6 +83,10 @@ export class P5Adapter extends Renderer {
       p.pixelDensity(window.devicePixelRatio || 1);
       p.smooth();
       p.frameRate(60);
+      // CSS can settle after the module starts; the initial p5 size may be
+      // narrower than the final flex canvas. Re-fit after layout so the
+      // artboard uses the full available width.
+      requestAnimationFrame(() => this.fitToContainer());
       const canvas = p.drawingContext?.canvas;
       if (canvas) {
         canvas.setAttribute('role', 'img');

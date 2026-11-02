@@ -16,8 +16,8 @@ import { dragSlider, openSection } from './helpers.js';
 async function canvasFingerprint(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector('#canvas-container canvas');
-    // Downscale to 48x48 for a stable, fast fingerprint.
-    const w = 48, h = 48;
+    // Downscale to 96x96 for a stable but sensitive fingerprint.
+    const w = 96, h = 96;
     const tmp = document.createElement('canvas');
     tmp.width = w; tmp.height = h;
     const tctx = tmp.getContext('2d');
@@ -32,7 +32,7 @@ async function canvasFingerprint(page) {
         const lum = data[i] + data[i + 1] + data[i + 2];
         if (lum > 60) {
           lit++;
-          buckets[Math.floor(y / 12) * 4 + Math.floor(x / 12)]++;
+          buckets[Math.floor(y / (h / 4)) * 4 + Math.floor(x / (w / 4))]++;
         }
       }
     }

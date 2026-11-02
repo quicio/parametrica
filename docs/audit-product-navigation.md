@@ -20,6 +20,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
 | El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
+| El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
 | La cámara no tenía reset explícito | **Resuelto** | Reset undoable, deshabilitado en proyección ortográfica. |
 | No había renombrado visible de capa | **Resuelto** | Acción de renombrado en Layers. |
@@ -287,7 +288,7 @@ Pendiente:
 |---|---|---|
 | Cámara | **Reset + guardas** | Reset undoable; recorte de plano cercano y distancia de escena. |
 | Proyección | Global, gated por capa activa | Sin cambios de contrato. |
-| Viewport/canvas | Global | Runtime. |
+| Viewport/canvas | Global | Reajuste tras layout; ocupa el ancho disponible y centra el artboard. |
 | Artboard | Global | Canvas section. |
 | Imagen | Underlay UI-only | No entra en documentos ni export. |
 | Export | SVG vectorial; PNG fiel; GIF animado | Signed Distance es la única omisión raster-only. |
@@ -443,6 +444,6 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 ### Estado de la suite
 
 - `npm run check`: lint, **1657/1657** checks y build.
-- `npm run test:e2e`: **98/98** tests.
+- `npm run test:e2e`: **99/99** tests.
 - `openspec validate --specs --strict`: **57/57** specs.
 - No hay cambios OpenSpec activos.

@@ -135,7 +135,7 @@ src/
 │
 ├── render/
 │   ├── Renderer.js               backend contract
-│   ├── p5/P5Adapter.js           lazy p5 backend, pass composer
+│   ├── p5/P5Adapter.js           lazy p5 backend, pass composer, post-layout canvas fit
 │   ├── thumbnail.js              plain-canvas candidate previews
 │   ├── projection.js             legacy curve projection compatibility
 │   ├── camera3d.js               compatibility re-export of view/camera
