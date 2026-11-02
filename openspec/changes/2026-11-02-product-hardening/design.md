@@ -29,18 +29,52 @@ For the affected controls, the implementation must choose one of:
 - make the control do what it says, or
 - remove/disable it with a short explanation.
 
-This applies to:
+This applies to `style.blend`, layer lock and render-pass toggles that cannot
+run on the current geometry. The control's label or help text must state any
+declared scope.
 
-- `style.blend`;
-- layer lock;
-- render-pass toggles that cannot run on the current geometry.
+### D2: Layer lock scope
 
-No final product semantics are introduced for lock beyond “a control labelled
-lock must prevent the mutation classes named in the spec while locked”.
-Selection behavior and visibility rights remain implementation decisions to
-validate.
+The audit confirms `layer.locked` has no effect. It does not establish that
+lock should cover rename, reorder or delete, so the minimum contract proposed
+for review is a **content lock**:
 
-### D2: Layer-scoped diagnostic analysis
+| Action | Under content lock | Rationale |
+|---|---|---|
+| Generator, parameters, equations/harmonics, operators, style | Blocked | Protects authored content |
+| Selection, visibility | Available | Inspect/hide without editing |
+| Rename, reorder, delete, duplicate | Not claimed | Structural/identity scope needs a separate decision |
+
+The UI may label this “Content lock” or explain the scope. If the product wants
+a broader lock, define those actions explicitly before exposing them as
+blocked. If no scope is approved, remove or disable the control. Selection
+behavior for structural actions is not decided here.
+
+### D3: Blend behavior and decision criteria
+
+Expected behavior if the control remains:
+
+- `normal`, `multiply`, `screen` and `difference` composite each layer's output
+  with what is beneath it;
+- the mode resets before the next layer;
+- the control applies consistently to the active passes, or the UI states which
+  passes support it;
+- PNG reflects the effect; SVG export states that blend is not represented.
+
+Decision criteria:
+
+1. The effect is visually consistent across the supported passes.
+2. Layer isolation is preserved and blend does not leak to the next layer.
+3. Painter ordering/depth remains predictable.
+4. The cost is acceptable for the current point/mesh budgets.
+5. Export behavior is explicit (PNG reflects it; SVG warns).
+
+If any criterion cannot be met, remove or disable the control instead of
+shipping a partial, unlabelled implementation. This design does not choose
+between implementing and removing; that decision requires validation against
+the criteria.
+
+### D4: Layer-scoped diagnostic analysis
 
 The current adapter passes `evaluation.analysis` (combined curves) to every
 layer while diagnostic passes index `layer.curves`. Replace this with one of:
@@ -58,7 +92,7 @@ The invariant is testable: with two layers, a diagnostic pass on the second
 layer must use the second layer's curves and must not read the first layer's
 analysis.
 
-### D3: Render-pass applicability metadata
+### D5: Render-pass applicability metadata
 
 Add optional, backward-compatible metadata to render-pass registration:
 
@@ -77,7 +111,7 @@ visible layers, or omits it when it would be meaningless. Passes without
 `appliesTo` are assumed applicable. The active state must remain truthful when
 geometry changes.
 
-### D4: SVG export fidelity
+### D6: SVG export fidelity
 
 SVG does not represent every p5 pass. The mandatory contract is disclosure, not
 full parity:
@@ -91,7 +125,7 @@ full parity:
 Full SVG parity (gradients, meshes, overlays) is a functional expansion
 candidate, not part of this change.
 
-### D5: Compatibility and migration
+### D7: Compatibility and migration
 
 - No document v4.
 - No new required document fields for H1–H5.
@@ -124,8 +158,9 @@ they require separate validation and, where noted, a design decision.
 
 These are intentionally unresolved and must not become requirements here:
 
-- Does layer lock block selection, or only mutation? Is the lock kept at all?
-- Should blend be implemented or removed?
+- Is the proposed content-lock scope approved, or should the lock control be
+  removed? Should structural/identity actions ever be included?
+- Should blend be implemented or removed after applying the D3 criteria?
 - Should pass grouping/descriptions ship with applicability or later?
 - Should SVG eventually render gradients/meshes, or remain a documented
   subset with PNG as the faithful export?

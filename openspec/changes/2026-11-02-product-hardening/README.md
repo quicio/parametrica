@@ -18,6 +18,8 @@ Mandatory scope:
 - render-pass applicability;
 - SVG export omission disclosure.
 
+Documentation updates in README/SPEC are complementary, not a P0 defect.
+
 Non-normative follow-ups: see the recommendation register in `proposal.md`.
 The LOOK ownership grouping is a proposal pending validation, not a task in
 this change.

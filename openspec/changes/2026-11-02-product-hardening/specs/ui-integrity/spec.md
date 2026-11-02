@@ -24,15 +24,19 @@ observable effect or be removed/disabled with a visible reason.
 
 #### Scenario: Layer lock
 
-- **WHEN** a layer is locked through a visible lock control
-- **THEN** the layer cannot be mutated through generator, parameter, equation,
-  operator, style, rename, reorder or delete controls
-- **AND** unlocking is an explicit action
+- **WHEN** a layer is locked through a control that declares a content-lock
+  scope
+- **THEN** its generator, parameters, equations/harmonics, operators and style
+  cannot be edited
+- **AND** selection and visibility remain available
+- **AND** the UI states the lock scope
+- **AND** rename, reorder, delete and duplicate are not claimed as blocked
+  unless the declared scope explicitly includes them
 
 #### Scenario: Lock control removed
 
-- **WHEN** lock semantics are not implemented
-- **THEN** no lock control is presented as effective
+- **WHEN** no lock scope is approved or implemented
+- **THEN** no layer lock is presented as effective
 
 #### Scenario: Inapplicable render pass
 

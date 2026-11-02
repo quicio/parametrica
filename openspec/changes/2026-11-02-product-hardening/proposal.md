@@ -17,10 +17,40 @@ separately.
 | # | Finding | Impact | Evidence |
 |---|---|---|---|
 | H1 | Layer-scoped `tangents` / `normals` / `curvature` passes receive combined analysis while indexing a layer's curves | Wrong diagnostics; correctness | `P5Adapter.js`, `analysis/differential.js` |
-| H2 | `style.blend` is exposed and persisted but no pass applies it | False affordance | `document.js`, `Controls.js`; no `blendMode` in `src/render` |
-| H3 | `layer.locked` is exposed but does not prevent mutation | False affordance | `App.setLayerLocked`, `Controls.js` |
+| H2 | `style.blend` is exposed and persisted but no pass applies it; resolution criteria are documented in design D3 | False affordance / unresolved behavior | `document.js`, `Controls.js`; no `blendMode` in `src/render` |
+| H3 | `layer.locked` is exposed but does not prevent any mutation; the intended scope is undefined and a content-lock contract is proposed below | False affordance / undefined contract | `App.setLayerLocked`, `Controls.js` |
 | H4 | Render passes appear as effective toggles when they cannot run on the current geometry | False affordance | `epicycles.js`, `surface.js` early returns |
 | H5 | SVG export emits curves and solid fill only and silently omits active render features | Trust / output fidelity | `Exporter.js` |
+
+### Layer lock scope (H3)
+
+The audit confirms the flag has no effect; it does **not** establish that lock
+must cover rename, reorder or delete. The minimum contract proposed for review
+is a **content lock**:
+
+| Action | Expected under content lock | Basis |
+|---|---|---|
+| Generator, parameters, equations/harmonics, operators, style | Blocked | Protects the layer's authored content |
+| Selection, visibility | Available | Inspect and hide without changing content |
+| Rename, reorder, delete, duplicate | Not claimed | Structural/identity scope is a separate product decision |
+
+If a broader lock is wanted, it must be defined before the UI presents it. The
+control label/description must state the scope. If no scope is approved, the
+control is removed or disabled rather than left as a no-op.
+
+### Blend resolution (H2)
+
+Expected behavior if the control stays:
+
+- `normal`, `multiply`, `screen` and `difference` composite each layer's output
+  with the layers beneath it;
+- the mode resets before the next layer;
+- the control applies consistently to the active passes, or the UI states
+  which passes support it;
+- PNG reflects the effect; SVG export states that blend is not represented.
+
+The implement-vs-remove decision is recorded in `design.md` D2. It is not
+decided here.
 
 ### Recommendation register — non-normative
 
@@ -76,7 +106,8 @@ The mandatory slice is limited to H1–H5:
   them; keep PNG as the faithful raster export.
 
 No navigation change, no fill-gradient work, no per-pass settings and no MAKE
-are part of this change.
+are part of this change. README/SPEC updates are complementary documentation,
+not a sixth P0 defect.
 
 ## Capabilities
 
