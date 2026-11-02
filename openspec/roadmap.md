@@ -135,6 +135,7 @@ extraction and conversion to a Fourier document.
 | SVG frame sequence ZIP + manifest | shipped (2026-11-02) |
 | Plotter-ready stroke-only SVG | shipped (2026-11-02) |
 | Image tracing: all connected contours into Fourier layers | shipped (2026-11-02) |
+| Internal hole contours in all-contours tracing | shipped (2026-11-02) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
@@ -153,7 +154,7 @@ extraction and conversion to a Fourier document.
 | Capability | Purpose |
 |---|---|
 | `palette-system` | Custom palette editor and per-layer color metrics |
-| `image-holes` | Hole-aware / nested contour tracing |
+| `image-evenodd` | Even-odd hole filling and contour nesting |
 | `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -429,6 +430,7 @@ generation metadata in the notebook; unit group 24.
 | `image-multicontour` | archived | shipped |
 | `helix-multiview` | archived | shipped |
 | `color-metrics` | archived | shipped |
+| `image-holes` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

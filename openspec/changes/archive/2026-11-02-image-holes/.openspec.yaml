@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Detect internal holes and trace them as editable contour layers alongside
+  outer silhouettes.
