@@ -155,7 +155,9 @@ extraction and conversion to a Fourier document.
 | Capability | Purpose |
 |---|---|
 | `palette-system` | Custom palette editor |
+| `pass-appearance` | Per-pass color and stroke-width settings |
 | `image-evenodd` | Even-odd hole filling and contour nesting |
+| `quad-svg-export` | Quad layout reconstruction in SVG/plotter |
 | `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |

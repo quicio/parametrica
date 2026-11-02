@@ -268,7 +268,9 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 Deferred to v0.x:
 
 - Custom palette editor
+- Per-pass color and stroke-width settings
 - Even-odd hole filling / contour nesting
+- Quad SVG/plotter reconstruction (canvas-only today)
 - MAKE/fabrication (solids, CSG, STL/3MF, 3D viewport)
 
 ---

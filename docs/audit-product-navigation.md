@@ -53,8 +53,9 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
 - **Custom palette editor** más allá de los presets actuales.
+- **Color y grosor configurables por pass** (la opacidad ya existe).
 - **Even-odd fill de huecos / jerarquía de contornos.**
-- **Color y grosor configurables por pass.**
+- **Quad SVG/plotter:** el quad sigue siendo canvas-only; PNG/GIF lo capturan.
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
 - **Notebook y Presets** siguen siendo dos bibliotecas separadas.
 - **MAKE/fabricación:** no hay autoría de sólidos, CSG, STL/3MF, unidades ni
@@ -400,6 +401,8 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 - **Export:** frame/GIF/SVG-frame export ya pertenece a Perform; los passes
   vectoriales y el SVG de plotter ya están cubiertos.
 - **Color:** editor de paletas personalizado.
+- **Passes:** color y stroke width por pass.
+- **Quad:** reconstrucción SVG/plotter del layout 2×2.
 - **Image:** even-odd fill de huecos y jerarquía.
 - **Composición:** relación Notebook/Presets y persistencia unificada.
 - **MAKE:** primer vertical slice de fabricación.
@@ -415,8 +418,8 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | Alcance del layer lock | Content lock | Decidir rename/reorder/delete/duplicate. |
 | Blend | Implementado | Validar visualmente `screen`/`difference` y coste. |
 | Estilo global vs por capa | `view.style` alias aceptado | Mantener o separar en el futuro. |
-| Render modes globales vs por capa | Globales | Decidir si se vuelven por capa. |
-| Fill/ramp scope | Ramp global; fill sólido/gradiente | Decidir color/grosor por pass. |
+| Render modes globales vs por capa | Override por capa implementado | Mantener la herencia global y el override. |
+| Fill/ramp scope | Ramp global; fill sólido/gradiente | Decidir color/grosor por pass y editor de paletas. |
 | Notebook vs Presets | Separados | Unificar, relacionar o mantener. |
 | MAKE | Sin código | Definir primer vertical slice y salida real. |
 | Persistencia | Múltiples stores | Decidir si se unifica. |
