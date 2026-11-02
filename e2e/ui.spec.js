@@ -717,6 +717,46 @@ test('image input traces a local circle into a Fourier document', async ({ page 
   expect(serialized).not.toContain('imageData');
 });
 
+test('image input traces multiple contours into separate Fourier layers', async ({ page }) => {
+  await openSection(page, 'Image');
+  const dataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 240;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 240, 240);
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(70, 120, 38, 0, Math.PI * 2);
+    ctx.arc(170, 120, 38, 0, Math.PI * 2);
+    ctx.fill();
+    return canvas.toDataURL('image/png');
+  });
+  const buffer = Buffer.from(dataUrl.split(',')[1], 'base64');
+  await page.locator('.image-file').setInputFiles({ name: 'two-circles.png', mimeType: 'image/png', buffer });
+  await expect(page.locator('.image-status')).toContainText('Image loaded');
+  await page.locator('.image-multi').check();
+  await page.locator('.image-trace').click();
+  await expect(page.locator('.image-status')).toContainText('2 contours');
+  await expect(page.locator('.image-preview')).toBeVisible();
+  await page.locator('.image-apply').click();
+  await page.waitForTimeout(500);
+
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      layers: app.document.layers.length,
+      generators: app.document.layers.map((layer) => layer.generator.id),
+      serialized: JSON.stringify(app.document),
+    };
+  });
+  expect(state.layers).toBe(2);
+  expect(state.generators).toEqual(['fourier', 'fourier']);
+  expect(state.serialized).not.toContain('image/png');
+  expect(state.serialized).not.toContain('imageData');
+});
+
 test('image input reports when no contour passes the threshold', async ({ page }) => {
   await openSection(page, 'Image');
   const before = await page.evaluate(() => JSON.stringify(window.__parametrica.document));

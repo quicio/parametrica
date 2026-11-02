@@ -21,6 +21,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
 | No había secuencia SVG frame-by-frame | **Resuelto** | Timeline exporta `frame-NNN.svg` + `manifest.json` en Perform. |
 | No había salida para plotter | **Resuelto** | Export Plotter SVG: solo trazos visibles, sin fills/gradientes/blend/overlays/passes. |
+| Image tracing solo trazaba el contorno mayor | **Resuelto** | Modo All contours: componentes separados, cada uno como capa Fourier; huecos siguen pendientes. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
@@ -48,7 +49,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
   fallback fiel.
 - **Palette system / color-by-metric** más allá del color ramp actual.
 - **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
-- **Image tracing multicontorno / con huecos.**
+- **Image tracing con huecos/nidos.**
 - **Ajustes por pass y render modes por capa.**
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
 - **Notebook y Presets** siguen siendo dos bibliotecas separadas.
@@ -395,7 +396,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 - **Export:** frame/GIF/SVG-frame export ya pertenece a Perform; los passes
   vectoriales y el SVG de plotter ya están cubiertos.
 - **Color:** palette system/color-by-metric más allá del ramp actual.
-- **Image:** multicontorno y huecos.
+- **Image:** huecos y jerarquía de contornos.
 - **Helix:** multi-viewport 3D + tres proyecciones.
 - **Composición:** relación Notebook/Presets y persistencia unificada.
 - **MAKE:** primer vertical slice de fabricación.
@@ -442,7 +443,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1665/1665** checks y build.
-- `npm run test:e2e`: **101/101** tests.
-- `openspec validate --specs --strict`: **59/59** specs.
+- `npm run check`: lint, **1669/1669** checks y build.
+- `npm run test:e2e`: **102/102** tests.
+- `openspec validate --specs --strict`: **60/60** specs.
 - No hay cambios OpenSpec activos.

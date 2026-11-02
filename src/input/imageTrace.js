@@ -11,7 +11,7 @@
  * objects (`{width, height, data}`) so the pipeline is Node-testable.
  */
 
-import { createDocument } from '../core/document.js';
+import { createDocument, createLayer, attachLayerAliases } from '../core/document.js';
 
 export const MAX_IMAGE_EDGE = 1024;
 export const DEFAULT_HARMONICS = 32;
@@ -77,6 +77,103 @@ export function traceImageData(imageData, options = {}) {
     harmonicCount: harmonics,
     pointCount: simplified.length,
   };
+}
+
+/**
+ * Trace every foreground component up to a bounded count. Each contour keeps
+ * the same Fourier result shape as `traceImageData`, so the existing preview
+ * and document builder can consume it.
+ */
+export function traceImageContours(imageData, options = {}) {
+  if (!imageData || !imageData.width || !imageData.height || !imageData.data) {
+    return { ok: false, reason: 'No image data to trace.' };
+  }
+  const width = Math.floor(imageData.width);
+  const height = Math.floor(imageData.height);
+  if (width < 3 || height < 3) return { ok: false, reason: 'Image is too small to trace.' };
+
+  const gray = grayscale(imageData);
+  const threshold = options.threshold == null
+    ? otsuThreshold(gray)
+    : clamp(Math.round(Number(options.threshold)), 0, 255);
+  if (!Number.isFinite(threshold)) return { ok: false, reason: 'Threshold is not valid.' };
+
+  const mask = binarize(gray, width, height, threshold, { invert: Boolean(options.invert) });
+  let foreground = 0;
+  for (let i = 0; i < mask.length; i++) foreground += mask[i];
+  if (!foreground) return { ok: false, reason: 'No pixels pass the threshold. Adjust the threshold or invert.' };
+  if (foreground === mask.length) return { ok: false, reason: 'The whole image is foreground; there is no contour.' };
+
+  const padded = padMask(mask, width, height);
+  const components = labelComponents(padded.mask, padded.width, padded.height);
+  const maxContours = Math.max(1, Math.min(12, Math.floor(options.maxContours ?? 12)));
+  const minArea = Math.max(8, Math.floor(foreground * 0.0005));
+  const contours = [];
+  for (const component of components) {
+    if (component.area < minArea) continue;
+    if (contours.length >= maxContours) break;
+    const result = traceComponent(
+      component.labels,
+      component.label,
+      component.area,
+      padded.width,
+      padded.height,
+      options,
+    );
+    if (result) contours.push(result);
+  }
+  if (!contours.length) return { ok: false, reason: 'No connected contour was found.' };
+  return { ok: true, threshold, width, height, mask, foreground, contours, count: contours.length };
+}
+
+function traceComponent(labels, label, area, width, height, options) {
+  const traced = traceBoundary(labels, label, width, height);
+  if (traced.length < 8) return null;
+  const simplified = simplifyRDP(traced, options.simplifyEpsilon ?? 1);
+  if (simplified.length < 3) return null;
+  const samples = Math.max(64, Math.min(2048, Math.floor(options.samples ?? DEFAULT_SAMPLES)));
+  const resampled = resampleClosed(simplified, samples);
+  const harmonics = Math.max(1, Math.min(64, Math.floor(options.harmonics ?? DEFAULT_HARMONICS)));
+  const fourier = contourToFourier(resampled, harmonics);
+  return {
+    label,
+    componentArea: area,
+    contourPx: simplified,
+    contour: fourier.contour,
+    reconstruction: fourier.reconstruction,
+    harmonicsX: fourier.harmonicsX,
+    harmonicsY: fourier.harmonicsY,
+    error: fourier.error,
+    samples,
+    harmonicCount: harmonics,
+    pointCount: simplified.length,
+  };
+}
+
+/** Build one editable Fourier layer per traced contour. */
+export function buildFourierDocuments(result, { name = 'Traced contour', size = 420, samples = 1200 } = {}) {
+  const entries = Array.isArray(result?.contours) && result.contours.length
+    ? result.contours
+    : result?.ok ? [result] : [];
+  if (!entries.length) throw new Error('Cannot build a document from an empty trace');
+  const params = (entry) => ({
+    harmonicsX: entry.harmonicsX,
+    harmonicsY: entry.harmonicsY,
+    samples,
+    size,
+  });
+  const first = createDocument('fourier', {
+    name,
+    generator: { params: params(entries[0]) },
+  });
+  for (let index = 1; index < entries.length; index++) {
+    first.layers.push(createLayer('fourier', {
+      name: `${name} ${index + 1}`,
+      generator: { params: params(entries[index]) },
+    }));
+  }
+  first.activeLayer = 0;
+  return attachLayerAliases(first);
 }
 
 /** Rec. 601 luma, composited over white for transparent pixels. */
@@ -185,6 +282,47 @@ export function largestComponent(mask, width, height) {
     }
   }
   return { labels, best, area: bestArea };
+}
+
+/** Label all 4-connected components. */
+export function labelComponents(mask, width, height) {
+  const labels = new Int32Array(width * height);
+  const queue = new Int32Array(width * height);
+  const components = [];
+  let next = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (!mask[i] || labels[i]) continue;
+    next += 1;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = i;
+    labels[i] = next;
+    let area = 0;
+    while (head < tail) {
+      const index = queue[head++];
+      area += 1;
+      const x = index % width;
+      const y = (index / width) | 0;
+      if (x > 0) {
+        const j = index - 1;
+        if (mask[j] && !labels[j]) { labels[j] = next; queue[tail++] = j; }
+      }
+      if (x + 1 < width) {
+        const j = index + 1;
+        if (mask[j] && !labels[j]) { labels[j] = next; queue[tail++] = j; }
+      }
+      if (y > 0) {
+        const j = index - width;
+        if (mask[j] && !labels[j]) { labels[j] = next; queue[tail++] = j; }
+      }
+      if (y + 1 < height) {
+        const j = index + width;
+        if (mask[j] && !labels[j]) { labels[j] = next; queue[tail++] = j; }
+      }
+    }
+    components.push({ label: next, area, labels });
+  }
+  return components.sort((a, b) => b.area - a.area);
 }
 
 const NEIGHBOURS = [

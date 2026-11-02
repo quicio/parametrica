@@ -476,7 +476,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation, PNG/SVG frame sequences, GIF encoding and frame caps |
 | 21 | offline advisor | narration/diff, grounded suggestions, validation, clamping, candidate isolation |
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
-| 23 | image trace | grayscale/Otsu, component selection, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, privacy |
+| 23 | image trace | grayscale/Otsu, largest/all-component tracing, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, multi-layer apply, privacy |
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
 | 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
@@ -486,7 +486,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1665 checks total.
+1669 checks total.
 
 ### Panel behavior
 

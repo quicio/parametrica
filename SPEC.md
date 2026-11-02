@@ -487,8 +487,9 @@ v1 pattern extended — the entire core stays DOM-free and Node-runnable:
   schema validation (unit group 21).
 - **Optional LLM advisor:** provider abstraction, grounded prompts, response
   parsing/validation, cache and offline fallback (unit group 22).
-- **Image trace:** local grayscale/threshold, largest-contour extraction,
-  RDP/resampling, Fourier fitting and document privacy (unit group 23).
+- **Image trace:** local grayscale/threshold, largest or all-component
+  extraction, RDP/resampling, Fourier fitting, multi-layer apply and document
+  privacy (unit group 23).
 - **Evolution:** bounded parent/child budgets, numeric crossover, structural
   operator mutation, full child evaluation and lineage (unit group 24).
 - **v1 migration:** every v1 preset converts to a valid document.
@@ -511,7 +512,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
 geometry. The remaining deferred items (color-by-metric palettes,
-multi-viewport layout, multi-contour tracing and MAKE/fabrication) are future
+multi-viewport layout, hole-aware tracing and MAKE/fabrication) are future
 work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new

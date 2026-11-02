@@ -51,7 +51,7 @@ import { adviseOffline, validateSuggestion, applySuggestionToDocument } from '..
 import { createProvider, runAdvisor, parseAdvisorResponse, shouldAutoAnalyze, PROVIDERS } from '../src/ai/provider.js';
 import { AdvisorCache, cacheKey } from '../src/ai/cache.js';
 import { buildAdvisorPrompt } from '../src/ai/prompt.js';
-import { traceImageData, otsuThreshold, binarize, grayscale, simplifyRDP, resampleClosed, contourToFourier, reconstructFromHarmonics, buildFourierDocument, MAX_IMAGE_EDGE } from '../src/input/imageTrace.js';
+import { traceImageData, traceImageContours, otsuThreshold, binarize, grayscale, simplifyRDP, resampleClosed, contourToFourier, reconstructFromHarmonics, buildFourierDocument, buildFourierDocuments, MAX_IMAGE_EDGE } from '../src/input/imageTrace.js';
 import { createGeneration, nextGeneration, isChildValid, describeStructuralChange, MAX_CHILDREN, MAX_PARENTS } from '../src/lab/evolution.js';
 import { numericParameterRefs, refKey, schemaForRef, stageForRef, pathForRef } from '../src/lab/parameters.js';
 import { MutationEngine } from '../src/mutation/MutationEngine.js';
@@ -1827,6 +1827,17 @@ console.log('23. image contour to fourier');
 
   const traced = traceImageData(circle, { harmonics: 32, samples: 512 });
   assert(traced.ok, `circle trace succeeds (${traced.reason ?? 'ok'})`);
+
+  const twoCircles = makeImage(240, 240, (x, y) => (
+    Math.hypot(x - 70, y - 120) < 38 || Math.hypot(x - 170, y - 120) < 38
+  ));
+  const many = traceImageContours(twoCircles, { harmonics: 16, samples: 256 });
+  assert(many.ok && many.count === 2, `two-circle trace finds two contours (${many.reason ?? many.count})`);
+  assert(many.contours.every((entry) => entry.harmonicsX.length && entry.harmonicsY.length), 'each contour has Fourier terms');
+  const multiDoc = buildFourierDocuments(many, { name: 'Two contours' });
+  assert(multiDoc.layers.length === 2 && multiDoc.activeLayer === 0, 'multi-contour apply creates one layer per contour');
+  const multiEval = evaluateDocument(multiDoc, { time: 0 });
+  assert(multiEval.errors.length === 0 && multiEval.curves.length === 2, 'multi-contour document evaluates');
   assert(traced.componentArea > 10_000, 'largest component keeps the silhouette area');
   assert(traced.contour.length === 512, 'contour is resampled to the requested count');
   assert(traced.reconstruction.length === 512, 'reconstruction uses the same sample count');

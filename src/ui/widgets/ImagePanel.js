@@ -6,7 +6,7 @@
  * a trace replaces the document with an editable `fourier` generator.
  */
 
-import { MAX_IMAGE_EDGE, traceImageData, buildFourierDocument, grayscale, binarize, otsuThreshold } from '../../input/imageTrace.js';
+import { MAX_IMAGE_EDGE, traceImageData, traceImageContours, buildFourierDocument, buildFourierDocuments, grayscale, binarize, otsuThreshold } from '../../input/imageTrace.js';
 
 export class ImagePanel {
   constructor(app) {
@@ -122,9 +122,17 @@ export class ImagePanel {
     this.traceBtn.className = 'lab-button image-trace';
     this.traceBtn.textContent = 'Trace contour';
     this.traceBtn.addEventListener('click', () => this.runTrace());
+    this.multiToggle = document.createElement('label');
+    this.multiToggle.className = 'image-toggle image-multi-toggle';
+    const multiInput = document.createElement('input');
+    multiInput.type = 'checkbox';
+    multiInput.className = 'image-multi';
+    const multiText = document.createElement('span');
+    multiText.textContent = 'All contours';
+    this.multiToggle.append(multiInput, multiText);
     const traceActions = document.createElement('div');
     traceActions.className = 'image-trace-actions';
-    traceActions.append(this.traceBtn, this.autoBtn);
+    traceActions.append(this.traceBtn, this.autoBtn, this.multiToggle);
     this.thresholdEl.append(this.threshold.el, this.invertToggle, traceActions);
 
     this.maskCanvas = document.createElement('canvas');
@@ -195,6 +203,7 @@ export class ImagePanel {
     this.invertToggle.querySelector('input').disabled = !enabled;
     this.autoBtn.disabled = !enabled;
     this.traceBtn.disabled = !enabled;
+    this.multiToggle.querySelector('input').disabled = !enabled;
   }
 
   async loadFile(file) {
@@ -309,16 +318,20 @@ export class ImagePanel {
 
   async runTrace() {
     if (!this.source) return;
+    const multiple = Boolean(this.multiToggle.querySelector('input').checked);
     this.traceBtn.disabled = true;
-    this.setStatus('Tracing largest contour…');
+    this.setStatus(multiple ? 'Tracing contours…' : 'Tracing largest contour…');
     await new Promise((resolve) => setTimeout(resolve, 0));
     try {
-      const result = traceImageData(this.source.imageData, {
+      const options = {
         threshold: this.source.threshold,
         invert: this.source.invert,
         harmonics: 32,
         samples: 512,
-      });
+      };
+      const result = multiple
+        ? traceImageContours(this.source.imageData, options)
+        : traceImageData(this.source.imageData, options);
       this.traceBtn.disabled = false;
       if (!result.ok) {
         this.clearTrace();
@@ -327,10 +340,19 @@ export class ImagePanel {
       }
       this.trace = result;
       this.renderPreview(result);
-      this.setStatus(
-        `Found ${result.pointCount}-point contour · ${result.harmonicCount} harmonics · ` +
-        `RMS ${(result.error.relative * 100).toFixed(2)}%`,
-      );
+      if (multiple) {
+        const points = result.contours.reduce((sum, contour) => sum + contour.pointCount, 0);
+        const rms = result.contours.reduce((sum, contour) => sum + contour.error.relative, 0) / result.contours.length;
+        this.setStatus(
+          `Found ${result.count} contours · ${points} points · ` +
+          `RMS ${(rms * 100).toFixed(2)}%`,
+        );
+      } else {
+        this.setStatus(
+          `Found ${result.pointCount}-point contour · ${result.harmonicCount} harmonics · ` +
+          `RMS ${(result.error.relative * 100).toFixed(2)}%`,
+        );
+      }
     } catch (error) {
       this.traceBtn.disabled = false;
       this.clearTrace();
@@ -344,25 +366,30 @@ export class ImagePanel {
     svg.setAttribute('viewBox', '-1.15 -1.15 2.3 2.3');
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', 'Contour and Fourier reconstruction');
-    const contour = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    contour.setAttribute('d', pathFromPoints(result.contour));
-    contour.setAttribute('fill', 'none');
-    contour.setAttribute('stroke', '#565656');
-    contour.setAttribute('stroke-width', '0.03');
-    const reconstruction = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    reconstruction.setAttribute('d', pathFromPoints(result.reconstruction));
-    reconstruction.setAttribute('fill', 'none');
-    reconstruction.setAttribute('stroke', '#e8e8e8');
-    reconstruction.setAttribute('stroke-width', '0.012');
-    svg.append(contour, reconstruction);
+    const entries = result.contours ?? [result];
+    for (const entry of entries) {
+      const contour = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      contour.setAttribute('d', pathFromPoints(entry.contour));
+      contour.setAttribute('fill', 'none');
+      contour.setAttribute('stroke', '#565656');
+      contour.setAttribute('stroke-width', '0.03');
+      const reconstruction = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      reconstruction.setAttribute('d', pathFromPoints(entry.reconstruction));
+      reconstruction.setAttribute('fill', 'none');
+      reconstruction.setAttribute('stroke', '#e8e8e8');
+      reconstruction.setAttribute('stroke-width', '0.012');
+      svg.append(contour, reconstruction);
+    }
 
     const legend = document.createElement('div');
     legend.className = 'image-legend';
     legend.innerHTML = '<span class="image-legend-contour">contour</span><span class="image-legend-fourier">Fourier</span>';
     const error = document.createElement('div');
     error.className = 'image-error';
-    error.textContent = `RMS ${(result.error.relative * 100).toFixed(2)}% · max ${(result.error.max * 100).toFixed(2)}% · ` +
-      `${result.harmonicCount} harmonics · ${result.samples} samples`;
+    const entry = entries[0];
+    error.textContent = `${entries.length} contour${entries.length === 1 ? '' : 's'} · ` +
+      `RMS ${(entry.error.relative * 100).toFixed(2)}% · max ${(entry.error.max * 100).toFixed(2)}% · ` +
+      `${entry.harmonicCount} harmonics · ${entry.samples} samples`;
     this.previewEl.append(svg, legend, error);
     this.previewEl.hidden = false;
     this.applyBtn.hidden = false;
@@ -381,9 +408,16 @@ export class ImagePanel {
     if (!this.trace?.ok) return;
     try {
       const name = `Trace · ${stripExtension(this.source?.name ?? 'contour')}`.slice(0, 80);
-      const doc = buildFourierDocument(this.trace, { name });
+      const doc = Array.isArray(this.trace.contours)
+        ? buildFourierDocuments(this.trace, { name })
+        : buildFourierDocument(this.trace, { name });
       this.app.adoptDocument(doc);
-      this.app.notify(`Fourier document created with ${this.trace.harmonicCount} harmonics`);
+      const contours = doc.layers?.length ?? 1;
+      this.app.notify(
+        contours > 1
+          ? `Fourier document created with ${contours} contours`
+          : `Fourier document created with ${this.trace.harmonicCount} harmonics`,
+      );
     } catch (error) {
       this.setStatus(`Could not apply trace: ${error.message}`, true);
     }
