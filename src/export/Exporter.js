@@ -153,6 +153,54 @@ export class Exporter {
     downloadDataURL(`parametrica-${timestamp()}.png`, dataUrl);
   }
 
+  /**
+   * Export the active timeline as one animated GIF. The frame plan comes from
+   * the same duration/FPS contract as the PNG sequence; the playhead and
+   * playback state are restored even when rendering fails.
+   */
+  async exportGIF({
+    duration = this.app.document.animation?.timeline?.duration ?? 6,
+    fps = 12,
+    maxSize = 360,
+    loop = this.app.document.animation?.timeline?.loop ?? true,
+    onProgress = null,
+  } = {}) {
+    const { gifFrameTimes, encodeGIF } = await import('./gif.js');
+    const times = gifFrameTimes(duration, fps);
+    const renderer = this.app.renderer;
+    if (!renderer?.renderNow || !renderer?.artboardImageData) {
+      throw new Error('Renderer is not ready');
+    }
+    const animation = this.app.document.animation;
+    const oldTime = animation.time;
+    const oldPlaying = animation.playing;
+    const frames = [];
+    try {
+      animation.playing = false;
+      for (let index = 0; index < times.length; index++) {
+        this.app.setTime(times[index]);
+        renderer.renderNow();
+        const frame = renderer.artboardImageData(maxSize);
+        if (!frame) throw new Error(`frame ${index + 1} could not be captured`);
+        frames.push(frame);
+        onProgress?.({ frame: index + 1, total: times.length });
+        // Let the status line paint during longer exports.
+        if ((index + 1) % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      const bytes = encodeGIF(frames, { fps, loop });
+      downloadBytes(`parametrica-${timestamp()}.gif`, bytes, 'image/gif');
+      return {
+        frames: frames.length,
+        width: frames[0].width,
+        height: frames[0].height,
+        bytes: bytes.length,
+      };
+    } finally {
+      animation.playing = oldPlaying;
+      this.app.setTime(oldTime);
+    }
+  }
+
   exportJSON() {
     downloadFile(
       `parametrica-${timestamp()}.json`,
@@ -224,6 +272,18 @@ function downloadDataURL(filename, dataUrl) {
 
 function downloadFile(filename, content, mimeType) {
   const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadBytes(filename, bytes, mimeType) {
+  const blob = new Blob([bytes], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

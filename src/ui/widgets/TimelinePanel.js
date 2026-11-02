@@ -78,7 +78,12 @@ export class TimelinePanel {
     exportBtn.className = 'lab-button timeline-export';
     exportBtn.textContent = 'Export frames';
     exportBtn.addEventListener('click', () => this.exportFrames());
-    actions.append(recordLabel, exportBtn);
+    this.gifBtn = document.createElement('button');
+    this.gifBtn.className = 'lab-button timeline-gif';
+    this.gifBtn.textContent = 'Export GIF';
+    this.gifBtn.title = 'Animated GIF from the timeline duration and FPS (360 px max side)';
+    this.gifBtn.addEventListener('click', () => this.exportGIF());
+    actions.append(recordLabel, exportBtn, this.gifBtn);
 
     this.statusEl = document.createElement('div');
     this.statusEl.className = 'timeline-status';
@@ -344,6 +349,25 @@ export class TimelinePanel {
     } finally {
       this.app.document.animation.playing = oldPlaying;
       this.app.setTime(oldTime);
+    }
+  }
+
+  async exportGIF() {
+    const fps = Number(this.fpsInput?.value) || 24;
+    this.gifBtn.disabled = true;
+    this.setStatus('Rendering GIF…');
+    try {
+      const result = await this.app.exporter.exportGIF({
+        duration: this.timeline.duration,
+        fps,
+        loop: this.timeline.loop,
+        onProgress: ({ frame, total }) => this.setStatus(`Rendering GIF ${frame}/${total}…`),
+      });
+      this.setStatus(`Exported GIF · ${result.frames} frames · ${result.width}×${result.height}`);
+    } catch (error) {
+      this.setStatus(`GIF export failed: ${error.message}`, true);
+    } finally {
+      this.gifBtn.disabled = false;
     }
   }
 

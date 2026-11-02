@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1625 checks)
+npm test             # node-only verification suite (1633 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (93 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (94 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -52,7 +52,7 @@ leaving your machine.
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
 | **Presets** | Grouped, searchable library with derived previews, favorites and recent presets, plus user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
-| **Export** | SVG (stroke/solid-fill subset + embedded document), PNG (faithful raster), JSON, clipboard |
+| **Export** | SVG (stroke/solid-fill subset + embedded document), PNG (faithful raster), GIF (timeline), JSON, clipboard |
 
 ---
 
@@ -88,7 +88,7 @@ viz/                toggleable diagnostic overlays
 animation/          AnimatableValue + timeline resolution (keyframes/easing)
 mutation/           parameter-space mutation with full evaluation validation
 presets/            built-in library + JSON persistence in localStorage
-export/             SVG (path-embedded document) · PNG · JSON · clipboard
+export/             SVG (path-embedded document) · PNG · GIF · JSON · clipboard
 ui/                 instrument panel + custom widgets (expression field, harmonic editor, operator stack, mode toggles)
 core/               App composition root · engine · registry · document · schema · history
 geometry/           v1 Catmull-Rom + Mirror + OpticalCorrection (used by bilateral-spline generator)
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1625 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1633 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (93 tests) against a Vite server started by Playwright itself.
+suite (94 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -250,7 +250,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Artboard & style** with palettes, stroke/fill controls and SVG/PNG export with documented fidelity
 - **2D grid & morph** for two-axis families and smooth A→B transitions
 - **Layers** with independent generators, operator stacks and styles
-- **Timeline** with keyframes, easing, recording, loop and ZIP frame export
+- **Timeline** with keyframes, easing, recording, loop, ZIP frame export and GIF export
 - **Offline advisor** with deterministic A/B narration, suggestions, preview and apply
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure
 - **Image input** with local underlay, threshold preview, largest-contour tracing and editable Fourier documents
@@ -263,7 +263,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)
-- **Export** SVG (embedded document) · PNG · JSON · clipboard
+- **Export** SVG (embedded document) · PNG · GIF (timeline) · JSON · clipboard
 
 Deferred to v0.x:
 

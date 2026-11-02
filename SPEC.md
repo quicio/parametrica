@@ -321,7 +321,7 @@ instead of collapsing to a line. `view.colorRamp` is an optional array of
 - Transport: play / pause / reset / speed / loop. Fully time-driven
   (never accumulative) ⇒ scrubbing is exact and deterministic.
 - Glyph becomes a living mathematical object.
-- Tier 2: PNG-sequence / SVG-frame export.
+- Tier 2: PNG-sequence, GIF and SVG-frame export.
 
 ## 13. Mutation Engine v2
 
@@ -393,7 +393,7 @@ Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
 Artboard presets, palettes, stroke/fill style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
-and multi-layer export · Timeline keyframes, easing and frame-sequence export ·
+and multi-layer export · Timeline keyframes, easing, frame-sequence and GIF export ·
 Form/Look/Explore/Keep panel modes with persisted accordions and essential/
 advanced parameters; Look split into Camera, Canvas, Style, Render and
 Overlays, with Image, Animation and Timeline under a temporary Work label · Session recovery with debounced local snapshots · Helix Lab
@@ -408,11 +408,12 @@ evolution with numeric crossover, structural mutation and generation lineage.
 
 SVG (one `<path>` per curve, clean coordinates, Parametrica document
 embedded as XML comment under `<!-- parametrica document: … -->`) ·
-PNG (HiDPI canvas) · JSON (ParametricaDocument) · clipboard JSON.
+PNG (HiDPI canvas) · animated GIF (timeline duration/FPS up to 50 FPS, 360 px max side) ·
+JSON (ParametricaDocument) · clipboard JSON.
 SVG is a stroke/solid-fill subset: the exporter warns when active features
 such as gradient wireframe, surface fill, overlays, diagnostic passes or blend
 mode are omitted. PNG is the faithful raster export.
-Tier 2: animation frame sequences.
+Tier 2: animation frame sequences and GIF export.
 
 ---
 
@@ -497,12 +498,12 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 | **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
 | **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 24 generators registered, 36 operators, `analysis/differential.js`, 4 overlays |
 | **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 14 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
-| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space and ZIP frame-sequence export | Source tree + `e2e` |
+| **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence and GIF export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space, ZIP frame-sequence and GIF export | Source tree + `e2e` |
 
 ### What ships in v0.1.0
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
-including the CodeMirror formula editor, frame-sequence export and heavy
+including the CodeMirror formula editor, frame-sequence/GIF export and heavy
 geometry. The remaining deferred items (color-by-metric palettes, plotter
 export, multi-viewport layout, custom gradient ramps, multi-contour tracing)
 are future work outside the v0.1.0 scope.

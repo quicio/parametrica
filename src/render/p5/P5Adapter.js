@@ -47,6 +47,8 @@ export class P5Adapter extends Renderer {
     this.loadError = null;
     this.dragState = null;
     this.animation = new AnimationController();
+    this.captureCanvas = null;
+    this.captureContext = null;
 
     // p5 is the largest dependency in the bundle. Importing it lazily
     // keeps the first paint and the control panel responsive while the
@@ -240,6 +242,39 @@ export class P5Adapter extends Renderer {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Read the current artboard as RGBA data at a bounded size. Used by GIF
+   * export so frames never need a PNG encode/decode round-trip.
+   */
+  artboardImageData(maxSize = 360) {
+    const source = this.p?.drawingContext?.canvas ?? this.p?.canvas;
+    if (!source) return null;
+    const crop = this.sourceCrop();
+    const artboard = crop.artboard;
+    const scale = Math.min(1, Math.max(1, Number(maxSize) || 360) / Math.max(artboard.width, artboard.height, 1));
+    const width = Math.max(1, Math.round(artboard.width * scale));
+    const height = Math.max(1, Math.round(artboard.height * scale));
+    if (!this.captureCanvas) {
+      this.captureCanvas = document.createElement('canvas');
+      this.captureContext = this.captureCanvas.getContext('2d', { willReadFrequently: true });
+    }
+    const canvas = this.captureCanvas;
+    const context = this.captureContext;
+    if (!context) return null;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    context.fillStyle = artboard.background ?? '#000000';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
+    return {
+      width,
+      height,
+      data: context.getImageData(0, 0, width, height).data,
+    };
   }
 
   sourceCrop() {

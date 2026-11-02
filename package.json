@@ -20,6 +20,7 @@
     "@codemirror/view": "^6.43.15",
     "@lezer/highlight": "^1.2.5",
     "d3-delaunay": "^6.0.4",
+    "gifenc": "^1.0.3",
     "lil-gui": "^0.19.2",
     "p5": "^1.11.0",
     "polygon-clipping": "^0.15.7"

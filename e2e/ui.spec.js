@@ -6,6 +6,7 @@
  * errors, undo after a structural edit, and the seed control.
  */
 
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { openSection } from './helpers.js';
 
@@ -490,6 +491,33 @@ test('timeline adds tracks/keyframes and exports a frame zip', async ({ page }) 
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.zip$/);
   await expect(page.locator('.timeline-status')).toContainText('Exported');
+});
+
+test('timeline exports an animated GIF and restores the playhead', async ({ page }) => {
+  await boot(page);
+  await openSection(page, 'Timeline');
+  await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
+  await page.waitForTimeout(300);
+
+  const duration = page.locator('.timeline-field', { hasText: 'Duration' }).locator('input');
+  const fps = page.locator('.timeline-field', { hasText: 'FPS' }).locator('input');
+  await duration.fill('0.4');
+  await duration.press('Enter');
+  await fps.fill('5');
+  await fps.press('Enter');
+  const before = await page.evaluate(() => window.__parametrica.document.animation.time);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('.timeline-gif').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.gif$/);
+  await expect(page.locator('.timeline-status')).toContainText('Exported GIF');
+
+  const file = readFileSync(await download.path());
+  expect(file.subarray(0, 6).toString()).toBe('GIF89a');
+  expect(file[file.length - 1]).toBe(0x3b);
+  const after = await page.evaluate(() => window.__parametrica.document.animation.time);
+  expect(after).toBeCloseTo(before, 6);
 });
 
 test('timeline records a parameter change at the playhead', async ({ page }) => {

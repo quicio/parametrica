@@ -58,6 +58,7 @@ import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/Pr
 import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
+import { encodeGIF, gifFrameTimes, GIF_MAX_FRAMES } from '../src/export/gif.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
 import { warpExpressions } from '../src/operators/geometry/deform.js';
 import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
@@ -1437,6 +1438,26 @@ console.log('20. motion timeline');
   const frames = frameTimes(6, 30);
   assert(frames.length === 180, 'frameTimes produces duration × fps frames');
   assert(frames[0] === 0 && Math.abs(frames[179] - 179 / 30) < 1e-6, 'frame timestamps are exact');
+
+  const gifTimes = gifFrameTimes(1, 10);
+  assert(gifTimes.length === 10 && gifTimes[0] === 0, 'GIF frame plan reuses timeline timestamps');
+  assert(gifFrameTimes(1, 120).length === 50, 'GIF frame plan caps playback at 50 FPS');
+  let capError = null;
+  try { gifFrameTimes(60, 10); } catch (error) { capError = error; }
+  assert(capError && capError.message.includes(String(GIF_MAX_FRAMES)), 'GIF frame plan enforces the frame cap');
+
+  const gifFrames = [
+    { width: 2, height: 2, data: new Uint8ClampedArray(16).fill(255) },
+    { width: 2, height: 2, data: new Uint8ClampedArray(16).map((_, i) => (i % 4 === 2 ? 255 : 0)) },
+  ];
+  const gif = encodeGIF(gifFrames, { fps: 12, loop: true });
+  assert(String.fromCharCode(...gif.slice(0, 6)) === 'GIF89a', 'GIF has a GIF89a header');
+  assert(gif[gif.length - 1] === 0x3b, 'GIF ends with the trailer');
+  const gifView = new DataView(gif.buffer, gif.byteOffset, gif.byteLength);
+  assert(gifView.getUint16(6, true) === 2 && gifView.getUint16(8, true) === 2, 'GIF keeps frame dimensions');
+  assert(new TextDecoder('latin1').decode(gif).includes('NETSCAPE2.0'), 'GIF loop extension is present');
+  const once = encodeGIF(gifFrames, { fps: 12, loop: false });
+  assert(!new TextDecoder('latin1').decode(once).includes('NETSCAPE2.0'), 'GIF plays once when loop is off');
 
   const clamped = sanitizeTimeline({
     duration: 999,
