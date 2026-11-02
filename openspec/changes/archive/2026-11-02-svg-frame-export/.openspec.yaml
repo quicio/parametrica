@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Export a deterministic ZIP of SVG frames and a manifest from the
+  timeline, alongside the existing PNG sequence and GIF.
