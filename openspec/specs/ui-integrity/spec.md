@@ -67,11 +67,18 @@ layer's curves.
 Export SHALL either reproduce the active render features or state which
 features are omitted.
 
+#### Scenario: SVG vector fidelity
+
+- **WHEN** the active scene uses vector render passes, diagnostics, overlays or
+  blend modes
+- **THEN** the SVG exporter reproduces them or reports a raster-only omission
+- **AND** it does not warn about features that are represented
+
 #### Scenario: SVG omissions
 
-- **WHEN** the active scene contains features the SVG exporter cannot represent
-  (for example gradient wireframe, surface fill or overlays)
-- **THEN** the user receives a visible notice listing the omitted features
+- **WHEN** the active scene contains a feature the SVG exporter cannot
+  represent as vector primitives (currently Signed Distance)
+- **THEN** the user receives a visible notice naming the omission
 - **AND** the export does not silently imply full fidelity
 
 #### Scenario: PNG fidelity

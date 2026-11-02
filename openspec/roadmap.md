@@ -130,6 +130,7 @@ extraction and conversion to a Fourier document.
 | LOOK Phase 2: Ingest + Perform, Work group removed | shipped (2026-11-02) |
 | Camera near-plane/scene-distance guards | shipped (2026-11-02) |
 | Timeline GIF export | shipped (2026-11-02) |
+| SVG vector pass fidelity: gradients, surfaces, diagnostics, overlays, blend | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -147,7 +148,6 @@ extraction and conversion to a Fourier document.
 |---|---|
 | `palette-system` | Color by metric, palettes, presets |
 | `plotter-export` | Plotter-ready SVG and line tests |
-| `svg-parity` | Full SVG coverage: gradient fill, mesh fill, overlays, diagnostics, blend |
 | `svg-frame-export` | SVG frame sequence alongside PNG ZIP and GIF |
 | `helix-multiview` | 3D + three orthographic projections at once |
 | `image-multicontour` | Multi-contour and hole-aware tracing |
@@ -419,6 +419,7 @@ generation metadata in the notebook; unit group 24.
 | `look-reorganization` (Phase 1) | archived | shipped |
 | `look-phase-2` | archived | shipped |
 | `gif-export` | archived | shipped |
+| `svg-export-fidelity` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

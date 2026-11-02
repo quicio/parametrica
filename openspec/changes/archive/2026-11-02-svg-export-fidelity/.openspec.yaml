@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Make SVG reproduce the active vector render passes, overlays and blend
+  modes instead of warning about them.
