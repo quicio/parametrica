@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Export visible layers as a plotter-ready, stroke-only SVG and cover line
+  geometry with tests.

@@ -133,6 +133,7 @@ extraction and conversion to a Fourier document.
 | SVG vector pass fidelity: gradients, surfaces, diagnostics, overlays, blend | shipped (2026-11-02) |
 | Fill gradients: linear/radial, direction, center, radius and stops | shipped (2026-11-02) |
 | SVG frame sequence ZIP + manifest | shipped (2026-11-02) |
+| Plotter-ready stroke-only SVG | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -149,7 +150,6 @@ extraction and conversion to a Fourier document.
 | Capability | Purpose |
 |---|---|
 | `palette-system` | Color by metric, palettes, presets |
-| `plotter-export` | Plotter-ready SVG and line tests |
 | `helix-multiview` | 3D + three orthographic projections at once |
 | `image-multicontour` | Multi-contour and hole-aware tracing |
 | `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
@@ -423,6 +423,7 @@ generation metadata in the notebook; unit group 24.
 | `svg-export-fidelity` | archived | shipped |
 | `fill-gradients` | archived | shipped |
 | `svg-frame-export` | archived | shipped |
+| `plotter-export` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
