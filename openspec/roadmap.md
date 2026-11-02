@@ -117,7 +117,7 @@ extraction and conversion to a Fourier document.
 | Artboard & style: presets, palettes, stroke/fill, export | shipped (2026-10-24) |
 | Grid 2D + same-structure morph | shipped (2026-10-24) |
 | Composition layers: v3, per-layer style, multi-layer export | shipped (2026-10-24) |
-| Motion timeline: keyframes, easing, recording, ZIP frames | shipped (2026-10-24) |
+| Motion timeline: keyframes, easing, recording, ZIP frames + GIF | shipped (2026-10-24, GIF 2026-11-02) |
 | Offline advisor: narration, rules, preview/apply | shipped (2026-10-24) |
 | Optional LLM advisor: providers, prompts, validation, cache, privacy | shipped (2026-10-24) |
 | Image input: underlay, contour extraction, Fourier tracing | shipped (2026-10-24) |
@@ -125,6 +125,11 @@ extraction and conversion to a Fourier document.
 | Helix Lab: generalized helix, orthographic views, gradient wireframe | shipped (2026-10-24) |
 | Technical debt: ESLint, CodeMirror, lazy p5, session recovery | shipped (2026-10-24) |
 | UI clarity: workspace modes, accordions, progressive params, status | shipped (2026-10-24) |
+| Product hardening + audit batch 1 | shipped (2026-11-02) |
+| LOOK Phase 1: Camera/Canvas/Style/Render/Overlays | shipped (2026-11-02) |
+| LOOK Phase 2: Ingest + Perform, Work group removed | shipped (2026-11-02) |
+| Camera near-plane/scene-distance guards | shipped (2026-11-02) |
+| Timeline GIF export | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -142,6 +147,11 @@ extraction and conversion to a Fourier document.
 |---|---|
 | `palette-system` | Color by metric, palettes, presets |
 | `plotter-export` | Plotter-ready SVG and line tests |
+| `svg-parity` | Full SVG coverage: gradient fill, mesh fill, overlays, diagnostics, blend |
+| `svg-frame-export` | SVG frame sequence alongside PNG ZIP and GIF |
+| `helix-multiview` | 3D + three orthographic projections at once |
+| `image-multicontour` | Multi-contour and hole-aware tracing |
+| `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
 
@@ -404,6 +414,11 @@ generation metadata in the notebook; unit group 24.
 | `ai-llm` | archived | shipped |
 | `image-input` | archived | shipped |
 | `evolution-lab` | archived | shipped |
+| `product-hardening` | archived | shipped |
+| `audit-corrections-batch-1` | archived | shipped |
+| `look-reorganization` (Phase 1) | archived | shipped |
+| `look-phase-2` | archived | shipped |
+| `gif-export` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

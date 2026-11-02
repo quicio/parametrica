@@ -2,8 +2,8 @@
 
 ## Purpose
 Defines a LOOK workspace organized around camera, canvas, active-layer style,
-render passes and overlays, with explicit scope and a clearly temporary home
-for ingest/time tools until their relocation is decided.
+render passes and overlays, with explicit scope. Ingest owns image tools and
+Perform owns animation, timeline and temporal export.
 ## Requirements
 ### Requirement: LOOK section ownership
 
@@ -112,23 +112,6 @@ Render SHALL expose the existing `view.colorRamp` setting.
 - **AND** editing the ramp does not change the palette
 - **AND** no implicit synchronization is introduced
 
-### Requirement: Temporary Work group
-
-Image, Animation and Timeline SHALL remain clearly marked as temporary Work
-tools until their relocation is approved.
-
-#### Scenario: Work group
-
-- **WHEN** LOOK contains Image, Animation or Timeline
-- **THEN** they are grouped under a visible Work label
-- **AND** they are not presented as appearance controls
-
-#### Scenario: Phase 2 relocation
-
-- **WHEN** a relocation decision is approved
-- **THEN** the Work group can be removed without changing the Camera, Canvas,
-  Style, Render or Overlays contracts
-
 ### Requirement: UI state compatibility
 
 The section split SHALL NOT break the persisted mode or unrelated accordion
@@ -140,4 +123,34 @@ state.
 - **THEN** the new sections open/close with defaults or a documented mapping
 - **AND** the selected mode remains valid
 - **AND** unknown section ids are ignored
+
+### Requirement: Ingest and Perform ownership
+
+Image SHALL live in Ingest. Animation and Timeline SHALL live in Perform.
+Frame and GIF export SHALL remain with Timeline in Perform. KEEP SHALL remain
+the workspace for final-artifact conservation and export.
+
+#### Scenario: Image ownership
+
+- **WHEN** the user opens Image
+- **THEN** Ingest is the active mode
+- **AND** Look is not required to reach Image
+
+#### Scenario: Time ownership
+
+- **WHEN** the user opens Animation or Timeline
+- **THEN** Perform is the active mode
+- **AND** the timeline frame/GIF export controls remain in Timeline
+
+#### Scenario: Look is appearance-only
+
+- **WHEN** Look is active
+- **THEN** Image, Animation and Timeline are not visible
+- **AND** the temporary Work group is absent
+
+#### Scenario: Keep boundary
+
+- **WHEN** the user opens Keep
+- **THEN** Notebook, Presets and Export remain available
+- **AND** temporal frame/GIF export is not duplicated there
 

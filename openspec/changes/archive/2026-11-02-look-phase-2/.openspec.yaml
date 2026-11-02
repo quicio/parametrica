@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Complete the LOOK reorganization by giving ingest and time tools their
+  own modes and removing the temporary Work group.
