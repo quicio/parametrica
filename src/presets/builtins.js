@@ -21,8 +21,10 @@ export const BUILT_IN_PRESETS = {
       name: 'Golden Rose',
       generator: {
         params: {
-          exprR: 'cos(phi*theta)',
-          turns: 8, samples: 2400, closed: false, fit: 360,
+          // 13/8 is a Fibonacci convergent of phi: it preserves the golden
+          // ratio character while closing the rose exactly after 8 turns.
+          exprR: 'cos((13/8)*theta)',
+          turns: 8, samples: 2400, closed: true, fit: 360,
         },
       },
     }),

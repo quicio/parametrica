@@ -31,7 +31,7 @@ export const PRESET_META = {
   },
   'Golden Rose': {
     category: 'curves',
-    description: 'Polar rose with a slowly turning radial envelope.',
+    description: 'Closed polar rose using the 13/8 Fibonacci approximation of φ.',
     tags: ['polar', 'rose', 'golden'],
   },
   Infinity: {

@@ -514,6 +514,17 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
   }
   assert(pm.delete('Infinity') === false, 'built-ins immutable');
 
+  // Golden Rose uses the 13/8 Fibonacci approximation of phi so it closes.
+  const golden = pm.get('Golden Rose');
+  const goldenEval = evaluateDocument(golden, { time: 0 });
+  assert(goldenEval.errors.length === 0, 'Golden Rose evaluates');
+  const goldenCurve = goldenEval.curves[0];
+  assert(goldenCurve.closed, 'Golden Rose is closed');
+  const goldenFirst = goldenCurve.points[0];
+  const goldenLast = goldenCurve.points[goldenCurve.points.length - 1];
+  const goldenGap = Math.hypot(goldenLast.x - goldenFirst.x, goldenLast.y - goldenFirst.y);
+  assert(goldenGap < 1e-6, `Golden Rose seam meets exactly (gap ${goldenGap})`);
+
   // Catalog: every built-in is discoverable, grouped and described.
   const entries = pm.entries();
   assert(entries.length === Object.keys(BUILT_IN_PRESETS).length, 'catalog lists every built-in preset');

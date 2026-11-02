@@ -35,6 +35,20 @@ test('polar evaluates the Golden Rose preset', async ({ page }) => {
   expect(state.pts).toBeGreaterThan(100);
 });
 
+test('Golden Rose preset closes its seam', async ({ page }) => {
+  const state = await page.evaluate(() => {
+    const curve = window.__parametrica.evaluation.curves[0];
+    const first = curve.points[0];
+    const last = curve.points[curve.points.length - 1];
+    return {
+      closed: curve.closed,
+      gap: Math.hypot(last.x - first.x, last.y - first.y),
+    };
+  });
+  expect(state.closed).toBe(true);
+  expect(state.gap).toBeLessThan(1e-6);
+});
+
 test('Turns slider drag reaches the document', async ({ page }) => {
   const before = await getParam(page, 'turns');
   // Turns range 1..64. Drag to ~50% → ~32-33.
@@ -54,7 +68,7 @@ test('adaptive sampling respects the Samples cap across turns', async ({ page })
   expect(state.pts).toBeLessThanOrEqual(500);
 });
 
-test('turns enriches a non-closing rose (phi irrational)', async ({ page }) => {
+test('turns enriches a non-closing irrational rose', async ({ page }) => {
   const countCrossings = () =>
     page.evaluate(() => {
       const pts = window.__parametrica.evaluation.curves[0].points;
@@ -68,7 +82,8 @@ test('turns enriches a non-closing rose (phi irrational)', async ({ page }) => {
       return acc;
     });
 
-  await setParams(page, { turns: 1 });
+  // Keep explicit irrational coverage: the built-in preset now uses 13/8.
+  await setParams(page, { exprR: 'cos(phi*theta)', closed: false, turns: 1 });
   await page.waitForTimeout(200);
   const c1 = await countCrossings();
   await setParams(page, { turns: 16 });

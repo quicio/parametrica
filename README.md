@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1609 checks)
+npm test             # node-only verification suite (1612 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (91 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (92 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -165,7 +165,7 @@ No central config to update.
 | Preset | Generator | Idea |
 |---|---|---|
 | Lissajous 3:5 | `lissajous` | a/b = 3/5 frequency ratio |
-| Golden Rose | `polar` | r = cos(k·θ) with k = φ-related integer |
+| Golden Rose | `polar` | Closed rose with k = 13/8, a Fibonacci approximation of φ |
 | Superformula Star | `superformula` | Gielis with star m, n values |
 | Superformula Flower | `superformula` | Gielis petal configuration |
 | Fourier Capsule | `fourier` | closed shape from harmonic series |
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1609 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1612 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (91 tests) against a Vite server started by Playwright itself.
+suite (92 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
