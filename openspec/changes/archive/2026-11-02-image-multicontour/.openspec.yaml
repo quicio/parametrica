@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Trace multiple image components into separate editable Fourier layers,
+  while keeping the existing largest-contour flow as the default.

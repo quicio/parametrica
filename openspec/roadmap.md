@@ -134,6 +134,7 @@ extraction and conversion to a Fourier document.
 | Fill gradients: linear/radial, direction, center, radius and stops | shipped (2026-11-02) |
 | SVG frame sequence ZIP + manifest | shipped (2026-11-02) |
 | Plotter-ready stroke-only SVG | shipped (2026-11-02) |
+| Image tracing: all connected contours into Fourier layers | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -151,7 +152,7 @@ extraction and conversion to a Fourier document.
 |---|---|
 | `palette-system` | Color by metric, palettes, presets |
 | `helix-multiview` | 3D + three orthographic projections at once |
-| `image-multicontour` | Multi-contour and hole-aware tracing |
+| `image-holes` | Hole-aware / nested contour tracing |
 | `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -424,6 +425,7 @@ generation metadata in the notebook; unit group 24.
 | `fill-gradients` | archived | shipped |
 | `svg-frame-export` | archived | shipped |
 | `plotter-export` | archived | shipped |
+| `image-multicontour` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
