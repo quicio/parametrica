@@ -51,13 +51,13 @@ test('content lock blocks edits while keeping visibility available', async ({ pa
 test('inapplicable render passes are disabled and applicable passes enable', async ({ page }) => {
   await boot(page);
   let view = await openSection(page, 'Render');
-  await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input')).toBeDisabled();
-  await expect(view.locator('.mode-toggle', { hasText: 'Epicycles' }).locator('input')).toBeDisabled();
+  await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input[type="checkbox"]')).toBeDisabled();
+  await expect(view.locator('.mode-toggle', { hasText: 'Epicycles' }).locator('input[type="checkbox"]')).toBeDisabled();
 
   await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
   await page.waitForTimeout(400);
   view = await openSection(page, 'Render');
-  await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input')).not.toBeDisabled();
+  await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input[type="checkbox"]')).not.toBeDisabled();
 });
 
 test('SVG export includes surfaces, diagnostics, overlays and blend', async ({ page }) => {
@@ -212,4 +212,49 @@ test('plotter export is stroke-only and independent of active passes', async ({ 
   expect(svg).not.toContain('svg-pass');
   expect(svg).not.toContain('svg-overlays');
   expect(svg).toContain('parametrica document');
+});
+
+
+test('per-layer render passes override the global modes', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
+  await page.waitForTimeout(300);
+  const style = await openSection(page, 'Style');
+  const override = style.locator('.layer-mode-override');
+  await override.selectOption('custom');
+  await page.waitForTimeout(200);
+  const stroke = style.locator('.layer-mode-toggle', { hasText: 'Stroke' }).locator('input');
+  const points = style.locator('.layer-mode-toggle', { hasText: 'Points' }).locator('input');
+  await points.check();
+  await stroke.uncheck();
+  await page.waitForTimeout(300);
+  const state = await page.evaluate(() => ({
+    layerModes: window.__parametrica.document.layers[0].modes,
+    globalModes: window.__parametrica.document.view.modes,
+  }));
+  expect(state.layerModes).toContain('points');
+  expect(state.layerModes).not.toContain('stroke');
+  expect(state.globalModes).toContain('stroke');
+});
+
+
+test('per-pass opacity changes the pass and persists on the view', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
+  await page.waitForTimeout(300);
+  const render = await openSection(page, 'Render');
+  const points = render.locator('.mode-toggle', { hasText: 'Points' });
+  await points.locator('input[type="checkbox"]').check();
+  await page.waitForTimeout(300);
+  const canvas = page.locator('#canvas-container canvas');
+  const before = await canvas.screenshot();
+  const opacity = points.locator('.pass-opacity');
+  await opacity.evaluate((el) => {
+    el.value = '0';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(300);
+  const after = await canvas.screenshot();
+  expect(Buffer.compare(before, after)).not.toBe(0);
+  expect(await page.evaluate(() => window.__parametrica.document.view.passOpacity.points)).toBe(0);
 });

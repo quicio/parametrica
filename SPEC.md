@@ -385,7 +385,7 @@ Carried from v1: Swiss-modernist black instrument, lil-gui, telemetry.
 
 New: generator selector · schema-built parameter panel (v1 pattern,
 rebuilt per generator) · operator-stack panel (add/remove/reorder/toggle)
-· per-pass visualization checkboxes · animation transport · harmonic
+· per-pass visualization checkboxes · per-layer render overrides · per-pass opacity · animation transport · harmonic
 table editor · formula editor drawer · undo/redo (50 snapshots, coalesced)
 · seed field + reroll · transient notices for import/preset failures ·
 Analysis panel with deterministic descriptor metrics and parameter influence ·

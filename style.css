@@ -651,6 +651,12 @@ html, body {
   margin: 0;
 }
 
+.mode-toggle .pass-opacity {
+  width: 34px;
+  margin-left: auto;
+  accent-color: var(--swiss-red);
+}
+
 .mode-toggle:hover { color: var(--ink); }
 
 .mode-toggle.inapplicable {
@@ -733,6 +739,23 @@ html, body {
   flex: 1 1 auto;
   font-size: 8px;
   padding: 4px;
+}
+
+.layer-mode-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.layer-mode-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
+
+.layer-mode-toggle {
+  font-size: 8px;
+  padding: 1px 0;
 }
 
 .fill-gradient-stops-box {

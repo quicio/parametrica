@@ -462,7 +462,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
 | 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
-| 9 | SVG export | output is well-formed, document is embedded, vector passes/overlays/blend are recorded, plotter output is stroke-only and raster-only SDF is reported |
+| 9 | SVG export | output is well-formed, document is embedded, vector passes/overlays/blend/opacity are recorded, plotter output is stroke-only and raster-only SDF is reported |
 | 10 | animation | time-driven resolution, deterministic across time |
 | 11 | sampling | uniform/adaptive caps, endpoint completeness, inverted domains |
 | 12 | performance | reference document budget |
@@ -472,7 +472,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 16 | lab exploration | 1D sweep endpoints and determinism, Solo/Lock, seeded randomize, visible seed, candidate isolation |
 | 17 | artboard/style | defaults, authoritative layer width, legacy stroke migration, clamping, solid/linear/radial fill gradients, style/artboard round-trip, styled SVG |
 | 18 | grid/morph | row-major grid order/budget, deterministic grid, morph endpoints/interpolation, incompatible structures |
-| 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, layer-scoped analysis, aggregate descriptor, layered SVG |
+| 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, layer-scoped analysis, per-layer render modes, aggregate descriptor, layered SVG |
 | 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation, PNG/SVG frame sequences, GIF encoding and frame caps |
 | 21 | offline advisor | narration/diff, grounded suggestions, validation, clamping, candidate isolation |
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
@@ -486,7 +486,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1682 checks total.
+1687 checks total.
 
 ### Panel behavior
 

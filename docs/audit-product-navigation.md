@@ -24,6 +24,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Image tracing solo trazaba el contorno mayor | **Resuelto** | Modo All contours: componentes separados, cada uno como capa Fourier; huecos siguen pendientes. |
 | Helix solo mostraba una proyección a la vez | **Resuelto** | Layout Quad: 3D + XY/XZ/YZ en canvas; SVG/plotter usan la proyección activa y avisan. |
 | Gradient Wireframe no permitía elegir la métrica de color | **Resuelto** | `view.colorMetric`: auto, altura, radio, curvatura o longitud de arco. |
+| Render modes eran globales y los passes no tenían opacidad | **Resuelto con alcance** | `layer.modes` por capa y `view.passOpacity` por pass; color/grosor por pass siguen pendientes. |
 | Los huecos internos se perdían al trazar | **Resuelto con alcance** | Los huecos se trazan como capas Fourier nombradas; el fill even-odd sigue pendiente. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
@@ -52,7 +53,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
   fallback fiel.
 - **Custom palette editor y métricas de color por capa** más allá del ramp global.
 - **Even-odd fill de huecos / jerarquía de contornos.**
-- **Ajustes por pass y render modes por capa.**
+- **Color y grosor configurables por pass.**
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
 - **Notebook y Presets** siguen siendo dos bibliotecas separadas.
 - **MAKE/fabricación:** no hay autoría de sólidos, CSG, STL/3MF, unidades ni
@@ -217,9 +218,9 @@ no viven en LOOK: Image está en Ingest y Animation/Timeline en Perform.
 
 ### Límites que siguen
 
-- Fill con gradientes lineales/radiales; sin ajustes por pass.
+- Fill con gradientes lineales/radiales; color/grosor por pass pendientes.
 - `view.modes` global; sin modos por capa.
-- Sin controles por pass más allá de activar/desactivar.
+- Passes con opacidad; color y grosor siguen fijos.
 
 ---
 
@@ -305,7 +306,7 @@ Pendiente:
 | Seed | Global, en Explore | Ya visible. |
 | Analysis | Por capa | Correcto para diagnósticos. |
 | Layer lock | **Content lock** | Estructura/identidad fuera de alcance. |
-| Render passes | **Grupos/descripciones/aplicabilidad** | Settings por pass pendientes. |
+| Render passes | **Grupos/descripciones/aplicabilidad/opacidad** | Color/grosor por pass pendientes. |
 | Blend | **Implementado** | `screen`/`difference` requieren revisión visual. |
 | GIF export | **Implementado** | 360 px, 240 frames, loop según timeline. |
 
@@ -369,8 +370,8 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### 11.2 Problemas de UX
 
-- Fill ya tiene gradientes lineales/radiales; faltan ajustes por pass.
-- No hay settings por pass ni modos por capa.
+- Fill ya tiene gradientes lineales/radiales; faltan color/grosor por pass.
+- Hay modos por capa y opacidad por pass; faltan color/grosor por pass.
 - Notebook y Presets siguen siendo dos bibliotecas sin relación explícita.
 - Seed y undo/redo siguen en EXPLORE.
 - Analysis/Advisor siguen en EXPLORE.
@@ -384,7 +385,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 - `view.style` es alias del estilo de la capa activa (decisión aceptada).
 - `view.modes` es global; el estilo es por capa.
 - El pipeline de superficies salta operadores.
-- Los passes hardcodean colores/grosores; no hay settings por pass.
+- Los passes siguen hardcodeando color/grosor; la opacidad ya es configurable.
 - `P5Adapter` sigue leyendo el documento para animación/artboard/underlay.
 - SVG y render p5 comparten los draw calls, pero no una descripción de escena completa.
 - Múltiples stores de persistencia.
@@ -414,7 +415,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | Blend | Implementado | Validar visualmente `screen`/`difference` y coste. |
 | Estilo global vs por capa | `view.style` alias aceptado | Mantener o separar en el futuro. |
 | Render modes globales vs por capa | Globales | Decidir si se vuelven por capa. |
-| Fill/ramp scope | Ramp global; fill sólido/gradiente | Decidir settings por pass. |
+| Fill/ramp scope | Ramp global; fill sólido/gradiente | Decidir color/grosor por pass. |
 | Notebook vs Presets | Separados | Unificar, relacionar o mantener. |
 | MAKE | Sin código | Definir primer vertical slice y salida real. |
 | Persistencia | Múltiples stores | Decidir si se unifica. |
@@ -444,7 +445,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1682/1682** checks y build.
-- `npm run test:e2e`: **103/103** tests.
-- `openspec validate --specs --strict`: **63/63** specs.
+- `npm run check`: lint, **1687/1687** checks y build.
+- `npm run test:e2e`: **105/105** tests.
+- `openspec validate --specs --strict`: **64/64** specs.
 - No hay cambios OpenSpec activos.

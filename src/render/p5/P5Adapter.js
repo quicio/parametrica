@@ -363,8 +363,9 @@ export class P5Adapter extends Renderer {
     analysisByLayer = null,
     combinedAnalysis = null,
   }) {
-    const layerAnalysisNeeded = needsLayerAnalysis(view);
     for (const group of scene.layers) {
+      const layerModes = Array.isArray(group.modes) && group.modes.length ? group.modes : modes;
+      const layerAnalysisNeeded = needsLayerAnalysis({ ...view, modes: layerModes });
       const layerData = {
         curves: group.curves,
         bbox: group.bbox,
@@ -379,13 +380,19 @@ export class P5Adapter extends Renderer {
       p.push();
       p.blendMode(blendModeConstant(p, group.style?.blend ?? view.style?.blend));
       try {
-        for (const modeId of modes) {
+        for (const modeId of layerModes) {
           if (!RenderPasses.has(modeId)) continue;
           p.push();
+          const context = p.drawingContext;
+          const previousAlpha = context?.globalAlpha ?? 1;
+          const opacity = Number(view.passOpacity?.[modeId]);
+          if (context && Number.isFinite(opacity)) context.globalAlpha = previousAlpha * clamp(opacity, 0, 1);
           try {
             RenderPasses.get(modeId).draw(p, layerData);
           } catch (e) {
             console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+          } finally {
+            if (context) context.globalAlpha = previousAlpha;
           }
           p.pop();
         }

@@ -29,7 +29,7 @@ test('parametric surface evaluates, tessellates and renders fill', async ({ page
   expect(state.normals).toBeGreaterThan(100);
 
   const view = await openSection(page, 'Render');
-  const fill = view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input');
+  const fill = view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input[type="checkbox"]');
   await expect(fill).toBeVisible();
   const canvas = page.locator('#canvas-container canvas');
   const before = await canvas.screenshot();

@@ -702,8 +702,9 @@ export class Controls {
     const body = this.section('Style', { id: 'style', mode: 'look' });
     const view = this.app.document.view;
     const st = view.style;
+    const layer = this.app.activeLayer;
     const locked = Boolean(this.app.activeLayerLocked);
-    const layerName = this.app.activeLayer?.name ?? 'current layer';
+    const layerName = layer?.name ?? 'current layer';
     body.appendChild(this.panelHint(`Active layer · ${layerName}`));
     const lockable = (control) => {
       if (locked) control.disabled = true;
@@ -940,6 +941,63 @@ export class Controls {
     paletteWrap.append(paletteSelect);
     row('Palette', paletteWrap);
 
+    if (layer) {
+      const override = document.createElement('select');
+      override.className = 'artboard-input layer-mode-override';
+      for (const option of [
+        { value: 'global', label: 'Global' },
+        { value: 'custom', label: 'Custom' },
+      ]) {
+        const opt = document.createElement('option');
+        opt.value = option.value;
+        opt.textContent = option.label;
+        override.appendChild(opt);
+      }
+      override.value = Array.isArray(layer.modes) && layer.modes.length ? 'custom' : 'global';
+      override.disabled = locked;
+
+      const modeList = document.createElement('div');
+      modeList.className = 'layer-mode-list';
+      const modeWrap = document.createElement('div');
+      modeWrap.className = 'layer-mode-wrap';
+      modeWrap.append(override, modeList);
+
+      const renderModes = () => {
+        modeList.replaceChildren();
+        modeList.hidden = !Array.isArray(layer.modes);
+        if (modeList.hidden) return;
+        for (const def of RenderPasses.list()) {
+          const rowEl = document.createElement('label');
+          rowEl.className = 'mode-toggle layer-mode-toggle';
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.checked = layer.modes.includes(def.id);
+          input.disabled = locked;
+          input.addEventListener('change', () => {
+            layer.modes = toggleMode(layer.modes, def.id, input.checked, RenderPasses.ids());
+            this.app.rebuild();
+          });
+          const text = document.createElement('span');
+          text.textContent = def.name;
+          rowEl.append(input, text);
+          modeList.appendChild(rowEl);
+        }
+      };
+
+      override.addEventListener('change', () => {
+        if (override.value === 'global') {
+          layer.modes = null;
+        } else {
+          layer.modes = [...view.modes];
+        }
+        renderModes();
+        this.app.rebuild();
+      });
+
+      row('Render passes', modeWrap);
+      renderModes();
+    }
+
     if (locked) {
       grid.appendChild(this.panelHint('Layer content is locked. Unlock the layer to edit style.'));
     }
@@ -1002,7 +1060,24 @@ export class Controls {
         });
         const text = document.createElement('span');
         text.textContent = def.name;
-        row.append(input, text);
+        const opacity = document.createElement('input');
+        opacity.type = 'range';
+        opacity.className = 'pass-opacity';
+        opacity.min = '0';
+        opacity.max = '1';
+        opacity.step = '0.05';
+        opacity.value = String(view.passOpacity?.[def.id] ?? 1);
+        opacity.title = `${def.name} opacity`;
+        opacity.disabled = !applies;
+        opacity.addEventListener('click', (event) => event.stopPropagation());
+        opacity.addEventListener('input', () => {
+          view.passOpacity = {
+            ...(view.passOpacity ?? {}),
+            [def.id]: Number(opacity.value),
+          };
+          this.app.rebuild();
+        });
+        row.append(input, text, opacity);
         modesBody.appendChild(row);
         modeInputs.push({ id: def.id, input, row, def });
       }

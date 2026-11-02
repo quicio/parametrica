@@ -177,7 +177,7 @@ test('gradient wireframe renders colored geometry', async ({ page }) => {
   await loadPreset(page, 'Básica');
   await openSection(page, 'Render');
   expect(await coloredPixelCount(page)).toBe(0);
-  const gradient = page.locator('.mode-toggle', { hasText: 'Gradient Wireframe' }).locator('input');
+  const gradient = page.locator('.mode-toggle', { hasText: 'Gradient Wireframe' }).locator('input[type="checkbox"]');
   await gradient.check();
   await page.waitForTimeout(400);
   expect(await coloredPixelCount(page)).toBeGreaterThan(100);

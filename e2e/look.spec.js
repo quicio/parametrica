@@ -75,7 +75,7 @@ test('camera reset is undoable through the existing history', async ({ page }) =
 test('color ramp is editable and independent from palettes', async ({ page }) => {
   await boot(page);
   const render = await openSection(page, 'Render');
-  await render.locator('.mode-toggle', { hasText: 'Gradient Wireframe' }).locator('input').check();
+  await render.locator('.mode-toggle', { hasText: 'Gradient Wireframe' }).locator('input[type="checkbox"]').check();
   await page.waitForTimeout(300);
   const canvas = page.locator('#canvas-container canvas');
   const before = await canvas.screenshot();

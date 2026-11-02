@@ -99,6 +99,7 @@ export function createDefaultView() {
     projection: '3d',
     layout: 'single',
     colorMetric: 'auto',
+    passOpacity: {},
     colorRamp: null,
   };
 }
@@ -116,6 +117,7 @@ export const DEFAULT_VIEW = Object.freeze({
   projection: '3d',
   layout: 'single',
   colorMetric: 'auto',
+  passOpacity: Object.freeze({}),
   colorRamp: null,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
@@ -152,6 +154,10 @@ function mergeView(base, raw) {
       ...base.artboard,
       ...(source.artboard && typeof source.artboard === 'object' ? source.artboard : {}),
     },
+    passOpacity: {
+      ...base.passOpacity,
+      ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),
+    },
     style: {
       ...base.style,
       ...sourceStyle,
@@ -169,6 +175,17 @@ function sanitizeArtboard(raw) {
     background: color(source.background, DEFAULT_ARTBOARD.background),
     margin: clamp(Number(source.margin), 0, 120, DEFAULT_ARTBOARD.margin),
   };
+}
+
+function sanitizePassOpacity(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!key) continue;
+    const n = Number(value);
+    if (Number.isFinite(n)) out[key] = clamp(n, 0, 1, 1);
+  }
+  return out;
 }
 
 function sanitizeStyle(raw, fallbackWidth = 2) {
@@ -212,6 +229,9 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
     visible: overrides.visible !== false,
     locked: Boolean(overrides.locked),
     seed: clamp(Number(overrides.seed), 0, 1e9, 1),
+    modes: Array.isArray(overrides.modes) && overrides.modes.length
+      ? [...new Set(overrides.modes.filter((mode) => typeof mode === 'string'))]
+      : null,
     generator: {
       id: generatorId,
       params: { ...sanitizeParams(generator.params, overrides.generator?.params) },
@@ -274,6 +294,9 @@ function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
     visible: source.visible !== false,
     locked: Boolean(source.locked),
     seed: clamp(Number(source.seed), 0, 1e9, fallbackSeed),
+    modes: Array.isArray(source.modes) && source.modes.length
+      ? [...new Set(source.modes.filter((mode) => typeof mode === 'string'))]
+      : null,
     generator: {
       id: generatorId,
       params: sanitizeParams(generator.params, source.generator?.params),
@@ -301,6 +324,7 @@ export function createDocument(generatorId = 'parametric', overrides = {}) {
   view.projection = sanitizeProjection(view.projection);
   view.layout = VIEW_LAYOUTS.includes(view.layout) ? view.layout : 'single';
   view.colorMetric = COLOR_METRICS.includes(view.colorMetric) ? view.colorMetric : 'auto';
+  view.passOpacity = sanitizePassOpacity(view.passOpacity);
   view.colorRamp = sanitizeColorRamp(view.colorRamp);
   view.artboard = sanitizeArtboard(overrides.view?.artboard);
   const style = sanitizeStyle(overrides.view?.style, overrides.view?.strokeWeight ?? view.strokeWeight);
@@ -373,6 +397,7 @@ export function sanitizeDocument(raw) {
   view.projection = sanitizeProjection(view.projection);
   view.layout = VIEW_LAYOUTS.includes(view.layout) ? view.layout : 'single';
   view.colorMetric = COLOR_METRICS.includes(view.colorMetric) ? view.colorMetric : 'auto';
+  view.passOpacity = sanitizePassOpacity(view.passOpacity);
   view.colorRamp = sanitizeColorRamp(view.colorRamp);
   const fallbackStyle = sanitizeStyle(raw.view?.style, view.strokeWeight);
   const seed = clamp(Number(raw.seed), 0, 1e9, 1);

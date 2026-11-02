@@ -22,15 +22,21 @@ import { SvgContext } from './svgContext.js';
  * @returns {string[]}
  */
 export function unsupportedSvgFeatures(view = {}, layers = null) {
-  const modes = Array.isArray(view?.modes) ? view.modes : ['stroke'];
+  const globalModes = Array.isArray(view?.modes) ? view.modes : ['stroke'];
+  const layersWithModes = Array.isArray(layers) ? layers.filter((layer) => layer.visible !== false) : [];
+  const modeSets = layersWithModes.length
+    ? layersWithModes.map((layer) => (
+      Array.isArray(layer.modes) && layer.modes.length ? layer.modes : globalModes
+    ))
+    : [globalModes];
+  const modes = new Set(modeSets.flat());
   const features = [];
   // Vector passes are recorded through the same draw code as the canvas.
   // Signed Distance is raster-only, so it remains an explicit omission.
   if (view?.layout === 'quad') features.push('Quad view layout (canvas-only)');
-  if (modes.includes('signed-distance')) features.push('Signed Distance (raster-only)');
+  if (modes.has('signed-distance')) features.push('Signed Distance (raster-only)');
   // Blend is represented with CSS mix-blend-mode. It is supported by
   // browsers, but not by every SVG consumer.
-  void layers;
   return [...new Set(features)];
 }
 
@@ -83,6 +89,7 @@ export class Exporter {
       const meshes = layer.renderMeshes ?? layer.meshes ?? [];
       if (!layerCurves.length && !meshes.length) continue;
       const style = layer.style ?? fallbackStyle;
+      const layerModes = Array.isArray(layer.modes) && layer.modes.length ? layer.modes : modes;
       const layerData = {
         curves: layerCurves,
         bbox: layer.bbox ?? bboxAll(layerCurves),
@@ -93,7 +100,7 @@ export class Exporter {
         time,
       };
       const passes = [];
-      for (const mode of modes) {
+      for (const mode of layerModes) {
         if (!RenderPasses.has(mode)) continue;
         if (mode === 'signed-distance') {
           omitted?.('Signed Distance (raster-only)');
@@ -107,7 +114,11 @@ export class Exporter {
           continue;
         }
         const markup = ctx.toMarkup('      ');
-        if (markup) passes.push(`    <g class="svg-pass" data-pass="${escapeAttr(mode)}">\n${markup}\n    </g>`);
+        if (markup) {
+          const opacity = Number(view.passOpacity?.[mode]);
+          const opacityAttr = Number.isFinite(opacity) && opacity < 1 ? ` opacity="${fmt(opacity)}"` : '';
+          passes.push(`    <g class="svg-pass" data-pass="${escapeAttr(mode)}"${opacityAttr}>\n${markup}\n    </g>`);
+        }
       }
       if (!passes.length) continue;
       const blend = blendMode(style.blend);

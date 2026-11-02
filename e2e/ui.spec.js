@@ -61,7 +61,7 @@ test('editing a harmonic row updates the document', async ({ page }) => {
 
 test('render modes stay an array when toggled', async ({ page }) => {
   await openSection(page, 'Render');
-  const points = page.locator('.mode-toggle', { hasText: 'Points' }).locator('input');
+  const points = page.locator('.mode-toggle', { hasText: 'Points' }).locator('input[type="checkbox"]');
   await points.check();
   await page.waitForTimeout(200);
 
@@ -78,7 +78,7 @@ test('render modes stay an array when toggled', async ({ page }) => {
 
 test('curvature pass lazily computes differential analysis', async ({ page }) => {
   await openSection(page, 'Render');
-  const curvature = page.locator('.mode-toggle', { hasText: 'Curvature Heatmap' }).locator('input');
+  const curvature = page.locator('.mode-toggle', { hasText: 'Curvature Heatmap' }).locator('input[type="checkbox"]');
   await curvature.check();
   await page.waitForTimeout(250);
 

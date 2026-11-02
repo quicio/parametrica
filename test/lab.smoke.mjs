@@ -457,6 +457,7 @@ console.log('6. documents');
   assert(typeof defaultDoc.view.camera.fov === 'number', 'default view.camera.fov is number');
   assert(defaultDoc.view.layout === 'single', 'default view uses the single layout');
   assert(defaultDoc.view.colorMetric === 'auto', 'default gradient metric is auto');
+  assert(Object.keys(defaultDoc.view.passOpacity).length === 0, 'default pass opacity map is empty');
   const quadView = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Quad View',
     generator: { id: 'helix', params: {} },
@@ -481,6 +482,12 @@ console.log('6. documents');
     operators: [], view: { colorMetric: 'bogus' }, animation: {},
   });
   assert(badMetric.view.colorMetric === 'auto', 'unknown color metric falls back to auto');
+  const opacityView = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Opacity View',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { passOpacity: { stroke: 0.5, points: 2, bogus: 'x' } }, animation: {},
+  });
+  assert(opacityView.view.passOpacity.stroke === 0.5 && opacityView.view.passOpacity.points === 1, 'pass opacity sanitizes and clamps');
   // Partial camera in raw: only the set key is honored, others default.
   const partialCam = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Partial Camera',
@@ -688,6 +695,11 @@ console.log('9. svg export');
   const blendedEval = evaluateDocument(blended, { time: 0 });
   const blendedSvg = Exporter.buildSVG(blendedEval.curves, blended.view, { w: 900, h: 900 }, blended);
   assert(blendedSvg.includes('mix-blend-mode:multiply'), 'blend mode exports as CSS mix-blend-mode');
+  const opaqueDoc = BUILT_IN_PRESETS['Lissajous 3:5']();
+  opaqueDoc.view.passOpacity = { stroke: 0.5 };
+  const opaqueEval = evaluateDocument(opaqueDoc, { time: 0 });
+  const opaqueSvg = Exporter.buildSVG(opaqueEval.curves, opaqueDoc.view, { w: 900, h: 900 }, opaqueDoc);
+  assert(opaqueSvg.includes('data-pass="stroke" opacity="0.5"'), 'pass opacity reaches the SVG group');
 
   const gradientDoc = BUILT_IN_PRESETS['Golden Rose']();
   gradientDoc.view.style.fill.enabled = true;
@@ -1546,6 +1558,13 @@ console.log('19. composition layers');
   const expectedLayer = analyzeCurve(ev.layers[1].curves[0].points, ev.layers[1].curves[0].closed);
   assert(Math.abs(layerAnalysis.perCurve[0].arcLength - expectedLayer.arcLength) < 1e-9, 'layer analysis matches its own curves');
   assert(layerAnalysis !== ev.analysis, 'layer analysis is distinct from combined analysis');
+  const modesDoc = createDocument('parametric');
+  modesDoc.layers.push(createLayer('rose', { name: 'Points layer', modes: ['stroke', 'points'] }));
+  attachLayerAliases(modesDoc);
+  const modesEval = evaluateDocument(modesDoc, { time: 0 });
+  assert(modesEval.layers[1].modes.join(',') === 'stroke,points', 'layer render-mode override survives evaluation');
+  const modesRoundTrip = sanitizeDocument(JSON.parse(JSON.stringify(modesDoc)));
+  assert(modesRoundTrip.layers[1].modes.join(',') === 'stroke,points', 'layer render-mode override survives round-trip');
   assert(ev.curves.every((c) => c.meta.layerId), 'curves carry layer ids');
   assert(ev.stats.curveCount === ev.curves.length, 'aggregate curve count');
 
