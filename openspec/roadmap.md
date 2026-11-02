@@ -136,7 +136,7 @@ extraction and conversion to a Fourier document.
 | Plotter-ready stroke-only SVG | shipped (2026-11-02) |
 | Image tracing: all connected contours into Fourier layers | shipped (2026-11-02) |
 | Internal hole contours in all-contours tracing | shipped (2026-11-02) |
-| Per-layer render modes, pass opacity and color metrics | shipped (2026-11-02) |
+| Per-layer render modes, pass opacity, color metrics and custom palettes | shipped (2026-11-02) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
@@ -154,7 +154,6 @@ extraction and conversion to a Fourier document.
 
 | Capability | Purpose |
 |---|---|
-| `palette-system` | Custom palette editor |
 | `pass-appearance` | Per-pass color and stroke-width settings |
 | `image-evenodd` | Even-odd hole filling and contour nesting |
 | `quad-svg-export` | Quad layout reconstruction in SVG/plotter |
@@ -436,6 +435,7 @@ generation metadata in the notebook; unit group 24.
 | `image-holes` | archived | shipped |
 | `layer-pass-controls` | archived | shipped |
 | `layer-color-metrics` | archived | shipped |
+| `custom-palettes` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
