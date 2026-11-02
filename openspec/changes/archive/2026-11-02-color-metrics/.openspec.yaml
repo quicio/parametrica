@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Let Gradient Wireframe color by an explicit metric (height, radius,
+  curvature or arc length) while preserving auto behavior.

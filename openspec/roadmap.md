@@ -136,6 +136,7 @@ extraction and conversion to a Fourier document.
 | Plotter-ready stroke-only SVG | shipped (2026-11-02) |
 | Image tracing: all connected contours into Fourier layers | shipped (2026-11-02) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
+| Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -151,7 +152,7 @@ extraction and conversion to a Fourier document.
 
 | Capability | Purpose |
 |---|---|
-| `palette-system` | Color by metric, palettes, presets |
+| `palette-system` | Custom palette editor and per-layer color metrics |
 | `image-holes` | Hole-aware / nested contour tracing |
 | `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
@@ -427,6 +428,7 @@ generation metadata in the notebook; unit group 24.
 | `plotter-export` | archived | shipped |
 | `image-multicontour` | archived | shipped |
 | `helix-multiview` | archived | shipped |
+| `color-metrics` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
