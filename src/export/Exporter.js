@@ -1,18 +1,22 @@
 /**
- * Exporter.js — SVG / PNG / JSON from evaluated curves.
+ * Exporter.js — SVG / PNG / GIF / JSON from evaluated curves and passes.
  *
- * SVG: one clean <path> per curve (M + L + Z for closed), coordinates
- * rounded to 2 decimals, black field, white monoline, the full
- * Parametrica document embedded as an XML comment — every SVG is a preset.
+ * SVG: replays the active vector render passes into an SVG recorder, keeps
+ * artboard/layer order and embeds the full Parametrica document as an XML
+ * comment. Signed Distance is the only raster-only omission.
  */
 
 import { APP_ID } from '../core/document.js';
 import { RenderPasses } from '../core/registry.js';
+import { analyzeAll } from '../analysis/differential.js';
+import { bboxAll } from '../sampling/sampling.js';
 import { projectCurves, projectionFor } from '../render/projection.js';
+import { drawOverlays } from '../viz/overlays.js';
+import { SvgContext } from './svgContext.js';
 
 /**
- * Active features the SVG builder does not represent. Used to warn instead of
- * silently implying full render fidelity.
+ * Active features the SVG builder does not represent as vector primitives.
+ * Used to warn instead of silently implying full render fidelity.
  * @param {object} view
  * @param {Array|null} layers evaluated layers (optional)
  * @returns {string[]}
@@ -20,25 +24,12 @@ import { projectCurves, projectionFor } from '../render/projection.js';
 export function unsupportedSvgFeatures(view = {}, layers = null) {
   const modes = Array.isArray(view?.modes) ? view.modes : ['stroke'];
   const features = [];
-  const hasMeshes = Array.isArray(layers)
-    ? layers.some((layer) => layer.visible !== false && (
-      (layer.renderMeshes?.length ?? 0) > 0 || (layer.meshes?.length ?? 0) > 0
-    ))
-    : false;
-  if (modes.includes('gradient-wireframe')) features.push('Gradient Wireframe');
-  if (modes.includes('surface-fill') && hasMeshes) features.push('Surface Fill');
-  for (const id of modes) {
-    if (id === 'stroke' || id === 'gradient-wireframe' || id === 'surface-fill') continue;
-    if (!RenderPasses.has(id)) continue;
-    features.push(RenderPasses.get(id).name);
-  }
-  if (view?.overlays && Object.values(view.overlays).some(Boolean)) features.push('Overlays');
-  const hasBlend = Array.isArray(layers)
-    ? layers.some((layer) => layer.style?.blend && layer.style.blend !== 'normal')
-    : false;
-  if (hasBlend || (view?.style?.blend && view.style.blend !== 'normal')) {
-    features.push('Blend mode');
-  }
+  // Vector passes are recorded through the same draw code as the canvas.
+  // Signed Distance is raster-only, so it remains an explicit omission.
+  if (modes.includes('signed-distance')) features.push('Signed Distance (raster-only)');
+  // Blend is represented with CSS mix-blend-mode. It is supported by
+  // browsers, but not by every SVG consumer.
+  void layers;
   return [...new Set(features)];
 }
 
@@ -55,7 +46,7 @@ export class Exporter {
    * @param {object} size    { w, h }
    * @param {object} document  embedded as metadata
    */
-  static buildSVG(curves, view, { w, h }, document = null, layers = null) {
+  static buildSVG(curves, view = {}, { w, h }, document = null, layers = null, options = {}) {
     const artboard = view.artboard ?? {
       width: w,
       height: h,
@@ -64,36 +55,92 @@ export class Exporter {
     const fallbackStyle = view.style ?? {
       stroke: { color: '#ffffff', width: view.strokeWeight ?? 2, opacity: 1, cap: 'round', join: 'round' },
       fill: { enabled: false, color: '#ffffff', opacity: 1 },
+      blend: 'normal',
     };
     const width = artboard.width;
     const height = artboard.height;
+    const source = Array.isArray(layers) && layers.length
+      ? layers.filter((layer) => layer.visible !== false)
+      : [{
+        curves: Array.isArray(curves) ? curves : [],
+        style: fallbackStyle,
+        meshes: options.meshes ?? [],
+        bbox: options.bbox ?? null,
+      }];
+    const modes = Array.isArray(view.modes) && view.modes.length ? view.modes : ['stroke'];
+    const time = options.time ?? document?.animation?.time ?? 0;
+    const omitted = options.onUnsupported ?? null;
     const meta = document
       ? `<!-- parametrica document: ${escapeComment(JSON.stringify({ app: APP_ID, ...document }))} -->\n`
       : '';
 
-    const groups = Array.isArray(layers) && layers.length
-      ? layers.filter((layer) => layer.visible !== false)
-        .map((layer) => ({ curves: layer.curves ?? [], style: layer.style ?? fallbackStyle }))
-      : [{ curves, style: fallbackStyle }];
+    const layerMarkup = [];
+    const allCurves = source.flatMap((layer) => layer.curves ?? []);
+    for (let index = 0; index < source.length; index++) {
+      const layer = source[index];
+      const layerCurves = layer.curves ?? [];
+      const meshes = layer.renderMeshes ?? layer.meshes ?? [];
+      if (!layerCurves.length && !meshes.length) continue;
+      const style = layer.style ?? fallbackStyle;
+      const layerData = {
+        curves: layerCurves,
+        bbox: layer.bbox ?? bboxAll(layerCurves),
+        meshes,
+        analysis: analyzeAll(layerCurves),
+        view: { ...view, style },
+        document,
+        time,
+      };
+      const passes = [];
+      for (const mode of modes) {
+        if (!RenderPasses.has(mode)) continue;
+        if (mode === 'signed-distance') {
+          omitted?.('Signed Distance (raster-only)');
+          continue;
+        }
+        const ctx = new SvgContext(width, height);
+        try {
+          RenderPasses.get(mode).draw(ctx, layerData);
+        } catch {
+          omitted?.(RenderPasses.get(mode).name);
+          continue;
+        }
+        const markup = ctx.toMarkup('      ');
+        if (markup) passes.push(`    <g class="svg-pass" data-pass="${escapeAttr(mode)}">\n${markup}\n    </g>`);
+      }
+      if (!passes.length) continue;
+      const blend = blendMode(style.blend);
+      const attrs = [`class="svg-layer"`, `data-layer="${index}"`];
+      if (blend) {
+        attrs.push(`data-blend="${blend}"`, `style="mix-blend-mode:${blend}"`);
+      }
+      layerMarkup.push(`  <g ${attrs.join(' ')}>\n${passes.join('\n')}\n  </g>`);
+    }
 
-    const pathElements = groups
-      .filter((group) => group.curves.length)
-      .map((group) => {
-        const paths = buildPaths(group.curves);
-        if (!paths) return '';
-        const attrs = styleAttrs(group.style, view);
-        return layers
-          ? `  <g ${attrs}>${paths}</g>`
-          : `  <path d="${paths}" ${attrs}/>`;
-      })
-      .join('\n');
+    let overlayMarkup = '';
+    if (hasOverlays(view.overlays) && allCurves.length) {
+      const ctx = new SvgContext(width, height);
+      try {
+        drawOverlays(ctx, {
+          curves: allCurves,
+          analysis: analyzeAll(allCurves),
+          bbox: bboxAll(allCurves),
+          view,
+        });
+        const markup = ctx.toMarkup('    ');
+        if (markup) overlayMarkup = `  <g class="svg-overlays" data-overlays="true">\n${markup}\n  </g>`;
+      } catch {
+        omitted?.('Overlays');
+      }
+    }
 
+    const body = [...layerMarkup, overlayMarkup].filter(Boolean).join('\n');
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
       meta +
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}" style="isolation:isolate">`,
       `  <rect x="${fmt(-width / 2)}" y="${fmt(-height / 2)}" width="${fmt(width)}" height="${fmt(height)}" fill="${escapeAttr(artboard.background)}"/>`,
-      pathElements,
+      body,
       '</svg>',
       '',
     ].join('\n');
@@ -133,14 +180,18 @@ export class Exporter {
       renderMeshes: evaluation.renderMeshes ?? [],
       style: doc.view.style,
     }];
-    const omitted = unsupportedSvgFeatures(doc.view, exportLayers);
-    if (omitted.length) {
+    const omitted = new Set(unsupportedSvgFeatures(doc.view, exportLayers));
+    const svg = Exporter.buildSVG(curves, doc.view, { w, h }, doc, layers, {
+      meshes: evaluation.renderMeshes ?? [],
+      time: doc.animation.time,
+      onUnsupported: (name) => omitted.add(name),
+    });
+    if (omitted.size) {
       this.app.notify?.(
-        `SVG omits: ${omitted.join(', ')}. Use PNG for full fidelity.`,
+        `SVG omits: ${[...omitted].join(', ')}. Use PNG for full fidelity.`,
         'info',
       );
     }
-    const svg = Exporter.buildSVG(curves, doc.view, { w, h }, doc, layers);
     downloadFile(`parametrica-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 
@@ -222,31 +273,14 @@ export class Exporter {
 
 const fmt = (n) => Number(Number(n).toFixed(2));
 
-function buildPaths(curves) {
-  return curves
-    .filter((c) => c.points.length > 1)
-    .map((c) => {
-      const pts = c.points;
-      let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
-      for (let i = 1; i < pts.length; i++) d += ` L ${fmt(pts[i].x)} ${fmt(pts[i].y)}`;
-      if (c.closed) d += ' Z';
-      return d;
-    })
-    .join(' ');
+function blendMode(value) {
+  return value === 'multiply' || value === 'screen' || value === 'difference'
+    ? value
+    : null;
 }
 
-function styleAttrs(style, view) {
-  const stroke = style.stroke ?? {};
-  const fill = style.fill ?? {};
-  return [
-    `fill="${fill.enabled ? escapeAttr(fill.color) : 'none'}"`,
-    `fill-opacity="${fmt(fill.enabled ? fill.opacity : 0)}"`,
-    `stroke="${escapeAttr(stroke.color ?? '#ffffff')}"`,
-    `stroke-width="${fmt(stroke.width ?? view.strokeWeight)}"`,
-    `stroke-opacity="${fmt(stroke.opacity ?? 1)}"`,
-    `stroke-linecap="${escapeAttr(stroke.cap ?? 'round')}"`,
-    `stroke-linejoin="${escapeAttr(stroke.join ?? 'round')}"`,
-  ].join(' ');
+function hasOverlays(overlays) {
+  return Boolean(overlays && Object.values(overlays).some(Boolean));
 }
 
 function escapeComment(text) {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { openSection } from './helpers.js';
 
@@ -59,16 +60,82 @@ test('inapplicable render passes are disabled and applicable passes enable', asy
   await expect(view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input')).not.toBeDisabled();
 });
 
-test('SVG export warns about omitted surface fill', async ({ page }) => {
+test('SVG export includes surfaces, diagnostics, overlays and blend', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
   await page.waitForTimeout(400);
-  const view = await openSection(page, 'Render');
-  await view.locator('.mode-toggle', { hasText: 'Surface Fill' }).locator('input').check();
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.modes = ['stroke', 'gradient-wireframe', 'surface-fill', 'tangents', 'topology'];
+    app.document.view.overlays = { inflections: true, samplePoints: true, ruler: true, bbox: true };
+    app.document.view.style.blend = 'multiply';
+    app.activeLayer.style.blend = 'multiply';
+    app.rebuild();
+  });
   await page.waitForTimeout(300);
 
-  const download = page.waitForEvent('download');
+  const downloadPromise = page.waitForEvent('download');
   await page.evaluate(() => window.__parametrica.exporter.exportSVG());
-  await download;
-  await expect(page.locator('#notice')).toContainText(/Surface Fill|PNG/);
+  const download = await downloadPromise;
+  const svg = readFileSync(await download.path(), 'utf8');
+  for (const pass of ['stroke', 'gradient-wireframe', 'surface-fill', 'tangents', 'topology']) {
+    expect(svg).toContain(`data-pass="${pass}"`);
+  }
+  expect(svg).toContain('data-overlays="true"');
+  expect(svg).toContain('mix-blend-mode:multiply');
+  expect(svg).toContain('<path');
+  expect(svg).toContain('<line');
+  expect(svg).toContain('<circle');
+  await expect(page.locator('#notice')).not.toContainText('SVG omits');
+});
+
+
+test('SVG export visually matches the artboard for vector strokes', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.applyPreset('Lissajous 3:5');
+    app.document.view.modes = ['stroke'];
+    app.document.view.overlays = { inflections: false, samplePoints: false, ruler: false, bbox: false };
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.evaluate(() => window.__parametrica.exporter.exportSVG());
+  const download = await downloadPromise;
+  const svg = readFileSync(await download.path(), 'utf8');
+
+  const counts = await page.evaluate(async (markup) => {
+    const app = window.__parametrica;
+    const png = app.renderer.artboardDataURL();
+    const load = (src) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+    const [pngImage, svgImage] = await Promise.all([load(png), load(dataUrl)]);
+    const count = (image) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 900;
+      canvas.height = 900;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 900, 900);
+      ctx.drawImage(image, 0, 0, 900, 900);
+      const data = ctx.getImageData(0, 0, 900, 900).data;
+      let lit = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 12 || data[i + 1] > 12 || data[i + 2] > 12) lit++;
+      }
+      return lit;
+    };
+    return { png: count(pngImage), svg: count(svgImage) };
+  }, svg);
+
+  expect(counts.png).toBeGreaterThan(1000);
+  expect(counts.svg).toBeGreaterThan(1000);
+  expect(Math.abs(counts.svg - counts.png) / counts.png).toBeLessThan(0.3);
 });

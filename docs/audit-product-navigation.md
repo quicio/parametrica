@@ -2,8 +2,8 @@
 
 **Original:** 2026-11-01  
 **Actualización de implementación:** 2026-11-02, tras `product-hardening`,
-las correcciones de auditoría, LOOK Phase 1, LOOK Phase 2, la corrección de
-cámara y GIF export.  
+las correcciones de auditoría, LOOK Phase 1/2, la corrección de cámara, GIF
+export y SVG export fidelity.  
 **Alcance de esta revisión:** actualizar el estado real de los hallazgos. No es
 una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
@@ -18,7 +18,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Los passes `tangents` / `normals` / `curvature` por capa usaban el análisis combinado | **Resuelto** | `evaluateLayers` expone análisis lazy por capa; `P5Adapter` mapea el análisis de la capa que dibuja. |
 | `style.blend` se exponía pero no se aplicaba | **Resuelto** | `P5Adapter` aplica el modo por capa y lo resetea antes de la siguiente capa/overlays. |
 | Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
-| El SVG omitía features activas sin avisar | **Resuelto con alcance** | `unsupportedSvgFeatures` avisa de gradiente, surface fill, overlays, diagnósticos y blend. La paridad SVG completa sigue pendiente. |
+| El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
 | La cámara no tenía reset explícito | **Resuelto** | Reset undoable, deshabilitado en proyección ortográfica. |
 | No había renombrado visible de capa | **Resuelto** | Acción de renombrado en Layers. |
@@ -37,12 +37,11 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 |---|---|---|
 | `layer.locked` no impedía nada | **Parcial: content lock** | Bloquea generador, parámetros, ecuaciones/armónicos, operadores y estilo. Rename/reorder/delete/duplicate y restauración/exploración siguen fuera del contrato. |
 | LOOK estaba sobrecargado | **Resuelto** | Phase 1 separó Camera/Canvas/Style/Render/Overlays. Phase 2 movió Image a Ingest y Animation/Timeline a Perform; el grupo Work desapareció. |
-| Export SVG no tiene paridad completa | **Parcial** | Se avisa de lo omitido; no se implementan gradientes de fill, mallas, overlays, passes diagnósticos ni blend. |
 
 ### Hallazgos que permanecen
 
-- **Paridad SVG completa:** gradientes de fill, surface fill, overlays, passes
-  diagnósticos y blend.
+- **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
+  fallback fiel.
 - **Secuencia SVG frame-by-frame:** hoy existen PNG ZIP y GIF; no SVG frames.
 - **Plotter-ready SVG** y pruebas de línea.
 - **Palette system / color-by-metric** más allá del color ramp actual.
@@ -79,8 +78,8 @@ promesas falsas:
    cámara entraba en la geometría.
 8. Timeline exporta PNG ZIP y GIF.
 
-Siguen abiertos la paridad SVG, varias capacidades visuales/de exportación y
-toda la visión MAKE/fabricación.
+Siguen abiertos varias capacidades visuales/de exportación y toda la visión
+MAKE/fabricación.
 
 ---
 
@@ -148,7 +147,7 @@ Cambios de comportamiento dentro del mapa actual:
 | Cámara | **Reset + guardas** | Reset undoable; recorte de plano cercano y distancia de escena. |
 | Image | En **Ingest** | Underlay/tracing existente, sin cambios de capacidad. |
 | Animation/Timeline | En **Perform** | Frame ZIP y GIF siguen en Timeline. |
-| SVG export | **Subconjunto con aviso** | Paridad completa pendiente. |
+| SVG export | **Passes vectoriales + overlays + blend** | Solo Signed Distance es raster-only. |
 
 ### EXPLORE
 
@@ -176,7 +175,7 @@ Cambios de comportamiento dentro del mapa actual:
 
 | Funcionalidad | Estado actual | Nota |
 |---|---|---|
-| Export SVG | Subconjunto con aviso | Paridad completa pendiente. |
+| Export SVG | **Passes vectoriales + overlays + blend** | Solo Signed Distance queda como omisión raster-only. |
 | Notebook notes/tags | **Editor implementado** | Notas y tags editables. |
 | Presets/Notebook | Dos bibliotecas | Siguen sin unificar/relacionar. |
 | Frame export / GIF | En Perform | No se duplica en Keep. |
@@ -216,7 +215,6 @@ no viven en LOOK: Image está en Ingest y Animation/Timeline en Perform.
 - Fill sólido; sin gradientes ni ajustes por pass.
 - `view.modes` global; sin modos por capa.
 - Sin controles por pass más allá de activar/desactivar.
-- El aviso SVG puede ser ruidoso con muchos diagnósticos activos.
 
 ---
 
@@ -270,14 +268,13 @@ Sigue conteniendo Notebook, Presets y Export.
 Resuelto:
 
 - Notas y tags editables en Notebook.
-- Export SVG avisa de features omitidas.
+- Export SVG reproduce passes vectoriales, overlays y blend; avisa solo de Signed Distance.
 - GIF export existe en Timeline.
 
 Pendiente:
 
 - relación Notebook/Presets;
 - mover frame/GIF export a su ubicación final;
-- paridad SVG completa;
 - secuencia SVG frame-by-frame;
 - export de fabricación.
 
@@ -292,7 +289,7 @@ Pendiente:
 | Viewport/canvas | Global | Runtime. |
 | Artboard | Global | Canvas section. |
 | Imagen | Underlay UI-only | No entra en documentos ni export. |
-| Export | SVG con aviso; PNG fiel; GIF animado | SVG completo pendiente. |
+| Export | SVG vectorial; PNG fiel; GIF animado | Signed Distance es la única omisión raster-only. |
 | Animación/Timeline | En **Perform** | PNG ZIP + GIF siguen en Timeline. |
 | Imagen | En **Ingest** | Underlay/tracing existente, UI-only. |
 | Overlays | Globales | Sin cambios. |
@@ -353,7 +350,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | `style.blend` sin efecto | **Resuelto** | Blend por capa, reset, PNG. |
 | `layer.locked` sin efecto | **Parcial** | Content lock; estructura/identidad pendiente. |
 | Passes no aplicables activos | **Resuelto con alcance** | `appliesTo` + UI. |
-| SVG omite features sin avisar | **Parcial** | Aviso implementado; paridad completa pendiente. |
+| SVG omite features sin avisar | **Resuelto** | Passes vectoriales, overlays y blend exportados; SDF avisado. |
 | `view.colorRamp` sin UI | **Resuelto** | Editor en Render. |
 | `renameLayer` sin UI | **Resuelto** | Acción en Layers. |
 | Notebook notes/tags sin UI | **Resuelto** | Editor en Notebook. |
@@ -385,7 +382,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 - El pipeline de superficies salta operadores.
 - Los passes hardcodean colores/grosores; no hay settings por pass.
 - `P5Adapter` sigue leyendo el documento para animación/artboard/underlay.
-- SVG y render p5 no comparten una descripción de escena completa.
+- SVG y render p5 comparten los draw calls, pero no una descripción de escena completa.
 - Múltiples stores de persistencia.
 - Historial incluye cambios de vista (usado por Camera Reset).
 - `view.strokeWeight` es un alias sincronizado de `style.stroke.width`.
@@ -394,8 +391,8 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ## 12. Oportunidades de evolución
 
-- **Export:** paridad SVG, SVG frames y plotter-ready SVG. Frame/GIF export
-  ya pertenece a Perform.
+- **Export:** SVG frames y plotter-ready SVG. Frame/GIF export ya pertenece a
+  Perform; los passes vectoriales ya son SVG.
 - **Color:** palette system/color-by-metric más allá del ramp actual.
 - **Image:** multicontorno y huecos.
 - **Helix:** multi-viewport 3D + tres proyecciones.
@@ -416,7 +413,6 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | Render modes globales vs por capa | Globales | Decidir si se vuelven por capa. |
 | Fill/ramp scope | Ramp global; fill sólido | Decidir gradientes y settings por pass. |
 | Notebook vs Presets | Separados | Unificar, relacionar o mantener. |
-| SVG parity | Aviso implementado | Decidir alcance de la paridad completa. |
 | MAKE | Sin código | Definir primer vertical slice y salida real. |
 | Persistencia | Múltiples stores | Decidir si se unifica. |
 
@@ -441,11 +437,11 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | `refreshRenderModes` en cada evaluación/playback | Posible rendimiento | Escrituras DOM guardadas; falta medir escenas grandes. |
 | Solo algunos passes tienen `appliesTo` | Limitación | Los futuros passes deben declararlo. |
 | El content lock no cubre timeline, exploración, presets ni restauración | Limitación documentada | Fuera del contrato de contenido. |
-| El aviso SVG puede ser ruidoso | UX | No es un fallo funcional. |
+| El aviso SVG queda limitado a Signed Distance | UX | Ya no lista passes vectoriales. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1633/1633** checks y build.
-- `npm run test:e2e`: **96/96** tests.
-- `openspec validate --specs --strict`: **55/55** specs.
+- `npm run check`: lint, **1644/1644** checks y build.
+- `npm run test:e2e`: **97/97** tests.
+- `openspec validate --specs --strict`: **56/56** specs.
 - No hay cambios OpenSpec activos.

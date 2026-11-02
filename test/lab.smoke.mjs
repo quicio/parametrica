@@ -607,21 +607,69 @@ console.log('9. svg export');
   assert((svg.match(/-->/g) || []).length === 1, 'comment escaped');
 
   const baseLayers = [{ visible: true, meshes: [], renderMeshes: [], style: { blend: 'normal' } }];
-  const gradientOmitted = unsupportedSvgFeatures(
-    { ...doc.view, modes: ['gradient-wireframe'], overlays: {}, style: { ...doc.view.style, blend: 'normal' } },
+  const supported = unsupportedSvgFeatures(
+    {
+      ...doc.view,
+      modes: ['gradient-wireframe', 'surface-fill', 'tangents', 'curvature'],
+      overlays: { inflections: true },
+      style: { ...doc.view.style, blend: 'multiply' },
+    },
     baseLayers,
   );
-  assert(gradientOmitted.includes('Gradient Wireframe'), 'SVG omission list includes gradient wireframe');
-  const surfaceOmitted = unsupportedSvgFeatures(
-    { ...doc.view, modes: ['surface-fill'], overlays: {}, style: { ...doc.view.style, blend: 'normal' } },
-    [{ visible: true, meshes: [{}], renderMeshes: [{}], style: { blend: 'normal' } }],
+  assert(supported.length === 0, 'vector passes, overlays and blend are SVG-supported');
+  const sdfOmitted = unsupportedSvgFeatures(
+    { ...doc.view, modes: ['signed-distance'], overlays: {}, style: { ...doc.view.style, blend: 'normal' } },
+    baseLayers,
   );
-  assert(surfaceOmitted.includes('Surface Fill'), 'SVG omission list includes surface fill when meshes exist');
-  const blendOmitted = unsupportedSvgFeatures(
-    { ...doc.view, modes: ['stroke'], overlays: {}, style: { ...doc.view.style, blend: 'multiply' } },
-    null,
-  );
-  assert(blendOmitted.includes('Blend mode'), 'SVG omission list includes blend mode');
+  assert(sdfOmitted.includes('Signed Distance (raster-only)'), 'SVG omission list keeps raster-only SDF');
+
+  const helix = BUILT_IN_PRESETS['Básica']();
+  helix.view.modes = ['gradient-wireframe'];
+  helix.view.colorRamp = ['#ff0000', '#0000ff'];
+  const helixEval = evaluateDocument(helix, { time: 0 });
+  const gradientSvg = Exporter.buildSVG(helixEval.curves, helix.view, { w: 900, h: 900 }, helix);
+  assert(gradientSvg.includes('data-pass="gradient-wireframe"'), 'gradient wireframe exports as a pass');
+  const gradientColors = [...gradientSvg.matchAll(/stroke="(#[0-9a-f]{6})"/g)].map((match) => match[1]);
+  assert(gradientColors.includes('#ff0000') && gradientColors.some((color) => parseInt(color.slice(5, 7), 16) > 200), 'gradient ramp colors reach SVG');
+
+  const torus = BUILT_IN_PRESETS.Torus();
+  torus.view.modes = ['surface-fill'];
+  const torusEval = evaluateDocument(torus, { time: 0 });
+  const surfaceSvg = Exporter.buildSVG(torusEval.curves, torus.view, { w: 900, h: 900 }, torus, null, {
+    meshes: torusEval.renderMeshes,
+  });
+  assert(surfaceSvg.includes('data-pass="surface-fill"') && surfaceSvg.includes('<path'), 'surface fill exports as SVG polygons');
+
+  const overlayDoc = BUILT_IN_PRESETS['Lissajous 3:5']();
+  overlayDoc.view.overlays = { inflections: true, samplePoints: true, ruler: true, bbox: true };
+  const overlayEval = evaluateDocument(overlayDoc, { time: 0 });
+  const overlaySvg = Exporter.buildSVG(overlayEval.curves, overlayDoc.view, { w: 900, h: 900 }, overlayDoc);
+  assert(overlaySvg.includes('data-overlays="true"'), 'overlays export as a separate SVG group');
+  assert(overlaySvg.includes('<circle') && overlaySvg.includes('<rect') && overlaySvg.includes('<line'), 'overlay primitives reach SVG');
+
+  const diagnostic = BUILT_IN_PRESETS['Lissajous 3:5']();
+  diagnostic.view.modes = ['tangents', 'normals', 'curvature', 'topology'];
+  const diagnosticEval = evaluateDocument(diagnostic, { time: 0 });
+  const diagnosticSvg = Exporter.buildSVG(diagnosticEval.curves, diagnostic.view, { w: 900, h: 900 }, diagnostic);
+  for (const id of ['tangents', 'normals', 'curvature', 'topology']) {
+    assert(diagnosticSvg.includes(`data-pass="${id}"`), `SVG exports diagnostic pass ${id}`);
+  }
+  assert(diagnosticSvg.includes('<line') && diagnosticSvg.includes('<circle'), 'diagnostic primitives reach SVG');
+
+  const blended = BUILT_IN_PRESETS['Lissajous 3:5']();
+  blended.view.style.blend = 'multiply';
+  const blendedEval = evaluateDocument(blended, { time: 0 });
+  const blendedSvg = Exporter.buildSVG(blendedEval.curves, blended.view, { w: 900, h: 900 }, blended);
+  assert(blendedSvg.includes('mix-blend-mode:multiply'), 'blend mode exports as CSS mix-blend-mode');
+
+  const sdfDoc = BUILT_IN_PRESETS['Lissajous 3:5']();
+  sdfDoc.view.modes = ['signed-distance'];
+  const sdfEval = evaluateDocument(sdfDoc, { time: 0 });
+  const sdfWarnings = [];
+  Exporter.buildSVG(sdfEval.curves, sdfDoc.view, { w: 900, h: 900 }, sdfDoc, null, {
+    onUnsupported: (name) => sdfWarnings.push(name),
+  });
+  assert(sdfWarnings.some((name) => name.includes('Signed Distance')), 'SDF is reported as a raster-only omission');
 }
 
 /* ——— 10. Animation (time flows into equations) ——— */
@@ -1370,7 +1418,7 @@ console.log('19. composition layers');
   assert(desc.curveCount === ev.curves.length, 'descriptor aggregate curve count');
 
   const svg = Exporter.buildSVG(ev.curves, doc.view, { w: 900, h: 900 }, doc, ev.layers);
-  assert((svg.match(/<g /g) || []).length === 2, 'SVG has one group per visible layer');
+  assert((svg.match(/class="svg-layer"/g) || []).length === 2, 'SVG has one group per visible layer');
   assert(svg.includes('#e30613'), 'SVG carries per-layer color');
 
   const hidden = structuredClone(doc);
@@ -1378,7 +1426,7 @@ console.log('19. composition layers');
   const hiddenEval = evaluateDocument(attachLayerAliases(hidden), { time: 0 });
   assert(hiddenEval.curves.every((c) => c.meta.layerId !== hidden.layers[1].id), 'hidden layer omitted from curves');
   const hiddenSvg = Exporter.buildSVG(hiddenEval.curves, hidden.view, { w: 900, h: 900 }, hidden, hiddenEval.layers);
-  assert((hiddenSvg.match(/<g /g) || []).length === 1, 'hidden layer omitted from SVG');
+  assert((hiddenSvg.match(/class="svg-layer"/g) || []).length === 1, 'hidden layer omitted from SVG');
 
   const broken = attachLayerAliases(structuredClone(doc));
   broken.layers[0].generator.params.exprX = 'sin(';
@@ -2055,7 +2103,7 @@ console.log('25. helix lab');
     assert(roundTrip.errors.length === 0 && roundTrip.curves.length === first.curves.length,
       `${name}: JSON round-trip evaluates`);
     const svg = Exporter.buildSVG(first.curves, parsed.document.view, { w: 900, h: 900 }, parsed.document);
-    assert(svg.includes('<path') && svg.includes('parametrica document:'), `${name}: SVG export is well-formed`);
+    assert((svg.includes('<path') || svg.includes('<line')) && svg.includes('parametrica document:'), `${name}: SVG export is well-formed`);
   }
   assert(signatures.size === helixNames.length, 'all six helix variations are geometrically distinct');
 }

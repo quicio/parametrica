@@ -407,13 +407,16 @@ evolution with numeric crossover, structural mutation and generation lineage.
 
 ## 17. Export
 
-SVG (one `<path>` per curve, clean coordinates, Parametrica document
-embedded as XML comment under `<!-- parametrica document: … -->`) ·
-PNG (HiDPI canvas) · animated GIF (timeline duration/FPS up to 50 FPS, 360 px max side) ·
-JSON (ParametricaDocument) · clipboard JSON.
-SVG is a stroke/solid-fill subset: the exporter warns when active features
-such as gradient wireframe, surface fill, overlays, diagnostic passes or blend
-mode are omitted. PNG is the faithful raster export.
+SVG (active vector render passes, overlays, blend modes and clean coordinates;
+Parametrica document embedded as XML comment under
+`<!-- parametrica document: … -->`) · PNG (HiDPI canvas) · animated GIF
+(timeline duration/FPS up to 50 FPS, 360 px max side) · JSON
+(ParametricaDocument) · clipboard JSON.
+SVG replays the same pass draw calls as the canvas through an SVG recorder:
+stroke, points, gradient wireframe, surface fill/wireframe, diagnostics and
+overlays are represented as vector primitives. Layer blend modes use CSS
+`mix-blend-mode`. Signed Distance remains a documented raster-only omission;
+PNG is the faithful raster fallback.
 Tier 2: animation frame sequences and GIF export.
 
 ---
@@ -506,8 +509,8 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
 geometry. The remaining deferred items (color-by-metric palettes, plotter
-export, multi-viewport layout, custom gradient ramps, multi-contour tracing)
-are future work outside the v0.1.0 scope.
+export, multi-viewport layout, multi-contour tracing, SVG frame sequences and
+MAKE/fabrication) are future work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in

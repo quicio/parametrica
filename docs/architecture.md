@@ -174,7 +174,8 @@ src/
 │   └── builtins.js               40 built-in mathematical families
 │
 ├── export/
-│   ├── Exporter.js               SVG (path-embedded document) · PNG · GIF · JSON
+│   ├── Exporter.js               SVG (pass-embedded document) · PNG · GIF · JSON
+│   ├── svgContext.js             p5-like SVG recorder for passes and overlays
 │   ├── gif.js                    GIF89a encoder, global palette and frame cap
 │   ├── geometryExport.js         Mesh/Solid exporter contract for STL/3MF
 │   └── zip.js                    frame-sequence ZIP writer
@@ -461,7 +462,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
 | 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
-| 9 | SVG export | output is well-formed, document is embedded, omitted active features are reported |
+| 9 | SVG export | output is well-formed, document is embedded, vector passes/overlays/blend are recorded and raster-only SDF is reported |
 | 10 | animation | time-driven resolution, deterministic across time |
 | 11 | sampling | uniform/adaptive caps, endpoint completeness, inverted domains |
 | 12 | performance | reference document budget |
@@ -485,7 +486,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1633 checks total.
+1644 checks total.
 
 ### Panel behavior
 
