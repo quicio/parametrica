@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Let each layer override the global render-pass list and let each pass
+  carry its own opacity across canvas and SVG.
