@@ -268,3 +268,26 @@ test('per-pass opacity changes the pass and persists on the view', async ({ page
   expect(Buffer.compare(before, after)).not.toBe(0);
   expect(await page.evaluate(() => window.__parametrica.document.view.passOpacity.points)).toBe(0);
 });
+
+
+test('custom palettes save, apply, persist and delete', async ({ page }) => {
+  await boot(page);
+  const style = await openSection(page, 'Style');
+  const name = style.locator('.palette-name');
+  await name.fill('Mine');
+  await style.locator('.palette-save').click();
+  await page.waitForTimeout(300);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('parametrica.palettes.v1') ?? '[]'));
+  expect(stored.length).toBe(1);
+  expect(stored[0].name).toBe('Mine');
+  const select = style.locator('.artboard-palette select');
+  await expect(select.locator('option', { hasText: 'Mine · custom' })).toHaveCount(1);
+  await select.selectOption(stored[0].id);
+  await page.waitForTimeout(200);
+  await expect(style.locator('.palette-delete')).toBeEnabled();
+  await style.locator('.palette-delete').click();
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('parametrica.palettes.v1') ?? '[]'));
+  expect(after.length).toBe(0);
+  await expect(select.locator('option', { hasText: 'Mine · custom' })).toHaveCount(0);
+});

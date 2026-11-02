@@ -26,7 +26,7 @@ import { ImagePanel } from './widgets/ImagePanel.js';
 import { EvolutionPanel } from './widgets/EvolutionPanel.js';
 import { ExplorePanel } from './widgets/ExplorePanel.js';
 import { PresetPanel } from './widgets/PresetPanel.js';
-import { ARTBOARD_PRESETS, PALETTES, paletteById } from '../render/palettes.js';
+import { ARTBOARD_PRESETS, PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
 
@@ -63,6 +63,7 @@ export class Controls {
     this.presetState = { selected: '', name: '' };
     this.presetFilter = { query: '', category: 'all' };
     this.presetPanel = null;
+    this.paletteStore = new PaletteStore(globalThis.localStorage ?? null);
     this.uiState = loadUiState();
     this.sectionEls = new Map();
     this.mode = this.uiState.mode;
@@ -923,22 +924,69 @@ export class Controls {
     paletteSelect.className = 'artboard-input';
     paletteSelect.disabled = locked;
     paletteSelect.title = 'Palette applies the canvas background and active-layer stroke/fill.';
-    for (const palette of PALETTES) {
-      const opt = document.createElement('option');
-      opt.value = palette.id;
-      opt.textContent = palette.name;
-      paletteSelect.appendChild(opt);
-    }
+    const paletteName = document.createElement('input');
+    paletteName.className = 'artboard-input palette-name';
+    paletteName.type = 'text';
+    paletteName.maxLength = 40;
+    paletteName.placeholder = 'Palette name';
+    paletteName.disabled = locked;
+    const paletteSave = document.createElement('button');
+    paletteSave.className = 'lab-button palette-save';
+    paletteSave.textContent = 'Save';
+    paletteSave.disabled = locked;
+    const paletteDelete = document.createElement('button');
+    paletteDelete.className = 'lab-button palette-delete';
+    paletteDelete.textContent = 'Delete';
+    paletteDelete.disabled = true;
+    const paletteActions = document.createElement('div');
+    paletteActions.className = 'palette-actions';
+    paletteActions.append(paletteName, paletteSave, paletteDelete);
+    const paletteWrap = document.createElement('span');
+    paletteWrap.className = 'artboard-palette';
+    paletteWrap.append(paletteSelect, paletteActions);
+
+    const renderPaletteOptions = (selectedId = paletteSelect.value) => {
+      paletteSelect.replaceChildren();
+      for (const palette of this.paletteStore.entries()) {
+        const opt = document.createElement('option');
+        opt.value = palette.id;
+        opt.textContent = palette.builtIn ? palette.name : `${palette.name} · custom`;
+        paletteSelect.appendChild(opt);
+      }
+      if (selectedId && this.paletteStore.get(selectedId)) paletteSelect.value = selectedId;
+      paletteDelete.disabled = locked || !this.paletteStore.isCustom(paletteSelect.value);
+    };
     paletteSelect.addEventListener('change', () => {
-      const palette = paletteById(paletteSelect.value);
+      const palette = this.paletteStore.get(paletteSelect.value);
+      if (!palette) return;
       this.app.document.view.artboard.background = palette.background;
       st.stroke.color = palette.stroke;
       st.fill.color = palette.fill;
+      paletteDelete.disabled = locked || !this.paletteStore.isCustom(palette.id);
       rebuild();
     });
-    const paletteWrap = document.createElement('span');
-    paletteWrap.className = 'artboard-palette';
-    paletteWrap.append(paletteSelect);
+    paletteSave.addEventListener('click', () => {
+      try {
+        const saved = this.paletteStore.save(paletteName.value, {
+          background: this.app.document.view.artboard.background,
+          stroke: st.stroke.color,
+          fill: st.fill.color,
+        });
+        paletteName.value = '';
+        renderPaletteOptions(saved.id);
+        this.app.notify?.(`Palette “${saved.name}” saved`);
+      } catch (error) {
+        this.app.notify?.(`Palette save failed: ${error.message}`, 'error');
+      }
+    });
+    paletteDelete.addEventListener('click', () => {
+      if (!this.paletteStore.isCustom(paletteSelect.value)) return;
+      const palette = this.paletteStore.get(paletteSelect.value);
+      this.paletteStore.delete(paletteSelect.value);
+      renderPaletteOptions(this.paletteStore.entries()[0]?.id);
+      this.app.notify?.(`Palette “${palette?.name ?? 'custom'}” deleted`);
+    });
+    renderPaletteOptions();
     row('Palette', paletteWrap);
 
     if (layer) {

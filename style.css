@@ -1793,11 +1793,28 @@ textarea:focus-visible {
 
 .artboard-palette {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
 }
 
-.artboard-palette .artboard-input { flex: 1; }
+.artboard-palette .artboard-input { flex: none; }
+
+.palette-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.palette-actions .palette-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.palette-actions .lab-button {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  font-size: 8px;
+}
 
 .artboard-swatch {
   width: 22px;

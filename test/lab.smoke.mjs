@@ -67,6 +67,7 @@ import { project3D } from '../src/view/camera.js';
 import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
+import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
 
 let failures = 0;
 let checks = 0;
@@ -1480,6 +1481,28 @@ console.log('17. artboard and style');
 
   const defaultSvg = Exporter.buildSVG(defaults.view ? evaluateDocument(defaults, { time: 0 }).curves : [], defaults.view, { w: 900, h: 900 }, defaults);
   assert(defaultSvg.includes('stroke="#ffffff"'), 'default SVG keeps white stroke');
+
+  class PaletteMemory {
+    constructor() { this.map = new Map(); }
+    getItem(key) { return this.map.has(key) ? this.map.get(key) : null; }
+    setItem(key, value) { this.map.set(key, String(value)); }
+    removeItem(key) { this.map.delete(key); }
+  }
+  const paletteStorage = new PaletteMemory();
+  const paletteStore = new PaletteStore(paletteStorage);
+  assert(paletteStore.entries().length === PALETTES.length, 'palette store starts with built-ins');
+  const savedPalette = paletteStore.save('Mine', { background: '#123456', stroke: '#abcdef', fill: '#fedcba' });
+  assert(savedPalette.id.startsWith('custom-') && paletteStore.entries().length === PALETTES.length + 1, 'custom palette is saved');
+  assert(paletteStorage.getItem(PALETTE_STORAGE_KEY).includes('Mine'), 'custom palette persists');
+  const reloadedPalettes = new PaletteStore(paletteStorage);
+  assert(reloadedPalettes.get(savedPalette.id)?.background === '#123456', 'custom palette reloads');
+  const replacedPalette = reloadedPalettes.save('Mine', { background: '#000000', stroke: '#ffffff', fill: '#ffffff' });
+  assert(replacedPalette.id === savedPalette.id && reloadedPalettes.entries().length === PALETTES.length + 1, 'same name replaces a custom palette');
+  assert(reloadedPalettes.delete(savedPalette.id), 'custom palette deletes');
+  assert(reloadedPalettes.entries().length === PALETTES.length, 'built-ins remain after delete');
+  let emptyName = null;
+  try { reloadedPalettes.save('', {}); } catch (error) { emptyName = error; }
+  assert(emptyName && /name required/i.test(emptyName.message), 'empty palette name is rejected');
 }
 
 /* ——— 18. Grid and morph ——— */

@@ -26,6 +26,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Gradient Wireframe no permitía elegir la métrica de color | **Resuelto** | `view.colorMetric`: auto, altura, radio, curvatura o longitud de arco. |
 | Render modes eran globales y los passes no tenían opacidad | **Resuelto con alcance** | `layer.modes` por capa y `view.passOpacity` por pass; color/grosor por pass siguen pendientes. |
 | La métrica de color era solo global | **Resuelto** | `layer.colorMetric` con herencia de `view.colorMetric` y selector en Style. |
+| Las paletas eran solo presets fijos | **Resuelto** | Paletas custom locales: guardar, reemplazar, aplicar y borrar. |
 | Los huecos internos se perdían al trazar | **Resuelto con alcance** | Los huecos se trazan como capas Fourier nombradas; el fill even-odd sigue pendiente. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
@@ -52,7 +53,6 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
-- **Custom palette editor** más allá de los presets actuales.
 - **Color y grosor configurables por pass** (la opacidad ya existe).
 - **Even-odd fill de huecos / jerarquía de contornos.**
 - **Quad SVG/plotter:** el quad sigue siendo canvas-only; PNG/GIF lo capturan.
@@ -449,7 +449,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1689/1689** checks y build.
-- `npm run test:e2e`: **105/105** tests.
-- `openspec validate --specs --strict`: **65/65** specs.
+- `npm run check`: lint, **1697/1697** checks y build.
+- `npm run test:e2e`: **106/106** tests.
+- `openspec validate --specs --strict`: **66/66** specs.
 - No hay cambios OpenSpec activos.

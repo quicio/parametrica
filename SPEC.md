@@ -391,7 +391,7 @@ table editor · formula editor drawer · undo/redo (50 snapshots, coalesced)
 Analysis panel with deterministic descriptor metrics and parameter influence ·
 Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
-Artboard presets, palettes, stroke/fill/gradient style and faithful export ·
+Artboard presets, built-in/custom palettes, stroke/fill/gradient style and faithful export ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing, frame-sequence and GIF export ·
 Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions
@@ -513,9 +513,9 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
-geometry. The remaining deferred items (custom palette editor, per-pass color/width,
-even-odd hole filling, quad SVG/plotter reconstruction and MAKE/fabrication)
-are future work outside the v0.1.0 scope.
+geometry. The remaining deferred items (per-pass color/width, even-odd hole filling,
+quad SVG/plotter reconstruction and MAKE/fabrication) are future work outside
+the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in
