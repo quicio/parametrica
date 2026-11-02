@@ -443,7 +443,7 @@ src/
   lab/         descriptor · notebook · exploration · evolution
   mutation/    MutationEngine
   presets/     built-in GlyphDocuments · v1 migration
-  export/      SVG · PNG · JSON
+  export/      SVG · plotter SVG · PNG · JSON
   ui/          Controls · OperatorStack · FormulaEditor · HarmonicTable
 ```
 
@@ -510,8 +510,9 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
-geometry. The remaining deferred items (color-by-metric palettes, plotter
-export, multi-viewport layout, multi-contour tracing and MAKE/fabrication) are future work outside the v0.1.0 scope.
+geometry. The remaining deferred items (color-by-metric palettes,
+multi-viewport layout, multi-contour tracing and MAKE/fabrication) are future
+work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in

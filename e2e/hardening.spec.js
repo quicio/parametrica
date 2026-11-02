@@ -181,3 +181,35 @@ test('fill gradients update the document, canvas and SVG', async ({ page }) => {
   expect(svg).toContain('<radialGradient');
   expect(svg).toContain('fill="url(#');
 });
+
+
+test('plotter export is stroke-only and independent of active passes', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.applyPreset('Golden Rose');
+    app.document.view.modes = ['gradient-wireframe', 'tangents'];
+    app.document.view.overlays = { inflections: true, samplePoints: true, ruler: true, bbox: true };
+    app.document.view.style.fill.enabled = true;
+    app.document.view.style.fill.gradient.enabled = true;
+    app.document.view.style.blend = 'multiply';
+    app.activeLayer.style = app.document.view.style;
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const exportSection = await openSection(page, 'Export');
+  const downloadPromise = page.waitForEvent('download');
+  await exportSection.locator('.controller', { hasText: 'Export Plotter SVG' }).locator('button').click();
+  const download = await downloadPromise;
+  const svg = readFileSync(await download.path(), 'utf8');
+  expect(svg).toContain('data-plotter="true"');
+  expect(svg).toContain('class="plotter-layer"');
+  expect(svg).toContain('fill="none"');
+  expect(svg).toContain('<path');
+  expect(svg).not.toContain('<rect');
+  expect(svg).not.toContain('<linearGradient');
+  expect(svg).not.toContain('mix-blend-mode');
+  expect(svg).not.toContain('svg-pass');
+  expect(svg).not.toContain('svg-overlays');
+  expect(svg).toContain('parametrica document');
+});

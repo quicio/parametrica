@@ -190,6 +190,80 @@ export class Exporter {
     return { svg, omitted: [...omitted] };
   }
 
+  static buildPlotterSVG(curves, view = {}, { w, h }, document = null, layers = null) {
+    const artboard = view.artboard ?? { width: w, height: h, background: '#000000' };
+    const width = artboard.width;
+    const height = artboard.height;
+    const fallbackStyle = view.style ?? {
+      stroke: { color: '#ffffff', width: view.strokeWeight ?? 2, opacity: 1, cap: 'round', join: 'round' },
+    };
+    const source = Array.isArray(layers) && layers.length
+      ? layers.filter((layer) => layer.visible !== false)
+      : [{ curves: Array.isArray(curves) ? curves : [], style: fallbackStyle }];
+    const meta = document
+      ? `<!-- parametrica document: ${escapeComment(JSON.stringify({ app: APP_ID, ...document }))} -->\n`
+      : '';
+    const groups = [];
+    for (let index = 0; index < source.length; index++) {
+      const layer = source[index];
+      const layerCurves = Array.isArray(layer.curves) ? layer.curves : [];
+      const stroke = (layer.style ?? fallbackStyle).stroke ?? {};
+      const d = layerCurves
+        .filter((curve) => curve.points?.length > 1)
+        .map((curve) => {
+          const points = curve.points;
+          let path = `M ${fmt(points[0].x)} ${fmt(points[0].y)}`;
+          for (let i = 1; i < points.length; i++) {
+            path += ` L ${fmt(points[i].x)} ${fmt(points[i].y)}`;
+          }
+          return curve.closed ? `${path} Z` : path;
+        })
+        .filter(Boolean)
+        .join(' ');
+      if (!d) continue;
+      groups.push(`  <g class="plotter-layer" data-layer="${index}" fill="none" stroke="${escapeAttr(stroke.color ?? '#ffffff')}" stroke-opacity="${fmt(stroke.opacity ?? 1)}" stroke-width="${fmt(stroke.width ?? view.strokeWeight)}" stroke-linecap="${escapeAttr(stroke.cap ?? 'round')}" stroke-linejoin="${escapeAttr(stroke.join ?? 'round')}">`);
+      groups.push(`    <path d="${d}"/>`);
+      groups.push('  </g>');
+    }
+    return [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      meta +
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}" data-plotter="true">`,
+      ...groups,
+      '</svg>',
+      '',
+    ].join('\n');
+  }
+
+  exportPlotterSVG() {
+    const doc = this.app.document;
+    const artboard = doc.view.artboard;
+    const w = artboard?.width ?? this.app.renderer.size().w;
+    const h = artboard?.height ?? this.app.renderer.size().h;
+    const evaluation = this.app.evaluation;
+    const projection = evaluation.viewProjection ?? projectionFor(evaluation.curves, doc.view.projection ?? '3d');
+    const layers = projection === '3d'
+      ? evaluation.layers
+      : evaluation.layers?.map((layer) => {
+        const applied = layer.appliedProjection ?? evaluation.appliedProjection ?? null;
+        return applied === projection
+          ? layer
+          : {
+            ...layer,
+            curves: projectCurves(layer.curves, projection, {
+              fit: Number(layer.generator?.params?.fit) || 0,
+            }),
+          };
+      });
+    const curves = projection === '3d'
+      ? evaluation.curves
+      : projectCurves(evaluation.curves, projection, {
+        fit: Number(doc.generator?.params?.fit) || 0,
+      });
+    const svg = Exporter.buildPlotterSVG(curves, doc.view, { w, h }, doc, layers);
+    downloadFile(`parametrica-plotter-${timestamp()}.svg`, svg, 'image/svg+xml');
+  }
+
   exportSVG() {
     const { svg, omitted } = this.buildSVGFromCurrent();
     if (omitted.length) {

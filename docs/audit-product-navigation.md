@@ -20,6 +20,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
 | El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
 | No había secuencia SVG frame-by-frame | **Resuelto** | Timeline exporta `frame-NNN.svg` + `manifest.json` en Perform. |
+| No había salida para plotter | **Resuelto** | Export Plotter SVG: solo trazos visibles, sin fills/gradientes/blend/overlays/passes. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
@@ -45,7 +46,6 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
-- **Plotter-ready SVG** y pruebas de línea.
 - **Palette system / color-by-metric** más allá del color ramp actual.
 - **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
 - **Image tracing multicontorno / con huecos.**
@@ -392,8 +392,8 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ## 12. Oportunidades de evolución
 
-- **Export:** plotter-ready SVG. Frame/GIF/SVG-frame export ya pertenece a
-  Perform; los passes vectoriales ya son SVG.
+- **Export:** frame/GIF/SVG-frame export ya pertenece a Perform; los passes
+  vectoriales y el SVG de plotter ya están cubiertos.
 - **Color:** palette system/color-by-metric más allá del ramp actual.
 - **Image:** multicontorno y huecos.
 - **Helix:** multi-viewport 3D + tres proyecciones.
@@ -442,7 +442,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1657/1657** checks y build.
-- `npm run test:e2e`: **100/100** tests.
-- `openspec validate --specs --strict`: **58/58** specs.
+- `npm run check`: lint, **1665/1665** checks y build.
+- `npm run test:e2e`: **101/101** tests.
+- `openspec validate --specs --strict`: **59/59** specs.
 - No hay cambios OpenSpec activos.

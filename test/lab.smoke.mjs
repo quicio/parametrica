@@ -713,6 +713,38 @@ console.log('9. svg export');
   assert(surfaceGradientSvg.includes('<linearGradient'), 'surface fill uses the fill gradient');
   assert((surfaceGradientSvg.match(/fill="url\(#/g) || []).length > 10, 'surface faces reuse the gradient paint');
 
+  const plotterView = {
+    ...doc.view,
+    modes: ['gradient-wireframe', 'tangents', 'surface-fill'],
+    overlays: { inflections: true, samplePoints: true, ruler: true, bbox: true },
+    style: {
+      ...doc.view.style,
+      fill: { ...doc.view.style.fill, enabled: true, gradient: { ...doc.view.style.fill.gradient, enabled: true } },
+      blend: 'multiply',
+    },
+  };
+  const plotterLayers = [
+    {
+      visible: true,
+      style: { stroke: { color: '#e30613', width: 3, opacity: 0.5, cap: 'butt', join: 'miter' } },
+      curves: [{ closed: true, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }] }],
+    },
+    {
+      visible: false,
+      style: { stroke: { color: '#00ff00', width: 9 } },
+      curves: [{ closed: false, points: [{ x: 50, y: 50 }, { x: 60, y: 60 }] }],
+    },
+  ];
+  const plotterSvg = Exporter.buildPlotterSVG([], plotterView, { w: 900, h: 900 }, doc, plotterLayers);
+  assert(plotterSvg.includes('data-plotter="true"'), 'plotter SVG is marked');
+  assert(plotterSvg.includes('class="plotter-layer"') && !plotterSvg.includes('data-layer="1"'), 'plotter SVG keeps only visible layers');
+  assert(plotterSvg.includes('fill="none"') && !plotterSvg.includes('fill="#') && !plotterSvg.includes('<linearGradient'), 'plotter SVG drops fills and gradients');
+  assert(!plotterSvg.includes('svg-pass') && !plotterSvg.includes('svg-overlays') && !plotterSvg.includes('mix-blend-mode'), 'plotter SVG drops passes, overlays and blend');
+  assert(plotterSvg.includes('Z') && plotterSvg.includes('stroke="#e30613"') && plotterSvg.includes('stroke-width="3"'), 'plotter SVG preserves lines and closed seams');
+  assert(plotterSvg.includes('stroke-linecap="butt"') && plotterSvg.includes('stroke-linejoin="miter"'), 'plotter SVG preserves cap and join');
+  assert(plotterSvg.includes('parametrica document:'), 'plotter SVG embeds the document');
+  assert(!plotterSvg.includes('<rect'), 'plotter SVG has no background rect');
+
   const sdfDoc = BUILT_IN_PRESETS['Lissajous 3:5']();
   sdfDoc.view.modes = ['signed-distance'];
   const sdfEval = evaluateDocument(sdfDoc, { time: 0 });

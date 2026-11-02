@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1657 checks)
+npm test             # node-only verification suite (1665 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (100 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (101 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -52,7 +52,7 @@ leaving your machine.
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
 | **Presets** | Grouped, searchable library with derived previews, favorites and recent presets, plus user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
-| **Export** | SVG (active vector passes, overlays, blend + embedded document), PNG (faithful raster), GIF (timeline), JSON, clipboard |
+| **Export** | SVG (active vector passes, overlays, blend + embedded document), plotter SVG (stroke-only), PNG (faithful raster), GIF (timeline), JSON, clipboard |
 
 ---
 
@@ -88,7 +88,7 @@ viz/                toggleable diagnostic overlays
 animation/          AnimatableValue + timeline resolution (keyframes/easing)
 mutation/           parameter-space mutation with full evaluation validation
 presets/            built-in library + JSON persistence in localStorage
-export/             SVG (pass-embedded document) · PNG · GIF · JSON · clipboard
+export/             SVG (pass-embedded document) · plotter SVG · PNG · GIF · JSON · clipboard
 ui/                 instrument panel + custom widgets (expression field, harmonic editor, operator stack, mode toggles)
 core/               App composition root · engine · registry · document · schema · history
 geometry/           v1 Catmull-Rom + Mirror + OpticalCorrection (used by bilateral-spline generator)
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1657 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1665 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (100 tests) against a Vite server started by Playwright itself.
+suite (101 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -263,12 +263,11 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)
-- **Export** SVG (vector passes + embedded document) · PNG · GIF (timeline) · JSON · clipboard
+- **Export** SVG (vector passes + embedded document) · plotter SVG (stroke-only) · PNG · GIF (timeline) · JSON · clipboard
 
 Deferred to v0.x:
 
 - Color-by-metric palette system beyond the current ramp
-- Plotter-ready SVG with line tests
 - Helix multi-viewport layout (3D + three projections at once)
 - Multi-contour / hole-aware image tracing
 - MAKE/fabrication (solids, CSG, STL/3MF, 3D viewport)

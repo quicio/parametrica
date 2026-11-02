@@ -1315,6 +1315,7 @@ export class Controls {
     const gui = this.makeGui(this.section('Export', { id: 'export', mode: 'keep' }));
     const ex = this.app.exporter;
     gui.add({ svg: () => ex.exportSVG() }, 'svg').name('Export SVG');
+    gui.add({ plotter: () => ex.exportPlotterSVG() }, 'plotter').name('Export Plotter SVG');
     gui.add({ png: () => ex.exportPNG() }, 'png').name('Export PNG');
     gui.add({ json: () => ex.exportJSON() }, 'json').name('Export JSON');
     gui.add({
