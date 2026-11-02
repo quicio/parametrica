@@ -1,0 +1,12 @@
+name: look-reorganization
+description: >
+  Staged LOOK reorganization into Camera, Canvas, Style, Render and Overlays,
+  with explicit scope, grouped render passes, camera reset, color-ramp editor
+  and a temporary Work group for Image/Animation/Timeline. Phase 2 relocation
+  is pending validation.
+status: proposed
+created: 2026-11-02
+capabilities:
+  - look-workspace
+skip_specs: false
+schema: spec-driven
