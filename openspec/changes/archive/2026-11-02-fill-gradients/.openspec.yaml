@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Add configurable linear/radial fill gradients for active-layer closed
+  fills, with matching canvas and SVG output.

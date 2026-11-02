@@ -131,6 +131,7 @@ extraction and conversion to a Fourier document.
 | Camera near-plane/scene-distance guards | shipped (2026-11-02) |
 | Timeline GIF export | shipped (2026-11-02) |
 | SVG vector pass fidelity: gradients, surfaces, diagnostics, overlays, blend | shipped (2026-11-02) |
+| Fill gradients: linear/radial, direction, center, radius and stops | shipped (2026-11-02) |
 
 ### Foundation contracts (this phase)
 
@@ -420,6 +421,7 @@ generation metadata in the notebook; unit group 24.
 | `look-phase-2` | archived | shipped |
 | `gif-export` | archived | shipped |
 | `svg-export-fidelity` | archived | shipped |
+| `fill-gradients` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
