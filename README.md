@@ -26,7 +26,7 @@ npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
 npm test             # node-only verification suite (1657 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (99 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (100 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (99 tests) against a Vite server started by Playwright itself.
+suite (100 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -250,7 +250,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Artboard & style** with palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **2D grid & morph** for two-axis families and smooth A→B transitions
 - **Layers** with independent generators, operator stacks and styles
-- **Perform** with Animation and Timeline: keyframes, easing, recording, loop, ZIP frame export and GIF export
+- **Perform** with Animation and Timeline: keyframes, easing, recording, loop, PNG ZIP, SVG frame ZIP and GIF export
 - **Offline advisor** with deterministic A/B narration, suggestions, preview and apply
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure
 - **Ingest** with local image underlay, threshold preview, largest-contour tracing and editable Fourier documents
@@ -271,7 +271,6 @@ Deferred to v0.x:
 - Plotter-ready SVG with line tests
 - Helix multi-viewport layout (3D + three projections at once)
 - Multi-contour / hole-aware image tracing
-- SVG frame-sequence export
 - MAKE/fabrication (solids, CSG, STL/3MF, 3D viewport)
 
 ---

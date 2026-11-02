@@ -19,6 +19,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | `style.blend` se exponía pero no se aplicaba | **Resuelto** | `P5Adapter` aplica el modo por capa y lo resetea antes de la siguiente capa/overlays. |
 | Los render passes aparecían activos aunque no aplicaran | **Resuelto con alcance** | Metadatos `appliesTo`; la UI desactiva y refresca la aplicabilidad tras cada evaluación. |
 | El SVG omitía features activas sin avisar | **Resuelto** | `SvgContext` reproduce los passes vectoriales, overlays y blend. Solo Signed Distance sigue siendo una omisión raster-only explícita. |
+| No había secuencia SVG frame-by-frame | **Resuelto** | Timeline exporta `frame-NNN.svg` + `manifest.json` en Perform. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
@@ -44,7 +45,6 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
-- **Secuencia SVG frame-by-frame:** hoy existen PNG ZIP y GIF; no SVG frames.
 - **Plotter-ready SVG** y pruebas de línea.
 - **Palette system / color-by-metric** más allá del color ramp actual.
 - **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
@@ -277,7 +277,6 @@ Pendiente:
 
 - relación Notebook/Presets;
 - mover frame/GIF export a su ubicación final;
-- secuencia SVG frame-by-frame;
 - export de fabricación.
 
 ---
@@ -291,7 +290,7 @@ Pendiente:
 | Viewport/canvas | Global | Reajuste tras layout; ocupa el ancho disponible y centra el artboard. |
 | Artboard | Global | Canvas section. |
 | Imagen | Underlay UI-only | No entra en documentos ni export. |
-| Export | SVG vectorial; PNG fiel; GIF animado | Signed Distance es la única omisión raster-only. |
+| Export | SVG vectorial + SVG frames; PNG fiel; GIF animado | Signed Distance es la única omisión raster-only. |
 | Animación/Timeline | En **Perform** | PNG ZIP + GIF siguen en Timeline. |
 | Imagen | En **Ingest** | Underlay/tracing existente, UI-only. |
 | Overlays | Globales | Sin cambios. |
@@ -393,7 +392,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ## 12. Oportunidades de evolución
 
-- **Export:** SVG frames y plotter-ready SVG. Frame/GIF export ya pertenece a
+- **Export:** plotter-ready SVG. Frame/GIF/SVG-frame export ya pertenece a
   Perform; los passes vectoriales ya son SVG.
 - **Color:** palette system/color-by-metric más allá del ramp actual.
 - **Image:** multicontorno y huecos.
@@ -444,6 +443,6 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 ### Estado de la suite
 
 - `npm run check`: lint, **1657/1657** checks y build.
-- `npm run test:e2e`: **99/99** tests.
-- `openspec validate --specs --strict`: **57/57** specs.
+- `npm run test:e2e`: **100/100** tests.
+- `openspec validate --specs --strict`: **58/58** specs.
 - No hay cambios OpenSpec activos.

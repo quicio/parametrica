@@ -194,7 +194,7 @@ src/
 │       ├── NotebookPanel.js      checkpoints, thumbnails and A/B compare
 │       ├── ExplorePanel.js       axis, scope, strip and candidate adoption
 │       ├── EvolutionPanel.js     parents, generations, previews and keeping children
-│       ├── TimelinePanel.js      tracks, keyframes, record, frame and GIF export
+│       ├── TimelinePanel.js      tracks, keyframes, record, PNG/GIF/SVG frame export
 │       ├── AdvisorPanel.js       provider settings, privacy, advice, preview and apply
 │       ├── ImagePanel.js         underlay controls, threshold preview and Fourier trace
 │       └── modeToggles.js        array-safe render-mode helpers
@@ -473,7 +473,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 17 | artboard/style | defaults, authoritative layer width, legacy stroke migration, clamping, solid/linear/radial fill gradients, style/artboard round-trip, styled SVG |
 | 18 | grid/morph | row-major grid order/budget, deterministic grid, morph endpoints/interpolation, incompatible structures |
 | 19 | composition layers | v3 migration, layer aliases, isolated evaluation, hidden layers, layer-scoped analysis, aggregate descriptor, layered SVG |
-| 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation, GIF encoding and frame caps |
+| 20 | motion timeline | interpolation/easing, frame times, loop, timeline validation, PNG/SVG frame sequences, GIF encoding and frame caps |
 | 21 | offline advisor | narration/diff, grounded suggestions, validation, clamping, candidate isolation |
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
 | 23 | image trace | grayscale/Otsu, component selection, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, privacy |

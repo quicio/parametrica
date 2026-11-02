@@ -520,6 +520,37 @@ test('timeline exports an animated GIF and restores the playhead', async ({ page
   expect(after).toBeCloseTo(before, 6);
 });
 
+test('timeline exports an SVG frame sequence with a manifest', async ({ page }) => {
+  await boot(page);
+  await openSection(page, 'Timeline');
+  await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
+  await page.waitForTimeout(300);
+
+  const duration = page.locator('.timeline-field', { hasText: 'Duration' }).locator('input');
+  const fps = page.locator('.timeline-field', { hasText: 'FPS' }).locator('input');
+  await duration.fill('0.4');
+  await duration.press('Enter');
+  await fps.fill('5');
+  await fps.press('Enter');
+  const before = await page.evaluate(() => window.__parametrica.document.animation.time);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('.timeline-svg-frames').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
+  await expect(page.locator('.timeline-status')).toContainText('Exported 2 SVG frames');
+
+  const archive = readFileSync(await download.path()).toString('latin1');
+  expect(archive).toContain('frame-000.svg');
+  expect(archive).toContain('frame-001.svg');
+  expect(archive).toContain('manifest.json');
+  expect(archive).toContain('<svg');
+  expect(archive).toContain('parametrica document');
+  expect(archive).toContain('"format": "svg"');
+  const after = await page.evaluate(() => window.__parametrica.document.animation.time);
+  expect(after).toBeCloseTo(before, 6);
+});
+
 test('timeline records a parameter change at the playhead', async ({ page }) => {
   await openSection(page, 'Timeline');
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));

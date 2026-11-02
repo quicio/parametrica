@@ -83,7 +83,12 @@ export class TimelinePanel {
     this.gifBtn.textContent = 'Export GIF';
     this.gifBtn.title = 'Animated GIF from the timeline duration and FPS (360 px max side)';
     this.gifBtn.addEventListener('click', () => this.exportGIF());
-    actions.append(recordLabel, exportBtn, this.gifBtn);
+    this.svgFramesBtn = document.createElement('button');
+    this.svgFramesBtn.className = 'lab-button timeline-svg-frames';
+    this.svgFramesBtn.textContent = 'Export SVG frames';
+    this.svgFramesBtn.title = 'ZIP of SVG frames using the timeline duration and FPS';
+    this.svgFramesBtn.addEventListener('click', () => this.exportSVGFrames());
+    actions.append(recordLabel, exportBtn, this.gifBtn, this.svgFramesBtn);
 
     this.statusEl = document.createElement('div');
     this.statusEl.className = 'timeline-status';
@@ -349,6 +354,55 @@ export class TimelinePanel {
     } finally {
       this.app.document.animation.playing = oldPlaying;
       this.app.setTime(oldTime);
+    }
+  }
+
+  async exportSVGFrames() {
+    const fps = Number(this.fpsInput?.value) || 24;
+    const duration = this.timeline.duration;
+    const times = frameTimes(duration, fps);
+    const exporter = this.app.exporter;
+    if (!exporter?.buildSVGFromCurrent) {
+      this.setStatus('SVG exporter is not ready', true);
+      return;
+    }
+    const oldTime = this.app.document.animation.time;
+    const oldPlaying = this.app.document.animation.playing;
+    this.svgFramesBtn.disabled = true;
+    this.setStatus(`Rendering ${times.length} SVG frames…`);
+    try {
+      this.app.document.animation.playing = false;
+      const files = [];
+      const manifestFrames = [];
+      for (let index = 0; index < times.length; index++) {
+        const time = times[index];
+        this.app.setTime(time);
+        const { svg, omitted } = exporter.buildSVGFromCurrent();
+        const name = `frame-${String(index).padStart(3, '0')}.svg`;
+        files.push({ name, data: new TextEncoder().encode(svg) });
+        manifestFrames.push({ file: name, time, omitted });
+        if ((index + 1) % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      const manifest = {
+        version: 1,
+        format: 'svg',
+        duration,
+        fps,
+        frameCount: files.length,
+        frames: manifestFrames,
+      };
+      files.push({
+        name: 'manifest.json',
+        data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)),
+      });
+      downloadBlob('parametrica-svg-sequence.zip', zipStore(files));
+      this.setStatus(`Exported ${times.length} SVG frames`);
+    } catch (error) {
+      this.setStatus(`SVG frame export failed: ${error.message}`, true);
+    } finally {
+      this.app.document.animation.playing = oldPlaying;
+      this.app.setTime(oldTime);
+      this.svgFramesBtn.disabled = false;
     }
   }
 

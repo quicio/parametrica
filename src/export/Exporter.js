@@ -148,7 +148,8 @@ export class Exporter {
 
   /* ——— Browser-bound actions ——— */
 
-  exportSVG() {
+  /** Build SVG for the current evaluation without touching download state. */
+  buildSVGFromCurrent() {
     const doc = this.app.document;
     const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
@@ -186,9 +187,14 @@ export class Exporter {
       time: doc.animation.time,
       onUnsupported: (name) => omitted.add(name),
     });
-    if (omitted.size) {
+    return { svg, omitted: [...omitted] };
+  }
+
+  exportSVG() {
+    const { svg, omitted } = this.buildSVGFromCurrent();
+    if (omitted.length) {
       this.app.notify?.(
-        `SVG omits: ${[...omitted].join(', ')}. Use PNG for full fidelity.`,
+        `SVG omits: ${omitted.join(', ')}. Use PNG for full fidelity.`,
         'info',
       );
     }

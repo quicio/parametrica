@@ -321,7 +321,7 @@ instead of collapsing to a line. `view.colorRamp` is an optional array of
 - Transport: play / pause / reset / speed / loop. Fully time-driven
   (never accumulative) ⇒ scrubbing is exact and deterministic.
 - Glyph becomes a living mathematical object.
-- Tier 2: PNG-sequence, GIF and SVG-frame export.
+- Tier 2: PNG-sequence, SVG-frame sequence and GIF export.
 
 ## 13. Mutation Engine v2
 
@@ -417,8 +417,9 @@ stroke, points, gradient wireframe, surface fill/wireframe, diagnostics and
 overlays are represented as vector primitives. Solid and linear/radial fill
 gradients use SVG paint definitions. Layer blend modes use CSS `mix-blend-mode`.
 Signed Distance remains a documented raster-only omission; PNG is the faithful
-raster fallback.
-Tier 2: animation frame sequences and GIF export.
+raster fallback. Timeline also exports a ZIP of standalone SVG frames plus a
+manifest.
+Tier 2: PNG/SVG frame sequences and GIF export.
 
 ---
 
@@ -510,8 +511,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
 geometry. The remaining deferred items (color-by-metric palettes, plotter
-export, multi-viewport layout, multi-contour tracing, SVG frame sequences and
-MAKE/fabrication) are future work outside the v0.1.0 scope.
+export, multi-viewport layout, multi-contour tracing and MAKE/fabrication) are future work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in
