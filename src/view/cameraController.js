@@ -3,6 +3,11 @@
  */
 
 const TAU = Math.PI * 2;
+// The camera sits at the origin and fov is its distance to the projection
+// plane. Below ~10 the camera can enter ordinary scene geometry, which makes
+// the view collapse into clipped radial lines. Keep a usable wide-angle limit.
+const MIN_FOV = 10;
+const MAX_FOV = 2000;
 
 export function wrapPi(angle) {
   let a = angle;
@@ -26,5 +31,5 @@ export function orbitCamera(camera, start, dx, dy) {
 
 export function zoomCamera(camera, delta) {
   const factor = delta > 0 ? 1.08 : 1 / 1.08;
-  return { ...camera, fov: clamp(camera.fov * factor, 1, 2000) };
+  return { ...camera, fov: clamp(camera.fov * factor, MIN_FOV, MAX_FOV) };
 }

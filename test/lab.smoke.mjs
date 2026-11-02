@@ -23,7 +23,7 @@ import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
-import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP } from '../src/core/document.js';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults } from '../src/core/schema.js';
 import { History } from '../src/core/history.js';
@@ -61,6 +61,9 @@ import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
 import { warpExpressions } from '../src/operators/geometry/deform.js';
 import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
+import { project3D } from '../src/view/camera.js';
+import { zoomCamera } from '../src/view/cameraController.js';
+import { projectWorldCurves, projectWorldMeshes } from '../src/view/projection.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 
 let failures = 0;
@@ -475,6 +478,15 @@ console.log('6. documents');
   assert(Math.abs(oorCam.view.camera.yaw) <= Math.PI + 1e-9, `yaw clamped (got ${oorCam.view.camera.yaw})`);
   assert(Math.abs(oorCam.view.camera.pitch) <= Math.PI / 2, `pitch clamped (got ${oorCam.view.camera.pitch})`);
   assert(oorCam.view.camera.fov === 2000, 'fov clamped to 2000');
+  const nearCam = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Near Camera',
+    generator: { id: 'parametric', params: {} },
+    operators: [], view: { camera: { fov: 1 } }, animation: {},
+  });
+  assert(nearCam.view.camera.fov === 10, 'fov clamped to the usable wide-angle minimum');
+  let zoomed = { ...DEFAULT_VIEW.camera };
+  for (let i = 0; i < 200; i++) zoomed = zoomCamera(zoomed, -1);
+  assert(zoomed.fov === 10, 'interactive zoom stops at the same minimum');
 
   // dual-format read: current app id
   assert(APP_ID === 'parametrica', 'APP_ID is parametrica');
@@ -2287,6 +2299,69 @@ console.log('29. world geometry contracts');
   const cached = evaluateDocument(helixDoc, { time: 0, bypassCache: false });
   const uncached = evaluateDocument(helixDoc, { time: 0, bypassCache: true });
   assert(JSON.stringify(cached.curves.map((c) => c.points)) === JSON.stringify(uncached.curves.map((c) => c.points)), 'cache-on and cache-off project equivalent curves');
+
+  // Near-plane handling: points behind the camera must never project to
+  // finite screen coordinates. They used to flip across the screen and
+  // produce long radial "spark" lines at some camera angles.
+  const nearCam = { yaw: 0, pitch: 0, fov: 1 };
+  assert(project3D(0, 0, -2, nearCam) === null, 'points behind the camera are clipped');
+  assert(project3D(0, 0, 0, nearCam) !== null, 'points in front of the camera still project');
+
+  const crossing = [{
+    id: 'crossing',
+    closed: false,
+    points: [
+      { x: 0, y: 0, z: 1 }, { x: 0, y: 1, z: 0.5 },
+      { x: 0, y: 0, z: -2 }, { x: 0, y: 1, z: -1 },
+      { x: 0, y: 0, z: 0.5 }, { x: 0, y: 1, z: 1 },
+    ],
+  }];
+  const split = projectWorldCurves(crossing, { camera: nearCam, fit: 0 });
+  assert(split.length === 2, 'camera clipping splits a curve into visible runs');
+  assert(split.every((curve) => curve.points.length >= 2 && curve.closed === false), 'clipped runs stay open and usable');
+  assert(
+    split.flatMap((curve) => curve.points).every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+    'clipped curve coordinates stay finite',
+  );
+
+  const plane = createMesh({
+    id: 'plane',
+    vertices: [
+      { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: 1 },
+      { x: -1, y: 1, z: 1 }, { x: 1, y: 1, z: 1 },
+      { x: -1, y: -1, z: -2 }, { x: 1, y: -1, z: -2 },
+      { x: -1, y: 1, z: -2 }, { x: 1, y: 1, z: -2 },
+    ],
+    faces: [[0, 1, 3, 2], [4, 6, 7, 5], [0, 2, 6, 4], [1, 5, 7, 3]],
+  });
+  const projectedPlane = projectWorldMeshes([plane], { camera: nearCam, fit: 100 })[0];
+  assert(projectedPlane.vertices.slice(0, 4).every(Boolean), 'visible mesh vertices project');
+  assert(projectedPlane.vertices.slice(4).every((point) => point === null), 'hidden mesh vertices are clipped');
+  assert(
+    projectedPlane.vertices.filter(Boolean).every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+    'visible mesh coordinates stay finite',
+  );
+
+  const shapes = [];
+  const fakeP = {
+    CLOSE: 0,
+    stroke() {},
+    strokeWeight() {},
+    fill() {},
+    beginShape() { shapes.push([]); },
+    vertex(x, y) { shapes[shapes.length - 1].push([x, y]); },
+    endShape() {},
+  };
+  RenderPasses.get('surface-fill').draw(fakeP, {
+    meshes: [projectedPlane],
+    view: {
+      style: {
+        stroke: { color: '#ffffff', width: 1, opacity: 1 },
+        fill: { enabled: false },
+      },
+    },
+  });
+  assert(shapes.length === 1 && shapes[0].length === 4, 'surface fill skips faces that touch hidden vertices');
 }
 
 /* ——— 30. parametric surfaces ——— */

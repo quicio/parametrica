@@ -24,33 +24,66 @@ export function projectWorldCurves(curves, {
   depthStrength = 0.55,
 } = {}) {
   if (!Array.isArray(curves) || projection === '3d') {
-    const projected = curves.map((curve) => projectCameraCurve(curve, camera, { depthFade, depthStrength }));
+    const projected = curves.flatMap((curve) => projectCameraCurveSegments(curve, camera, { depthFade, depthStrength }));
     return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
   }
   const projected = curves.map((curve) => projectOrthographicCurve(curve, projection));
   return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
 }
 
-export function projectCameraCurve(curve, camera, options = {}) {
+/**
+ * Project a camera-space curve, splitting it into visible runs when samples
+ * fall behind the camera. A curve that never leaves the frustum keeps its
+ * original closed flag; clipped fragments are open.
+ */
+export function projectCameraCurveSegments(curve, camera, options = {}) {
   const cam = camera ?? cameraFrom(null);
-  return {
-    id: curve.id,
-    closed: curve.closed,
-    meta: curve.meta,
-    points: curve.points.map((point) => {
-      const projected = project3D(point.x, point.y, point.z, cam, options);
-      if (!projected) return null;
-      return {
-        x: projected.x,
-        y: projected.y,
-        x3: point.x,
-        y3: point.y,
-        h3: point.z,
-        depth: projected.depth,
-        depthAlpha: projected.depthAlpha,
-      };
-    }).filter(Boolean),
+  const runs = [];
+  let run = [];
+  let broken = false;
+  const flush = () => {
+    if (run.length >= 2) runs.push({ points: run, closed: false });
+    run = [];
   };
+  for (const point of curve.points) {
+    const projected = project3D(point.x, point.y, point.z, cam, options);
+    if (!projected) {
+      broken = true;
+      flush();
+      continue;
+    }
+    run.push({
+      x: projected.x,
+      y: projected.y,
+      x3: point.x,
+      y3: point.y,
+      h3: point.z,
+      depth: projected.depth,
+      depthAlpha: projected.depthAlpha,
+    });
+  }
+  flush();
+  if (!runs.length) return [];
+  if (runs.length === 1 && !broken) {
+    return [{
+      id: curve.id,
+      closed: curve.closed,
+      meta: curve.meta,
+      points: runs[0].points,
+    }];
+  }
+  return runs.map((segment, index) => ({
+    id: `${curve.id ?? 'curve'}-s${index}`,
+    closed: false,
+    meta: { ...(curve.meta ?? {}), discontinuity: true, segment: index },
+    points: segment.points,
+  }));
+}
+
+/** Single-run compatibility wrapper; use projectCameraCurveSegments for splits. */
+export function projectCameraCurve(curve, camera, options = {}) {
+  return projectCameraCurveSegments(curve, camera, options)[0]
+    ?? { id: curve.id, closed: false, meta: curve.meta, points: [] };
 }
 
 export function projectOrthographicCurve(curve, projection) {
@@ -108,9 +141,6 @@ export function projectMesh(mesh, {
     const p = projectWorldPoint(point, projection);
     return { x: p.x, y: p.y, depthAlpha: 1 };
   });
-  if (projected.some((point) => !point)) {
-    return { ...mesh, vertices: [], faces: [], normals: mesh.normals, faceNormals: mesh.faceNormals };
-  }
   const fitted = fit > 0 ? fitVertices(projected, fit) : centerVertices(projected);
   return { ...mesh, vertices: fitted, faces: mesh.faces, normals: mesh.normals, faceNormals: mesh.faceNormals };
 }
@@ -122,17 +152,31 @@ export function projectSurface(surface, _options = {}) {
   return surface;
 }
 
+function visibleVertices(vertices) {
+  return vertices.filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
 function centerVertices(vertices) {
-  const box = bbox(vertices);
-  return vertices.map((point) => ({ ...point, x: point.x - box.cx, y: point.y - box.cy }));
+  const visible = visibleVertices(vertices);
+  if (!visible.length) return vertices.map(() => null);
+  const box = bbox(visible);
+  return vertices.map((point) => (
+    point ? { ...point, x: point.x - box.cx, y: point.y - box.cy } : null
+  ));
 }
 
 function fitVertices(vertices, size) {
-  const box = bbox(vertices);
+  const visible = visibleVertices(vertices);
+  if (!visible.length) return vertices.map(() => null);
+  const box = bbox(visible);
   const scale = size / Math.max(box.width, box.height, 1e-9);
-  return vertices.map((point) => ({
-    ...point,
-    x: (point.x - box.cx) * scale,
-    y: (point.y - box.cy) * scale,
-  }));
+  return vertices.map((point) => (
+    point
+      ? {
+        ...point,
+        x: (point.x - box.cx) * scale,
+        y: (point.y - box.cy) * scale,
+      }
+      : null
+  ));
 }

@@ -59,21 +59,31 @@ RenderPasses.register({
     p.stroke(rgb[0], rgb[1], rgb[2], Math.min(alpha, 85));
     p.strokeWeight(0.4);
     for (const mesh of meshes) {
-      const faces = mesh.faces.map((face) => {
+      const faces = [];
+      for (const face of mesh.faces) {
         let depth = 0;
         let depthAlpha = 0;
+        let visible = true;
         for (const index of face) {
-          depth += mesh.vertices[index]?.depth ?? 0;
-          depthAlpha += mesh.vertices[index]?.depthAlpha ?? 1;
+          const point = mesh.vertices[index];
+          if (!point) {
+            visible = false;
+            break;
+          }
+          depth += point.depth ?? 0;
+          depthAlpha += point.depthAlpha ?? 1;
         }
-        return { face, depth: depth / face.length, depthAlpha: depthAlpha / face.length };
-      }).sort((a, b) => a.depth - b.depth);
+        if (visible) {
+          faces.push({ face, depth: depth / face.length, depthAlpha: depthAlpha / face.length });
+        }
+      }
+      faces.sort((a, b) => a.depth - b.depth);
       for (const { face, depthAlpha } of faces) {
         p.fill(rgb[0], rgb[1], rgb[2], Math.round(alpha * clamp01(depthAlpha)));
         p.beginShape();
         for (const index of face) {
           const point = mesh.vertices[index];
-          if (point) p.vertex(point.x, point.y);
+          p.vertex(point.x, point.y);
         }
         p.endShape(p.CLOSE);
       }

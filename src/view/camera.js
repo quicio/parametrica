@@ -14,6 +14,13 @@ export function cameraFrom(view) {
   return view?.camera ?? DEFAULT_CAMERA;
 }
 
+/**
+ * Keep a sliver of geometry between the camera and the projection plane.
+ * Without it, points just behind the camera divide by a negative depth and
+ * flip across the screen, producing long radial "spark" artifacts.
+ */
+const NEAR_PLANE_RATIO = 0.01;
+
 /** Project one world point to screen space and normalized depth. */
 export function project3D(x, y, z, cam, { depthFade = true, fadeStrength = 0.55 } = {}) {
   const cy = Math.cos(cam.yaw);
@@ -25,8 +32,9 @@ export function project3D(x, y, z, cam, { depthFade = true, fadeStrength = 0.55 
   const yp = -x * sy * cp + y * cy * cp + z * sp;
   const zp = x * sy * sp - y * cy * sp + z * cp;
   const denom = zp + fov;
-  if (Math.abs(denom) < 1e-9) return null;
-  const depth = Math.max(0, Math.min(1, (zp + fov) / (2 * fov)));
+  const near = Math.max(1e-9, Math.abs(fov) * NEAR_PLANE_RATIO);
+  if (denom <= near) return null;
+  const depth = Math.max(0, Math.min(1, denom / (2 * fov)));
   return {
     x: (xp * fov) / denom,
     y: (yp * fov) / denom,

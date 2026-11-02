@@ -206,3 +206,40 @@ test('orthographic views are gated to 3D documents', async ({ page }) => {
   await openSection(page, 'Camera');
   await expect(page.locator('.view-projection')).toBeDisabled();
 });
+
+test('camera clipping avoids radial spark artifacts near the camera', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Enneper Surface'));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    window.__parametrica.document.view.camera.fov = 1.5;
+    window.__parametrica.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const state = await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    const mesh = evaluation.renderMeshes[0];
+    const visible = mesh.vertices.filter(Boolean);
+    return {
+      hidden: mesh.vertices.length - visible.length,
+      finite: visible.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+      max: Math.max(...visible.map((point) => Math.max(Math.abs(point.x), Math.abs(point.y)))),
+      curvesFinite: evaluation.curves.every((curve) =>
+        curve.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))),
+    };
+  });
+  expect(state.hidden).toBeGreaterThan(0);
+  expect(state.finite).toBe(true);
+  expect(state.curvesFinite).toBe(true);
+  expect(state.max).toBeLessThan(1000);
+
+  // A checkpoint saved with the old extreme fov must recover to the safe
+  // wide-angle minimum when restored.
+  const restoredFov = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const checkpoint = app.saveCheckpoint('near-plane-check');
+    app.restoreCheckpoint(checkpoint.id);
+    return app.document.view.camera.fov;
+  });
+  expect(restoredFov).toBe(10);
+});

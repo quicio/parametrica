@@ -480,11 +480,11 @@ for `renderer.readyPromise` before touching the canvas.
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
 | 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose group, description and truthful applicability |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
-| 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions and analysis |
+| 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions, analysis and camera near-plane clipping |
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1612 checks total.
+1623 checks total.
 
 ### Panel behavior
 

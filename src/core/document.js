@@ -31,6 +31,8 @@ const DEFAULT_CAMERA = {
   pitch: Math.PI / 9,
   fov:   320,
 };
+const MIN_CAMERA_FOV = 10;
+const MAX_CAMERA_FOV = 2000;
 
 const DEFAULT_ARTBOARD = {
   width: 900,
@@ -346,7 +348,7 @@ export function sanitizeDocument(raw) {
   view.camera = {
     yaw:   clamp(Number(rawCam.yaw   ?? DEFAULT_CAMERA.yaw),   -Math.PI, Math.PI,                    DEFAULT_CAMERA.yaw),
     pitch: clamp(Number(rawCam.pitch ?? DEFAULT_CAMERA.pitch), -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05, DEFAULT_CAMERA.pitch),
-    fov:   clamp(Number(rawCam.fov   ?? DEFAULT_CAMERA.fov),   1, 2000,                              DEFAULT_CAMERA.fov),
+    fov:   clamp(Number(rawCam.fov   ?? DEFAULT_CAMERA.fov),   MIN_CAMERA_FOV, MAX_CAMERA_FOV,      DEFAULT_CAMERA.fov),
   };
   view.artboard = sanitizeArtboard(raw.view?.artboard);
   view.projection = sanitizeProjection(view.projection);
