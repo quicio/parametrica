@@ -541,6 +541,8 @@ export class Controls {
     const canProject = Boolean(generator && supportsSpatial(generator));
     if (!canProject && view.projection !== '3d') view.projection = '3d';
     view.projection ??= '3d';
+    view.layout ??= 'single';
+    if (!canProject) view.layout = 'single';
 
     body.appendChild(this.panelHint(
       canProject
@@ -579,6 +581,12 @@ export class Controls {
       projection.disable();
       projection.domElement.title = 'Orthographic views require a spatial active layer';
     }
+    const layout = gui.add(view, 'layout', {
+      Single: 'single',
+      Quad: 'quad',
+    }).name('Layout').onChange(() => this.app.rebuild());
+    layout.domElement.title = 'Quad view arranges 3D + XY/XZ/YZ. SVG and plotter exports use the active projection.';
+    if (!canProject) layout.disable();
     gui.add(view, 'guides').name('CAD Guides').onChange(() => this.app.rebuild());
     body.appendChild(resetCamera);
     syncReset();

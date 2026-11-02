@@ -398,7 +398,7 @@ Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions
 and essential/advanced parameters; Look split into Camera, Canvas, Style,
 Render and Overlays; Ingest owns Image; Perform owns Animation, Timeline and
 temporal export · Session recovery with debounced local snapshots · Helix Lab
-(generalized helix, orthographic projections, gradient wireframe) ·
+(generalized helix, orthographic projections, quad view, gradient wireframe) ·
 Offline advisor with deterministic narration and grounded suggestions ·
 Optional LLM advisor with fake/Ollama/OpenAI-compatible providers, grounded
 prompts, validated responses, caching and privacy disclosure · Local image
@@ -418,7 +418,8 @@ overlays are represented as vector primitives. Solid and linear/radial fill
 gradients use SVG paint definitions. Layer blend modes use CSS `mix-blend-mode`.
 Signed Distance remains a documented raster-only omission; PNG is the faithful
 raster fallback. Timeline also exports a ZIP of standalone SVG frames plus a
-manifest.
+manifest. Quad view is canvas-only for SVG/plotter; PNG and GIF capture the
+quad canvas.
 Tier 2: PNG/SVG frame sequences and GIF export.
 
 ---
@@ -512,7 +513,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export and heavy
 geometry. The remaining deferred items (color-by-metric palettes,
-multi-viewport layout, hole-aware tracing and MAKE/fabrication) are future
+hole-aware tracing and MAKE/fabrication) are future
 work outside the v0.1.0 scope.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new

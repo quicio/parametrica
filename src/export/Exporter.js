@@ -26,6 +26,7 @@ export function unsupportedSvgFeatures(view = {}, layers = null) {
   const features = [];
   // Vector passes are recorded through the same draw code as the canvas.
   // Signed Distance is raster-only, so it remains an explicit omission.
+  if (view?.layout === 'quad') features.push('Quad view layout (canvas-only)');
   if (modes.includes('signed-distance')) features.push('Signed Distance (raster-only)');
   // Blend is represented with CSS mix-blend-mode. It is supported by
   // browsers, but not by every SVG consumer.

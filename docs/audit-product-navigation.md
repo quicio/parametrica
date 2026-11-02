@@ -22,6 +22,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | No había secuencia SVG frame-by-frame | **Resuelto** | Timeline exporta `frame-NNN.svg` + `manifest.json` en Perform. |
 | No había salida para plotter | **Resuelto** | Export Plotter SVG: solo trazos visibles, sin fills/gradientes/blend/overlays/passes. |
 | Image tracing solo trazaba el contorno mayor | **Resuelto** | Modo All contours: componentes separados, cada uno como capa Fourier; huecos siguen pendientes. |
+| Helix solo mostraba una proyección a la vez | **Resuelto** | Layout Quad: 3D + XY/XZ/YZ en canvas; SVG/plotter usan la proyección activa y avisan. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
 | `view.colorRamp` no tenía editor | **Resuelto** | Editor de 2–6 stops, add/remove/reset, preview y persistencia en LOOK → Render. |
@@ -48,7 +49,6 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 - **Signed Distance** sigue siendo una omisión raster-only del SVG; PNG es el
   fallback fiel.
 - **Palette system / color-by-metric** más allá del color ramp actual.
-- **Multi-viewport del Helix Lab:** 3D + tres proyecciones simultáneas.
 - **Image tracing con huecos/nidos.**
 - **Ajustes por pass y render modes por capa.**
 - **Surfaces ignoran operadores**; el pipeline sigue siendo curve-céntrico.
@@ -397,7 +397,6 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
   vectoriales y el SVG de plotter ya están cubiertos.
 - **Color:** palette system/color-by-metric más allá del ramp actual.
 - **Image:** huecos y jerarquía de contornos.
-- **Helix:** multi-viewport 3D + tres proyecciones.
 - **Composición:** relación Notebook/Presets y persistencia unificada.
 - **MAKE:** primer vertical slice de fabricación.
 - **Verificación:** `screen`/`difference` y rendimiento de aplicabilidad en
@@ -443,7 +442,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1669/1669** checks y build.
-- `npm run test:e2e`: **102/102** tests.
-- `openspec validate --specs --strict`: **60/60** specs.
+- `npm run check`: lint, **1672/1672** checks y build.
+- `npm run test:e2e`: **103/103** tests.
+- `openspec validate --specs --strict`: **61/61** specs.
 - No hay cambios OpenSpec activos.

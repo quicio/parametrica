@@ -455,6 +455,19 @@ console.log('6. documents');
   assert(typeof defaultDoc.view.camera.yaw === 'number', 'default view.camera.yaw is number');
   assert(typeof defaultDoc.view.camera.pitch === 'number', 'default view.camera.pitch is number');
   assert(typeof defaultDoc.view.camera.fov === 'number', 'default view.camera.fov is number');
+  assert(defaultDoc.view.layout === 'single', 'default view uses the single layout');
+  const quadView = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Quad View',
+    generator: { id: 'helix', params: {} },
+    operators: [], view: { layout: 'quad' }, animation: {},
+  });
+  assert(quadView.view.layout === 'quad', 'quad layout survives sanitization');
+  const badLayout = sanitizeDocument({
+    app: 'parametrica', version: 2, name: 'Bad Layout',
+    generator: { id: 'helix', params: {} },
+    operators: [], view: { layout: 'grid' }, animation: {},
+  });
+  assert(badLayout.view.layout === 'single', 'unknown layout falls back to single');
   // Partial camera in raw: only the set key is honored, others default.
   const partialCam = sanitizeDocument({
     app: 'parametrica', version: 2, name: 'Partial Camera',

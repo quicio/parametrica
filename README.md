@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1669 checks)
+npm test             # node-only verification suite (1672 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (102 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (103 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1669 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1672 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (102 tests) against a Vite server started by Playwright itself.
+suite (103 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -255,7 +255,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure
 - **Ingest** with local image underlay, threshold preview, single/all-contour tracing and editable Fourier layers
 - **Evolution** with parent selection, numeric crossover, structural mutation and generation lineage
-- **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views and a height-gradient wireframe
+- **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views, a height-gradient wireframe and a 2×2 quad view (3D + XY/XZ/YZ)
 - **Clone ×3** quick action via the Grid Repeat operator (side-by-side copies remain editable)
 - **CodeMirror formula editor** with math-aware highlighting and inline errors
 - **Session recovery** with local autosave and an explicit Restore/Dismiss banner
@@ -268,7 +268,6 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 Deferred to v0.x:
 
 - Color-by-metric palette system beyond the current ramp
-- Helix multi-viewport layout (3D + three projections at once)
 - Hole-aware / nested image tracing
 - MAKE/fabrication (solids, CSG, STL/3MF, 3D viewport)
 

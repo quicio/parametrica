@@ -8,7 +8,9 @@
  *  - HiDPI via pixelDensity; black field; CAD guides.
  */
 
-import { RenderPasses } from '../../core/registry.js';
+import { Generators, RenderPasses } from '../../core/registry.js';
+import { supportsSpatial } from '../../core/capabilities.js';
+import { analyzeAll } from '../../analysis/differential.js';
 import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
@@ -321,72 +323,150 @@ export class P5Adapter extends Renderer {
     p.fill(artboard.background);
     p.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
 
-    if (doc.view.guides) this.drawGuides(p, artboard);
-
-    if (!this.captureMode) this.drawUnderlay(p, artboard);
-
     const evaluation = app.evaluation;
-    if (evaluation) {
-      const data = {
-        curves: evaluation.curves,
-        bbox: evaluation.bbox,
-        view: doc.view,
-        document: doc,
-        time: doc.animation.time,
-      };
-      // Differential geometry is lazy: only read it when an active pass
-      // or overlay actually uses tangents/normals/curvature/inflections.
-      const layerAnalysisNeeded = needsLayerAnalysis(doc.view);
-      const combinedAnalysis = needsAnalysis(doc.view) ? evaluation.analysis : undefined;
-      const analysisByLayer = new Map(
-        (evaluation.layers ?? []).map((layer) => [layer.id, layer]),
-      );
-      const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
-      const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
+    const spatial = supportsSpatial(Generators.get(doc.generator.id));
+    const quad = doc.view.layout === 'quad' && spatial;
 
-      for (const group of scene.layers) {
-        const layerData = {
-          ...data,
-          curves: group.curves,
-          meshes: group.meshes ?? [],
-          bbox: group.bbox,
-          view: { ...doc.view, style: group.style ?? doc.view.style },
-        };
-        if (layerAnalysisNeeded) {
-          const sourceLayer = analysisByLayer.get(group.id);
-          // Single-generator evaluations have no layer list; their combined
-          // analysis is already layer-scoped.
-          layerData.analysis = sourceLayer?.analysis ?? combinedAnalysis;
-        }
-        p.push();
-        p.blendMode(blendModeConstant(p, group.style?.blend ?? doc.view.style?.blend));
-        try {
-          for (const modeId of modes) {
-            if (!RenderPasses.has(modeId)) continue;
-            p.push();
-            try {
-              RenderPasses.get(modeId).draw(p, layerData);
-            } catch (e) {
-              console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
-            }
-            p.pop();
-          }
-        } finally {
-          p.pop();
-          p.blendMode(p.BLEND);
-        }
+    if (doc.view.guides && !quad) this.drawGuides(p, artboard);
+    if (!this.captureMode && !quad) this.drawUnderlay(p, artboard);
+
+    if (evaluation) {
+      if (quad) {
+        this.drawQuadView(p, evaluation, doc, artboard);
+      } else {
+        const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
+        const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
+        const analysisByLayer = new Map(
+          (evaluation.layers ?? []).map((layer) => [layer.id, layer.analysis]),
+        );
+        this.drawSceneContent(p, scene, {
+          document: doc,
+          time: doc.animation.time,
+          view: doc.view,
+          modes,
+          analysisByLayer,
+          combinedAnalysis: needsAnalysis(doc.view) ? evaluation.analysis : undefined,
+        });
       }
-      p.push();
-      drawOverlays(p, {
-        ...data,
-        curves: scene.layers.flatMap((layer) => layer.curves),
-        bbox: scene.meta.bbox,
-        analysis: combinedAnalysis,
-      });
-      p.pop();
     }
 
     p.pop();
+  }
+
+  drawSceneContent(p, scene, {
+    document: doc,
+    time,
+    view,
+    modes,
+    analysisByLayer = null,
+    combinedAnalysis = null,
+  }) {
+    const layerAnalysisNeeded = needsLayerAnalysis(view);
+    for (const group of scene.layers) {
+      const layerData = {
+        curves: group.curves,
+        bbox: group.bbox,
+        view: { ...view, style: group.style ?? view.style },
+        document: doc,
+        time,
+        meshes: group.meshes ?? [],
+      };
+      if (layerAnalysisNeeded) {
+        layerData.analysis = analysisByLayer?.get(group.id) ?? combinedAnalysis;
+      }
+      p.push();
+      p.blendMode(blendModeConstant(p, group.style?.blend ?? view.style?.blend));
+      try {
+        for (const modeId of modes) {
+          if (!RenderPasses.has(modeId)) continue;
+          p.push();
+          try {
+            RenderPasses.get(modeId).draw(p, layerData);
+          } catch (e) {
+            console.warn(`[parametrica] pass "${modeId}" failed:`, e.message);
+          }
+          p.pop();
+        }
+      } finally {
+        p.pop();
+        p.blendMode(p.BLEND);
+      }
+    }
+    p.push();
+    drawOverlays(p, {
+      curves: scene.layers.flatMap((layer) => layer.curves),
+      bbox: scene.meta.bbox,
+      analysis: combinedAnalysis,
+      view,
+      document: doc,
+      time,
+    });
+    p.pop();
+  }
+
+  drawQuadView(p, evaluation, doc, artboard) {
+    const panels = [
+      { projection: '3d', label: '3D' },
+      { projection: 'xy', label: 'XY · Planta' },
+      { projection: 'xz', label: 'XZ · Alzado' },
+      { projection: 'yz', label: 'YZ · Perfil' },
+    ];
+    const gap = Math.max(8, Math.min(artboard.width, artboard.height) * 0.025);
+    const width = (artboard.width - gap) / 2;
+    const height = (artboard.height - gap) / 2;
+    const positions = [
+      [-artboard.width / 2, -artboard.height / 2],
+      [gap / 2, -artboard.height / 2],
+      [-artboard.width / 2, gap / 2],
+      [gap / 2, gap / 2],
+    ];
+    const panelScale = Math.min(1, Math.min(width, height) / 380);
+    const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
+    panels.forEach((panel, index) => {
+      const [x, y] = positions[index];
+      const view = { ...doc.view, projection: panel.projection, layout: 'single' };
+      const scene = buildRenderScene({
+        evaluation,
+        document: doc,
+        view,
+        projectionOverride: panel.projection,
+      });
+      const layers = scene.layers;
+      const analysisByLayer = new Map(layers.map((layer) => [layer.id, analyzeAll(layer.curves)]));
+      const combinedAnalysis = analyzeAll(layers.flatMap((layer) => layer.curves));
+      const context = p.drawingContext;
+      p.push();
+      p.noFill();
+      p.stroke(255, 28);
+      p.strokeWeight(1);
+      p.rect(x, y, width, height);
+      context.save();
+      context.beginPath();
+      context.rect(x, y, width, height);
+      context.clip();
+      p.push();
+      p.translate(x + width / 2, y + height / 2);
+      p.scale(panelScale);
+      this.drawSceneContent(p, scene, {
+        document: doc,
+        time: doc.animation.time,
+        view,
+        modes,
+        analysisByLayer,
+        combinedAnalysis,
+      });
+      p.pop();
+      context.restore();
+      p.pop();
+
+      p.push();
+      p.noStroke();
+      p.fill(255, 150);
+      p.textSize(12);
+      p.textAlign(p.LEFT, p.TOP);
+      p.text(panel.label, x + 8, y + 8);
+      p.pop();
+    });
   }
 
   /**

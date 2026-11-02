@@ -135,7 +135,7 @@ src/
 │
 ├── render/
 │   ├── Renderer.js               backend contract
-│   ├── p5/P5Adapter.js           lazy p5 backend, pass composer, post-layout canvas fit
+│   ├── p5/P5Adapter.js           lazy p5 backend, pass composer, quad view, post-layout canvas fit
 │   ├── thumbnail.js              plain-canvas candidate previews
 │   ├── projection.js             legacy curve projection compatibility
 │   ├── camera3d.js               compatibility re-export of view/camera
@@ -478,7 +478,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
 | 23 | image trace | grayscale/Otsu, largest/all-component tracing, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, multi-layer apply, privacy |
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
-| 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, gradient ramp, six presets |
+| 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, quad view, gradient ramp, six presets |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
 | 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose group, description and truthful applicability |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
@@ -486,7 +486,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1669 checks total.
+1672 checks total.
 
 ### Panel behavior
 

@@ -50,6 +50,7 @@ const DEFAULT_STYLE = {
 
 const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
+export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
 
 export function createDefaultArtboard() {
@@ -95,6 +96,7 @@ export function createDefaultView() {
     artboard: createDefaultArtboard(),
     style: createDefaultStyle(),
     projection: '3d',
+    layout: 'single',
     colorRamp: null,
   };
 }
@@ -110,6 +112,7 @@ export const DEFAULT_VIEW = Object.freeze({
   camera: Object.freeze({ ...DEFAULT_CAMERA }),
   artboard: Object.freeze({ ...DEFAULT_ARTBOARD }),
   projection: '3d',
+  layout: 'single',
   colorRamp: null,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
@@ -293,6 +296,7 @@ export function createDocument(generatorId = 'parametric', overrides = {}) {
   const generator = Generators.get(generatorId);
   const view = mergeView(createDefaultView(), overrides.view);
   view.projection = sanitizeProjection(view.projection);
+  view.layout = VIEW_LAYOUTS.includes(view.layout) ? view.layout : 'single';
   view.colorRamp = sanitizeColorRamp(view.colorRamp);
   view.artboard = sanitizeArtboard(overrides.view?.artboard);
   const style = sanitizeStyle(overrides.view?.style, overrides.view?.strokeWeight ?? view.strokeWeight);
@@ -363,6 +367,7 @@ export function sanitizeDocument(raw) {
   };
   view.artboard = sanitizeArtboard(raw.view?.artboard);
   view.projection = sanitizeProjection(view.projection);
+  view.layout = VIEW_LAYOUTS.includes(view.layout) ? view.layout : 'single';
   view.colorRamp = sanitizeColorRamp(view.colorRamp);
   const fallbackStyle = sanitizeStyle(raw.view?.style, view.strokeWeight);
   const seed = clamp(Number(raw.seed), 0, 1e9, 1);

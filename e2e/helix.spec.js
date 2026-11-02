@@ -141,6 +141,24 @@ test('camera drag works in 3D and is inert in orthographic projections', async (
   expect(Math.abs(after3D.yaw - before3D.yaw)).toBeGreaterThan(0.01);
 });
 
+test('quad layout arranges 3D and three orthographic views', async ({ page }) => {
+  await loadPreset(page, 'Básica');
+  await openSection(page, 'Camera');
+  const before = await canvasFingerprint(page);
+  const layout = page.locator('.controller', { hasText: 'Layout' }).locator('select');
+  await layout.selectOption('Quad');
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.__parametrica.document.view.layout)).toBe('quad');
+  const after = await canvasFingerprint(page);
+  const delta = Math.abs(after.lit - before.lit) +
+    after.buckets.reduce((sum, bucket, index) => sum + Math.abs(bucket - before.buckets[index]), 0);
+  expect(delta).toBeGreaterThan(0);
+
+  await layout.selectOption('Single');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__parametrica.document.view.layout)).toBe('single');
+});
+
 test('radial modulation slider changes the helix and the canvas', async ({ page }) => {
   await loadPreset(page, 'Básica');
   const before = await canvasFingerprint(page);
