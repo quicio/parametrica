@@ -393,9 +393,9 @@ plotter, PNG and GIF captures.
 - `world` mode: the reference uses the world-anchored transform.
 - Quad: each panel builds its own reference; axes appear in every panel, while
   the ground plane is restricted to the 3D and XY panels.
-- Reference extent is derived from world bounds but capped by the framed view
-  so a very deep shape does not push axes off-screen. The cap is presentation
-  only and never feeds back into the frame.
+- Reference extent is derived from world bounds and capped by the horizontal
+  world span so a very deep shape does not push axes off-screen. It never uses
+  projected artboard units and never feeds back into the frame.
 
 This is deliberately separate from **CAD Guides**, which are artboard
 crosshairs/margins. The reference is also not exported and does not define
@@ -786,7 +786,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle, marker/triangle/cell overlays, pin/release and render/export isolation |
 | 38 | surface seams | open borders, closed seams, reverse/twist styles, inverted domains, missing/malformed/zero-span mappings, perspective projection, no mutation and single-view export isolation |
 
-1922 checks total.
+1924 checks total.
 
 ### Panel behavior
 

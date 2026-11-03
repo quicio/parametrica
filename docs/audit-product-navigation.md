@@ -457,12 +457,13 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | No se podía inspeccionar una superficie bajo el cursor | **Resuelto con alcance** | Surface Inspector en Canvas single: rayo world, intersección de triángulos, oclusión por distancia, UV reales por esquina y XYZ; sin edición, Quad ni export. |
 | La inspección no tenía feedback visual en el canvas | **Resuelto con alcance** | Overlays UI-only de marcador, triángulo y celda paramétrica, con estados missing/mismatch y pin/release; fuera de escena y exports. |
 | Los seams/twists no se podían distinguir visualmente | **Resuelto con alcance** | Overlay UI-only: bordes grises, seams rojos discontinuos y twists punteados, con leyenda explícita. Solo declara topología; no afirma continuidad geométrica. |
+| Spatial Reference desaparecía en perspectiva | **Resuelto** | El extent usaba unidades proyectadas como world; ahora usa world bounds y cap por extensión horizontal, sin tocar frame ni bbox. |
 | Quad en SVG/plotter | Limitación conocida | Quad sigue siendo canvas-only; la exportación usa la proyección activa. |
 | Unidades físicas | Fuera de alcance | `A` es abstracto; la referencia espacial no muestra unidades físicas y el plotter aún no declara mm. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1922/1922** checks y build.
-- `npm run test:e2e`: **114/114** tests.
+- `npm run check`: lint, **1924/1924** checks y build.
+- `npm run test:e2e`: **115/115** tests.
 - `openspec validate --specs --strict`: **73/73** specs.
 - No hay cambios OpenSpec activos.

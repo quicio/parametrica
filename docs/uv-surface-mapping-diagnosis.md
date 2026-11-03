@@ -32,6 +32,10 @@
 > **Fase 3D/3E:** marcador, triángulo, celda y pin; overlay de bordes/seams/
 > twists declarados. No se afirma continuidad geométrica ni se dibujan pares
 > de seam u orientación de twist que el mapping no demuestre.
+>
+> **Fase 3F:** revisión integrada; corregido el extent de Spatial Reference
+> para usar world bounds en perspectiva. Overlays 3C–3E conviven sin entrar en
+> render, frame, bbox ni exportaciones.
 
 ---
 

@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Consolidate the surface inspection stack and correct the Spatial
+  Reference extent so it uses world units in perspective.
