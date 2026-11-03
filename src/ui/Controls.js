@@ -193,6 +193,12 @@ export class Controls {
     this.refreshStatus();
   }
 
+  syncParametricsToggle() {
+    if (this.parametricsToggle) {
+      this.parametricsToggle.checked = this.app.isParametricsVisible();
+    }
+  }
+
   refreshStatus() {
     if (!this.statusEl || !this.statusText) return;
     const doc = this.app.document;
@@ -686,6 +692,16 @@ export class Controls {
     marginWrap.className = 'artboard-range-wrap';
     marginWrap.append(margin, marginValue);
     row('Margin', marginWrap);
+
+    this.parametricsToggle = document.createElement('input');
+    this.parametricsToggle.className = 'artboard-check parametrics-toggle-checkbox';
+    this.parametricsToggle.type = 'checkbox';
+    this.parametricsToggle.checked = this.app.isParametricsVisible();
+    this.parametricsToggle.title = 'Show active-layer parametric properties at the canvas edge';
+    this.parametricsToggle.addEventListener('change', () => {
+      this.app.setParametricsVisible(this.parametricsToggle.checked);
+    });
+    row('Parametrics', this.parametricsToggle);
 
     const sync = () => {
       widthInput.value = String(ab.width);

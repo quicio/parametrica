@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1697 checks)
+npm test             # node-only verification suite (1704 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (106 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (107 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1697 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1704 checks across 31 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (106 tests) against a Vite server started by Playwright itself.
+suite (107 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -248,6 +248,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Notebook** with checkpoints, thumbnails, lineage and A/B comparison
 - **Explore** with Solo/Lock, seeded randomize and a 1D variation strip
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
+- **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions
 - **Layers** with independent generators, operator stacks and styles
 - **Perform** with Animation and Timeline: keyframes, easing, recording, loop, PNG ZIP, SVG frame ZIP and GIF export

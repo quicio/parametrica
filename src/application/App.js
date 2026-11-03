@@ -28,6 +28,7 @@ import { renderPresetPreview } from '../presets/preview.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
 import { MIN_CAMERA_FOV } from '../view/cameraController.js';
 import { DialogService } from '../ui/dialogs.js';
+import { ParametricOverlay } from '../ui/ParametricOverlay.js';
 
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
@@ -66,6 +67,7 @@ export class App {
     this.sessionErrorShown = false;
 
     this.evaluate();
+    this.parametricOverlay = new ParametricOverlay(canvasContainer, this);
     this.renderer = new P5Adapter(canvasContainer, this);
     this.exporter = new Exporter(this);
     this.controls = new Controls(this, uiContainer);
@@ -126,6 +128,7 @@ export class App {
     this.controls?.refreshRenderModes?.();
     this.controls?.showErrors(this._evaluation.errors);
     this.updateTelemetry();
+    this.parametricOverlay?.refresh();
     this.controls?.labPanel?.scheduleAuto();
     // The advisor only re-runs after a stable, non-playing commit. Its own
     // debounce (700 ms) collapses slider drags and never fires per frame.
@@ -621,6 +624,15 @@ export class App {
 
   resetTime() {
     this.setTime(0);
+  }
+
+  setParametricsVisible(visible) {
+    this.parametricOverlay?.setVisible(visible);
+    this.controls?.syncParametricsToggle?.();
+  }
+
+  isParametricsVisible() {
+    return Boolean(this.parametricOverlay?.visible);
   }
 
   resetCamera() {

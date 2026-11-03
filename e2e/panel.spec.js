@@ -39,6 +39,37 @@ test('canvas fills the available width and centers the artboard', async ({ page 
   expect(Math.abs(rect.y - (rect.container.h - rect.h) / 2)).toBeLessThanOrEqual(1);
 });
 
+test('parametric overlay shows active-layer properties and toggles', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Básica'));
+  await page.waitForTimeout(300);
+  const overlay = page.locator('#parametrics');
+  await expect(overlay.locator('.parametrics-title')).toHaveText('Básica');
+  await expect(overlay.locator('.parametrics-generator')).toContainText(/Helix/i);
+  const radiusRow = overlay.locator('.parametrics-row', { hasText: 'Radius' });
+  await expect(radiusRow.locator('.parametrics-value')).toHaveText('120');
+
+  await overlay.locator('.parametrics-toggle').click();
+  await expect(overlay.locator('.parametrics-body')).toBeHidden();
+  await overlay.locator('.parametrics-toggle').click();
+  await expect(overlay.locator('.parametrics-body')).toBeVisible();
+
+  const canvas = await openSection(page, 'Canvas');
+  const checkbox = canvas.locator('.parametrics-toggle-checkbox');
+  await checkbox.uncheck();
+  await expect(overlay.locator('.parametrics-body')).toBeHidden();
+  await checkbox.check();
+  await expect(overlay.locator('.parametrics-body')).toBeVisible();
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.generator.params.r = 200;
+    app.rebuild();
+  });
+  await page.waitForTimeout(250);
+  await expect(radiusRow.locator('.parametrics-value')).toHaveText('200');
+});
+
 test('workspace modes and accordion state persist', async ({ page }) => {
   await boot(page);
   await expect(page.locator('.panel-mode[data-mode="form"]')).toHaveAttribute('aria-selected', 'true');

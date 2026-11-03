@@ -33,6 +33,7 @@ import { toggleMode, normalizeModes } from '../src/ui/widgets/modeToggles.js';
 import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.js';
 import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
 import { computeDescriptor } from '../src/lab/descriptor.js';
+import { buildParametricSummary, formatParametricValue } from '../src/lab/parametricSummary.js';
 import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.js';
 import { Notebook, sanitizeCheckpoint, INBOX_PROJECT_ID } from '../src/lab/notebook.js';
 import { NotebookWorkspace } from '../src/lab/workspace.js';
@@ -2324,6 +2325,16 @@ console.log('25. helix lab');
     assert((svg.includes('<path') || svg.includes('<line')) && svg.includes('parametrica document:'), `${name}: SVG export is well-formed`);
   }
   assert(signatures.size === helixNames.length, 'all six helix variations are geometrically distinct');
+
+  const summaryDoc = BUILT_IN_PRESETS['Básica']();
+  const summary = buildParametricSummary(summaryDoc);
+  assert(summary.layerName === 'Básica' && /Helix/i.test(summary.generatorName), 'parametric summary identifies the active shape');
+  assert(summary.params.some((param) => param.label === 'Radius' && param.value === '120'), 'parametric summary exposes shape values');
+  assert(summary.params.some((param) => param.advanced), 'parametric summary keeps advanced values available');
+  assert(formatParametricValue([1, 2, 3]) === '3 items', 'parametric summary formats arrays');
+  assert(formatParametricValue(true) === 'yes', 'parametric summary formats booleans');
+  assert(formatParametricValue(3.141592) === '3.1416', 'parametric summary rounds numbers');
+  assert(formatParametricValue({ expr: 'sin(time)' }).startsWith('ƒ '), 'parametric summary formats animatable expressions');
 }
 
 /* ——— 26. Session recovery ——— */

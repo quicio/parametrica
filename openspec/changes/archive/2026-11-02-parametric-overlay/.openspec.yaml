@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Show the active shape's parametric properties in a minimal, toggleable
+  canvas-edge overlay.

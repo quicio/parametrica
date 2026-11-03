@@ -391,7 +391,7 @@ table editor · formula editor drawer · undo/redo (50 snapshots, coalesced)
 Analysis panel with deterministic descriptor metrics and parameter influence ·
 Notebook with checkpoints, thumbnails, lineage and A/B comparison ·
 Explore with Solo/Lock, seeded randomize and a 1D variation strip ·
-Artboard presets, built-in/custom palettes, stroke/fill/gradient style and faithful export ·
+Artboard presets, built-in/custom palettes, stroke/fill/gradient style and faithful export · Parametric edge overlay with active-shape properties ·
 2D grids and same-structure morphing · Document v3 layers, per-layer styles
 and multi-layer export · Timeline keyframes, easing, frame-sequence and GIF export ·
 Form/Look/Explore/Perform/Ingest/Keep panel modes with persisted accordions

@@ -73,6 +73,7 @@ src/
 │   ├── notebookRepository.js     repository boundary + versioned migration
 │   ├── workspace.js              active project/series save target
 │   ├── parameters.js             shared ParameterRef helpers
+│   ├── parametricSummary.js      active-shape property summary
 │   ├── exploration.js            Solo/Lock, sweeps and seeded randomize
 │   ├── evolution.js              crossover, structural mutation and lineage
 │   └── diff.js                   document and descriptor diffs
@@ -181,6 +182,7 @@ src/
 │   └── zip.js                    frame-sequence ZIP writer
 │
 ├── ui/
+│   ├── ParametricOverlay.js      canvas-edge property HUD
 │   ├── Controls.js               mode bar, accordions and instrument panel
 │   ├── dialogs.js                injectable prompt / confirm service
 │   ├── params/
@@ -478,7 +480,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 22 | optional llm advisor | fake determinism, prompt grounding, response parsing, clamping/rejection, cache, fallback, trigger policy |
 | 23 | image trace | grayscale/Otsu, largest/all-component/hole tracing, boundary tracing, RDP, arc-length resampling, DFT reconstruction error, multi-layer apply, privacy |
 | 24 | evolution lab | numeric crossover bounds, seeded determinism, structural mutation budget, child validation, generation lineage |
-| 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, quad view, gradient metric/ramp, six presets |
+| 25 | helix lab | classic reduction, radial/pitch modulation, torsion, strands, projections, quad view, gradient metric/ramp, six presets, active-shape summary |
 | 26 | session recovery | debounced snapshots, playback stripping, flush/clear, corrupt JSON and quota failures |
 | 27 | registry contracts | every registry exposes the expected contract and metadata; render passes expose group, description and truthful applicability |
 | 28 | extensibility boundaries | adding modules through registries does not require central edits |
@@ -486,7 +488,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 
-1697 checks total.
+1704 checks total.
 
 ### Panel behavior
 
