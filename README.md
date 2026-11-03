@@ -24,7 +24,7 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1773 checks)
+npm test             # node-only verification suite (1812 checks)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (109 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1773 checks across 34 groups (expression
+Runs `test/lab.smoke.mjs` — 1812 checks across 35 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -250,6 +250,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Explicit coordinate contracts** for parameter, world and artboard spaces, with one `ViewTransform` shared by canvas, Quad, SVG and plotter
 - **Spatial reference** with world origin, XYZ axes and an optional low-density ground plane; UI-only and excluded from exports
 - **UV Domain inset** for parametric surfaces: real U/V bounds, low-density grid, axis orientation and closure/seam markers; UI-only and never exported
+- **SurfaceMapping sidecar** with per-cell triangle topology and real per-corner UVs, including seams and twists; not yet consumed by picking or render
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions

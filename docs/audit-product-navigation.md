@@ -452,12 +452,13 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | El fit sigue serializado en `generator.params` | Limitación de compatibilidad | El engine lo consume como frame; una fase posterior puede mover el control a `view.frame` sin cambiar documentos. |
 | Documentos mixtos 2D + 3D | Limitación de fase 0 | Las capas planas siguen en espacio artboard; no comparten frame espacial con las capas world. |
 | El dominio UV no era visible | **Resuelto con alcance** | Inset UI-only con límites reales de `Surface.domain`, grid de baja densidad, orientación U/V y marcas de cierre/seam. Sin UV↔XYZ interactivo. |
+| No existía una correspondencia paramétrica por esquina | **Resuelto con alcance** | `SurfaceMapping` generado junto a la teselación: celda/triángulo, UV reales por esquina, seams y twists; sidecar de evaluación sin consumo en render/picking todavía. |
 | Quad en SVG/plotter | Limitación conocida | Quad sigue siendo canvas-only; la exportación usa la proyección activa. |
 | Unidades físicas | Fuera de alcance | `A` es abstracto; la referencia espacial no muestra unidades físicas y el plotter aún no declara mm. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1773/1773** checks y build.
+- `npm run check`: lint, **1812/1812** checks y build.
 - `npm run test:e2e`: **109/109** tests.
-- `openspec validate --specs --strict`: **70/70** specs.
+- `openspec validate --specs --strict`: **71/71** specs.
 - No hay cambios OpenSpec activos.

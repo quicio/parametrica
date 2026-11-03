@@ -94,7 +94,7 @@ src/
 │   ├── contracts.js              Curve2D/Curve3D/Surface/Mesh/Solid
 │   ├── validate.js               geometry + mesh + solid validation
 │   ├── relations.js              lift, tessellate, mesh→solid
-│   ├── surfaceTessellation.js    Surface → Mesh, seams and twists
+│   ├── surfaceTessellation.js    Surface → Mesh + SurfaceMapping, seams/twists
 │   ├── uvDomain.js               read-only Surface domain summaries
 │   ├── wireframe.js              deterministic mesh iso-lines
 │   ├── legacy.js                 Curve[] compatibility adapters
@@ -415,6 +415,28 @@ The inset is presentation only. It does not touch `ViewTransform`, frame,
 bbox, geometry, Spatial Reference, SVG, plotter, PNG or GIF. It is not a second
 viewport and has no UV ↔ XYZ interaction.
 
+#### SurfaceMapping
+
+`tessellateSurfaceWithMapping(surface)` returns both the render `Mesh` and an
+explicit `SurfaceMapping`. Both are produced in the same logical-cell loop;
+the mapping never infers cells from face indices and never derives UV from XYZ.
+
+The mapping preserves:
+
+- `surfaceId`, `meshId`;
+- real `u0/u1`, `v0/v1`;
+- `closedU/V`, `seamU/V`, `twistU/V`;
+- unique grid rows/cols and logical `uCells/vCells`;
+- per-triangle `indices`, `cell {u,v}` and `triangle` index;
+- real UVs per triangle corner, computed before `wrap/flip`.
+
+The mesh stays unchanged and `Mesh.meta` is not used as a mapping blob. The
+engine caches `{ meshes, surfaceMappings }` in the same entry, so a Surface
+re-evaluation or topology change replaces the mapping together with the mesh.
+`evaluation.surfaceMappings` and `layer.surfaceMappings` expose the sidecar;
+`RenderScene`, `ViewTransform`, render passes and exporters do not consume it
+yet.
+
 ### 3.4 Rendering
 
 ```
@@ -616,8 +638,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 32 | spatial contracts | P/W/A ids, frame sanitization and scales, world-origin anchoring, shared multi-mesh/multi-layer framing, scene/export parity, planarity preservation, quad reprojection |
 | 33 | spatial reference | reference config, world origin, axis visibility by projection, ground divisions, frame independence, composition anchoring and planar exclusion |
 | 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
+| 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
 
-1773 checks total.
+1812 checks total.
 
 ### Panel behavior
 

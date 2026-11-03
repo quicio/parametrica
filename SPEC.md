@@ -329,6 +329,13 @@ domain chart with U/V axes, bounds and a low-density grid. It never projects,
 frames, mutates geometry or enters an export. Visibility lives in Canvas and is
 persisted locally; a valid active surface is required for the inset to appear.
 
+`tessellateSurfaceWithMapping(surface)` exposes an explicit `SurfaceMapping`
+sidecar with the real domain, per-triangle logical cell, triangle index,
+per-corner UVs and mesh vertex indices. UVs are computed before `wrap/flip`,
+so welded seam vertices can carry distinct UVs. The mapping is generated with
+the mesh, cached with it and exposed as `evaluation.surfaceMappings`; it does
+not enter RenderScene, rendering, picking or export yet.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.
