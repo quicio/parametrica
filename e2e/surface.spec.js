@@ -142,6 +142,166 @@ test('surface inspector reads UV and XYZ from a hovered triangle', async ({ page
   await expect(inspector).toBeHidden();
 });
 
+test('surface inspector pins, invalidates and stays out of exports', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(500);
+  await page.waitForFunction(() => Boolean(window.__parametrica.renderer.lastScene));
+  const canvas = await openSection(page, 'Canvas');
+  await canvas.locator('.surface-inspector-toggle-checkbox').check();
+  const inspector = page.locator('#surface-inspector');
+  await expect(inspector).toBeVisible();
+
+  const point = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const scene = app.renderer.lastScene;
+    const layer = scene.layers[0];
+    const mesh = app.evaluation.meshes[0];
+    const face = mesh.faces[Math.floor(mesh.faces.length / 3)];
+    const centre = face.reduce((sum, index) => ({
+      x: sum.x + mesh.vertices[index].x / 3,
+      y: sum.y + mesh.vertices[index].y / 3,
+      z: sum.z + mesh.vertices[index].z / 3,
+    }), { x: 0, y: 0, z: 0 });
+    const art = layer.transform.toArtboard(centre);
+    const rect = app.renderer.artboardRect();
+    return {
+      x: rect.x + rect.w / 2 + art.x * rect.scale,
+      y: rect.y + rect.h / 2 + art.y * rect.scale,
+    };
+  });
+
+  const surface = page.locator('#canvas-container canvas');
+  const before = await surface.screenshot();
+  const pngBefore = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  await page.mouse.move(point.x, point.y);
+  await page.waitForTimeout(300);
+  const after = await surface.screenshot();
+  expect(Buffer.compare(before, after)).not.toBe(0);
+  const pngAfter = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  expect(pngAfter).toBe(pngBefore);
+
+  const xyz = await inspector.locator('.si-row', { hasText: 'xyz' }).locator('.si-value').textContent();
+  await inspector.locator('.si-pin').click();
+  await expect(inspector.locator('.si-pin')).toHaveText('RELEASE');
+  await expect(inspector.locator('.si-row', { hasText: 'xyz' }).locator('.si-value')).toHaveText(xyz);
+
+  const canvasBox = await page.locator('#canvas-container canvas').boundingBox();
+  await page.mouse.move(canvasBox.x + 8, canvasBox.y + canvasBox.height - 8);
+  await page.waitForTimeout(250);
+  await expect(inspector.locator('.si-row', { hasText: 'xyz' }).locator('.si-value')).toHaveText(xyz);
+
+  await inspector.locator('.si-pin').click();
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+
+  await page.mouse.move(point.x, point.y);
+  await page.waitForTimeout(250);
+  await inspector.locator('.si-pin').click();
+  await expect(inspector.locator('.si-pin')).toHaveText('RELEASE');
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.camera.yaw += 0.2;
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+  await expect(inspector.locator('.si-empty')).toContainText('Pinned result invalidated');
+});
+
+test('surface inspector pin follows projection, playback and layer lifecycle', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(500);
+  await page.waitForFunction(() => Boolean(window.__parametrica.renderer.lastScene));
+  const canvas = await openSection(page, 'Canvas');
+  await canvas.locator('.surface-inspector-toggle-checkbox').check();
+  const inspector = page.locator('#surface-inspector');
+  await expect(inspector).toBeVisible();
+
+  const pickAndPin = async () => {
+    await page.waitForTimeout(300);
+    const point = await page.evaluate(() => {
+      const app = window.__parametrica;
+      const scene = app.renderer.lastScene;
+      const layer = scene.layers[0];
+      const mesh = app.evaluation.meshes[0];
+      const face = mesh.faces[Math.floor(mesh.faces.length / 3)];
+      const centre = face.reduce((sum, index) => ({
+        x: sum.x + mesh.vertices[index].x / 3,
+        y: sum.y + mesh.vertices[index].y / 3,
+        z: sum.z + mesh.vertices[index].z / 3,
+      }), { x: 0, y: 0, z: 0 });
+      const art = layer.transform.toArtboard(centre);
+      const rect = app.renderer.artboardRect();
+      return {
+        x: rect.x + rect.w / 2 + art.x * rect.scale,
+        y: rect.y + rect.h / 2 + art.y * rect.scale,
+      };
+    });
+    await page.evaluate((p) => window.__parametrica.inspectAtCanvas(p.x, p.y), point);
+    await inspector.locator('.si-pin').click();
+    await expect(inspector.locator('.si-pin')).toHaveText('RELEASE');
+  };
+
+  await pickAndPin();
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.projection = 'xy';
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+  await expect(inspector.locator('.si-empty')).toContainText('Pinned result invalidated');
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.projection = '3d';
+    app.document.view.camera.fov = 320;
+    app.rebuild();
+  });
+  await pickAndPin();
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.camera.fov += 20;
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.camera.fov = 320;
+    app.rebuild();
+  });
+  await pickAndPin();
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.animation.playing = true;
+    app.evaluate();
+  });
+  await page.waitForTimeout(250);
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+  await expect(inspector.locator('.si-empty')).toContainText('Playback');
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.animation.playing = false;
+    app.rebuild();
+  });
+  await pickAndPin();
+  await page.evaluate(() => window.__parametrica.addLayer('parametric-surface'));
+  await page.waitForTimeout(350);
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+  await expect(inspector.locator('.si-empty')).toContainText('Pinned result invalidated');
+
+  await pickAndPin();
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await page.waitForTimeout(350);
+  await expect(inspector.locator('.si-pin')).toHaveText('RELEASE');
+  await inspector.locator('.si-pin').click();
+  await expect(inspector.locator('.si-pin')).toHaveText('PIN');
+});
+
 test('surface inspector preference persists across reload', async ({ page }) => {
   await boot(page);
   let canvas = await openSection(page, 'Canvas');

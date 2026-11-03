@@ -72,7 +72,8 @@ import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } 
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
 import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
 import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.js';
-import { pickSurface } from '../src/interaction/surfacePicker.js';
+import { pickSurface, validatePickResult } from '../src/interaction/surfacePicker.js';
+import { buildInspectionOverlay } from '../src/interaction/inspectionOverlay.js';
 import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
@@ -4012,6 +4013,49 @@ console.log('37. surface picking');
     realScene.layers,
   );
   assert(!svg.includes('surface-pick'), 'picking never enters SVG export');
+
+  const overlay = buildInspectionOverlay({
+    evaluation: flatEvaluation,
+    scene: flatScene,
+    result: flatPick,
+  });
+  assert(overlay?.marker && overlay.triangle?.length === 3, 'inspection overlay exposes marker and triangle');
+  assert(overlay.cell?.length === 4 && overlay.mappingValid, 'valid mapping exposes a four-corner cell highlight');
+  const missingOverlay = buildInspectionOverlay({
+    evaluation: {
+      layers: [layerFor([flatMesh], [])],
+      worldBBox: flatEvaluation.worldBBox,
+    },
+    scene: flatScene,
+    result: missingMappingPick,
+  });
+  assert(missingOverlay?.triangle?.length === 3 && missingOverlay.cell === null, 'missing mapping highlights only the triangle');
+  assert(missingOverlay.mappingValid === false, 'missing mapping is visibly marked invalid');
+  const malformedOverlay = buildInspectionOverlay({
+    evaluation: {
+      layers: [layerFor([flatMesh], [malformedMapping])],
+      worldBBox: flatEvaluation.worldBBox,
+    },
+    scene: flatScene,
+    result: malformedPick,
+  });
+  assert(malformedOverlay?.cell === null && malformedOverlay.mappingValid === false, 'malformed mapping never highlights a cell');
+
+  assert(validatePickResult(flatPick, flatEvaluation), 'current pick validates against its evaluation');
+  const shiftedEval = {
+    layers: [layerFor([{
+      ...flatMesh,
+      vertices: flatMesh.vertices.map((point) => ({ ...point, x: point.x + 1 })),
+    }], [flatMapping])],
+    worldBBox: flatEvaluation.worldBBox,
+  };
+  assert(!validatePickResult(flatPick, shiftedEval), 'geometry changes invalidate a stored pick');
+  const hiddenEval = {
+    layers: [{ ...layerFor([flatMesh], [flatMapping]), visible: false }],
+    worldBBox: flatEvaluation.worldBBox,
+  };
+  assert(!validatePickResult(flatPick, hiddenEval), 'hidden layers invalidate a stored pick');
+  assert(!validatePickResult({ ...flatPick, world: { ...flatPick.world, x: flatPick.world.x + 1 } }, flatEvaluation), 'tampered world points are rejected');
 }
 
 /* ——— Snapshots ——— */

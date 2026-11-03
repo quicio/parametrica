@@ -78,6 +78,71 @@ export function pickSurface({ evaluation, scene, artboardPoint, bounds = null, a
   return best;
 }
 
+/**
+ * Revalidate a stored pick against the current evaluation. This is used by the
+ * pinned inspector so stale world/UV/cell data is never displayed.
+ */
+export function validatePickResult(result, evaluation) {
+  if (!result || !evaluation) return false;
+  const layer = evaluationLayer(evaluation, result.layerId);
+  if (!layer || layer.visible === false) return false;
+  const mesh = (layer.meshes ?? []).find((entry) => entry.id === result.meshId);
+  if (!mesh || !Array.isArray(mesh.vertices) || !Array.isArray(mesh.faces)) return false;
+  const face = mesh.faces[result.faceIndex];
+  if (!Array.isArray(face) || !sameIndices(face, result.triangleIndices)) return false;
+  const a = mesh.vertices[face[0]];
+  const b = mesh.vertices[face[1]];
+  const c = mesh.vertices[face[2]];
+  const bary = result.barycentric;
+  if (!a || !b || !c || !bary) return false;
+  const world = {
+    x: a.x * bary.a + b.x * bary.b + c.x * bary.c,
+    y: a.y * bary.a + b.y * bary.b + c.y * bary.c,
+    z: a.z * bary.a + b.z * bary.b + c.z * bary.c,
+  };
+  if (!samePoint(world, result.world)) return false;
+
+  const mapping = (layer.surfaceMappings ?? []).find((entry) => entry.meshId === result.meshId) ?? null;
+  const mappingFace = mapping?.faces?.[result.faceIndex] ?? null;
+  const status = !mapping
+    ? 'missing'
+    : (!mappingFace || !sameIndices(mappingFace.indices, face) ? 'mismatch' : 'ok');
+  if (status !== result.mappingStatus) return false;
+  if (status !== 'ok') return true;
+  const uv = interpolateUV(mappingFace.uv, bary);
+  if (!uv || !Number.isFinite(uv.u) || !Number.isFinite(uv.v)) return false;
+  if (!result.uv || !sameNumber(uv.u, result.uv.u) || !sameNumber(uv.v, result.uv.v)) return false;
+  if (!result.cell || result.cell.u !== mappingFace.cell.u || result.cell.v !== mappingFace.cell.v) return false;
+  return result.triangle === mappingFace.triangle;
+}
+
+function evaluationLayer(evaluation, layerId) {
+  if (Array.isArray(evaluation.layers) && evaluation.layers.length) {
+    return evaluation.layers.find((layer) => layer.id === layerId) ?? null;
+  }
+  if (!Array.isArray(evaluation.meshes) || !evaluation.meshes.length) return null;
+  return {
+    id: layerId ?? 'layer-0',
+    name: evaluation.name ?? 'Surface',
+    visible: true,
+    meshes: evaluation.meshes,
+    surfaceMappings: evaluation.surfaceMappings ?? [],
+  };
+}
+
+function samePoint(a, b) {
+  if (!a || !b) return false;
+  const scale = Math.max(1, Math.abs(a.x), Math.abs(a.y), Math.abs(a.z));
+  return Math.abs(a.x - b.x) <= 1e-7 * scale
+    && Math.abs(a.y - b.y) <= 1e-7 * scale
+    && Math.abs(a.z - b.z) <= 1e-7 * scale;
+}
+
+function sameNumber(a, b) {
+  const scale = Math.max(1, Math.abs(a), Math.abs(b));
+  return Math.abs(a - b) <= 1e-7 * scale;
+}
+
 function inspectableLayers(evaluation, scene, activeLayerId) {
   const layers = Array.isArray(evaluation.layers) && evaluation.layers.length
     ? evaluation.layers.filter((layer) => (

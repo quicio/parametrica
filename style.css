@@ -1062,6 +1062,31 @@ html, body {
   color: var(--ink-dim);
 }
 
+.si-pin {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 1px 4px;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.si-pin:hover:not(:disabled),
+.si-pin[aria-pressed="true"] {
+  border-color: var(--ink-dim);
+  color: var(--ink);
+}
+
+.si-pin:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .si-body {
   display: flex;
   flex-direction: column;

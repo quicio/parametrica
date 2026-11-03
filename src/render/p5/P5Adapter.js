@@ -15,6 +15,7 @@ import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.js';
 import { buildSpatialReference } from '../../view/spatialReference.js';
 import { drawSpatialReference } from '../reference.js';
+import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
 import { AnimationController } from '../../application/animationController.js';
 
@@ -381,6 +382,7 @@ export class P5Adapter extends Renderer {
           analysisByLayer,
           combinedAnalysis: needsAnalysis(doc.view) ? evaluation.analysis : undefined,
         });
+        if (!this.captureMode) this.drawInspectionOverlay(p, scene, rect);
       }
     }
 
@@ -548,6 +550,78 @@ export class P5Adapter extends Renderer {
     ctx.restore();
   }
 
+  drawInspectionOverlay(p, scene, rect) {
+    const result = this.app.surfaceInspector?.activeResult?.();
+    if (!result) return;
+    const overlay = buildInspectionOverlay({
+      evaluation: this.app.evaluation,
+      scene,
+      result,
+    });
+    if (!overlay) return;
+    const scale = rect.scale > 0 ? rect.scale : 1;
+    const artboard = rect.artboard;
+    const ctx = p.drawingContext;
+    if (ctx && artboard) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
+      ctx.clip();
+    }
+    p.push();
+    if (overlay.cell) {
+      p.fill(227, 6, 19, 24);
+      p.stroke(227, 6, 19, 220);
+      p.strokeWeight(1.6 / scale);
+      drawOverlayShape(p, overlay.cell);
+    }
+    if (overlay.triangle) {
+      p.fill(245, 245, 245, overlay.mappingValid ? 30 : 0);
+      p.stroke(overlay.mappingValid ? 250 : 150, overlay.mappingValid ? 240 : 170);
+      p.strokeWeight(1.4 / scale);
+      if (!overlay.mappingValid && ctx) ctx.setLineDash([4 / scale, 3 / scale]);
+      drawOverlayShape(p, overlay.triangle);
+      if (ctx) ctx.setLineDash([]);
+    }
+    if (overlay.marker) {
+      p.noStroke();
+      p.fill(5, 5, 5, 200);
+      p.circle(overlay.marker.x, overlay.marker.y, 10 / scale);
+      p.fill(250, 250, 250, 245);
+      p.circle(overlay.marker.x, overlay.marker.y, 5.5 / scale);
+      p.stroke(5, 5, 5, 190);
+      p.strokeWeight(2 / scale);
+      p.line(
+        overlay.marker.x - 9 / scale,
+        overlay.marker.y,
+        overlay.marker.x + 9 / scale,
+        overlay.marker.y,
+      );
+      p.line(
+        overlay.marker.x,
+        overlay.marker.y - 9 / scale,
+        overlay.marker.x,
+        overlay.marker.y + 9 / scale,
+      );
+      p.stroke(250, 250, 250, 220);
+      p.strokeWeight(1 / scale);
+      p.line(
+        overlay.marker.x - 7 / scale,
+        overlay.marker.y,
+        overlay.marker.x + 7 / scale,
+        overlay.marker.y,
+      );
+      p.line(
+        overlay.marker.x,
+        overlay.marker.y - 7 / scale,
+        overlay.marker.x,
+        overlay.marker.y + 7 / scale,
+      );
+    }
+    p.pop();
+    if (ctx && artboard) ctx.restore();
+  }
+
   drawReference(p, scene, scale, { ground = null, clip = null } = {}) {
     const config = scene?.meta?.reference;
     const transform = scene?.meta?.referenceTransform;
@@ -588,4 +662,10 @@ export class P5Adapter extends Renderer {
     p.rect(-w / 2 + margin, -h / 2 + margin, w - margin * 2, h - margin * 2);
     p.pop();
   }
+}
+
+function drawOverlayShape(p, points) {
+  p.beginShape();
+  for (const point of points) p.vertex(point.x, point.y);
+  p.endShape(p.CLOSE);
 }
