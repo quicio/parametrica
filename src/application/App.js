@@ -136,6 +136,7 @@ export class App {
   evaluate() {
     this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
     this.controls?.refreshRenderModes?.();
+    this.controls?.refreshFabricate?.();
     this.controls?.showErrors(this._evaluation.errors);
     this.updateTelemetry();
     this.parametricOverlay?.refresh();

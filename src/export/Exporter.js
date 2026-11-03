@@ -13,6 +13,9 @@ import { bboxAll } from '../sampling/sampling.js';
 import { buildRenderScene } from '../application/renderSceneBuilder.js';
 import { drawOverlays } from '../viz/overlays.js';
 import { SvgContext } from './svgContext.js';
+import { artboardToMillimetres, millimetresPerUnit } from '../core/units.js';
+import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
+import { buildFabricationReport } from '../application/fabricationSource.js';
 
 /**
  * Active features the SVG builder does not represent as vector primitives.
@@ -216,14 +219,48 @@ export class Exporter {
       groups.push(`    <path d="${d}"/>`);
       groups.push('  </g>');
     }
+    const pageMmWidth = artboardToMillimetres(width, view.units);
+    const pageMmHeight = artboardToMillimetres(height, view.units);
+    const physicalPage = pageMmWidth !== null && pageMmHeight !== null;
+    const pageSize = physicalPage
+      ? `width="${fmt(pageMmWidth)}mm" height="${fmt(pageMmHeight)}mm" data-units="mm" data-mm-per-artboard-unit="${fmt(millimetresPerUnit(view.units, 'artboard'))}"`
+      : `width="${fmt(width)}" height="${fmt(height)}"`;
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
       meta +
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}" data-plotter="true">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" ${pageSize} data-plotter="true">`,
       ...groups,
       '</svg>',
       '',
     ].join('\n');
+  }
+
+  buildSTLFromCurrent() {
+    const doc = this.app.document;
+    const report = buildFabricationReport({
+      evaluation: this.app.evaluation,
+      layerIndex: doc.activeLayer ?? 0,
+      units: doc.view?.units ?? null,
+    });
+    if (!report.exportable || !report.source) {
+      throw new Error(report.reason ?? 'No validated closed Mesh/Solid to export');
+    }
+    return exportBinarySTL(report.source.geometry, {
+      units: doc.view?.units ?? null,
+      name: doc.name,
+    });
+  }
+
+  exportSTL() {
+    try {
+      const result = this.buildSTLFromCurrent();
+      downloadBytes(`parametrica-${timestamp()}.stl`, result.data, STL_MIME_TYPE);
+      this.app.notify?.(`Exported STL · ${result.triangles} triangles · ${result.unit}`);
+      return result;
+    } catch (error) {
+      this.app.notify?.(error.message, 'error');
+      return null;
+    }
   }
 
   exportPlotterSVG() {

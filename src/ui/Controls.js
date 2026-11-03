@@ -29,6 +29,15 @@ import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
+import {
+  PHYSICAL_UNIT_SYSTEMS,
+  artboardToMillimetres,
+  bboxToMillimetres,
+  formatPhysicalLength,
+  millimetresPerUnit,
+  validateUnits,
+} from '../core/units.js';
+import { buildFabricationReport } from '../application/fabricationSource.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
 const DEFAULT_OPEN = new Set(['generator', 'parameters']);
@@ -49,6 +58,7 @@ const MODES = [
   { id: 'perform', label: 'Perform' },
   { id: 'ingest', label: 'Ingest' },
   { id: 'keep', label: 'Keep' },
+  { id: 'fabricate', label: 'Fabricate' },
 ];
 
 export class Controls {
@@ -190,6 +200,7 @@ export class Controls {
     }
     this.saveUiState();
     if (resetScroll) this.container.scrollTop = 0;
+    if (modeId === 'fabricate') this.refreshFabricate?.();
     this.refreshStatus();
   }
 
@@ -320,6 +331,8 @@ export class Controls {
     this.buildOperatorsSection();
     this.buildCameraSection();
     this.buildCanvasSection();
+    this.buildUnitsSection();
+    this.buildFabricateSection();
     this.buildStyleSection();
     this.buildRenderSection();
     this.buildOverlaysSection();
@@ -785,6 +798,259 @@ export class Controls {
     };
     sync();
     body.appendChild(grid);
+  }
+
+  buildUnitsSection() {
+    const body = this.section('Scale', { id: 'units', mode: 'look' });
+    const view = this.app.document.view;
+    const units = view.units;
+    body.appendChild(this.panelHint(
+      'Optional physical scale. Geometry is never rescaled; millimetres are applied only by export consumers.',
+    ));
+
+    const grid = document.createElement('div');
+    grid.className = 'artboard-grid units-grid';
+
+    const row = (label, control) => {
+      const el = document.createElement('label');
+      el.className = 'artboard-row';
+      const name = document.createElement('span');
+      name.className = 'artboard-label';
+      name.textContent = label;
+      el.append(name, control);
+      grid.appendChild(el);
+      return el;
+    };
+
+    const worldSize = document.createElement('div');
+    worldSize.className = 'units-readout units-world-size';
+    const pageSize = document.createElement('div');
+    pageSize.className = 'units-readout units-page-size';
+    const warning = document.createElement('div');
+    warning.className = 'units-warning';
+
+    const refresh = () => {
+      const bbox = this.app.evaluation?.worldBBox ?? this.app.evaluation?.bbox ?? null;
+      const physical = bboxToMillimetres(bbox, units);
+      if (physical) {
+        const dimensions = [
+          formatPhysicalLength(physical.width),
+          formatPhysicalLength(physical.height),
+          physical.depth !== null ? formatPhysicalLength(physical.depth) : null,
+        ].filter(Boolean);
+        worldSize.textContent = `World bbox · ${dimensions.join(' × ')}`;
+      } else {
+        worldSize.textContent = 'World bbox · unitless';
+      }
+
+      const artboard = view.artboard;
+      const pageWidth = artboardToMillimetres(artboard.width, units);
+      const pageHeight = artboardToMillimetres(artboard.height, units);
+      if (pageWidth !== null && pageHeight !== null) {
+        pageSize.textContent = `Page · ${formatPhysicalLength(pageWidth)} × ${formatPhysicalLength(pageHeight)}`;
+      } else {
+        pageSize.textContent = `Page · unitless · ${artboard.width} × ${artboard.height}`;
+      }
+
+      const validation = validateUnits(units);
+      warning.textContent = validation.ok
+        ? `World scale ×${millimetresPerUnit(units, 'world') ?? '—'} · page scale ×${millimetresPerUnit(units, 'artboard') ?? '—'}`
+        : validation.errors.join(' · ');
+      warning.dataset.valid = validation.ok ? 'true' : 'false';
+    };
+
+    const select = (value, className, onChange) => {
+      const el = document.createElement('select');
+      el.className = `artboard-input ${className}`;
+      for (const system of PHYSICAL_UNIT_SYSTEMS) {
+        const option = document.createElement('option');
+        option.value = system;
+        option.textContent = system === 'unitless' ? 'unitless' : system;
+        el.appendChild(option);
+      }
+      el.value = value;
+      el.addEventListener('change', () => {
+        onChange(el.value);
+        this.app.rebuild();
+        refresh();
+      });
+      return el;
+    };
+
+    const factorInput = (value, className, disabled, onChange) => {
+      const el = document.createElement('input');
+      el.className = `artboard-input ${className}`;
+      el.type = 'number';
+      el.min = '0.000001';
+      el.step = '0.01';
+      el.placeholder = disabled ? '—' : 'mm per unit';
+      el.disabled = disabled;
+      el.value = value === null ? '' : String(value);
+      el.addEventListener('change', () => {
+        const number = Number(el.value);
+        onChange(Number.isFinite(number) && number > 0 ? number : null);
+        this.app.rebuild();
+        refresh();
+      });
+      return el;
+    };
+
+    let worldFactor = null;
+    const worldSelect = select(units.world, 'units-world-select', (value) => {
+      units.world = value;
+      if (value === 'unitless') units.mmPerWorldUnit = null;
+      if (worldFactor) {
+        worldFactor.disabled = value === 'unitless';
+        worldFactor.placeholder = value === 'unitless' ? '—' : 'mm per unit';
+      }
+    });
+    row('World units', worldSelect);
+    worldFactor = factorInput(
+      units.mmPerWorldUnit,
+      'units-world-factor',
+      units.world === 'unitless',
+      (value) => { units.mmPerWorldUnit = value; },
+    );
+    row('World mm/unit', worldFactor);
+
+    let artboardFactor = null;
+    const artboardSelect = select(units.artboard, 'units-artboard-select', (value) => {
+      units.artboard = value;
+      if (value === 'unitless') units.mmPerArtboardUnit = null;
+      if (artboardFactor) {
+        artboardFactor.disabled = value === 'unitless';
+        artboardFactor.placeholder = value === 'unitless' ? '—' : 'mm per unit';
+      }
+    });
+    row('Page units', artboardSelect);
+    artboardFactor = factorInput(
+      units.mmPerArtboardUnit,
+      'units-artboard-factor',
+      units.artboard === 'unitless',
+      (value) => { units.mmPerArtboardUnit = value; },
+    );
+    row('Page mm/unit', artboardFactor);
+
+    grid.append(worldSize, pageSize, warning);
+    refresh();
+    body.appendChild(grid);
+  }
+
+  buildFabricateSection() {
+    const body = this.section('Fabricate', { id: 'fabricate', mode: 'fabricate' });
+    body.appendChild(this.panelHint(
+      'Read-only fabrication gate. Parametrica never repairs, caps or edits geometry in this mode.',
+    ));
+
+    const panel = document.createElement('div');
+    panel.className = 'fabricate-panel';
+
+    const status = document.createElement('div');
+    status.className = 'fabricate-status';
+    status.setAttribute('role', 'status');
+    const source = document.createElement('div');
+    source.className = 'fabricate-source';
+    const reason = document.createElement('div');
+    reason.className = 'fabricate-reason';
+
+    const rows = document.createElement('div');
+    rows.className = 'fabricate-rows';
+    const makeRow = (label, className) => {
+      const row = document.createElement('div');
+      row.className = 'fabricate-row';
+      const name = document.createElement('span');
+      name.className = 'fabricate-label';
+      name.textContent = label;
+      const value = document.createElement('span');
+      value.className = `fabricate-value ${className}`;
+      value.textContent = '—';
+      row.append(name, value);
+      rows.appendChild(row);
+      return value;
+    };
+    const triangles = makeRow('Triangles', 'fabricate-triangles');
+    const vertices = makeRow('Vertices', 'fabricate-vertices');
+    const volume = makeRow('Volume', 'fabricate-volume');
+    const worldSize = makeRow('World bbox', 'fabricate-world-size');
+    const physical = makeRow('Physical', 'fabricate-physical-size');
+    const warnings = makeRow('Checks', 'fabricate-warnings');
+
+    const exportButton = document.createElement('button');
+    exportButton.type = 'button';
+    exportButton.className = 'lab-button fabricate-export';
+    exportButton.textContent = 'EXPORT STL';
+    exportButton.addEventListener('click', () => {
+      this.app.exporter.exportSTL();
+      this.refreshFabricate();
+    });
+
+    panel.append(status, source, reason, rows, exportButton);
+    body.appendChild(panel);
+
+    this.fabricateEls = {
+      panel, status, source, reason, triangles, vertices, volume,
+      worldSize, physical, warnings, exportButton,
+    };
+    this.refreshFabricate();
+  }
+
+  refreshFabricate() {
+    const els = this.fabricateEls;
+    if (!els) return;
+    const doc = this.app.document;
+    const report = buildFabricationReport({
+      evaluation: this.app.evaluation,
+      layerIndex: doc.activeLayer ?? 0,
+      units: doc.view?.units ?? null,
+    });
+    const ready = Boolean(report.exportable);
+    const state = ready
+      ? 'ready'
+      : report.candidates.length
+        ? (report.unitsReady ? 'invalid' : 'units')
+        : 'empty';
+    els.status.textContent = ready
+      ? 'READY · validated closed body'
+      : state === 'units'
+        ? 'UNITS REQUIRED'
+        : state === 'invalid'
+          ? 'NOT FABRICABLE'
+          : 'NO SOURCE';
+    els.status.dataset.state = state;
+    els.panel.dataset.exportable = String(ready);
+
+    els.source.textContent = report.source
+      ? `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
+      : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
+    els.reason.textContent = report.reason ?? (ready
+      ? 'Binary STL · millimetres · single body'
+      : 'Fabrication is read-only; no repair or caps are available.');
+
+    els.triangles.textContent = report.source ? String(report.triangles) : '—';
+    els.vertices.textContent = report.source ? String(report.vertices) : '—';
+
+    const worldScale = millimetresPerUnit(doc.view?.units, 'world');
+    if (report.volume !== null && report.volume !== undefined) {
+      const physicalVolume = worldScale ? report.volume * worldScale ** 3 : report.volume;
+      els.volume.textContent = worldScale
+        ? `${formatNumber(physicalVolume)} mm³`
+        : `${formatNumber(report.volume)} unit³`;
+    } else {
+      els.volume.textContent = '—';
+    }
+
+    els.worldSize.textContent = report.bbox
+      ? `${formatNumber(report.bbox.width)} × ${formatNumber(report.bbox.height)} × ${formatNumber(report.bbox.depth)}`
+      : '—';
+    els.physical.textContent = report.physical
+      ? `${formatPhysicalLength(report.physical.width)} × ${formatPhysicalLength(report.physical.height)} × ${formatPhysicalLength(report.physical.depth ?? 0)}`
+      : 'unitless';
+    els.warnings.textContent = report.warnings.length ? report.warnings.join(' · ') : 'validated';
+
+    els.exportButton.disabled = !ready;
+    els.exportButton.title = ready
+      ? 'Write one binary STL in millimetres'
+      : (report.reason ?? 'Select a validated closed Mesh/Solid');
   }
 
   buildStyleSection() {
@@ -1645,6 +1911,15 @@ function countMods(stage) {
 
 function slugify(title) {
   return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  const abs = Math.abs(number);
+  if (abs >= 100) return number.toFixed(1);
+  if (abs >= 10) return number.toFixed(2);
+  return number.toFixed(3);
 }
 
 function resolveMode(value) {

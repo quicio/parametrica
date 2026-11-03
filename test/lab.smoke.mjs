@@ -61,6 +61,8 @@ import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/Pr
 import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
+import { exportBinarySTL, BinaryStlExporter, FabricationExportError } from '../src/export/stl.js';
+import { buildFabricationReport, resolveFabricationSource } from '../src/application/fabricationSource.js';
 import { encodeGIF, gifFrameTimes, GIF_MAX_FRAMES } from '../src/export/gif.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
 import { warpExpressions } from '../src/operators/geometry/deform.js';
@@ -70,6 +72,7 @@ import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh, projectMeshToView, projectWorldMeshesToView, applyViewTransformToMeshes } from '../src/view/projection.js';
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
+import { createDefaultUnits, sanitizeUnits, validateUnits, worldToMillimetres, artboardToMillimetres, bboxToMillimetres } from '../src/core/units.js';
 import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
 import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.js';
 import { pickSurface, validatePickResult } from '../src/interaction/surfacePicker.js';
@@ -2911,6 +2914,200 @@ console.log('30b. surface workbench operators');
   const curveEval = evaluateDocument(curveDoc, { time: 0 });
   assert(curveEval.errors.length === 0, 'translate accepts curve documents');
   assert(curveEval.curves[0].points[0].z === undefined, 'curve translate does not add a z coordinate');
+}
+
+/* ——— 30c. physical units ——— */
+console.log('30c. physical units');
+{
+  const defaults = createDefaultUnits();
+  assert(defaults.world === 'unitless' && defaults.artboard === 'unitless', 'units default to unitless');
+  assert(defaults.mmPerWorldUnit === null && defaults.mmPerArtboardUnit === null, 'unitless factors are null');
+
+  const doc = createDocument('parametric', {});
+  assert(JSON.stringify(doc.view.units) === JSON.stringify(defaults), 'new documents carry explicit unitless metadata');
+  const legacyRaw = JSON.parse(JSON.stringify(doc));
+  delete legacyRaw.view.units;
+  const legacy = sanitizeDocument(legacyRaw);
+  assert(JSON.stringify(legacy.view.units) === JSON.stringify(defaults), 'legacy documents sanitize to unitless');
+
+  const physical = {
+    world: 'mm', mmPerWorldUnit: 2.5,
+    artboard: 'cm', mmPerArtboardUnit: 10,
+  };
+  assert(validateUnits(physical).ok, 'complete physical units validate');
+  assert(Math.abs(worldToMillimetres(4, physical) - 10) < 1e-12, 'world conversion uses mmPerWorldUnit');
+  assert(Math.abs(artboardToMillimetres(3, physical) - 30) < 1e-12, 'artboard conversion uses mmPerArtboardUnit');
+  assert(worldToMillimetres(4, defaults) === null, 'unitless world never claims millimetres');
+  assert(artboardToMillimetres(3, defaults) === null, 'unitless artboard never claims millimetres');
+
+  const physicalBBox = bboxToMillimetres({ width: 10, height: 20, depth: 5 }, physical);
+  assert(physicalBBox.width === 25 && physicalBBox.height === 50 && physicalBBox.depth === 12.5, 'bbox conversion scales every world axis');
+
+  const invalid = sanitizeUnits({ world: 'mm', mmPerWorldUnit: -1, artboard: 'cm', mmPerArtboardUnit: 0 });
+  assert(invalid.mmPerWorldUnit === null && invalid.mmPerArtboardUnit === null, 'non-positive factors are rejected');
+  assert(validateUnits(invalid).ok === false, 'incomplete physical units fail validation');
+  assert(sanitizeUnits({ world: 'furlong' }).world === 'unitless', 'unknown unit systems fall back to unitless');
+
+  const physicalDoc = createDocument('parametric', { view: { units: physical } });
+  assert(physicalDoc.view.units.world === 'mm' && physicalDoc.view.units.mmPerWorldUnit === 2.5, 'createDocument accepts explicit units');
+  const roundTrip = sanitizeDocument(JSON.parse(JSON.stringify(physicalDoc)));
+  assert(JSON.stringify(roundTrip.view.units) === JSON.stringify(physical), 'physical units survive sanitize round-trip');
+
+  const geometryDoc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 8, samplesV: 6 } },
+  });
+  const before = evaluateDocument(geometryDoc, { time: 0 });
+  const beforePoints = JSON.stringify(before.geometry[0].grid.points);
+  const beforeBBox = JSON.stringify(before.worldBBox);
+  geometryDoc.view.units = sanitizeUnits(physical);
+  const after = evaluateDocument(geometryDoc, { time: 0 });
+  assert(JSON.stringify(after.geometry[0].grid.points) === beforePoints, 'units never rescale world vertices');
+  assert(JSON.stringify(after.worldBBox) === beforeBBox, 'units never change world bbox');
+  assert(JSON.stringify(after.surfaceMappings[0].domain) === JSON.stringify(before.surfaceMappings[0].domain), 'units never change SurfaceMapping');
+
+  const view = createDocument('parametric', {}).view;
+  const curves = evaluateDocument(createDocument('parametric', {}), { time: 0 }).curves;
+  const unitlessSvg = Exporter.buildPlotterSVG(curves, view, { w: 900, h: 900 });
+  assert(unitlessSvg.includes('width="900" height="900"'), 'unitless plotter keeps abstract page size');
+  assert(!unitlessSvg.includes('data-units'), 'unitless plotter makes no physical claim');
+  const pageUnits = { ...defaults, artboard: 'mm', mmPerArtboardUnit: 0.5 };
+  const physicalSvg = Exporter.buildPlotterSVG(curves, { ...view, units: pageUnits }, { w: 900, h: 900 });
+  assert(physicalSvg.includes('width="450mm" height="450mm"'), 'physical plotter declares millimetre page size');
+  assert(physicalSvg.includes('data-units="mm"'), 'physical plotter marks the declared unit');
+  assert(physicalSvg.includes('viewBox="-450 -450 900 900"'), 'physical plotter keeps the abstract viewBox');
+}
+
+/* ——— 30d. fabrication STL export ——— */
+console.log('30d. fabrication STL export');
+{
+  const units = { world: 'mm', mmPerWorldUnit: 2, artboard: 'unitless', mmPerArtboardUnit: null };
+  const doc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 10, samplesV: 8 } },
+  });
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const mesh = evaluation.meshes[0];
+  assert(validateMesh(mesh).ok, 'closed surface mesh is fabrication-valid');
+  const before = JSON.stringify(mesh);
+
+  const exported = exportBinarySTL(mesh, { units });
+  assert(exported.unit === 'mm' && exported.scale === 2, 'STL export declares millimetres and scale');
+  assert(exported.triangles === mesh.faces.length, 'STL writes one triangle per mesh face');
+  assert(exported.data.length === 84 + 50 * exported.triangles, 'binary STL byte length is exact');
+  const view = new DataView(exported.data.buffer);
+  assert(view.getUint32(80, true) === exported.triangles, 'binary STL header records the triangle count');
+  const face = mesh.faces[0];
+  const vertex = mesh.vertices[face[0]];
+  assert(Math.abs(view.getFloat32(84, true)) <= 1 + 1e-6, 'first facet starts with a finite normal');
+  assert(Math.abs(view.getFloat32(96, true) - vertex.x * 2) < 1e-4, 'first vertex x is scaled to millimetres');
+  assert(Math.abs(view.getFloat32(100, true) - vertex.y * 2) < 1e-4, 'first vertex y is scaled to millimetres');
+  assert(Math.abs(view.getFloat32(104, true) - vertex.z * 2) < 1e-4, 'first vertex z is scaled to millimetres');
+  assert(view.getUint16(84 + 48, true) === 0, 'facet attribute bytes are zero');
+
+  const again = exportBinarySTL(mesh, { units });
+  assert(Buffer.compare(Buffer.from(exported.data), Buffer.from(again.data)) === 0, 'STL export is byte-deterministic');
+  assert(JSON.stringify(mesh) === before, 'STL export never mutates world geometry');
+
+  const explicit = exportBinarySTL(mesh, { mmPerWorldUnit: 0.5 });
+  assert(explicit.scale === 0.5, 'explicit millimetre scale overrides units');
+  const facade = new BinaryStlExporter();
+  assert(facade.id === 'binary-stl' && facade.mimeType === 'model/stl', 'binary STL exporter advertises its format');
+  assert(facade.export(mesh, { units }) instanceof Uint8Array, 'exporter facade returns bytes');
+
+  let unitlessError = null;
+  try {
+    exportBinarySTL(mesh, { units: createDefaultUnits() });
+  } catch (error) {
+    unitlessError = error;
+  }
+  assert(unitlessError instanceof FabricationExportError && unitlessError.code === 'units-required', 'unitless STL export is rejected');
+
+  const openDoc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 6, samplesV: 6, closedU: false, closedV: false } },
+  });
+  const openMesh = evaluateDocument(openDoc, { time: 0 }).meshes[0];
+  assert(validateMesh(openMesh).ok === false, 'open surface mesh is not fabrication-valid');
+  let openError = null;
+  try {
+    exportBinarySTL(openMesh, { units });
+  } catch (error) {
+    openError = error;
+  }
+  assert(openError instanceof FabricationExportError && openError.code === 'invalid-geometry', 'open mesh is rejected before writing bytes');
+  assert(openError.validation.errors.some((message) => message.includes('open boundary')), 'open mesh error identifies the boundary');
+
+  const badMesh = { ...mesh, faces: mesh.faces.map((faceIndices, index) => (index === 0 ? [0, 1, 999999] : faceIndices)) };
+  let badError = null;
+  try {
+    exportBinarySTL(badMesh, { units });
+  } catch (error) {
+    badError = error;
+  }
+  assert(badError instanceof FabricationExportError && badError.code === 'invalid-geometry', 'invalid indices are rejected');
+
+  const solid = meshToSolid(mesh).solid;
+  assert(solid && validateSolid(solid).ok, 'closed mesh promotes to a valid Solid');
+  const solidStl = exportBinarySTL(solid, { units });
+  assert(solidStl.triangles === mesh.faces.length && solidStl.kind === 'solid', 'STL exports a Solid boundary');
+}
+
+/* ——— 30e. fabrication source and report ——— */
+console.log('30e. fabrication source and report');
+{
+  const units = { world: 'mm', mmPerWorldUnit: 2, artboard: 'unitless', mmPerArtboardUnit: null };
+  const doc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 10, samplesV: 8 } },
+  });
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const before = JSON.stringify(evaluation.meshes[0]);
+
+  const resolved = resolveFabricationSource({ evaluation, layerIndex: 0 });
+  assert(resolved.source?.exportable === true, 'closed surface mesh resolves as a fabrication source');
+  assert(resolved.candidates.length === 1 && resolved.closed === 1, 'source resolution counts candidates');
+  assert(resolved.source.geometry.kind === 'mesh', 'surface tessellation supplies Mesh sources');
+
+  const report = buildFabricationReport({ evaluation, layerIndex: 0, units });
+  assert(report.exportable === true && report.unitsReady === true, 'physical units make a closed source exportable');
+  assert(report.triangles === evaluation.meshes[0].faces.length, 'report counts triangles');
+  assert(report.vertices === evaluation.meshes[0].vertices.length, 'report counts vertices');
+  assert(Number.isFinite(report.volume) && report.volume > 0, 'report includes a positive volume');
+  assert(report.bbox.width > 0 && report.physical.width === report.bbox.width * 2, 'report includes world and physical bounds');
+  assert(report.warnings.includes('self-intersection validation not implemented'), 'report surfaces the self-intersection limitation');
+
+  const unitless = buildFabricationReport({ evaluation, layerIndex: 0, units: createDefaultUnits() });
+  assert(unitless.unitsReady === false && unitless.exportable === false, 'unitless documents cannot export');
+  assert(unitless.reason.includes('world scale'), 'unitless report explains the missing scale');
+
+  const exporter = new Exporter({
+    document: { ...doc, view: { ...doc.view, units }, activeLayer: 0 },
+    evaluation,
+    notify: () => {},
+  });
+  const built = exporter.buildSTLFromCurrent();
+  assert(built.data instanceof Uint8Array && built.triangles === report.triangles, 'Exporter builds STL from the active source');
+  let unitlessBuild = null;
+  try {
+    new Exporter({
+      document: { ...doc, view: { ...doc.view, units: createDefaultUnits() }, activeLayer: 0 },
+      evaluation,
+      notify: () => {},
+    }).buildSTLFromCurrent();
+  } catch (error) {
+    unitlessBuild = error;
+  }
+  assert(unitlessBuild && unitlessBuild.message.includes('world scale'), 'Exporter rejects STL without physical units');
+
+  const openDoc = createDocument('parametric-surface', {
+    generator: { params: { samplesU: 6, samplesV: 6, closedU: false, closedV: false } },
+  });
+  const openEvaluation = evaluateDocument(openDoc, { time: 0 });
+  const openReport = buildFabricationReport({ evaluation: openEvaluation, layerIndex: 0, units });
+  assert(openReport.source === null && openReport.candidates.length === 1, 'open mesh is listed but not selectable');
+  assert(openReport.exportable === false && openReport.reason.includes('No validated closed'), 'open mesh report explains why export is unavailable');
+
+  const flatEvaluation = { layers: [{ id: 'plain', name: 'Plain', geometry: [], meshes: [] }] };
+  const empty = buildFabricationReport({ evaluation: flatEvaluation, layerIndex: 0, units });
+  assert(empty.source === null && empty.reason.includes('no Mesh/Solid'), 'empty layer reports no fabrication geometry');
+  assert(JSON.stringify(evaluation.meshes[0]) === before, 'fabrication report never mutates world geometry');
 }
 
 /* ——— 31. preset library ——— */

@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1924 checks)
+npm test             # node-only verification suite (2026 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (115 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (118 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -47,12 +47,12 @@ leaving your machine.
 | **Parameters** | Schema-built panel that swaps when you change generator. Numbers, booleans, selects |
 | **Equations** | Live text fields for `x(t)`, `y(t)`, `r(θ)`, or free-form `custom` programs. Errors surface inline |
 | **Harmonics** | Interactive Fourier tables with add/remove/reorder rows |
-| **Operators** | Stack of pure `Curve[] → Curve[]` stages — rotate, scale, offset, radial/linear arrays, kaleidoscope, symmetry, resample, deform, project, stroke, boolean, voronoi. Reorder, toggle, add |
+| **Operators** | Stack of pure world-space stages — translate, rotate, scale, mirror, offset, radial/linear arrays, kaleidoscope, symmetry, resample, deform, project, stroke, boolean, voronoi. Surface/Mesh layers use the spatial subset before tessellation |
 | **View** | Multiple render passes stack (curve, points, normals/tangents, curvature heatmap, epicycles, wireframe). Overlays: inflections, sample points, ruler, bbox |
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
 | **Presets** | Grouped, searchable library with derived previews, favorites and recent presets, plus user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
-| **Export** | SVG (active vector passes, overlays, blend + embedded document), plotter SVG (stroke-only), PNG (faithful raster), GIF (timeline), JSON, clipboard |
+| **Export** | SVG (active vector passes, overlays, blend + embedded document), plotter SVG (stroke-only, optional physical page), PNG (faithful raster), GIF (timeline), binary STL (validated closed Mesh/Solid), JSON, clipboard |
 
 ---
 
@@ -250,10 +250,13 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Explicit coordinate contracts** for parameter, world and artboard spaces, with one `ViewTransform` shared by canvas, Quad, SVG and plotter
 - **Spatial reference** with world origin, XYZ axes and an optional low-density ground plane; UI-only and excluded from exports
 - **UV Domain inset** for parametric surfaces: real U/V bounds, low-density grid, axis orientation and closure/seam markers; UI-only and never exported
-- **SurfaceMapping sidecar** with per-cell triangle topology and real per-corner UVs, including seams and twists; not yet consumed by picking or render
+- **SurfaceMapping sidecar** with per-cell triangle topology and real per-corner UVs, including seams and twists; consumed by picking, the surface inspector and seam overlay
 - **Projection source** opt-in sidecar that preserves world-vertex identity and real orthographic depth without changing the normal render path
 - **Surface inspector** for single Canvas: hover a surface to read surface, triangle, cell, real UV, XYZ and depth, with marker/triangle/cell overlays and pin/release inspection
 - **Seam overlay** for declared domain borders, closed seams and reverse/twist seams, with an explicit legend; UI-only and never exported
+- **Surface workbench** with world translate/rotate/scale/mirror/array before tessellation, multiple surfaces per layer and explicit SurfaceMapping lifecycle
+- **Physical units** with explicit world/artboard millimetre scales; geometry is never rescaled and unitless remains the default
+- **Binary STL export** for validated closed Mesh/Solid bodies, plus a read-only **Fabricate** mode with health, counts, volume and physical bounds
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions
@@ -267,18 +270,18 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Clone ×3** quick action via the Grid Repeat operator (side-by-side copies remain editable)
 - **CodeMirror formula editor** with math-aware highlighting and inline errors
 - **Session recovery** with local autosave and an explicit Restore/Dismiss banner
-- **Panel clarity** with Form/Look/Explore/Perform/Ingest/Keep modes, persisted accordions, essential/advanced parameters, per-layer render overrides, per-pass opacity, layer warnings and a Clone ×3 operator
+- **Panel clarity** with Form/Look/Explore/Perform/Ingest/Keep/Fabricate modes, persisted accordions, essential/advanced parameters, per-layer render overrides, per-pass opacity, layer warnings and a Clone ×3 operator
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)
-- **Export** SVG (vector passes + embedded document) · plotter SVG (stroke-only) · PNG · GIF (timeline) · JSON · clipboard
+- **Export** SVG (vector passes + embedded document) · plotter SVG (stroke-only) · PNG · GIF (timeline) · binary STL (validated closed body, mm) · JSON · clipboard
 
 Deferred to v0.x:
 
 - Per-pass color and stroke-width settings
 - Even-odd hole filling / contour nesting
 - Quad SVG/plotter reconstruction (canvas-only today)
-- MAKE/fabrication (solids, CSG, STL/3MF, 3D viewport)
+- Solid foundations: caps, merge, CSG/booleans, repair, self-intersection checks, multi-body packing and 3MF (STL single-body MVP is available)
 
 ---
 

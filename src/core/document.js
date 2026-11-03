@@ -16,6 +16,7 @@ import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
 import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
+import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
 
 export const DOCUMENT_VERSION = 3;
 
@@ -105,6 +106,7 @@ export function createDefaultView() {
     colorRamp: null,
     frame: createFrame(),
     reference: createReference(),
+    units: createDefaultUnits(),
   };
 }
 
@@ -125,6 +127,7 @@ export const DEFAULT_VIEW = Object.freeze({
   colorRamp: null,
   frame: Object.freeze({ ...DEFAULT_FRAME }),
   reference: Object.freeze({ ...DEFAULT_REFERENCE }),
+  units: DEFAULT_UNITS,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({
@@ -162,6 +165,7 @@ function mergeView(base, raw) {
     },
     frame: sanitizeFrame(source.frame, base.frame),
     reference: sanitizeReference(source.reference),
+    units: sanitizeUnits(source.units ?? base.units),
     passOpacity: {
       ...base.passOpacity,
       ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),

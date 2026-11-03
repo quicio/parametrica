@@ -2208,6 +2208,99 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.units-readout {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+  padding: 4px 0 0;
+}
+
+.units-warning {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  padding-top: 2px;
+}
+
+.units-warning[data-valid="false"] {
+  color: var(--swiss-red);
+}
+
+.fabricate-panel {
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fabricate-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--swiss-red);
+}
+
+.fabricate-status[data-state="ready"] {
+  color: var(--ink);
+}
+
+.fabricate-source {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-dim);
+  letter-spacing: 0.05em;
+}
+
+.fabricate-reason {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+
+.fabricate-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fabricate-row {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.fabricate-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.fabricate-value {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
+}
+
+.fabricate-export {
+  align-self: flex-start;
+  min-width: 128px;
+}
+
+.fabricate-export:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .artboard-palette {
   display: flex;
   flex-direction: column;
