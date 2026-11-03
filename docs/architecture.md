@@ -90,6 +90,10 @@ src/
 │   ├── renderSceneBuilder.js     evaluation + view → RenderScene
 │   └── animationController.js    transport/clock only
 │
+├── interaction/
+│   ├── ray.js                    cursor → artboard → world ray, triangle hit
+│   └── surfacePicker.js          world surface hits, occlusion, mapping UVs
+│
 ├── geometry/
 │   ├── contracts.js              Curve2D/Curve3D/Surface/Mesh/Solid
 │   ├── validate.js               geometry + mesh + solid validation
@@ -197,6 +201,7 @@ src/
 ├── ui/
 │   ├── ParametricOverlay.js      canvas-edge property HUD
 │   ├── UVDomainInset.js          compact surface parameter-domain chart
+│   ├── SurfaceInspector.js       hover surface UV/XYZ/depth readout
 │   ├── Controls.js               mode bar, accordions and instrument panel
 │   ├── dialogs.js                injectable prompt / confirm service
 │   ├── params/
@@ -490,6 +495,39 @@ pays no source-array allocation.
 parametric mapping and the projected geometry. Mapping face indices refer to
 the same source vertex identities, and projected faces keep their indices.
 
+#### Surface inspection
+
+`src/interaction/ray.js` and `src/interaction/surfacePicker.js` implement the
+first inspection path. It is pure, world-space and independent of p5:
+
+```text
+canvas CSS point
+  → artboardPointFromCanvas (inverse of artboardRect)
+  → rayForArtboardPoint (same ViewTransform that produced the scene)
+  → intersectRayTriangle against canonical world meshes
+  → nearest world hit (occlusion)
+  → SurfaceMapping face/corner UV interpolation
+  → SurfacePickResult
+```
+
+Perspective rays use the inverse of the `project3D` yaw/pitch rotation, with
+the camera eye at `(0,0,-fov)` in camera space. Orthographic rays are parallel
+to the panel eye (+Z, +Y or +X) and start outside the world bounds on the
+corresponding positive axis.
+
+Picking intersects **world** triangles with Möller–Trumbore, double-sided and
+degenerate-safe. It never relies on painter ordering. The nearest world ray
+parameter wins across all visible surface meshes and layers. UV uses the
+world barycentric coordinates and the mapping's real corner UVs, so it is
+perspective-correct by construction (no screen-space affine interpolation).
+`SurfaceMapping` and `Projection Source` remain unchanged.
+
+`src/ui/SurfaceInspector.js` is a compact read-only panel toggled from Canvas.
+It is only active in single Canvas, updates on hover/camera changes/parameter
+re-evaluation, and is excluded from render, captures and exports. Quad shows
+“Single view only”. Picking is linear over inspectable surface triangles; no
+BVH is introduced yet.
+
 ### 3.4 Rendering
 
 ```
@@ -693,8 +731,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
 | 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
 | 36 | projection source | opt-in world aliases, vertex identity, XY/XZ/YZ orthographic depth, shared projected positions with different depth, SurfaceMapping compatibility, cache invalidation and export exclusion |
+| 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, seams/twists, perspective-consistent UV/XYZ, missing mappings and render/export isolation |
 
-1840 checks total.
+1871 checks total.
 
 ### Panel behavior
 

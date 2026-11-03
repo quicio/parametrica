@@ -143,6 +143,7 @@ extraction and conversion to a Fourier document.
 | UV Domain inset: real U/V bounds, low-density grid, orientation and seams | shipped (2026-11-03) |
 | SurfaceMapping sidecar: per-cell triangles and real per-corner UVs | shipped (2026-11-03) |
 | Projection source: world identity and orthographic depth sidecar | shipped (2026-11-03) |
+| Surface inspection: world ray picking, UV/XYZ readout and occlusion | shipped (2026-11-03) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
@@ -448,6 +449,7 @@ generation metadata in the notebook; unit group 24.
 | `uv-domain` | archived | shipped |
 | `surface-mapping` | archived | shipped |
 | `projection-source` | archived | shipped |
+| `surface-inspection` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

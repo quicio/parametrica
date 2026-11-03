@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Add world-space surface inspection in single Canvas with perspective and
+  orthographic rays, occlusion, real UV/XYZ readout and a compact inspector UI.

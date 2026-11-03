@@ -342,6 +342,13 @@ source vertex indices and, for orthographic views, carries `orthoDepth` on the
 dropped world axis (XY = `-z`, XZ = `-y`, YZ = `-x`). Per-vertex render depth
 stays unchanged, so painter order and exports are unaffected.
 
+Surface inspection in single Canvas converts the cursor through
+`device → artboard → world ray`, intersects canonical world triangles and
+selects the nearest hit independently of painter order. `SurfaceMapping`
+provides real per-corner UVs; world barycentric coordinates make UV and XYZ
+perspective-consistent. The inspector is UI-only, updates on camera/parameter
+changes, and never enters RenderScene, captures or exports.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

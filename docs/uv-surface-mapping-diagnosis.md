@@ -18,6 +18,11 @@
 > **Actualización Fase 3B:** la proyección de mallas puede preservar un
 > `mesh-projection-source` opt-in con alias world, identidad de vértice y
 > `orthoDepth` por vista. El render normal sigue sin asignar ese sidecar.
+>
+> **Actualización Fase 3C:** Surface Inspector implementa picking world en
+> Canvas single con rayos perspectiva/ortográficos, intersección de triángulos,
+> oclusión por distancia, UV reales por esquina y lectura XYZ. Sin edición,
+> Quad, z-buffer ni export.
 
 ---
 
