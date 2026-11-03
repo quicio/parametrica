@@ -168,7 +168,11 @@ extraction and conversion to a Fourier document.
 | `pass-appearance` | Per-pass color and stroke-width settings |
 | `image-evenodd` | Even-odd hole filling and contour nesting |
 | `quad-svg-export` | Quad layout reconstruction in SVG/plotter |
-| `make-fabrication` | Solids, CSG, STL/3MF, units and print preparation |
+| `surface-workbench` | Surface/Mesh world operators, multiple surfaces and mapping lifecycle |
+| `physical-units` | Explicit world/artboard units and scale |
+| `fabrication-export` | Validated binary STL for closed Mesh/Solid |
+| `make-mvp` | Read-only Fabricate mode for validated watertight geometry |
+| `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
 
@@ -458,9 +462,53 @@ generation metadata in the notebook; unit group 24.
 | `surface-inspection-visual` | archived | shipped |
 | `surface-seams` | archived | shipped |
 | `surface-inspection-integration` | archived | shipped |
+| `surface-workbench` | active | specified, not implemented |
+| `physical-units` | active | specified, not implemented |
+| `fabrication-export` | active | specified, not implemented |
+| `make-mvp` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
+
+## 5.2 Post-3F track — Surface Workbench & Fabrication (Fases 4A–4D, specified)
+
+The next vertical slices are specified in four active OpenSpec changes. They
+must be implemented in order; none is archived yet.
+
+| Order | Change | Scope | Depends on |
+|---|---|---|---|
+| 4A | `2026-11-03-surface-workbench` | World operators that accept Surface/Mesh, multiple surfaces, mapping lifecycle | Existing surface pipeline |
+| 4B | `2026-11-03-physical-units` | Explicit world/artboard units and scale; no geometry mutation | 4A optional, useful before export |
+| 4C | `2026-11-03-fabrication-export` | Binary STL for validated watertight Mesh/Solid | 4B |
+| 4D | `2026-11-03-make-mvp` | Read-only Fabricate mode: health, units, STL export | 4B, 4C |
+
+Rules:
+
+- Do not start 4D before 4B and 4C validate the physical/export pipeline.
+- Do not add CSG, caps, repair or multi-body to 4D.
+- 4A is the preferred first slice because fabrication needs forms worth making.
+- If MAKE is the immediate business priority, the minimum path is 4B → 4C → 4D,
+  then 4A; this is explicitly a product-order exception, not an architectural
+  one.
+
+### Phase 5 — Solid foundations (not specified)
+
+`solid-foundations` is intentionally **not** an active OpenSpec change yet. It
+covers caps/merge, boolean/CSG, self-intersection checks, repair and multi-body.
+It should only be specified after 4A–4D and real user demand for solid modeling.
+
+---
+
+## 5.3 Later exploration backlog
+
+Smaller independent slices remain candidates for parallel work:
+
+- `pass-appearance` (per-pass color/stroke width);
+- `image-evenodd` (hole fill/nesting);
+- `quad-svg-export` (Quad reconstruction in SVG/plotter);
+- browser benchmark of dense surface picking/seams and playback;
+- unified notebook/presets persistence decision.
+
 
 ## 6. Dependency graph
 

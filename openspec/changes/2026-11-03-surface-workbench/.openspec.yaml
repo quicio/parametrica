@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Make surfaces first-class editable geometry through world-space operators
+  while preserving curve behavior, mapping identity and render contracts.

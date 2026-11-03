@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Add a narrow read-only Fabricate workspace for validated watertight
+  surfaces/solids and STL export, without becoming CAD.
