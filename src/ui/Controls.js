@@ -205,6 +205,12 @@ export class Controls {
     }
   }
 
+  syncSurfaceInspectorToggle() {
+    if (this.surfaceInspectorToggle) {
+      this.surfaceInspectorToggle.checked = this.app.isSurfaceInspectorEnabled();
+    }
+  }
+
   refreshStatus() {
     if (!this.statusEl || !this.statusText) return;
     const doc = this.app.document;
@@ -742,6 +748,16 @@ export class Controls {
       this.app.setUVDomainVisible(this.uvDomainToggle.checked);
     });
     row('UV Domain', this.uvDomainToggle);
+
+    this.surfaceInspectorToggle = document.createElement('input');
+    this.surfaceInspectorToggle.className = 'artboard-check surface-inspector-toggle-checkbox';
+    this.surfaceInspectorToggle.type = 'checkbox';
+    this.surfaceInspectorToggle.checked = this.app.isSurfaceInspectorEnabled();
+    this.surfaceInspectorToggle.title = 'Inspect the surface under the cursor in single Canvas.';
+    this.surfaceInspectorToggle.addEventListener('change', () => {
+      this.app.setSurfaceInspectorEnabled(this.surfaceInspectorToggle.checked);
+    });
+    row('Inspect', this.surfaceInspectorToggle);
 
     const sync = () => {
       widthInput.value = String(ab.width);

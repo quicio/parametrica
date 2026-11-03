@@ -71,6 +71,8 @@ import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, pro
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
 import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
+import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.js';
+import { pickSurface } from '../src/interaction/surfacePicker.js';
 import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
@@ -3539,6 +3541,337 @@ console.log('36. projection source');
   assert(JSON.stringify(scene.transform.frame) === before.frame, 'projection source does not alter the frame');
   assert(JSON.stringify(scene.meta.bbox) === before.bbox, 'projection source does not alter the bbox');
   assert(!svg.includes('mesh-projection-source') && !svg.includes('surface-mapping'), 'projection source never enters SVG export');
+}
+
+/* ——— 37. Surface picking ——— */
+console.log('37. surface picking');
+{
+  const bbox = {
+    minX: -20, maxX: 20, minY: -20, maxY: 20, minZ: -20, maxZ: 20,
+    diagonal: Math.hypot(40, 40, 40),
+  };
+  const ortho = createViewTransform({
+    projection: 'xy',
+    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+  });
+  const canvasPoint = artboardPointFromCanvas(
+    { x: 230, y: 110 },
+    { x: 10, y: 20, w: 400, h: 200, scale: 2 },
+  );
+  assert(canvasPoint.x === 10 && canvasPoint.y === -5, 'canvas point converts to artboard without viewport distortion');
+
+  const worldPoint = { x: 12, y: -4, z: 30 };
+  const camera = { yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320 };
+  const perspective = createViewTransform({
+    projection: '3d',
+    camera,
+    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+  });
+  const perspectiveArt = perspective.toArtboard(worldPoint);
+  const perspectiveRay = rayForArtboardPoint({ point: perspectiveArt, transform: perspective });
+  assert(perspectiveRay?.kind === 'perspective', 'perspective cursor produces a perspective ray');
+  assert(Math.abs(Math.hypot(
+    perspectiveRay.direction.x,
+    perspectiveRay.direction.y,
+    perspectiveRay.direction.z,
+  ) - 1) < 1e-9, 'perspective ray direction is normalized');
+  const perspectiveHit = intersectRayTriangle(
+    perspectiveRay,
+    { x: -20, y: -20, z: 30 },
+    { x: 40, y: -20, z: 30 },
+    { x: 0, y: 40, z: 30 },
+  );
+  assert(perspectiveHit, 'perspective ray intersects a world triangle');
+  const perspectiveWorld = {
+    x: perspectiveRay.origin.x + perspectiveRay.direction.x * perspectiveHit.t,
+    y: perspectiveRay.origin.y + perspectiveRay.direction.y * perspectiveHit.t,
+    z: perspectiveRay.origin.z + perspectiveRay.direction.z * perspectiveHit.t,
+  };
+  assert(
+    Math.abs(perspectiveWorld.x - worldPoint.x) < 1e-7
+    && Math.abs(perspectiveWorld.y - worldPoint.y) < 1e-7
+    && Math.abs(perspectiveWorld.z - worldPoint.z) < 1e-7,
+    'perspective ray inversion returns the original world point',
+  );
+
+  const orthoWorld = { x: 3, y: 4, z: 7 };
+  const orthoArt = ortho.toArtboard(orthoWorld);
+  const orthoRay = rayForArtboardPoint({ point: orthoArt, transform: ortho, worldBBox: bbox });
+  assert(orthoRay?.kind === 'orthographic', 'orthographic cursor produces a parallel ray');
+  assert(orthoRay.direction.z === -1 && orthoRay.origin.z > bbox.maxZ, 'XY orthographic ray starts above the scene');
+  const orthoHit = intersectRayTriangle(
+    orthoRay,
+    { x: 2, y: 3, z: 7 },
+    { x: 4, y: 3, z: 7 },
+    { x: 3, y: 5, z: 7 },
+  );
+  assert(orthoHit, 'orthographic ray intersects a world triangle');
+  assert(orthoDepthForPoint(orthoWorld, 'xy').value === -7, 'orthographic depth uses -Z');
+  assert(intersectRayTriangle(
+    orthoRay,
+    { x: 0, y: 0, z: 7 },
+    { x: 1, y: 0, z: 7 },
+    { x: 2, y: 0, z: 7 },
+  ) === null, 'degenerate triangles are ignored');
+
+  const xzRay = rayForArtboardPoint({
+    point: createViewTransform({ projection: 'xz', frame: { mode: 'world', anchor: 'world-origin', scale: 1 } })
+      .toArtboard({ x: 3, y: 4, z: 5 }),
+    transform: createViewTransform({ projection: 'xz', frame: { mode: 'world', anchor: 'world-origin', scale: 1 } }),
+    worldBBox: bbox,
+  });
+  const yzRay = rayForArtboardPoint({
+    point: createViewTransform({ projection: 'yz', frame: { mode: 'world', anchor: 'world-origin', scale: 1 } })
+      .toArtboard({ x: 3, y: 4, z: 5 }),
+    transform: createViewTransform({ projection: 'yz', frame: { mode: 'world', anchor: 'world-origin', scale: 1 } }),
+    worldBBox: bbox,
+  });
+  assert(xzRay.orthoAxis === 'y' && xzRay.direction.y === -1, 'XZ ray looks along -Y');
+  assert(yzRay.orthoAxis === 'x' && yzRay.direction.x === -1, 'YZ ray looks along -X');
+
+  const flatSurface = createSurface({
+    id: 'flat-pick-surface',
+    domain: { u: [0, 1], v: [0, 1], closedU: false, closedV: false, seamU: 'normal', seamV: 'normal' },
+    grid: {
+      rows: 3,
+      cols: 3,
+      points: [
+        [{ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 2, z: 0 }],
+        [{ x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }, { x: 1, y: 2, z: 0 }],
+        [{ x: 2, y: 0, z: 0 }, { x: 2, y: 1, z: 0 }, { x: 2, y: 2, z: 0 }],
+      ],
+    },
+    meta: {},
+  });
+  const { mesh: flatMesh, mapping: flatMapping } = tessellateSurfaceWithMapping(flatSurface);
+  const sceneFor = (transform, layers = [{ id: 'layer-a', transform }]) => ({
+    kind: 'render-scene',
+    transform,
+    layers,
+    meta: { worldBBox: { ...bbox, minZ: 0, maxZ: 0 } },
+  });
+  const layerFor = (meshes, mappings) => ({
+    id: 'layer-a',
+    name: 'Surface A',
+    visible: true,
+    meshes,
+    surfaceMappings: mappings,
+  });
+  const flatFace = flatMapping.faces[0];
+  const flatCentre = flatFace.indices.reduce((sum, index) => ({
+    x: sum.x + flatMesh.vertices[index].x / 3,
+    y: sum.y + flatMesh.vertices[index].y / 3,
+    z: sum.z + flatMesh.vertices[index].z / 3,
+  }), { x: 0, y: 0, z: 0 });
+  const flatArt = ortho.toArtboard(flatCentre);
+  const flatScene = sceneFor(ortho);
+  const flatEvaluation = {
+    layers: [layerFor([flatMesh], [flatMapping])],
+    worldBBox: { ...bbox, minZ: 0, maxZ: 0 },
+  };
+  const flatPick = pickSurface({
+    evaluation: flatEvaluation,
+    scene: flatScene,
+    artboardPoint: flatArt,
+  });
+  assert(flatPick?.meshId === flatMesh.id && flatPick.faceIndex === 0, 'orthographic picking resolves the world triangle');
+  assert(flatPick.mappingStatus === 'ok' && flatPick.uv, 'picking resolves UV through SurfaceMapping');
+  assert(flatPick.cell.u === 0 && flatPick.cell.v === 0 && flatPick.triangle === 0, 'picking returns the logical cell and triangle');
+  const expectedUV = flatFace.uv.reduce((sum, uv) => ({
+    u: sum.u + uv.u / 3,
+    v: sum.v + uv.v / 3,
+  }), { u: 0, v: 0 });
+  assert(
+    Math.abs(flatPick.uv.u - expectedUV.u) < 1e-9
+    && Math.abs(flatPick.uv.v - expectedUV.v) < 1e-9,
+    'picking interpolates real corner UVs',
+  );
+  assert(
+    Math.abs(flatPick.world.x - flatCentre.x) < 1e-9
+    && Math.abs(flatPick.world.z - flatCentre.z) < 1e-9,
+    'picking returns the world intersection point',
+  );
+
+  const perspectiveFlat = createViewTransform({
+    projection: '3d',
+    camera,
+    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+  });
+  const perspectiveFlatPick = pickSurface({
+    evaluation: flatEvaluation,
+    scene: sceneFor(perspectiveFlat),
+    artboardPoint: perspectiveFlat.toArtboard(flatCentre),
+  });
+  assert(perspectiveFlatPick?.mappingStatus === 'ok', 'perspective picking resolves the same triangle and mapping');
+
+  const nearSurface = createSurface({
+    ...flatSurface,
+    id: 'near-pick-surface',
+    grid: {
+      rows: 3,
+      cols: 3,
+      points: flatSurface.grid.points.map((row) => row.map((point) => ({ ...point, z: 10 }))),
+    },
+  });
+  const { mesh: nearMesh, mapping: nearMapping } = tessellateSurfaceWithMapping(nearSurface);
+  const occlusionEvaluation = {
+    layers: [layerFor([flatMesh, nearMesh], [flatMapping, nearMapping])],
+    worldBBox: { ...bbox, minZ: 0, maxZ: 10 },
+  };
+  const occlusionScene = sceneFor(ortho, [{ id: 'layer-a', transform: ortho }]);
+  occlusionScene.meta.worldBBox = { ...bbox, minZ: 0, maxZ: 10 };
+  const occlusionPick = pickSurface({
+    evaluation: occlusionEvaluation,
+    scene: occlusionScene,
+    artboardPoint: flatArt,
+  });
+  assert(occlusionPick?.meshId === nearMesh.id, 'picking selects the nearest surface regardless of mesh order');
+  assert(Number.isFinite(occlusionPick.distance), 'occlusion result exposes a finite distance');
+
+  const missingMappingPick = pickSurface({
+    evaluation: {
+      layers: [layerFor([flatMesh], [])],
+      worldBBox: flatEvaluation.worldBBox,
+    },
+    scene: flatScene,
+    artboardPoint: flatArt,
+  });
+  assert(missingMappingPick?.mappingStatus === 'missing' && missingMappingPick.uv === null, 'missing mapping is explicit and never invents UVs');
+
+  const seamMesh = createMesh({
+    id: 'seam-pick-mesh',
+    vertices: [
+      { x: 0, y: 0, z: 0 },
+      { x: 1, y: 0, z: 0 },
+      { x: 0, y: 1, z: 0 },
+    ],
+    faces: [[0, 1, 2]],
+  });
+  const seamMapping = {
+    kind: 'surface-mapping',
+    surfaceId: 'seam-pick-surface',
+    meshId: 'seam-pick-mesh',
+    domain: { u: [0, 1], v: [0, 1], closedU: true, closedV: false, seamU: 'reverse', seamV: 'normal', twistU: true, twistV: false },
+    grid: { rows: 1, cols: 2, uCells: 1, vCells: 1 },
+    faces: [{
+      indices: [0, 1, 2],
+      cell: { u: 1, v: 0 },
+      triangle: 0,
+      uv: [{ u: 1, v: 0 }, { u: 0, v: 0 }, { u: 0, v: 1 }],
+    }],
+  };
+  const seamPick = pickSurface({
+    evaluation: {
+      layers: [layerFor([seamMesh], [seamMapping])],
+      worldBBox: { ...bbox, minZ: 0, maxZ: 0 },
+    },
+    scene: flatScene,
+    artboardPoint: ortho.toArtboard({ x: 1 / 3, y: 1 / 3, z: 0 }),
+  });
+  assert(seamPick?.mappingStatus === 'ok', 'seam triangle resolves through its explicit mapping');
+  assert(
+    Math.abs(seamPick.uv.u - 1 / 3) < 1e-9 && Math.abs(seamPick.uv.v - 1 / 3) < 1e-9,
+    'seam UV interpolation preserves the real u1 corner',
+  );
+
+  const perspectiveTriangleMesh = createMesh({
+    id: 'perspective-pick-mesh',
+    vertices: [
+      { x: 0, y: 0, z: 0 },
+      { x: 10, y: 0, z: 10 },
+      { x: 0, y: 10, z: 20 },
+    ],
+    faces: [[0, 1, 2]],
+  });
+  const perspectiveTriangleMapping = {
+    kind: 'surface-mapping',
+    surfaceId: 'perspective-pick-surface',
+    meshId: 'perspective-pick-mesh',
+    domain: { u: [10, 20], v: [-3, 7], closedU: false, closedV: false, seamU: 'normal', seamV: 'normal', twistU: false, twistV: false },
+    grid: { rows: 2, cols: 2, uCells: 1, vCells: 1 },
+    faces: [{
+      indices: [0, 1, 2],
+      cell: { u: 0, v: 0 },
+      triangle: 0,
+      uv: [{ u: 10, v: -3 }, { u: 20, v: -3 }, { u: 10, v: 7 }],
+    }],
+  };
+  const perspectiveWorldPick = {
+    x: 2, y: 3, z: 6,
+  };
+  const bary = { a: 0.2, b: 0.3, c: 0.5 };
+  perspectiveWorldPick.x = 0 * bary.a + 10 * bary.b + 0 * bary.c;
+  perspectiveWorldPick.y = 0 * bary.a + 0 * bary.b + 10 * bary.c;
+  perspectiveWorldPick.z = 0 * bary.a + 10 * bary.b + 20 * bary.c;
+  const perspectiveTriangleScene = sceneFor(perspective);
+  const perspectiveTrianglePick = pickSurface({
+    evaluation: {
+      layers: [layerFor([perspectiveTriangleMesh], [perspectiveTriangleMapping])],
+      worldBBox: bbox,
+    },
+    scene: perspectiveTriangleScene,
+    artboardPoint: perspective.toArtboard(perspectiveWorldPick),
+  });
+  assert(perspectiveTrianglePick?.mappingStatus === 'ok', 'perspective picking resolves a slanted triangle');
+  const expectedPerspectiveUV = {
+    u: 10 * bary.a + 20 * bary.b + 10 * bary.c,
+    v: -3 * bary.a + -3 * bary.b + 7 * bary.c,
+  };
+  assert(
+    Math.abs(perspectiveTrianglePick.uv.u - expectedPerspectiveUV.u) < 1e-7
+    && Math.abs(perspectiveTrianglePick.uv.v - expectedPerspectiveUV.v) < 1e-7,
+    'perspective picking interpolates UV consistently in world space',
+  );
+  assert(
+    Math.abs(perspectiveTrianglePick.world.x - perspectiveWorldPick.x) < 1e-7
+    && Math.abs(perspectiveTrianglePick.world.y - perspectiveWorldPick.y) < 1e-7
+    && Math.abs(perspectiveTrianglePick.world.z - perspectiveWorldPick.z) < 1e-7,
+    'perspective picking returns the exact world point',
+  );
+
+  const realDoc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        samplesU: 8, samplesV: 8, closedU: true, closedV: true,
+        exprX: 'cos(u) * (2 + cos(v))',
+        exprY: 'sin(u) * (2 + cos(v))',
+        exprZ: 'sin(v)',
+        fit: 300,
+      },
+    },
+  });
+  const realEval = evaluateDocument(realDoc, { time: 0 });
+  const realScene = buildRenderScene({ evaluation: realEval, document: realDoc, view: realDoc.view });
+  const realMesh = realEval.meshes[0];
+  const realFace = realEval.surfaceMappings[0].faces[0];
+  const realCentre = realFace.indices.reduce((sum, index) => ({
+    x: sum.x + realMesh.vertices[index].x / 3,
+    y: sum.y + realMesh.vertices[index].y / 3,
+    z: sum.z + realMesh.vertices[index].z / 3,
+  }), { x: 0, y: 0, z: 0 });
+  const realArt = realScene.layers[0].transform.toArtboard(realCentre);
+  const beforePick = {
+    geometry: JSON.stringify(realEval.geometry),
+    frame: JSON.stringify(realScene.transform.frame),
+    bbox: JSON.stringify(realScene.meta.bbox),
+  };
+  const realPick = pickSurface({
+    evaluation: realEval,
+    scene: realScene,
+    artboardPoint: realArt,
+  });
+  assert(realPick?.mappingStatus === 'ok', 'real surface picking returns a mapped result');
+  assert(JSON.stringify(realEval.geometry) === beforePick.geometry, 'picking does not mutate surface geometry');
+  assert(JSON.stringify(realScene.transform.frame) === beforePick.frame, 'picking does not mutate the frame');
+  assert(JSON.stringify(realScene.meta.bbox) === beforePick.bbox, 'picking does not mutate the bbox');
+  const svg = Exporter.buildSVG(
+    realScene.layers.flatMap((layer) => layer.curves),
+    realDoc.view,
+    { w: 900, h: 900 },
+    realDoc,
+    realScene.layers,
+  );
+  assert(!svg.includes('surface-pick'), 'picking never enters SVG export');
 }
 
 /* ——— Snapshots ——— */

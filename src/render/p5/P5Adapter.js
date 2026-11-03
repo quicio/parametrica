@@ -55,6 +55,7 @@ export class P5Adapter extends Renderer {
     this.animation = new AnimationController();
     this.captureCanvas = null;
     this.captureContext = null;
+    this.lastScene = null;
 
     // p5 is the largest dependency in the bundle. Importing it lazily
     // keeps the first paint and the control panel responsive while the
@@ -97,6 +98,7 @@ export class P5Adapter extends Renderer {
       if (canvas) {
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', 'Parametric geometry canvas');
+        canvas.addEventListener('mouseleave', () => this.app.clearSurfaceInspection?.());
       }
     };
     p.draw = () => this.drawFrame(p);
@@ -124,6 +126,7 @@ export class P5Adapter extends Renderer {
       // Orthographic views have no camera to rotate.
       if ((this.app.document.view.projection ?? '3d') !== '3d') return;
       this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
+      this.app.pointerDragging = true;
     };
     p.mouseDragged = (event) => {
       if (!this.dragState) return;
@@ -135,11 +138,17 @@ export class P5Adapter extends Renderer {
       this.app.document.view.camera.pitch = next.pitch;
       this.app.rebuild();
     };
-    p.mouseReleased = () => {
-      if (!this.dragState) return;
+    p.mouseReleased = (event) => {
       // Release anywhere ends the drag — the user might drag off the
       // canvas. Don't require isOverCanvas here.
       this.dragState = null;
+      this.app.pointerDragging = false;
+      if (isOverCanvas(event)) this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
+    };
+    p.mouseMoved = (event) => {
+      if (this.captureMode || !isOverCanvas(event)) return;
+      if (this.app.document.view.layout === 'quad') return;
+      this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
     };
     p.mouseWheel = (event) => {
       // Scroll-wheel zooms by adjusting FOV. Only respond when the
@@ -333,6 +342,7 @@ export class P5Adapter extends Renderer {
     const scene = evaluation && !quad
       ? buildRenderScene({ evaluation, document: doc, view: doc.view })
       : null;
+    this.lastScene = scene;
 
     if (doc.view.guides && !quad && !this.captureMode) this.drawGuides(p, artboard);
     if (!this.captureMode && !quad) this.drawUnderlay(p, artboard);

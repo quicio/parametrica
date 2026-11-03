@@ -30,6 +30,10 @@ import { MIN_CAMERA_FOV } from '../view/cameraController.js';
 import { DialogService } from '../ui/dialogs.js';
 import { ParametricOverlay } from '../ui/ParametricOverlay.js';
 import { UVDomainInset } from '../ui/UVDomainInset.js';
+import { SurfaceInspector } from '../ui/SurfaceInspector.js';
+import { buildRenderScene } from './renderSceneBuilder.js';
+import { artboardPointFromCanvas } from '../interaction/ray.js';
+import { pickSurface } from '../interaction/surfacePicker.js';
 
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
@@ -44,6 +48,7 @@ export class App {
     // UI-only reference state: never serialised with the document.
     this.imageUnderlay = null;
     this.imageInput = null;
+    this.pointerDragging = false;
 
     this.history = new History(50);
     this.lastSnapshot = this.snapshot();
@@ -70,6 +75,7 @@ export class App {
     this.evaluate();
     this.parametricOverlay = new ParametricOverlay(canvasContainer, this);
     this.uvDomainInset = new UVDomainInset(canvasContainer, this);
+    this.surfaceInspector = new SurfaceInspector(canvasContainer, this);
     this.renderer = new P5Adapter(canvasContainer, this);
     this.exporter = new Exporter(this);
     this.controls = new Controls(this, uiContainer);
@@ -132,6 +138,7 @@ export class App {
     this.updateTelemetry();
     this.parametricOverlay?.refresh();
     this.uvDomainInset?.refresh();
+    this.surfaceInspector?.onEvaluation();
     this.controls?.labPanel?.scheduleAuto();
     // The advisor only re-runs after a stable, non-playing commit. Its own
     // debounce (700 ms) collapses slider drags and never fires per frame.
@@ -645,6 +652,51 @@ export class App {
 
   isUVDomainVisible() {
     return Boolean(this.uvDomainInset?.visible);
+  }
+
+  setSurfaceInspectorEnabled(enabled) {
+    this.surfaceInspector?.setEnabled(enabled);
+    this.controls?.syncSurfaceInspectorToggle?.();
+  }
+
+  isSurfaceInspectorEnabled() {
+    return Boolean(this.surfaceInspector?.enabled);
+  }
+
+  inspectAtCanvas(canvasX, canvasY) {
+    if (!this.surfaceInspector?.enabled) return null;
+    this.surfaceInspector.setPoint(canvasX, canvasY);
+    if (this.pointerDragging) return null;
+    if (!this.evaluation || !this.renderer) {
+      this.surfaceInspector.setMessage('Surface not ready');
+      return null;
+    }
+    if (this.document.view.layout === 'quad') {
+      this.surfaceInspector.setMessage('Single view only');
+      return null;
+    }
+    const rect = this.renderer.artboardRect();
+    const artboardPoint = artboardPointFromCanvas({ x: canvasX, y: canvasY }, rect);
+    if (!artboardPoint) {
+      this.surfaceInspector.setMessage('No surface under cursor');
+      return null;
+    }
+    const scene = buildRenderScene({
+      evaluation: this.evaluation,
+      document: this.document,
+      view: this.document.view,
+    });
+    const result = pickSurface({
+      evaluation: this.evaluation,
+      scene,
+      artboardPoint,
+    });
+    this.surfaceInspector.setResult(result);
+    return result;
+  }
+
+  clearSurfaceInspection() {
+    this.surfaceInspector?.clear();
   }
 
   resetCamera() {
