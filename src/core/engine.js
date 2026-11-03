@@ -19,7 +19,7 @@ import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
 import { validateGeometry } from '../geometry/validate.js';
 import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '../view/projection.js';
 import { resolveFrame, SPACE } from '../view/transform.js';
-import { tessellateSurface } from '../geometry/surfaceTessellation.js';
+import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { isSurface } from '../geometry/contracts.js';
 
@@ -158,7 +158,7 @@ export function evaluateDocument(document, options = {}) {
     arcLength: Math.round(arcLengthAll(curves)),
   };
 
-  const result = { curves, space: SPACE.ARTBOARD, errors, stats, bbox };
+  const result = { curves, surfaceMappings: [], space: SPACE.ARTBOARD, errors, stats, bbox };
 
   // Differential geometry (tangents/normals/curvature/inflections) is
   // only needed by a few render passes/overlays. Compute it on first
@@ -210,18 +210,24 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     if (!errors.length && !options.bypassCache) SURFACE_CACHE.set(cacheKey, { signature, surfaces });
   }
 
-  let meshes = MESH_CACHE.get(surfaces);
-  if (!meshes) {
-    meshes = surfaces.map((surface) => {
+  let meshEntry = MESH_CACHE.get(surfaces);
+  if (!meshEntry) {
+    const built = surfaces.map((surface) => {
       try {
-        return tessellateSurface(surface);
+        return tessellateSurfaceWithMapping(surface);
       } catch (error) {
         errors.push({ stage: 'generator', index: 0, message: error.message });
         return null;
       }
     }).filter(Boolean);
-    if (!errors.length) MESH_CACHE.set(surfaces, meshes);
+    meshEntry = {
+      meshes: built.map((entry) => entry.mesh),
+      surfaceMappings: built.map((entry) => entry.mapping),
+    };
+    if (!errors.length && built.length === surfaces.length) MESH_CACHE.set(surfaces, meshEntry);
   }
+  const meshes = meshEntry.meshes;
+  const surfaceMappings = meshEntry.surfaceMappings;
 
   const projection = projectionForGeometry(surfaces, document.view?.projection ?? '3d');
   const viewSignature = JSON.stringify([WORLD_CACHE_VERSION, projection, document.view?.camera ?? null, Number(params.fit) || 0]);
@@ -250,6 +256,7 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
   const result = {
     curves,
     meshes,
+    surfaceMappings,
     renderMeshes: meshViews.meshes,
     geometry: surfaces,
     space: SPACE.WORLD,
@@ -385,6 +392,7 @@ function evaluateSpatialDocument(document, options, generatorDef) {
   };
   const result = {
     curves: viewCurves,
+    surfaceMappings: [],
     geometry: worldGeometry,
     space: SPACE.WORLD,
     worldBBox,
@@ -565,6 +573,7 @@ function evaluateLayers(document, options = {}) {
       space: evaluation.space ?? (evaluation.geometry ? SPACE.WORLD : SPACE.ARTBOARD),
       geometry: evaluation.geometry ?? null,
       meshes: evaluation.meshes ?? [],
+      surfaceMappings: evaluation.surfaceMappings ?? [],
       renderMeshes: evaluation.renderMeshes ?? [],
       appliedProjection: evaluation.appliedProjection ?? null,
       viewProjection: evaluation.viewProjection ?? null,
@@ -618,6 +627,7 @@ function evaluateLayers(document, options = {}) {
   const worldGeometry = layerResults.flatMap((layer) => layer.geometry ?? []);
   const meshes = layerResults.flatMap((layer) => layer.meshes ?? []);
   const renderMeshes = layerResults.flatMap((layer) => layer.renderMeshes ?? []);
+  const surfaceMappings = layerResults.flatMap((layer) => layer.surfaceMappings ?? []);
   const visibleSpaces = new Set(layerResults.filter((layer) => layer.visible !== false).map((layer) => layer.space));
   const space = visibleSpaces.size === 1
     ? [...visibleSpaces][0]
@@ -625,6 +635,7 @@ function evaluateLayers(document, options = {}) {
   const result = {
     curves: capped,
     meshes,
+    surfaceMappings,
     renderMeshes,
     geometry: worldGeometry,
     space,

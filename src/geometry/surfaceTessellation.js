@@ -1,5 +1,9 @@
 /**
  * geometry/surfaceTessellation.js — deterministic Surface → Mesh.
+ *
+ * The tessellation also builds an explicit SurfaceMapping sidecar. The mapping
+ * preserves logical parameter cells and per-corner UVs before wrap/flip, which
+ * is the information a welded mesh cannot represent by itself.
  */
 
 import { createMesh } from './contracts.js';
@@ -11,7 +15,19 @@ import { validateSurface } from './validate.js';
  * `'reverse'`) additionally mirrors the opposite coordinate at the wrap,
  * which produces a half-twisted but crack-free mesh (Möbius band).
  */
-export function tessellateSurface(surface, { id = surface.id, smooth = true } = {}) {
+export function tessellateSurface(surface, options = {}) {
+  return buildSurfaceTessellation(surface, options).mesh;
+}
+
+/**
+ * Tessellate and return the explicit parameter mapping alongside the mesh.
+ * Both are produced in the same logical-cell loop so they cannot drift.
+ */
+export function tessellateSurfaceWithMapping(surface, options = {}) {
+  return buildSurfaceTessellation(surface, options);
+}
+
+function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = {}) {
   const validation = validateSurface(surface);
   if (!validation.ok) {
     const error = new Error(`surface tessellation: ${validation.errors[0]}`);
@@ -35,6 +51,8 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
     throw new Error('surface tessellation: grid needs at least one cell in U and V');
   }
 
+  const domain = domainOf(surface, { seamU, seamV, twistU, twistV });
+
   const vertices = [];
   for (let u = 0; u < uniqueRows; u++) {
     for (let v = 0; v < uniqueCols; v++) vertices.push({ ...rows[u][v] });
@@ -47,7 +65,7 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
     if (index >= 0 && index < size) return { index, flip: false };
     return { index: ((index % size) + size) % size, flip: Boolean(twist) };
   };
-  const corner = (u, v) => {
+  const cornerIndex = (u, v) => {
     const cu = wrap(u, uniqueRows, twistU);
     const cv = wrap(v, uniqueCols, twistV);
     let ui = cu.index;
@@ -57,7 +75,19 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
     return indexOf(ui, vi);
   };
 
+  const uStep = (domain.u[1] - domain.u[0]) / uCells;
+  const vStep = (domain.v[1] - domain.v[0]) / vCells;
+  const uvAt = (u, v) => ({
+    u: domain.u[0] + uStep * u,
+    v: domain.v[0] + vStep * v,
+  });
+  const corner = (u, v) => ({
+    index: cornerIndex(u, v),
+    uv: uvAt(u, v),
+  });
+
   const faces = [];
+  const mappingFaces = [];
   const faceNormals = [];
   for (let u = 0; u < uCells; u++) {
     for (let v = 0; v < vCells; v++) {
@@ -65,13 +95,20 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
       const b = corner(u + 1, v);
       const c = corner(u + 1, v + 1);
       const d = corner(u, v + 1);
-      faces.push([a, b, c], [a, c, d]);
-      faceNormals.push(faceNormal(vertices[a], vertices[b], vertices[c]));
-      faceNormals.push(faceNormal(vertices[a], vertices[c], vertices[d]));
+
+      const tri0 = [a, b, c];
+      const tri1 = [a, c, d];
+      faces.push(tri0.map((cornerPoint) => cornerPoint.index), tri1.map((cornerPoint) => cornerPoint.index));
+      mappingFaces.push(
+        mappingFace(tri0, u, v, 0),
+        mappingFace(tri1, u, v, 1),
+      );
+      faceNormals.push(faceNormal(vertices[a.index], vertices[b.index], vertices[c.index]));
+      faceNormals.push(faceNormal(vertices[a.index], vertices[c.index], vertices[d.index]));
     }
   }
 
-  return createMesh({
+  const mesh = createMesh({
     id,
     vertices,
     faces,
@@ -93,6 +130,55 @@ export function tessellateSurface(surface, { id = surface.id, smooth = true } = 
       gridCols: uniqueCols,
     },
   });
+
+  const mapping = {
+    kind: 'surface-mapping',
+    surfaceId: surface.id ?? null,
+    meshId: mesh.id,
+    domain,
+    grid: {
+      rows: uniqueRows,
+      cols: uniqueCols,
+      uCells,
+      vCells,
+    },
+    faces: mappingFaces,
+  };
+
+  return { mesh, mapping };
+}
+
+function mappingFace(tri, cellU, cellV, triangle) {
+  return {
+    indices: tri.map((cornerPoint) => cornerPoint.index),
+    cell: { u: cellU, v: cellV },
+    triangle,
+    uv: tri.map((cornerPoint) => cornerPoint.uv),
+  };
+}
+
+function domainOf(surface, { seamU, seamV, twistU, twistV }) {
+  const u = range(surface.domain?.u, 'u');
+  const v = range(surface.domain?.v, 'v');
+  return {
+    u,
+    v,
+    closedU: Boolean(surface.domain?.closedU),
+    closedV: Boolean(surface.domain?.closedV),
+    seamU,
+    seamV,
+    twistU,
+    twistV,
+  };
+}
+
+function range(raw, axis) {
+  const start = Number(raw?.[0]);
+  const end = Number(raw?.[1]);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    throw new Error(`surface mapping: non-finite ${axis} domain`);
+  }
+  return [start, end];
 }
 
 function faceNormal(a, b, c) {

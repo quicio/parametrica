@@ -45,7 +45,7 @@ import { FakeDialogService } from '../src/ui/dialogs.js';
 import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.js';
 import { validateGeometry, validateMesh, validateSolid, validateSurface } from '../src/geometry/validate.js';
 import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.js';
-import { tessellateSurface, surfaceArea } from '../src/geometry/surfaceTessellation.js';
+import { tessellateSurface, tessellateSurfaceWithMapping, surfaceArea } from '../src/geometry/surfaceTessellation.js';
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
@@ -3219,6 +3219,200 @@ console.log('34. uv domain');
     scene.layers,
   );
   assert(!svg.includes('uv-domain') && !svg.includes('UV DOMAIN'), 'UV domain never enters SVG export');
+}
+
+/* ——— 35. Surface mapping ——— */
+console.log('35. surface mapping');
+{
+  const makeSurface = ({
+    rows = 5,
+    cols = 5,
+    u = [0, 1],
+    v = [0, 1],
+    closedU = false,
+    closedV = false,
+    seamU = 'normal',
+    seamV = 'normal',
+    id = 'surface-mapping-fixture',
+  } = {}) => createSurface({
+    id,
+    domain: { u, v, closedU, closedV, seamU, seamV },
+    grid: {
+      rows,
+      cols,
+      points: Array.from({ length: rows }, (_, ui) => (
+        Array.from({ length: cols }, (_, vi) => ({ x: ui, y: vi, z: ui + vi }))
+      )),
+    },
+    meta: {},
+  });
+
+  const open = makeSurface({
+    u: [-1.5, 2.5],
+    v: [10, -2],
+    rows: 5,
+    cols: 6,
+    closedU: false,
+    closedV: false,
+  });
+  const { mesh: openMesh, mapping: openMap } = tessellateSurfaceWithMapping(open);
+  assert(openMap.kind === 'surface-mapping', 'mapping has an explicit kind');
+  assert(openMap.surfaceId === open.id && openMap.meshId === openMesh.id, 'mapping links surface and mesh');
+  assert(openMap.domain.u[0] === -1.5 && openMap.domain.u[1] === 2.5, 'mapping preserves non-normalized U domain');
+  assert(openMap.domain.v[0] === 10 && openMap.domain.v[1] === -2, 'mapping preserves inverted V domain');
+  assert(openMap.grid.uCells === 4 && openMap.grid.vCells === 5, 'mapping stores logical cell counts');
+  assert(openMap.faces.length === openMesh.faces.length, 'mapping has one entry per mesh triangle');
+  assert(
+    openMap.faces.every((face, index) => JSON.stringify(face.indices) === JSON.stringify(openMesh.faces[index])),
+    'mapping indices match mesh faces exactly',
+  );
+  assert(openMap.faces[0].cell.u === 0 && openMap.faces[0].cell.v === 0 && openMap.faces[0].triangle === 0, 'first triangle carries its cell and triangle index');
+  assert(openMap.faces[1].triangle === 1, 'second triangle is marked inside the same cell');
+  assert(openMap.faces[0].uv[0].u === -1.5 && openMap.faces[0].uv[0].v === 10, 'corner UV starts at the real domain origin');
+  assert(openMap.faces[0].uv[1].u === -0.5 && openMap.faces[0].uv[1].v === 10, 'corner UV advances by the real U step');
+  assert(openMap.faces[0].uv[2].v === 7.6, 'corner UV advances by the real V step');
+  const lastOpen = openMap.faces[openMap.faces.length - 1];
+  assert(lastOpen.uv.some((uv) => uv.u === 2.5) && lastOpen.uv.some((uv) => uv.v === -2), 'mapping reaches the real domain end');
+  assert(
+    openMap.faces.every((face) => face.indices.every((index) => index >= 0 && index < openMesh.vertices.length)),
+    'mapping vertex indices stay inside the mesh',
+  );
+
+  const closedU = makeSurface({ rows: 5, cols: 5, closedU: true, closedV: false });
+  const { mesh: closedUMesh, mapping: closedUMap } = tessellateSurfaceWithMapping(closedU);
+  const seamUFace = closedUMap.faces.find((face) => face.uv.some((uv) => uv.u === 1));
+  assert(seamUFace, 'closed U mapping has a seam triangle ending at u1');
+  const seamUCorner = seamUFace.uv.findIndex((uv) => uv.u === 1);
+  const seamUIndex = seamUFace.indices[seamUCorner];
+  assert(seamUIndex < closedUMap.grid.cols, 'closed U seam vertex wraps to the first row');
+  assert(closedUMesh.meta.closedU === true && closedUMesh.meta.twistU === false, 'closed U mesh keeps topology flags');
+  assert(closedUMap.domain.closedU === true && closedUMap.domain.twistU === false, 'mapping keeps closed U without twist');
+
+  const closedV = makeSurface({ rows: 5, cols: 5, closedU: false, closedV: true });
+  const { mapping: closedVMap } = tessellateSurfaceWithMapping(closedV);
+  assert(closedVMap.faces.some((face) => face.uv.some((uv) => uv.v === 1)), 'closed V mapping has a seam triangle ending at v1');
+  assert(closedVMap.domain.closedV === true, 'mapping keeps closed V');
+
+  const reverse = makeSurface({
+    rows: 5,
+    cols: 5,
+    closedU: true,
+    closedV: true,
+    seamU: 'reverse',
+    seamV: 'normal',
+  });
+  const { mapping: reverseMap } = tessellateSurfaceWithMapping(reverse);
+  assert(reverseMap.domain.seamU === 'reverse' && reverseMap.domain.twistU === true, 'reverse U seam becomes a mapping twist');
+  assert(reverseMap.domain.seamV === 'normal' && reverseMap.domain.twistV === false, 'V remains normal');
+  assert(reverseMap.faces.some((face) => face.uv.some((uv) => uv.u === 1)), 'reverse seam still carries the real u1 UV');
+  assert(reverseMap.faces.some((face) => face.uv.some((uv) => uv.v === 1)), 'closed V still carries the real v1 UV');
+
+  const bothReverse = makeSurface({
+    rows: 5,
+    cols: 5,
+    closedU: true,
+    closedV: true,
+    seamU: 'reverse',
+    seamV: 'reverse',
+  });
+  const { mapping: bothReverseMap } = tessellateSurfaceWithMapping(bothReverse);
+  assert(bothReverseMap.domain.twistU && bothReverseMap.domain.twistV, 'both reverse seams are represented as twists');
+
+  const { mapping: sharedMap } = tessellateSurfaceWithMapping(makeSurface({
+    rows: 5,
+    cols: 5,
+    closedU: true,
+    closedV: true,
+  }));
+  const uvByVertex = new Map();
+  for (const face of sharedMap.faces) {
+    face.indices.forEach((index, corner) => {
+      const uv = face.uv[corner];
+      const key = `${uv.u}:${uv.v}`;
+      if (!uvByVertex.has(index)) uvByVertex.set(index, new Set());
+      uvByVertex.get(index).add(key);
+    });
+  }
+  assert(
+    [...uvByVertex.values()].some((set) => set.size > 1),
+    'a welded seam vertex can carry multiple UVs',
+  );
+
+  const zeroSpan = makeSurface({ rows: 3, cols: 3, u: [0, 0], v: [0, 1] });
+  const { mapping: zeroMap } = tessellateSurfaceWithMapping(zeroSpan);
+  assert(zeroMap.faces.every((face) => face.uv.every((uv) => uv.u === 0)), 'degenerate zero-span domain keeps finite duplicate UVs');
+
+  let invalidDomain = null;
+  try {
+    tessellateSurfaceWithMapping({
+      kind: 'surface',
+      id: 'invalid',
+      domain: { u: [0, 1] },
+      grid: {
+        rows: 2,
+        cols: 2,
+        points: [
+          [{ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }],
+          [{ x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }],
+        ],
+      },
+      meta: {},
+    });
+  } catch (error) {
+    invalidDomain = error;
+  }
+  assert(invalidDomain && /domain/.test(invalidDomain.message), 'invalid domain fails explicitly');
+
+  const doc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        exprX: 'cos(u) * (2 + cos(v))',
+        exprY: 'sin(u) * (2 + cos(v))',
+        exprZ: 'sin(v)',
+        u0: 0, u1: Math.PI * 2,
+        v0: 0, v1: Math.PI * 2,
+        samplesU: 8, samplesV: 8,
+        closedU: true, closedV: true,
+        fit: 300,
+      },
+    },
+  });
+  const first = evaluateDocument(doc, { time: 0 });
+  assert(first.surfaceMappings.length === 1, 'surface evaluation exposes a mapping sidecar');
+  assert(first.layers[0].surfaceMappings.length === 1, 'layer evaluation exposes a mapping sidecar');
+  const firstMap = first.surfaceMappings[0];
+  const firstDomain = [...firstMap.domain.u];
+  const firstCells = firstMap.grid.uCells;
+  assert(firstMap.domain.twistU === false, 'engine mapping carries topology metadata');
+
+  doc.generator.params.u1 = 1.5;
+  doc.generator.params.samplesU = 10;
+  const second = evaluateDocument(doc, { time: 0 });
+  const secondMap = second.surfaceMappings[0];
+  assert(secondMap !== firstMap, 'reevaluation creates a new mapping');
+  assert(secondMap.domain.u[1] === 1.5 && secondMap.domain.u[0] === firstDomain[0], 'reevaluation updates the real domain');
+  assert(secondMap.grid.uCells !== firstCells, 'topology changes replace the mapping grid');
+
+  const stable = evaluateDocument(doc, { time: 0 });
+  assert(stable.surfaceMappings[0] === secondMap, 'unchanged evaluation reuses the cached mapping');
+
+  const scene = buildRenderScene({ evaluation: second, document: doc, view: doc.view });
+  const before = {
+    geometry: JSON.stringify(second.geometry),
+    frame: JSON.stringify(scene.transform.frame),
+    bbox: JSON.stringify(scene.meta.bbox),
+  };
+  const svg = Exporter.buildSVG(
+    scene.layers.flatMap((layer) => layer.curves),
+    doc.view,
+    { w: 900, h: 900 },
+    doc,
+    scene.layers,
+  );
+  assert(JSON.stringify(second.geometry) === before.geometry, 'mapping does not mutate geometry');
+  assert(JSON.stringify(scene.transform.frame) === before.frame, 'mapping does not mutate the frame');
+  assert(JSON.stringify(scene.meta.bbox) === before.bbox, 'mapping does not mutate the bbox');
+  assert(!svg.includes('surface-mapping'), 'mapping never enters SVG export');
 }
 
 /* ——— Snapshots ——— */
