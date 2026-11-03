@@ -12,18 +12,6 @@ test('Fabricate is read-only, unit-gated and exports a validated closed body', a
   await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
   await page.waitForTimeout(500);
 
-  await page.evaluate(() => {
-    const app = window.__parametrica;
-    app.document.view.units = {
-      world: 'mm',
-      mmPerWorldUnit: 2,
-      artboard: 'unitless',
-      mmPerArtboardUnit: null,
-    };
-    app.rebuild();
-  });
-  await page.waitForTimeout(350);
-
   const before = await page.evaluate(() => {
     const app = window.__parametrica;
     return {
@@ -35,6 +23,20 @@ test('Fabricate is read-only, unit-gated and exports a validated closed body', a
   const fabricate = await openSection(page, 'Fabricate');
   const status = fabricate.locator('.fabricate-status');
   const exportButton = fabricate.locator('.fabricate-export');
+  await expect(status).toContainText('UNITS REQUIRED');
+  await expect(exportButton).toBeDisabled();
+
+  const unitSelect = fabricate.locator('.fabricate-world-units');
+  const scaleInput = fabricate.locator('.fabricate-world-scale');
+  await expect(unitSelect).toHaveValue('unitless');
+  await expect(scaleInput).toBeDisabled();
+  await unitSelect.selectOption('mm');
+  await page.waitForTimeout(250);
+  await expect(scaleInput).toBeEnabled();
+  await scaleInput.fill('2');
+  await scaleInput.press('Enter');
+  await page.waitForTimeout(350);
+
   await expect(status).toContainText('READY');
   await expect(status).toHaveAttribute('data-state', 'ready');
   await expect(fabricate.locator('.fabricate-triangles')).not.toHaveText('—');

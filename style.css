@@ -2291,6 +2291,17 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.fabricate-scale-controls {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fabricate-scale-controls .artboard-input {
+  padding: 3px 4px;
+}
+
 .fabricate-export {
   align-self: flex-start;
   min-width: 128px;

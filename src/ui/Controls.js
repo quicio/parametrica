@@ -955,6 +955,49 @@ export class Controls {
 
     const rows = document.createElement('div');
     rows.className = 'fabricate-rows';
+
+    const scaleRow = document.createElement('div');
+    scaleRow.className = 'fabricate-row';
+    const scaleLabel = document.createElement('span');
+    scaleLabel.className = 'fabricate-label';
+    scaleLabel.textContent = 'World scale';
+    const scaleWrap = document.createElement('span');
+    scaleWrap.className = 'fabricate-scale-controls';
+    const unitSelect = document.createElement('select');
+    unitSelect.className = 'artboard-input fabricate-world-units';
+    for (const system of PHYSICAL_UNIT_SYSTEMS) {
+      const option = document.createElement('option');
+      option.value = system;
+      option.textContent = system === 'unitless' ? 'unitless' : system;
+      unitSelect.appendChild(option);
+    }
+    const scaleInput = document.createElement('input');
+    scaleInput.className = 'artboard-input fabricate-world-scale';
+    scaleInput.type = 'number';
+    scaleInput.min = '0.000001';
+    scaleInput.step = '0.01';
+    scaleInput.placeholder = 'mm per world unit';
+    unitSelect.addEventListener('change', () => {
+      const units = this.app.document.view.units;
+      units.world = unitSelect.value;
+      if (units.world === 'unitless') units.mmPerWorldUnit = null;
+      this.app.rebuild();
+      this.refreshFabricate();
+    });
+    scaleInput.addEventListener('change', () => {
+      const units = this.app.document.view.units;
+      const factor = Number(scaleInput.value);
+      units.mmPerWorldUnit = Number.isFinite(factor) && factor > 0 ? factor : null;
+      units.world = units.mmPerWorldUnit === null
+        ? 'unitless'
+        : (units.world === 'unitless' ? 'mm' : units.world);
+      this.app.rebuild();
+      this.refreshFabricate();
+    });
+    scaleWrap.append(unitSelect, scaleInput);
+    scaleRow.append(scaleLabel, scaleWrap);
+    rows.appendChild(scaleRow);
+
     const makeRow = (label, className) => {
       const row = document.createElement('div');
       row.className = 'fabricate-row';
@@ -989,7 +1032,7 @@ export class Controls {
 
     this.fabricateEls = {
       panel, status, source, reason, triangles, vertices, volume,
-      worldSize, physical, warnings, exportButton,
+      worldSize, physical, warnings, exportButton, unitSelect, scaleInput,
     };
     this.refreshFabricate();
   }
@@ -1003,6 +1046,13 @@ export class Controls {
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
     });
+    const units = doc.view?.units ?? {};
+    els.unitSelect.value = PHYSICAL_UNIT_SYSTEMS.includes(units.world) ? units.world : 'unitless';
+    els.scaleInput.disabled = units.world === 'unitless';
+    els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
+      ? String(units.mmPerWorldUnit)
+      : '';
+    els.scaleInput.placeholder = units.world === 'unitless' ? 'set mm/unit' : 'mm per world unit';
     const ready = Boolean(report.exportable);
     const state = ready
       ? 'ready'
