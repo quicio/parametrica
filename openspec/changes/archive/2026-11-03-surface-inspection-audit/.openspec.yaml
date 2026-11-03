@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Correct Surface Inspection integration and numerical edge cases found by
+  the Phase 3C audit without adding new features.

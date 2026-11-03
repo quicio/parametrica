@@ -23,6 +23,11 @@
 > Canvas single con rayos perspectiva/ortográficos, intersección de triángulos,
 > oclusión por distancia, UV reales por esquina y lectura XYZ. Sin edición,
 > Quad, z-buffer ni export.
+>
+> **Auditoría 3C:** tolerancia relativa para triángulos pequeños, composición
+> limitada a la capa activa, Quad detectado por estado real del renderer,
+> refresco por resize, mapping malformado marcado como mismatch y caché de
+> mensajes del inspector.
 
 ---
 

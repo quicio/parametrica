@@ -349,6 +349,12 @@ provides real per-corner UVs; world barycentric coordinates make UV and XYZ
 perspective-consistent. The inspector is UI-only, updates on camera/parameter
 changes, and never enters RenderScene, captures or exports.
 
+Picking uses relative triangle-scale tolerance for tiny valid triangles. In
+`scene`/`world` modes occlusion compares world rays across visible surfaces;
+in `composition` mode each layer has its own frame, so inspection follows the
+active layer. Quad state uses the renderer's actual `quadActive`, not only the
+declared layout. Malformed mappings report `mismatch` and never invent UVs.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

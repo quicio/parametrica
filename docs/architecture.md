@@ -516,17 +516,25 @@ to the panel eye (+Z, +Y or +X) and start outside the world bounds on the
 corresponding positive axis.
 
 Picking intersects **world** triangles with Möller–Trumbore, double-sided and
-degenerate-safe. It never relies on painter ordering. The nearest world ray
-parameter wins across all visible surface meshes and layers. UV uses the
+degenerate-safe. The determinant tolerance is relative to triangle edge scale
+and `t` only needs to be positive, so very small but valid triangles are not
+misclassified as degenerate. It never relies on painter ordering. In `scene`
+and `world` modes the nearest world ray parameter wins across visible meshes
+and layers. In `composition` mode each layer has an independent frame, so a
+cursor point maps to a different world ray per layer; inspection follows the
+active layer instead of comparing incomparable world distances. UV uses the
 world barycentric coordinates and the mapping's real corner UVs, so it is
 perspective-correct by construction (no screen-space affine interpolation).
+A malformed mapping or non-finite UV is reported as `mismatch`, never as valid.
 `SurfaceMapping` and `Projection Source` remain unchanged.
 
 `src/ui/SurfaceInspector.js` is a compact read-only panel toggled from Canvas.
 It is only active in single Canvas, updates on hover/camera changes/parameter
-re-evaluation, and is excluded from render, captures and exports. Quad shows
-“Single view only”. Picking is linear over inspectable surface triangles; no
-BVH is introduced yet.
+re-evaluation/viewport resize, and is excluded from render, captures and
+exports. Quad state comes from the renderer's actual `quadActive`, not only the
+declared layout; an active planar layer can keep a declared quad layout in
+single rendering. Quad shows “Single view only”. Picking is linear over
+inspectable surface triangles; no BVH is introduced yet.
 
 ### 3.4 Rendering
 
@@ -731,9 +739,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
 | 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
 | 36 | projection source | opt-in world aliases, vertex identity, XY/XZ/YZ orthographic depth, shared projected positions with different depth, SurfaceMapping compatibility, cache invalidation and export exclusion |
-| 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, seams/twists, perspective-consistent UV/XYZ, missing mappings and render/export isolation |
+| 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle and render/export isolation |
 
-1871 checks total.
+1885 checks total.
 
 ### Panel behavior
 

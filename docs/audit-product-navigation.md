@@ -460,7 +460,7 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1871/1871** checks y build.
-- `npm run test:e2e`: **110/110** tests.
+- `npm run check`: lint, **1885/1885** checks y build.
+- `npm run test:e2e`: **111/111** tests.
 - `openspec validate --specs --strict`: **73/73** specs.
 - No hay cambios OpenSpec activos.
