@@ -24,7 +24,7 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1704 checks)
+npm test             # node-only verification suite (1734 checks)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (107 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1704 checks across 31 groups (expression
+Runs `test/lab.smoke.mjs` — 1734 checks across 32 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -247,6 +247,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Analysis panel** with deterministic descriptor metrics and parameter influence
 - **Notebook** with checkpoints, thumbnails, lineage and A/B comparison
 - **Explore** with Solo/Lock, seeded randomize and a 1D variation strip
+- **Explicit coordinate contracts** for parameter, world and artboard spaces, with one `ViewTransform` shared by canvas, Quad, SVG and plotter
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions

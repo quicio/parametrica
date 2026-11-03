@@ -305,13 +305,18 @@ Overlays (always drawn on top, independently toggleable, in
 
 ### Orthographic projections
 
-`document.view.projection` is `3d | xy | xz | yz`. The engine keeps full 3D
-points (`x3`, `y3`, `h3`) and the renderer drops the perpendicular axis at
-draw time, fitting the projected bbox with the generator `fit` value. No
+`document.view.projection` is `3d | xy | xz | yz`. Spatial generators keep
+full world geometry (`x,y,z`); a single `ViewTransform` projects it and a
+scene `frame` maps it to artboard units. `view.frame.mode` is
+`scene | composition | world`: `scene` shares one frame across spatial layers,
+`composition` preserves per-layer framing, and `world` anchors a fixed scale
+at the world origin. Canvas, Quad, SVG and plotter consume the same
+artboard-space `RenderScene`; exporters do not re-project or re-fit. No
 re-evaluation occurs on view switch. Orthographic views are only available
-for 3D generators; 2D curves have `h3 = 0` and fall back to the camera view
-instead of collapsing to a line. `view.colorRamp` is an optional array of
-2–6 hex colors for the gradient pass; the default is yellow → purple → blue.
+for 3D generators; planar curves keep their legacy artboard-space contract
+and fall back to the camera view instead of collapsing to a line.
+`view.colorRamp` is an optional array of 2–6 hex colors for the gradient
+pass; the default is yellow → purple → blue.
 
 ## 12. Animation
 

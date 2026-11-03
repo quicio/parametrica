@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-02
+goal: Establish explicit parameter, world and artboard contracts plus one
+  ViewTransform and render scene shared by canvas, Quad, SVG and plotter.

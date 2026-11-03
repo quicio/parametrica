@@ -19,19 +19,26 @@ document (JSON)
    ▼
 evaluate(document, ctx)        ◄── per-stage cache
    │
-   ├─ generator.sample(params, ctx)         → Curve[]
-   ├─ operator[0].apply(curves, params, ctx)
-   ├─ operator[1].apply(curves, params, ctx)
-   ├─ …
-   ├─ enforceBudget(curves)                 → after every stage
-   ├─ analyzeAll(curves)                    → lazy on `analysis` access
+   ├─ planar generator.sample(...)           → Curve[] (plane)
+   ├─ spatial generator.generate(...)        → world Curve3D / Surface
+   ├─ world operators → view operators
+   ├─ enforceBudget(...)                     → after every stage
+   ├─ analyzeAll(...)                        → lazy on `analysis` access
    │
    ▼
-{ curves, analysis, errors, stats, bbox }
+{ curves, geometry, space, errors, stats, bbox }
+
+        │ buildRenderScene(evaluation, view)
+        ▼
+{ transform, layers, meta }    ◄── one artboard-space scene
+        │
+        ├─ canvas (p5)
+        ├─ SVG
+        └─ plotter SVG
 ```
 
 The pipeline is pure: it has no UI dependencies and runs in Node. The
-renderer (`P5Renderer`) reads the result and draws it; nothing in the
+renderer (`P5Adapter`) reads the scene and draws it; nothing in the
 core knows that p5 exists.
 
 ---
@@ -87,12 +94,15 @@ src/
 │   ├── contracts.js              Curve2D/Curve3D/Surface/Mesh/Solid
 │   ├── validate.js               geometry + mesh + solid validation
 │   ├── relations.js              lift, tessellate, mesh→solid
+│   ├── surfaceTessellation.js    Surface → Mesh, seams and twists
+│   ├── wireframe.js              deterministic mesh iso-lines
 │   ├── legacy.js                 Curve[] compatibility adapters
 │   ├── transform.js              world-space transforms
 │   └── analysis.js               world curve analysis
 │
 ├── view/
 │   ├── camera.js                 pinhole camera + project3D
+│   ├── transform.js              P/W/A contracts, effective camera, frame
 │   ├── projection.js             camera/orthographic world projection
 │   └── cameraController.js       orbit/zoom state transitions
 │
@@ -264,7 +274,8 @@ evaluateDocument(document, { time })
    │     ▼
    │   compile user expressions (cached by source string)
    │   sample function over domain
-   │   post-process: fit / center
+   │   post-process: split discontinuities + legacy centering
+   │   engine: applyPlaneFit once when the generator has a fit hint
    │
    ├─ for each operator in document.operators:
    │     operator.apply(curves, params, ctx)
@@ -299,22 +310,79 @@ evaluateDocument._cache = {
 When `time` changes, no cache hit (time flows into every stage). When
 a slider moves, only stages from the changed one downward re-evaluate.
 
-### 3.3 Rendering
+### 3.3 Coordinate spaces and framing
+
+Parametrica distinguishes three authoring spaces and two presentation
+transforms. They are contracts, not new geometry types:
+
+| Space | Meaning | Owner |
+|---|---|---|
+| **P** — parameter | `u,v` or `t` domain | generator schema / `Surface.domain` |
+| **W** — world | canonical `x,y,z` geometry | spatial generators, world operators |
+| **A** — artboard | abstract page units consumed by every backend | `ViewTransform` / `RenderScene` |
 
 ```
-P5Renderer.drawFrame(p)
+P --generator--> W --camera/orthographic--> A --renderer--> device px
+                                      │
+                                      └--plotter scale--> millimetres
+```
+
+`src/view/transform.js` owns the single `ViewTransform` implementation:
+
+- it resolves one **effective camera** for the scene (the document camera
+  plus the automatic near-plane pull-back);
+- it projects world points to view space;
+- it applies one **frame** (`scale`, `tx`, `ty`) to produce artboard units;
+- it exposes `toArtboard()`, `toDevice()` and the frame metadata used by
+  future spatial references.
+
+`src/application/renderSceneBuilder.js` is the only place that projects
+spatial layers for presentation. Canvas, SVG and plotter consume the same
+`RenderScene`; exporters do not re-project or re-fit.
+
+Frame modes (`view.frame.mode`):
+
+- **`scene`** (default): one frame for every spatial layer. Relative layer
+  positions and multi-mesh positions are preserved. A single-layer document
+  produces exactly the same artboard coordinates as the old per-layer path.
+- **`composition`**: one frame per layer, preserving the legacy artistic
+  behavior. Use it when layers are intentionally composed independently.
+- **`world`**: fixed scale anchored at the world origin. This is the mode a
+  future Spatial Reference needs; it is available but has no UI yet.
+
+`fit` remains a serialized generator parameter for backward compatibility,
+but it is no longer applied inside generator mathematics. The engine reads it
+as a frame hint: planar generators are normalized once by `applyPlaneFit`,
+and spatial generators are framed by `ViewTransform`. `fit = 0` means native
+scale; the legacy centering behavior is preserved.
+
+Planar generators keep a legacy contract: their `sample()` output is a 2D
+curve in the plane. The engine fits/centers it immediately after sampling and
+before operators. Spatial generators always emit world geometry and never see
+the camera or the artboard.
+
+### 3.4 Rendering
+
+```
+P5Adapter.drawFrame(p)
    │
    ├─ if doc.animation.playing: app.setTime(t + dt × speed)
    │
    ├─ p.background(0)
-   ├─ p.translate(centerX, centerY)
+   ├─ p.translate(artboard center)
+   ├─ p.scale(artboard → canvas)
    │
-   ├─ if doc.view.guides: drawGuides(p)
+   ├─ scene = buildRenderScene(evaluation, view)
+   │     ├─ project spatial layers through one ViewTransform
+   │     ├─ keep planar layers as artboard-space curves
+   │     └─ derive wireframes from projected meshes
    │
-   ├─ for each modeId in doc.view.modes:
-   │     RenderPasses.get(modeId).draw(p, data)
+   ├─ if doc.view.guides and not capture: drawGuides(p)
    │
-   ├─ drawOverlays(p, data)        ◄── independent overlay layer
+   ├─ for each layer and modeId:
+   │     RenderPasses.get(modeId).draw(p, layerData)
+   │
+   ├─ drawOverlays(p, scene)        ◄── independent overlay layer
    │
    ▼
 frame painted
@@ -322,9 +390,11 @@ frame painted
 
 Passes are independent and composable. Overlays are a separate layer
 on top. Either can be toggled live; either can throw without taking
-down the rest of the frame (caught + logged).
+down the rest of the frame (caught + logged). Quad view builds one scene
+per panel with its own projection override; SVG and plotter always export
+the active single projection.
 
-### 3.4 Mutation
+### 3.5 Mutation
 
 ```
 MutationEngine.mutate(document)
@@ -487,8 +557,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 29 | world geometry contracts | Surface/Mesh/Solid validation, conversions, analysis, camera distance and near-plane clipping |
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
+| 32 | spatial contracts | P/W/A ids, frame sanitization and scales, world-origin anchoring, shared multi-mesh/multi-layer framing, scene/export parity, planarity preservation, quad reprojection |
 
-1704 checks total.
+1734 checks total.
 
 ### Panel behavior
 

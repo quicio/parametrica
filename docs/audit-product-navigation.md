@@ -28,6 +28,7 @@ una nueva auditoría y no introduce funcionalidades ni cambios de código.
 | La métrica de color era solo global | **Resuelto** | `layer.colorMetric` con herencia de `view.colorMetric` y selector en Style. |
 | Las paletas eran solo presets fijos | **Resuelto** | Paletas custom locales: guardar, reemplazar, aplicar y borrar. |
 | La telemetría no mostraba las propiedades de la forma | **Resuelto** | Overlay `ƒ` en el borde: capa, generador, parámetros, seed y operadores; toggle persistente. |
+| El fit y la proyección estaban repartidos entre generadores, engine y exporters | **Resuelto con alcance** | Contratos P/W/A, `ViewTransform` único y `RenderScene` compartido por canvas, Quad, SVG y plotter. El fit sigue serializado en `generator.params` como alias de compatibilidad, pero el engine lo aplica como frame. |
 | Los huecos internos se perdían al trazar | **Resuelto con alcance** | Los huecos se trazan como capas Fourier nombradas; el fill even-odd sigue pendiente. |
 | Fill solo admitía color sólido | **Resuelto** | `fill.gradient` lineal/radial con ángulo, centro, radio y 2–4 colores, en canvas y SVG. |
 | El canvas inicial podía quedar 100 px más estrecho que su contenedor | **Resuelto** | `P5Adapter` reajusta el canvas tras el layout y vuelve a ajustarlo al cargar; el artboard usa el ancho disponible y se centra. |
@@ -447,10 +448,15 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | Solo algunos passes tienen `appliesTo` | Limitación | Los futuros passes deben declararlo. |
 | El content lock no cubre timeline, exploración, presets ni restauración | Limitación documentada | Fuera del contrato de contenido. |
 | El aviso SVG queda limitado a Signed Distance | UX | Ya no lista passes vectoriales. |
+| El fit sigue serializado en `generator.params` | Limitación de compatibilidad | El engine lo consume como frame; una fase posterior puede mover el control a `view.frame` sin cambiar documentos. |
+| Documentos mixtos 2D + 3D | Limitación de fase 0 | Las capas planas siguen en espacio artboard; no comparten frame espacial con las capas world. |
+| Referencia espacial y UV Domain | Fuera de alcance | La arquitectura ya expone `ViewTransform`, `frame` y `Surface.domain`, pero no hay UI ni overlays. |
+| Quad en SVG/plotter | Limitación conocida | Quad sigue siendo canvas-only; la exportación usa la proyección activa. |
+| Unidades físicas | Fuera de alcance | `A` es abstracto; el plotter aún no declara mm. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1704/1704** checks y build.
+- `npm run check`: lint, **1734/1734** checks y build.
 - `npm run test:e2e`: **107/107** tests.
-- `openspec validate --specs --strict`: **67/67** specs.
+- `openspec validate --specs --strict`: **68/68** specs.
 - No hay cambios OpenSpec activos.
