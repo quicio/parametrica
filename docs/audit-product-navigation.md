@@ -451,13 +451,13 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | El aviso SVG queda limitado a Signed Distance | UX | Ya no lista passes vectoriales. |
 | El fit sigue serializado en `generator.params` | Limitación de compatibilidad | El engine lo consume como frame; una fase posterior puede mover el control a `view.frame` sin cambiar documentos. |
 | Documentos mixtos 2D + 3D | Limitación de fase 0 | Las capas planas siguen en espacio artboard; no comparten frame espacial con las capas world. |
-| UV Domain | Fuera de alcance | La arquitectura ya expone `ViewTransform`, `frame` y `Surface.domain`, pero no hay inset UV. |
+| El dominio UV no era visible | **Resuelto con alcance** | Inset UI-only con límites reales de `Surface.domain`, grid de baja densidad, orientación U/V y marcas de cierre/seam. Sin UV↔XYZ interactivo. |
 | Quad en SVG/plotter | Limitación conocida | Quad sigue siendo canvas-only; la exportación usa la proyección activa. |
 | Unidades físicas | Fuera de alcance | `A` es abstracto; la referencia espacial no muestra unidades físicas y el plotter aún no declara mm. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1752/1752** checks y build.
-- `npm run test:e2e`: **108/108** tests.
-- `openspec validate --specs --strict`: **69/69** specs.
+- `npm run check`: lint, **1773/1773** checks y build.
+- `npm run test:e2e`: **109/109** tests.
+- `openspec validate --specs --strict`: **70/70** specs.
 - No hay cambios OpenSpec activos.

@@ -323,6 +323,12 @@ It draws the world origin, XYZ axes and an optional low-density z = 0 ground
 plane through the scene transform. It is excluded from the frame, SVG,
 plotter, PNG and GIF, and is separate from the artboard CAD guides.
 
+The **UV Domain** inset is also UI-only. It reads the active Surface's real
+`domain.u/v`, grid samples and closure/seam metadata, then draws a compact
+domain chart with U/V axes, bounds and a low-density grid. It never projects,
+frames, mutates geometry or enters an export. Visibility lives in Canvas and is
+persisted locally; a valid active surface is required for the inset to appear.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

@@ -95,6 +95,7 @@ src/
 │   ├── validate.js               geometry + mesh + solid validation
 │   ├── relations.js              lift, tessellate, mesh→solid
 │   ├── surfaceTessellation.js    Surface → Mesh, seams and twists
+│   ├── uvDomain.js               read-only Surface domain summaries
 │   ├── wireframe.js              deterministic mesh iso-lines
 │   ├── legacy.js                 Curve[] compatibility adapters
 │   ├── transform.js              world-space transforms
@@ -195,6 +196,7 @@ src/
 │
 ├── ui/
 │   ├── ParametricOverlay.js      canvas-edge property HUD
+│   ├── UVDomainInset.js          compact surface parameter-domain chart
 │   ├── Controls.js               mode bar, accordions and instrument panel
 │   ├── dialogs.js                injectable prompt / confirm service
 │   ├── params/
@@ -390,6 +392,28 @@ plotter, PNG and GIF captures.
 This is deliberately separate from **CAD Guides**, which are artboard
 crosshairs/margins. The reference is also not exported and does not define
 physical units, snapping or a CAD grid.
+
+#### UV Domain inset
+
+`src/geometry/uvDomain.js` is a pure, read-only summary of the active Surface
+domain. It preserves the real parameter endpoints, min/max, reversed axes,
+`closedU/V`, `seamU/V` and actual grid rows/columns. It never defaults to
+`[0,1]` or `[0,2π]`.
+
+`src/ui/UVDomainInset.js` renders that summary as a compact DOM/SVG overlay in
+the lower-right corner of the canvas:
+
+- U horizontal, V vertical, with arrows following the real parameter
+  direction;
+- domain rectangle, low-density 4×4 grid and numeric bounds;
+- closed axes shown as dashed seams; reverse seams labelled with `↺`;
+- sample counts and open/closed state in the footer;
+- hidden when the active layer is planar, hidden or has no valid Surface;
+- toggled from Canvas and persisted as UI-only state.
+
+The inset is presentation only. It does not touch `ViewTransform`, frame,
+bbox, geometry, Spatial Reference, SVG, plotter, PNG or GIF. It is not a second
+viewport and has no UV ↔ XYZ interaction.
 
 ### 3.4 Rendering
 
@@ -591,8 +615,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 | 32 | spatial contracts | P/W/A ids, frame sanitization and scales, world-origin anchoring, shared multi-mesh/multi-layer framing, scene/export parity, planarity preservation, quad reprojection |
 | 33 | spatial reference | reference config, world origin, axis visibility by projection, ground divisions, frame independence, composition anchoring and planar exclusion |
+| 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
 
-1752 checks total.
+1773 checks total.
 
 ### Panel behavior
 
