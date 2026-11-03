@@ -347,6 +347,67 @@ test('surface seams toggle overlays, legend and export isolation', async ({ page
   await expect(legend).toBeHidden();
 });
 
+test('surface overlays coexist and preserve exports', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(500);
+  await page.waitForFunction(() => Boolean(window.__parametrica.renderer.lastScene));
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.reference.enabled = true;
+    app.document.view.reference.ground = true;
+    app.setUVDomainVisible(true);
+    app.setSurfaceInspectorEnabled(true);
+    app.setSeamsVisible(true);
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+  const canvas = await openSection(page, 'Canvas');
+  await expect(page.locator('#uv-domain')).toBeVisible();
+  await expect(page.locator('#surface-inspector')).toBeVisible();
+  await expect(page.locator('#seam-legend')).toBeVisible();
+
+  const point = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const scene = app.renderer.lastScene;
+    const layer = scene.layers[0];
+    const mesh = app.evaluation.meshes[0];
+    const face = mesh.faces[Math.floor(mesh.faces.length / 3)];
+    const centre = face.reduce((sum, index) => ({
+      x: sum.x + mesh.vertices[index].x / 3,
+      y: sum.y + mesh.vertices[index].y / 3,
+      z: sum.z + mesh.vertices[index].z / 3,
+    }), { x: 0, y: 0, z: 0 });
+    const art = layer.transform.toArtboard(centre);
+    const rect = app.renderer.artboardRect();
+    return {
+      x: rect.x + rect.w / 2 + art.x * rect.scale,
+      y: rect.y + rect.h / 2 + art.y * rect.scale,
+    };
+  });
+  await page.mouse.move(point.x, point.y);
+  await page.waitForTimeout(250);
+  await page.locator('#surface-inspector .si-pin').click();
+  await expect(page.locator('#surface-inspector .si-pin')).toHaveText('RELEASE');
+  const pngWith = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.setSeamsVisible(false);
+    app.setUVDomainVisible(false);
+    app.setSurfaceInspectorEnabled(false);
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const pngWithout = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  expect(pngWithout).toBe(pngWith);
+  const svg = await page.evaluate(() => window.__parametrica.exporter.buildSVGFromCurrent().svg);
+  expect(svg).not.toContain('seam-legend');
+  expect(svg).not.toContain('surface-inspector');
+  expect(svg).not.toContain('uv-domain');
+  await expect(canvas.locator('.seams-toggle-checkbox')).not.toBeChecked();
+});
+
 test('surface inspector preference persists across reload', async ({ page }) => {
   await boot(page);
   let canvas = await openSection(page, 'Canvas');

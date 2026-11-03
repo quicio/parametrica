@@ -31,23 +31,19 @@ export function sanitizeReference(raw) {
  * artwork frame. The reference follows the visible geometry's size, not its
  * screen framing.
  */
-export function referenceExtent(bounds, frame = null) {
+export function referenceExtent(bounds) {
   if (!bounds) return 100;
   const width = span(bounds.width, bounds.minX, bounds.maxX);
   const height = span(bounds.height, bounds.minY, bounds.maxY);
   const depth = span(bounds.depth, bounds.minZ, bounds.maxZ);
   const size = Math.max(width, height, depth, 0);
+  const horizontal = Math.max(width, height, 0);
   const worldExtent = size > 0 ? size * 0.75 : 100;
-  // Keep the reference legible even when one world axis is much longer than
-  // the framed view (for example a tall helix). This cap uses presentation
-  // scale but never changes the scene frame.
-  const projected = frame?.bounds;
-  const scale = Number(frame?.scale);
-  const viewSpan = projected && Number.isFinite(scale) && scale > 0
-    ? Math.min(projected.width, projected.height) / scale
-    : 0;
-  const frameCap = viewSpan > 0 ? viewSpan * 0.45 : worldExtent;
-  return Math.max(1e-3, Math.min(worldExtent, frameCap));
+  // A deep/thin shape must not push the axes off-screen. Cap by the horizontal
+  // world span, never by projected artboard units (which are not world units
+  // in perspective). The floor keeps a visible axis for vertical shapes.
+  if (horizontal <= 0) return Math.max(1e-3, worldExtent);
+  return Math.max(1e-3, Math.min(worldExtent, Math.max(horizontal * 0.9, size * 0.2)));
 }
 
 /**
@@ -61,7 +57,7 @@ export function buildSpatialReference({
   divisions = GROUND_DIVISIONS,
 } = {}) {
   if (!transform) return null;
-  const extent = referenceExtent(worldBBox, transform.frame);
+  const extent = referenceExtent(worldBBox);
   const origin = transform.toArtboard({ x: 0, y: 0, z: 0 });
   const axes = [
     { id: 'x', label: 'X', end: { x: extent, y: 0, z: 0 } },

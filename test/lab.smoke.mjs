@@ -3060,10 +3060,18 @@ console.log('33. spatial reference');
   const sanitized = sanitizeReference({ enabled: 1, ground: 'yes', extra: true });
   assert(sanitized.enabled === true && sanitized.ground === true && !('extra' in sanitized), 'reference config is sanitized');
   assert(referenceExtent({ width: 100, height: 50, depth: 20 }) === 75, 'reference extent follows world size');
-  assert(referenceExtent(
-    { width: 1000, height: 1000, depth: 1000 },
-    { bounds: { width: 100, height: 100 }, scale: 1 },
-  ) === 45, 'reference extent is capped by the framed view');
+  assert(
+    referenceExtent({ width: 1000, height: 1000, depth: 1000 }) === 750,
+    'reference extent follows world size, not projected artboard scale',
+  );
+  assert(
+    referenceExtent({ width: 240, height: 240, depth: 1130 }) === 226,
+    'reference extent caps a deep world shape without using projected units',
+  );
+  assert(
+    referenceExtent({ width: 0, height: 0, depth: 1000 }) === 750,
+    'vertical shapes still receive a visible reference extent',
+  );
 
   const ortho = createViewTransform({
     projection: 'xy',
