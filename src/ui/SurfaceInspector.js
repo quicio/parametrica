@@ -10,6 +10,7 @@ export class SurfaceInspector {
     this.app = app;
     this.enabled = loadEnabled();
     this.lastPoint = null;
+    this.lastMessage = null;
     this.el = document.createElement('aside');
     this.el.id = 'surface-inspector';
     this.el.className = 'surface-inspector';
@@ -46,12 +47,19 @@ export class SurfaceInspector {
       this.setMessage('');
       return;
     }
-    if (this.app.document.view.layout === 'quad') {
+    if (this.isQuadActive()) {
       this.setMessage('Single view only');
       return;
     }
     if (this.lastPoint) this.app.inspectAtCanvas(this.lastPoint.x, this.lastPoint.y);
     else this.setMessage('Hover a surface');
+  }
+
+  isQuadActive() {
+    const active = this.app.renderer?.quadActive;
+    return active === undefined
+      ? this.app.document.view.layout === 'quad'
+      : Boolean(active);
   }
 
   setPoint(x, y) {
@@ -64,6 +72,7 @@ export class SurfaceInspector {
       this.setMessage('No surface under cursor');
       return;
     }
+    this.lastMessage = null;
     this.status.textContent = [
       result.projection,
       result.mappingStatus === 'ok' ? 'mapping ok' : result.mappingStatus,
@@ -87,6 +96,8 @@ export class SurfaceInspector {
 
   setMessage(message) {
     if (!this.enabled) return;
+    if (this.lastMessage === message) return;
+    this.lastMessage = message;
     this.status.textContent = '';
     this.status.classList.remove('warn');
     this.body.replaceChildren();
@@ -97,9 +108,23 @@ export class SurfaceInspector {
     this.body.appendChild(empty);
   }
 
+  onLayoutChange(quadActive) {
+    if (!this.enabled) return;
+    if (quadActive) {
+      this.setMessage('Single view only');
+      return;
+    }
+    if (this.lastPoint) this.app.inspectAtCanvas(this.lastPoint.x, this.lastPoint.y);
+    else this.setMessage('Hover a surface');
+  }
+
+  onViewportChange() {
+    this.onEvaluation();
+  }
+
   onEvaluation() {
     if (!this.enabled) return;
-    if (this.app.document.view.layout === 'quad') {
+    if (this.isQuadActive()) {
       this.setMessage('Single view only');
       return;
     }

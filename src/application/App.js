@@ -671,7 +671,10 @@ export class App {
       this.surfaceInspector.setMessage('Surface not ready');
       return null;
     }
-    if (this.document.view.layout === 'quad') {
+    const quadActive = this.renderer.quadActive === undefined
+      ? this.document.view.layout === 'quad'
+      : Boolean(this.renderer.quadActive);
+    if (quadActive) {
       this.surfaceInspector.setMessage('Single view only');
       return null;
     }
@@ -690,6 +693,7 @@ export class App {
       evaluation: this.evaluation,
       scene,
       artboardPoint,
+      activeLayerId: this.document.layers?.[this.document.activeLayer ?? 0]?.id ?? null,
     });
     this.surfaceInspector.setResult(result);
     return result;

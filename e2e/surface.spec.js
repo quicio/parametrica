@@ -117,6 +117,22 @@ test('surface inspector reads UV and XYZ from a hovered triangle', async ({ page
   const cellRow = inspector.locator('.si-row', { hasText: 'cell' });
   await expect(cellRow.locator('.si-value')).toContainText('u ');
 
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.layout = 'quad';
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+  await expect(inspector.locator('.si-empty')).toContainText('Single view only');
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.layout = 'single';
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+  await expect(inspector.locator('.si-status')).toContainText('mapping ok');
+
   const canvasBox = await page.locator('#canvas-container canvas').boundingBox();
   await page.mouse.move(canvasBox.x + 8, canvasBox.y + canvasBox.height - 8);
   await page.waitForTimeout(200);
@@ -124,6 +140,21 @@ test('surface inspector reads UV and XYZ from a hovered triangle', async ({ page
 
   await toggle.uncheck();
   await expect(inspector).toBeHidden();
+});
+
+test('surface inspector preference persists across reload', async ({ page }) => {
+  await boot(page);
+  let canvas = await openSection(page, 'Canvas');
+  const toggle = canvas.locator('.surface-inspector-toggle-checkbox');
+  await toggle.check();
+  await expect(page.locator('#surface-inspector')).toBeVisible();
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
+  await page.waitForTimeout(200);
+  canvas = await openSection(page, 'Canvas');
+  await expect(canvas.locator('.surface-inspector-toggle-checkbox')).toBeChecked();
+  await expect(page.locator('#surface-inspector')).toBeVisible();
 });
 
 test('parametric surface evaluates, tessellates and renders fill', async ({ page }) => {

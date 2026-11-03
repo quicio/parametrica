@@ -3559,6 +3559,14 @@ console.log('37. surface picking');
     { x: 10, y: 20, w: 400, h: 200, scale: 2 },
   );
   assert(canvasPoint.x === 10 && canvasPoint.y === -5, 'canvas point converts to artboard without viewport distortion');
+  const nonSquarePoint = artboardPointFromCanvas(
+    { x: 500, y: 300 },
+    { x: 50, y: 25, w: 300, h: 500, scale: 1.5 },
+  );
+  assert(
+    Math.abs(nonSquarePoint.x - 200) < 1e-9 && Math.abs(nonSquarePoint.y - 50 / 3) < 1e-9,
+    'canvas conversion respects artboard offset, scale and aspect ratio',
+  );
 
   const worldPoint = { x: 12, y: -4, z: 30 };
   const camera = { yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320 };
@@ -3594,6 +3602,34 @@ console.log('37. surface picking');
     'perspective ray inversion returns the original world point',
   );
 
+  for (const fov of [50, 320, 1000]) {
+    const zoomed = createViewTransform({
+      projection: '3d',
+      camera: { yaw: 0.2, pitch: -0.3, fov },
+      frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+    });
+    const zoomArt = zoomed.toArtboard(worldPoint);
+    const zoomRay = rayForArtboardPoint({ point: zoomArt, transform: zoomed });
+    const zoomHit = intersectRayTriangle(
+      zoomRay,
+      { x: -20, y: -20, z: 30 },
+      { x: 40, y: -20, z: 30 },
+      { x: 0, y: 40, z: 30 },
+    );
+    const zoomWorld = zoomHit ? {
+      x: zoomRay.origin.x + zoomRay.direction.x * zoomHit.t,
+      y: zoomRay.origin.y + zoomRay.direction.y * zoomHit.t,
+      z: zoomRay.origin.z + zoomRay.direction.z * zoomHit.t,
+    } : null;
+    assert(
+      zoomWorld
+      && Math.abs(zoomWorld.x - worldPoint.x) < 1e-6
+      && Math.abs(zoomWorld.y - worldPoint.y) < 1e-6
+      && Math.abs(zoomWorld.z - worldPoint.z) < 1e-6,
+      `FOV ${fov} rays preserve the original world point`,
+    );
+  }
+
   const orthoWorld = { x: 3, y: 4, z: 7 };
   const orthoArt = ortho.toArtboard(orthoWorld);
   const orthoRay = rayForArtboardPoint({ point: orthoArt, transform: ortho, worldBBox: bbox });
@@ -3613,6 +3649,49 @@ console.log('37. surface picking');
     { x: 1, y: 0, z: 7 },
     { x: 2, y: 0, z: 7 },
   ) === null, 'degenerate triangles are ignored');
+  const tinyScale = 1e-6;
+  const tinyHit = intersectRayTriangle(
+    { origin: { x: 0.5 * tinyScale, y: 0.5 * tinyScale, z: tinyScale }, direction: { x: 0, y: 0, z: -1 } },
+    { x: 0, y: 0, z: 0 },
+    { x: tinyScale, y: 0, z: 0 },
+    { x: 0, y: tinyScale, z: 0 },
+  );
+  assert(tinyHit, 'tolerance scales down for very small triangles');
+  const closeHit = intersectRayTriangle(
+    { origin: { x: 0.5e-10, y: 0.5e-10, z: 0.5e-10 }, direction: { x: 0, y: 0, z: -1 } },
+    { x: 0, y: 0, z: 0 },
+    { x: 1e-10, y: 0, z: 0 },
+    { x: 0, y: 1e-10, z: 0 },
+  );
+  assert(closeHit, 'near-zero but positive ray distances are accepted');
+
+  const directRay = { origin: { x: 0, y: 0, z: 10 }, direction: { x: 0, y: 0, z: -1 } };
+  const edgeHit = intersectRayTriangle(
+    directRay,
+    { x: 5, y: -5, z: 0 },
+    { x: 5, y: 5, z: 0 },
+    { x: -5, y: 5, z: 0 },
+  );
+  assert(edgeHit && Math.abs(edgeHit.barycentric.a - 0.5) < 1e-9, 'edge intersections return stable barycentrics');
+  const vertexHit = intersectRayTriangle(
+    directRay,
+    { x: 0, y: 0, z: 0 },
+    { x: 5, y: 0, z: 0 },
+    { x: 0, y: 5, z: 0 },
+  );
+  assert(vertexHit && Math.abs(vertexHit.barycentric.a - 1) < 1e-9, 'vertex intersections return the vertex barycentric');
+  assert(intersectRayTriangle(
+    directRay,
+    { x: 0, y: 5, z: 0 },
+    { x: 5, y: -5, z: 0 },
+    { x: -5, y: -5, z: 0 },
+  ) !== null, 'inverted winding is picked double-sided');
+  assert(intersectRayTriangle(
+    directRay,
+    { x: NaN, y: 0, z: 0 },
+    { x: 5, y: 0, z: 0 },
+    { x: 0, y: 5, z: 0 },
+  ) === null, 'NaN triangle data is rejected');
 
   const xzRay = rayForArtboardPoint({
     point: createViewTransform({ projection: 'xz', frame: { mode: 'world', anchor: 'world-origin', scale: 1 } })
@@ -3727,6 +3806,49 @@ console.log('37. surface picking');
   });
   assert(occlusionPick?.meshId === nearMesh.id, 'picking selects the nearest surface regardless of mesh order');
   assert(Number.isFinite(occlusionPick.distance), 'occlusion result exposes a finite distance');
+  const reversedOcclusionPick = pickSurface({
+    evaluation: {
+      layers: [layerFor([nearMesh, flatMesh], [nearMapping, flatMapping])],
+      worldBBox: { ...bbox, minZ: 0, maxZ: 10 },
+    },
+    scene: occlusionScene,
+    artboardPoint: flatArt,
+  });
+  assert(reversedOcclusionPick?.meshId === nearMesh.id, 'occlusion is independent of mesh array order');
+
+  const compositionLayers = [
+    { ...layerFor([flatMesh], [flatMapping]), id: 'layer-a' },
+    { ...layerFor([nearMesh], [nearMapping]), id: 'layer-b' },
+  ];
+  const compositionScene = {
+    kind: 'render-scene',
+    transform: ortho,
+    layers: [
+      { id: 'layer-a', transform: ortho },
+      { id: 'layer-b', transform: ortho },
+    ],
+    meta: {
+      worldBBox: { ...bbox, minZ: 0, maxZ: 10 },
+      frame: { mode: 'composition' },
+    },
+  };
+  const compositionEvaluation = {
+    layers: compositionLayers,
+    worldBBox: { ...bbox, minZ: 0, maxZ: 10 },
+  };
+  const activeFarPick = pickSurface({
+    evaluation: compositionEvaluation,
+    scene: compositionScene,
+    artboardPoint: flatArt,
+    activeLayerId: 'layer-a',
+  });
+  assert(activeFarPick?.layerId === 'layer-a', 'composition mode inspects the active layer instead of comparing independent world rays');
+  const ambiguousCompositionPick = pickSurface({
+    evaluation: compositionEvaluation,
+    scene: compositionScene,
+    artboardPoint: flatArt,
+  });
+  assert(ambiguousCompositionPick === null, 'composition picking without an active layer is explicitly ambiguous');
 
   const missingMappingPick = pickSurface({
     evaluation: {
@@ -3737,6 +3859,24 @@ console.log('37. surface picking');
     artboardPoint: flatArt,
   });
   assert(missingMappingPick?.mappingStatus === 'missing' && missingMappingPick.uv === null, 'missing mapping is explicit and never invents UVs');
+
+  const malformedMapping = {
+    ...flatMapping,
+    faces: flatMapping.faces.map((face, index) => (
+      index === 0
+        ? { ...face, uv: [{ u: NaN, v: 0 }, face.uv[1], face.uv[2]] }
+        : face
+    )),
+  };
+  const malformedPick = pickSurface({
+    evaluation: {
+      layers: [layerFor([flatMesh], [malformedMapping])],
+      worldBBox: flatEvaluation.worldBBox,
+    },
+    scene: flatScene,
+    artboardPoint: flatArt,
+  });
+  assert(malformedPick?.mappingStatus === 'mismatch' && malformedPick.uv === null, 'malformed UVs are rejected instead of displayed as valid');
 
   const seamMesh = createMesh({
     id: 'seam-pick-mesh',

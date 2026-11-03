@@ -56,6 +56,7 @@ export class P5Adapter extends Renderer {
     this.captureCanvas = null;
     this.captureContext = null;
     this.lastScene = null;
+    this.quadActive = false;
 
     // p5 is the largest dependency in the bundle. Importing it lazily
     // keeps the first paint and the control panel responsive while the
@@ -147,7 +148,7 @@ export class P5Adapter extends Renderer {
     };
     p.mouseMoved = (event) => {
       if (this.captureMode || !isOverCanvas(event)) return;
-      if (this.app.document.view.layout === 'quad') return;
+      if (this.quadActive) return;
       this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
     };
     p.mouseWheel = (event) => {
@@ -172,7 +173,10 @@ export class P5Adapter extends Renderer {
   fitToContainer() {
     if (!this.p) return;
     const { w, h } = this.size();
-    if (w !== this.p.width || h !== this.p.height) this.p.resizeCanvas(w, h);
+    if (w !== this.p.width || h !== this.p.height) {
+      this.p.resizeCanvas(w, h);
+      this.app.surfaceInspector?.onViewportChange?.();
+    }
   }
 
   /** Render one frame immediately (used by sequence export). */
@@ -339,6 +343,10 @@ export class P5Adapter extends Renderer {
     const evaluation = app.evaluation;
     const spatial = supportsSpatial(Generators.get(doc.generator.id));
     const quad = doc.view.layout === 'quad' && spatial;
+    if (quad !== this.quadActive) {
+      this.quadActive = quad;
+      if (!this.captureMode) this.app.surfaceInspector?.onLayoutChange?.(quad);
+    }
     const scene = evaluation && !quad
       ? buildRenderScene({ evaluation, document: doc, view: doc.view })
       : null;

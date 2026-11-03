@@ -4,6 +4,8 @@
  */
 
 const EPS = 1e-9;
+const DET_REL_EPS = 1e-10;
+const MIN_DET_SCALE = 1e-30;
 
 /**
  * Invert the canvas→artboard half of P5Adapter.artboardRect().
@@ -112,7 +114,11 @@ export function intersectRayTriangle(ray, a, b, c) {
   const e2 = sub(c, a);
   const h = cross(ray.direction, e2);
   const det = dot(e1, h);
-  if (!Number.isFinite(det) || Math.abs(det) <= EPS) return null;
+  const edgeScale = Math.max(
+    MIN_DET_SCALE,
+    Math.hypot(e1.x, e1.y, e1.z) * Math.hypot(e2.x, e2.y, e2.z),
+  );
+  if (!Number.isFinite(det) || Math.abs(det) <= DET_REL_EPS * edgeScale) return null;
   const inv = 1 / det;
   const s = sub(ray.origin, a);
   const u = inv * dot(s, h);
@@ -121,7 +127,7 @@ export function intersectRayTriangle(ray, a, b, c) {
   const v = inv * dot(ray.direction, q);
   if (v < -EPS || u + v > 1 + EPS) return null;
   const t = inv * dot(e2, q);
-  if (!Number.isFinite(t) || t <= EPS) return null;
+  if (!Number.isFinite(t) || t <= 0) return null;
   return {
     t,
     barycentric: {

@@ -15,10 +15,10 @@ import {
 
 const TIE_EPS = 1e-9;
 
-export function pickSurface({ evaluation, scene, artboardPoint, bounds = null } = {}) {
+export function pickSurface({ evaluation, scene, artboardPoint, bounds = null, activeLayerId = null } = {}) {
   if (!evaluation || !scene || !artboardPoint) return null;
   if (!Number.isFinite(artboardPoint.x) || !Number.isFinite(artboardPoint.y)) return null;
-  const layers = inspectableLayers(evaluation, scene);
+  const layers = inspectableLayers(evaluation, scene, activeLayerId);
   if (!layers.length) return null;
   const worldBBox = bounds ?? scene.meta?.worldBBox ?? evaluation.worldBBox ?? null;
   let best = null;
@@ -44,10 +44,12 @@ export function pickSurface({ evaluation, scene, artboardPoint, bounds = null } 
         if (best && hit.t >= best.distance - TIE_EPS) continue;
         const mapping = mappings.get(mesh.id) ?? null;
         const mappingFace = mapping?.faces?.[faceIndex] ?? null;
-        const mappingStatus = !mapping
+        let mappingStatus = !mapping
           ? 'missing'
           : (!mappingFace || !sameIndices(mappingFace.indices, face) ? 'mismatch' : 'ok');
         const uv = mappingStatus === 'ok' ? interpolateUV(mappingFace.uv, hit.barycentric) : null;
+        const validUV = uv && Number.isFinite(uv.u) && Number.isFinite(uv.v);
+        if (mappingStatus === 'ok' && !validUV) mappingStatus = 'mismatch';
         const world = pointOnRay(ray, hit.t);
         best = {
           kind: 'surface-pick',
@@ -59,7 +61,7 @@ export function pickSurface({ evaluation, scene, artboardPoint, bounds = null } 
           triangleIndices: [...face],
           barycentric: hit.barycentric,
           world,
-          uv,
+          uv: mappingStatus === 'ok' ? uv : null,
           cell: mappingStatus === 'ok' ? { ...mappingFace.cell } : null,
           triangle: mappingStatus === 'ok' ? mappingFace.triangle : null,
           mappingStatus,
@@ -76,20 +78,29 @@ export function pickSurface({ evaluation, scene, artboardPoint, bounds = null } 
   return best;
 }
 
-function inspectableLayers(evaluation, scene) {
-  if (Array.isArray(evaluation.layers) && evaluation.layers.length) {
-    return evaluation.layers.filter((layer) => (
+function inspectableLayers(evaluation, scene, activeLayerId) {
+  const layers = Array.isArray(evaluation.layers) && evaluation.layers.length
+    ? evaluation.layers.filter((layer) => (
       layer.visible !== false && Array.isArray(layer.meshes) && layer.meshes.length > 0
-    ));
+    ))
+    : (Array.isArray(evaluation.meshes) && evaluation.meshes.length
+      ? [{
+        id: scene.layers?.[0]?.id ?? 'layer-0',
+        name: evaluation.name ?? 'Surface',
+        visible: true,
+        meshes: evaluation.meshes,
+        surfaceMappings: evaluation.surfaceMappings ?? [],
+      }]
+      : []);
+
+  // Composition frames are independent. A cursor point maps to a different
+  // world ray per layer, so comparing world distances across layers would be
+  // meaningless. Inspection follows the active layer in that mode.
+  if (scene.meta?.frame?.mode === 'composition') {
+    if (!activeLayerId) return [];
+    return layers.filter((layer) => layer.id === activeLayerId);
   }
-  if (!Array.isArray(evaluation.meshes) || !evaluation.meshes.length) return [];
-  return [{
-    id: scene.layers?.[0]?.id ?? 'layer-0',
-    name: evaluation.name ?? 'Surface',
-    visible: true,
-    meshes: evaluation.meshes,
-    surfaceMappings: evaluation.surfaceMappings ?? [],
-  }];
+  return layers;
 }
 
 function sceneLayerFor(scene, layer) {
