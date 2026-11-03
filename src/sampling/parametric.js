@@ -5,7 +5,6 @@
 import {
   sampleUniform,
   sampleAdaptive,
-  fitCurves,
   centerCurves,
   splitCurveAtDiscontinuities,
 } from './sampling.js';
@@ -25,8 +24,14 @@ export function sampleParametric(fnX, fnY, { t0, t1, samples, adaptive, scope })
     : sampleUniform(fn, a, b, samples);
 }
 
-/** Apply discontinuity splitting + fit/center post-processing. */
-export function postProcess(curves, { fit = 0, center = true }) {
+/**
+ * Apply discontinuity splitting and optional centering.
+ *
+ * Fit is presentation, not generator mathematics: the engine owns the final
+ * frame. Keeping centering here preserves the legacy planar output for
+ * `fit = 0` while the engine applies the fit scale once for fitted shapes.
+ */
+export function postProcess(curves, { center = true } = {}) {
   let out = [];
   for (const curve of curves) {
     const split = splitCurveAtDiscontinuities(curve.points, { closed: Boolean(curve.closed) });
@@ -50,8 +55,7 @@ export function postProcess(curves, { fit = 0, center = true }) {
       });
     }
   }
-  if (fit > 0) out = fitCurves(out, fit);
-  else if (center) out = centerCurves(out);
+  if (center) out = centerCurves(out);
   return out;
 }
 

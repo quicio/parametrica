@@ -18,7 +18,9 @@ import { analyzeGeometry } from '../geometry/analysis.js';
 import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
 import { validateGeometry } from '../geometry/validate.js';
 import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '../view/projection.js';
+import { resolveFrame, SPACE } from '../view/transform.js';
 import { tessellateSurface } from '../geometry/surfaceTessellation.js';
+import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { isSurface } from '../geometry/contracts.js';
 
 const STAGE_CACHE = new WeakMap();
@@ -113,6 +115,7 @@ export function evaluateDocument(document, options = {}) {
         ...ctx, stagePath: 'generator.params',
       }, tagErrors(errors, 'generator', 0));
       curves = runGuarded(() => def.sample(params, ctx), errors, 'generator', 0) ?? [];
+      curves = applyPlaneFit(curves, params);
     } else {
       const def = Operators.get(stage.id);
       const params = resolveParams(def.params, stage.params, stage.mods, {
@@ -155,7 +158,7 @@ export function evaluateDocument(document, options = {}) {
     arcLength: Math.round(arcLengthAll(curves)),
   };
 
-  const result = { curves, errors, stats, bbox };
+  const result = { curves, space: SPACE.ARTBOARD, errors, stats, bbox };
 
   // Differential geometry (tangents/normals/curvature/inflections) is
   // only needed by a few render passes/overlays. Compute it on first
@@ -249,6 +252,7 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     meshes,
     renderMeshes: meshViews.meshes,
     geometry: surfaces,
+    space: SPACE.WORLD,
     worldBBox: bboxGeometry(surfaces),
     viewProjection: projection,
     appliedProjection: projection,
@@ -267,98 +271,6 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     get() { if (!worldAnalysis) worldAnalysis = analyzeGeometry(surfaces); return worldAnalysis; },
   });
   return result;
-}
-
-function meshWireframeCurves(meshes) {
-  const curves = [];
-  for (const mesh of meshes) {
-    const rows = mesh.meta?.gridRows;
-    const cols = mesh.meta?.gridCols;
-    if (!rows || !cols) continue;
-    const closedU = Boolean(mesh.meta?.closedU);
-    const closedV = Boolean(mesh.meta?.closedV);
-    const twistU = Boolean(mesh.meta?.twistU);
-    const twistV = Boolean(mesh.meta?.twistV);
-    const point = (u, v) => {
-      const p = mesh.vertices[u * cols + v];
-      return p ? { x: p.x, y: p.y } : null;
-    };
-    const push = (id, points, closed, axis) => {
-      if (points.length >= 2) {
-        curves.push({
-          id,
-          points,
-          closed,
-          meta: { source: 'surface-wireframe', meshId: mesh.id, axis },
-        });
-      }
-    };
-    // A row or column can cross the camera plane. Keep each visible run as
-    // its own open polyline instead of drawing a chord across the gap.
-    const pushRuns = (id, rawPoints, closed, axis) => {
-      let run = [];
-      let runIndex = 0;
-      let broken = false;
-      const flush = () => {
-        if (run.length >= 2) {
-          const suffix = runIndex ? `-p${runIndex}` : '';
-          push(`${id}${suffix}`, run, closed && !broken, axis);
-          runIndex++;
-        }
-        run = [];
-      };
-      for (const p of rawPoints) {
-        if (p) {
-          run.push(p);
-          continue;
-        }
-        broken = true;
-        flush();
-      }
-      flush();
-    };
-
-    // U-direction curves: fixed v, varying u.
-    if (twistU && closedU) {
-      for (let v = 0; v < cols; v++) {
-        const mirror = cols - 1 - v;
-        if (mirror < v) continue;
-        const points = [];
-        for (let u = 0; u < rows; u++) points.push(point(u, v));
-        if (mirror !== v) {
-          for (let u = 0; u < rows; u++) points.push(point(u, mirror));
-        }
-        pushRuns(`${mesh.id}-u-${v}`, points, true, 'u');
-      }
-    } else {
-      for (let v = 0; v < cols; v++) {
-        const points = [];
-        for (let u = 0; u < rows; u++) points.push(point(u, v));
-        pushRuns(`${mesh.id}-col-${v}`, points, closedU, 'u');
-      }
-    }
-
-    // V-direction curves: fixed u, varying v.
-    if (twistV && closedV) {
-      for (let u = 0; u < rows; u++) {
-        const mirror = rows - 1 - u;
-        if (mirror < u) continue;
-        const points = [];
-        for (let v = 0; v < cols; v++) points.push(point(u, v));
-        if (mirror !== u) {
-          for (let v = 0; v < cols; v++) points.push(point(mirror, v));
-        }
-        pushRuns(`${mesh.id}-v-${u}`, points, true, 'v');
-      }
-    } else {
-      for (let u = 0; u < rows; u++) {
-        const points = [];
-        for (let v = 0; v < cols; v++) points.push(point(u, v));
-        pushRuns(`${mesh.id}-row-${u}`, points, closedV, 'v');
-      }
-    }
-  }
-  return curves;
 }
 
 function evaluateSpatialDocument(document, options, generatorDef) {
@@ -474,6 +386,7 @@ function evaluateSpatialDocument(document, options, generatorDef) {
   const result = {
     curves: viewCurves,
     geometry: worldGeometry,
+    space: SPACE.WORLD,
     worldBBox,
     viewProjection: projection,
     appliedProjection: projection,
@@ -649,6 +562,7 @@ function evaluateLayers(document, options = {}) {
       generator: layer.generator,
       operators: layer.operators,
       curves,
+      space: evaluation.space ?? (evaluation.geometry ? SPACE.WORLD : SPACE.ARTBOARD),
       geometry: evaluation.geometry ?? null,
       meshes: evaluation.meshes ?? [],
       renderMeshes: evaluation.renderMeshes ?? [],
@@ -704,11 +618,16 @@ function evaluateLayers(document, options = {}) {
   const worldGeometry = layerResults.flatMap((layer) => layer.geometry ?? []);
   const meshes = layerResults.flatMap((layer) => layer.meshes ?? []);
   const renderMeshes = layerResults.flatMap((layer) => layer.renderMeshes ?? []);
+  const visibleSpaces = new Set(layerResults.filter((layer) => layer.visible !== false).map((layer) => layer.space));
+  const space = visibleSpaces.size === 1
+    ? [...visibleSpaces][0]
+    : (visibleSpaces.size > 1 ? SPACE.MIXED : SPACE.ARTBOARD);
   const result = {
     curves: capped,
     meshes,
     renderMeshes,
     geometry: worldGeometry,
+    space,
     worldBBox: worldGeometry.length ? bboxGeometry(worldGeometry) : null,
     errors,
     stats,
@@ -731,6 +650,30 @@ function evaluateLayers(document, options = {}) {
     },
   });
   return result;
+}
+
+/**
+ * Planar generators emit raw polylines; the engine applies their legacy fit
+ * once, outside the generator. `fit = 0` stays native and is centered by
+ * `postProcess` where the generator historically did so.
+ */
+function applyPlaneFit(curves, params) {
+  const fit = Number(params?.fit ?? params?.size);
+  if (!Number.isFinite(fit) || fit <= 0) return curves;
+  const frame = resolveFrame({
+    bounds: bboxAll(curves),
+    mode: 'composition',
+    anchor: 'bbox',
+    fit,
+  });
+  return curves.map((curve) => ({
+    ...curve,
+    points: curve.points.map((point) => ({
+      ...point,
+      x: point.x * frame.scale + frame.tx,
+      y: point.y * frame.scale + frame.ty,
+    })),
+  }));
 }
 
 function totalPoints(curves) {

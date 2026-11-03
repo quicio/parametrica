@@ -329,7 +329,7 @@ export class P5Adapter extends Renderer {
     const spatial = supportsSpatial(Generators.get(doc.generator.id));
     const quad = doc.view.layout === 'quad' && spatial;
 
-    if (doc.view.guides && !quad) this.drawGuides(p, artboard);
+    if (doc.view.guides && !quad && !this.captureMode) this.drawGuides(p, artboard);
     if (!this.captureMode && !quad) this.drawUnderlay(p, artboard);
 
     if (evaluation) {

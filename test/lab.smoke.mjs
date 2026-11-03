@@ -23,6 +23,7 @@ import { createStdlib } from '../src/math/stdlib.js';
 import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
+import { postProcess } from '../src/sampling/parametric.js';
 import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
 import { createDefaultFillGradient, sanitizeFillGradient, resolveFillGradient } from '../src/core/fillGradient.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
@@ -67,6 +68,8 @@ import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, p
 import { project3D } from '../src/view/camera.js';
 import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
+import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
+import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
 
@@ -2898,6 +2901,149 @@ console.log('31. preset library');
   assert(!cleanup.isFavorite('Disposable'), 'delete removes the favorite');
   assert(cleanup.recentEntries().length === 0, 'delete removes the recent');
   assert(cleanup.preview('Disposable') === null, 'delete removes the preview');
+}
+
+/* ——— 32. Spatial contracts ——— */
+console.log('32. spatial contracts');
+{
+  assert(SPACE.PARAMETER === 'parameter' && SPACE.WORLD === 'world' && SPACE.ARTBOARD === 'artboard', 'space ids are explicit and stable');
+
+  const defaultFrame = createFrame();
+  assert(defaultFrame.mode === 'scene' && defaultFrame.anchor === 'bbox', 'default frame is scene/bbox');
+  assert(sanitizeFrame({ mode: 'nope', fit: -1 }).mode === 'scene', 'invalid frame mode falls back');
+  assert(sanitizeFrame({ mode: 'world' }).anchor === 'world-origin', 'world frame anchors at the world origin');
+  assert(sanitizeFrame({ fit: 0 }).fit === 0, 'fit zero remains a meaningful native-scale frame');
+
+  const rawLine = postProcess([{ id: 'line', points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] }], { fit: 100 });
+  assert(Math.abs(rawLine[0].points[1].x - rawLine[0].points[0].x) === 10, 'generator post-processing no longer applies fit');
+
+  const bounds = { minX: 0, minY: 0, maxX: 100, maxY: 50, width: 100, height: 50, cx: 50, cy: 25 };
+  const fitted = resolveFrame({ bounds, mode: 'composition', fit: 200 });
+  assert(fitted.scale === 2, 'fit scale maps the largest bbox side to the fit size');
+  assert(fitted.tx === -100 && fitted.ty === -50, 'fit centers the projected bbox');
+  const native = resolveFrame({ bounds, mode: 'composition', fit: 0 });
+  assert(native.scale === 1 && native.tx === -50 && native.ty === -25, 'native fit keeps scale but still centers');
+  const anchored = resolveFrame({
+    bounds,
+    mode: 'world',
+    anchor: 'world-origin',
+    scale: 2,
+    projectedOrigin: { x: 50, y: 25 },
+  });
+  assert(anchored.scale === 2 && anchored.tx === -100 && anchored.ty === -50, 'world frame anchors the projected origin');
+
+  const worldTransform = createViewTransform({
+    projection: 'xy',
+    frame: { mode: 'world', anchor: 'world-origin', scale: 2 },
+    bounds,
+  });
+  const origin = worldTransform.toArtboard({ x: 0, y: 0, z: 0 });
+  const ten = worldTransform.toArtboard({ x: 10, y: 0, z: 0 });
+  assert(Math.abs(origin.x) < 1e-9 && Math.abs(origin.y) < 1e-9, 'world transform maps the world origin to artboard origin');
+  assert(Math.abs(ten.x - 20) < 1e-9, 'world transform keeps a stable world-unit scale');
+  const device = worldTransform.toDevice({ x: 10, y: -5 }, { x: 10, y: 20, w: 200, h: 100, scale: 0.5 });
+  assert(device.x === 115 && device.y === 67.5, 'artboard transform maps to device pixels predictably');
+
+  const meshA = createMesh({
+    id: 'mesh-a',
+    vertices: [{ x: -5, y: -5, z: 0 }, { x: 5, y: -5, z: 0 }, { x: 5, y: 5, z: 0 }, { x: -5, y: 5, z: 0 }],
+    faces: [[0, 1, 2], [0, 2, 3]],
+  });
+  const meshB = createMesh({
+    id: 'mesh-b',
+    vertices: [{ x: 95, y: -5, z: 0 }, { x: 105, y: -5, z: 0 }, { x: 105, y: 5, z: 0 }, { x: 95, y: 5, z: 0 }],
+    faces: [[0, 1, 2], [0, 2, 3]],
+  });
+  const projectedMeshes = projectWorldMeshes([meshA, meshB], { projection: 'xy', fit: 200 });
+  const centreA = projectedMeshes[0].vertices.reduce((sum, point) => sum + point.x, 0) / 4;
+  const centreB = projectedMeshes[1].vertices.reduce((sum, point) => sum + point.x, 0) / 4;
+  assert(Math.abs(centreB - centreA) > 50, 'multiple meshes keep their relative positions under one fit');
+  assert(Math.abs(centreA) > 1, 'the first mesh is not independently centered');
+
+  const twoLayerDoc = createDocument('parametric-3d', {
+    generator: {
+      params: { exprX: 'cos(t)', exprY: 'sin(t)', exprZ: '0', samples: 64, fit: 200 },
+    },
+    view: { frame: { mode: 'scene', fit: 200 } },
+  });
+  twoLayerDoc.layers.push(createLayer('parametric-3d', {
+    name: 'Offset',
+    generator: { params: { exprX: 'cos(t) + 20', exprY: 'sin(t)', exprZ: '0', samples: 64, fit: 200 } },
+  }));
+  const twoLayerEval = evaluateDocument(twoLayerDoc, { time: 0 });
+  const scene = buildRenderScene({ evaluation: twoLayerEval, document: twoLayerDoc, view: twoLayerDoc.view });
+
+  const singleDoc = createDocument('helix', { generator: { params: { samples: 200, fit: 340 } } });
+  const singleEval = evaluateDocument(singleDoc, { time: 0 });
+  const singleScene = buildRenderScene({ evaluation: singleEval, document: singleDoc, view: singleDoc.view });
+  const singleDelta = singleEval.curves[0].points.reduce((max, point, index) => {
+    const other = singleScene.layers[0].curves[0].points[index];
+    return Math.max(max, Math.hypot(point.x - other.x, point.y - other.y));
+  }, 0);
+  assert(singleDelta < 1e-9, 'single-layer scene preserves the existing fit exactly');
+  assert(scene.layers.length === 2, 'scene contains every spatial layer');
+  assert(scene.meta.space === SPACE.WORLD, 'scene declares world-space input');
+  assert(scene.transform, 'scene exposes the shared ViewTransform');
+  const firstBox = scene.layers[0].bbox;
+  const secondBox = scene.layers[1].bbox;
+  assert(Math.abs(secondBox.cx - firstBox.cx) > 10, 'scene framing preserves layer offsets instead of centering each layer');
+
+  const worldMeshes = [meshA, meshB];
+  const sceneTransform = createViewTransform({
+    projection: 'xy',
+    frame: { mode: 'scene', anchor: 'bbox', fit: 200 },
+    bounds,
+  });
+  assert(worldMeshes.every((mesh) => mesh.vertices.every((point) => point.x !== undefined)), 'mesh fixtures stay world-space');
+
+  const svg = Exporter.buildSVG(scene.layers.flatMap((layer) => layer.curves), twoLayerDoc.view, { w: 900, h: 900 }, twoLayerDoc, scene.layers);
+  const plotter = Exporter.buildPlotterSVG(scene.layers.flatMap((layer) => layer.curves), twoLayerDoc.view, { w: 900, h: 900 }, twoLayerDoc, scene.layers);
+  const firstPoint = scene.layers[0].curves[0].points[0];
+  const expectedPoint = `M ${Number(firstPoint.x.toFixed(2))} ${Number(firstPoint.y.toFixed(2))}`;
+  assert(svg.includes('data-layer="0"') && plotter.includes('data-plotter="true"'), 'SVG and plotter consume the render scene');
+  assert(plotter.includes(expectedPoint), 'plotter coordinates match the scene artboard coordinates');
+
+  const flatDoc = createDocument('parametric', {
+    generator: { params: { samples: 128, fit: 340 } },
+  });
+  const flatEval = evaluateDocument(flatDoc, { time: 0 });
+  const flatScene = buildRenderScene({ evaluation: flatEval, document: flatDoc, view: flatDoc.view });
+  assert(flatScene.meta.space === SPACE.ARTBOARD, 'planar generators remain artboard-space');
+  assert(JSON.stringify(flatScene.layers[0].curves) === JSON.stringify(flatEval.curves), 'planar curves are not re-framed');
+
+  const surfaceDoc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        samplesU: 16, samplesV: 8, closedU: false, closedV: false,
+        exprX: 'cos(u) * (2 + cos(v))', exprY: 'sin(u) * (2 + cos(v))', exprZ: 'sin(v)',
+        fit: 300,
+      },
+    },
+    view: { projection: 'xy' },
+  });
+  const surfaceEval = evaluateDocument(surfaceDoc, { time: 0 });
+  const surfaceScene = buildRenderScene({ evaluation: surfaceEval, document: surfaceDoc, view: surfaceDoc.view });
+  const surfaceDelta = surfaceEval.renderMeshes[0].vertices.reduce((max, point, index) => {
+    const other = surfaceScene.layers[0].meshes[0].vertices[index];
+    if (!point || !other) return max;
+    return Math.max(max, Math.hypot(point.x - other.x, point.y - other.y));
+  }, 0);
+  assert(surfaceDelta < 1e-9, 'single-surface scene preserves the existing fit exactly');
+  const orthoScene = buildRenderScene({ evaluation: surfaceEval, document: surfaceDoc, view: { ...surfaceDoc.view, projection: 'xy' } });
+  const perspectiveScene = buildRenderScene({
+    evaluation: surfaceEval,
+    document: surfaceDoc,
+    view: { ...surfaceDoc.view, projection: '3d' },
+    projectionOverride: '3d',
+  });
+  assert(orthoScene.meta.projection === 'xy', 'orthographic scene keeps its projection');
+  assert(perspectiveScene.meta.projection === '3d', 'quad 3D panel reprojects world geometry');
+  assert(
+    perspectiveScene.layers[0].meshes[0].vertices.some((point) => point.depth > 0),
+    '3D panel uses camera depth even when the document is orthographic',
+  );
+
+  assert(sceneTransform.space === SPACE.WORLD && sceneTransform.projection === 'xy', 'ViewTransform declares source space and projection');
 }
 
 /* ——— Snapshots ——— */

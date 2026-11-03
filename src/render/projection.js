@@ -6,7 +6,7 @@
  * projection of the existing points, never a re-evaluation.
  */
 
-import { centerCurves, fitCurves } from '../sampling/sampling.js';
+import { boundsOfProjectedPoints, createViewTransform } from '../view/transform.js';
 
 /**
  * @param {Array} curves
@@ -41,7 +41,15 @@ export function projectCurves(curves, projection = '3d', { fit = 0 } = {}) {
     ...curve,
     points: curve.points.map((point) => projectPoint(point, projection)),
   }));
-  return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
+  const transform = createViewTransform({
+    projection,
+    frame: { mode: 'composition', anchor: 'bbox', fit },
+    bounds: boundsOfProjectedPoints(projected.flatMap((curve) => curve.points)),
+  });
+  return projected.map((curve) => ({
+    ...curve,
+    points: curve.points.map((point) => transform.applyFrame(point)),
+  }));
 }
 
 export function projectPoint(point, projection) {

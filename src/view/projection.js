@@ -2,11 +2,18 @@
  * view/projection.js — world geometry to render-space geometry.
  *
  * Camera and orthographic projection live here. Generators never project.
+ * The framing step is delegated to view/transform.js so curves, meshes,
+ * references and exporters share one transform contract.
  */
 
-import { bbox, centerCurves, fitCurves } from '../sampling/sampling.js';
 import { isCurve3D, isMesh, isSurface } from '../geometry/contracts.js';
 import { cameraFrom, project3D } from './camera.js';
+import {
+  boundsOfProjectedPoints,
+  createViewTransform,
+  projectPointToView,
+  resolveEffectiveCamera,
+} from './transform.js';
 
 export function supportsOrthographicGeometry(geometry) {
   return Array.isArray(geometry) && geometry.some((item) => isCurve3D(item) || isSurface(item) || isMesh(item));
@@ -17,26 +24,81 @@ export function projectionForGeometry(geometry, projection = '3d') {
 }
 
 /**
- * Pull the camera back far enough that ordinary scene geometry stays in
- * front of it. The document camera has no position: fov is its distance to
- * the projection plane, so a large or scaled figure can otherwise surround
- * the camera and collapse into clipped radial lines.
+ * Project world curves to view space without framing. Kept separate from
+ * framing so a caller can resolve one scene transform and apply it to every
+ * layer, curve and mesh consistently.
  */
-function cameraForScene(camera, pointLists) {
+export function projectWorldCurvesToView(curves, {
+  camera = null,
+  projection = '3d',
+  depthFade = true,
+  depthStrength = 0.55,
+} = {}) {
+  const source = Array.isArray(curves) ? curves : [];
   const cam = camera ?? cameraFrom(null);
-  let radius = 0;
-  for (const points of pointLists) {
-    for (const point of points ?? []) {
-      const x = Number(point?.x);
-      const y = Number(point?.y);
-      const z = Number(point?.z);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      const distance = Math.hypot(x, y, Number.isFinite(z) ? z : 0);
-      if (distance > radius) radius = distance;
-    }
+  if (projection === '3d') {
+    return source.flatMap((curve) => projectCameraCurveSegments(curve, cam, {
+      depthFade,
+      fadeStrength: depthStrength,
+    }));
   }
-  const minimum = radius * 1.1;
-  return cam.fov >= minimum ? cam : { ...cam, fov: minimum };
+  return source.map((curve) => projectOrthographicCurve(curve, projection));
+}
+
+export function projectWorldMeshesToView(meshes, {
+  camera = null,
+  projection = '3d',
+  depthFade = true,
+  depthStrength = 0.55,
+} = {}) {
+  const source = Array.isArray(meshes) ? meshes : [];
+  const cam = camera ?? cameraFrom(null);
+  return source.map((mesh) => projectMeshToView(mesh, {
+    camera: cam,
+    projection,
+    depthFade,
+    depthStrength,
+  }));
+}
+
+export function projectMeshToView(mesh, {
+  camera = null,
+  projection = '3d',
+  depthFade = true,
+  depthStrength = 0.55,
+} = {}) {
+  if (!isMesh(mesh)) return mesh;
+  const cam = camera ?? cameraFrom(null);
+  const vertices = mesh.vertices.map((point) => {
+    const projected = projectPointToView(point, projection, cam, {
+      depthFade,
+      fadeStrength: depthStrength,
+    });
+    if (!projected) return null;
+    return {
+      x: projected.x,
+      y: projected.y,
+      depth: projected.depth,
+      depthAlpha: projected.depthAlpha,
+    };
+  });
+  return { ...mesh, vertices, faces: mesh.faces, normals: mesh.normals, faceNormals: mesh.faceNormals };
+}
+
+export function applyViewTransformToCurves(curves, transform) {
+  if (!transform) return curves;
+  return (curves ?? []).map((curve) => ({
+    ...curve,
+    points: curve.points.map((point) => transform.applyFrame(point)),
+  }));
+}
+
+export function applyViewTransformToMeshes(meshes, transform) {
+  if (!transform) return meshes;
+  return (meshes ?? []).map((mesh) => ({
+    ...mesh,
+    vertices: mesh.vertices.map((point) => (point ? transform.applyFrame(point) : null)),
+  }));
 }
 
 export function projectWorldCurves(curves, {
@@ -45,15 +107,95 @@ export function projectWorldCurves(curves, {
   fit = 0,
   depthFade = true,
   depthStrength = 0.55,
+  transform = null,
 } = {}) {
-  if (!Array.isArray(curves) || projection === '3d') {
-    const safeCamera = cameraForScene(camera, curves.map((curve) => curve.points));
-    const projected = curves.flatMap((curve) => projectCameraCurveSegments(curve, safeCamera, { depthFade, depthStrength }));
-    return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
-  }
-  const projected = curves.map((curve) => projectOrthographicCurve(curve, projection));
-  return fit > 0 ? fitCurves(projected, fit) : centerCurves(projected);
+  const source = Array.isArray(curves) ? curves : [];
+  const safeCamera = transform?.camera
+    ?? resolveEffectiveCamera(camera, source.map((curve) => curve.points));
+  const projectionId = transform?.projection ?? projection;
+  const projected = projectWorldCurvesToView(source, {
+    camera: safeCamera,
+    projection: projectionId,
+    depthFade,
+    depthStrength,
+  });
+  const resolved = transform ?? createViewTransform({
+    projection: projectionId,
+    camera: safeCamera,
+    frame: { mode: 'composition', anchor: 'bbox', fit },
+    bounds: boundsOfProjectedPoints(projected.flatMap((curve) => curve.points ?? [])),
+    depthFade,
+    depthStrength,
+  });
+  return applyViewTransformToCurves(projected, resolved);
 }
+
+export function projectWorldMeshes(meshes, {
+  camera = null,
+  projection = '3d',
+  fit = 0,
+  depthFade = true,
+  depthStrength = 0.55,
+  transform = null,
+} = {}) {
+  const source = Array.isArray(meshes) ? meshes : [];
+  const safeCamera = transform?.camera
+    ?? resolveEffectiveCamera(camera, source.map((mesh) => mesh.vertices));
+  const projectionId = transform?.projection ?? projection;
+  const projected = projectWorldMeshesToView(source, {
+    camera: safeCamera,
+    projection: projectionId,
+    depthFade,
+    depthStrength,
+  });
+  const resolved = transform ?? createViewTransform({
+    projection: projectionId,
+    camera: safeCamera,
+    frame: { mode: 'composition', anchor: 'bbox', fit },
+    bounds: boundsOfProjectedPoints(projected.flatMap((mesh) => mesh.vertices ?? [])),
+    depthFade,
+    depthStrength,
+  });
+  return applyViewTransformToMeshes(projected, resolved);
+}
+
+/**
+ * One mesh with its own frame. This is a compatibility helper; scene builders
+ * should use `projectWorldMeshes` or a shared ViewTransform so multiple meshes
+ * keep their relative positions.
+ *
+ * Unlike `projectWorldMeshes`, this does not pull the camera back: callers use
+ * it to test clipping against the document camera as authored.
+ */
+export function projectMesh(mesh, {
+  camera = null,
+  projection = '3d',
+  fit = 0,
+  depthFade = true,
+  depthStrength = 0.55,
+  transform = null,
+} = {}) {
+  if (!isMesh(mesh)) return mesh;
+  const cam = transform?.camera ?? camera ?? cameraFrom(null);
+  const projectionId = transform?.projection ?? projection;
+  const projected = projectMeshToView(mesh, {
+    camera: cam,
+    projection: projectionId,
+    depthFade,
+    depthStrength,
+  });
+  const resolved = transform ?? createViewTransform({
+    projection: projectionId,
+    camera: cam,
+    frame: { mode: 'composition', anchor: 'bbox', fit },
+    bounds: boundsOfProjectedPoints(projected.vertices ?? []),
+    depthFade,
+    depthStrength,
+  });
+  return applyViewTransformToMeshes([projected], resolved)[0] ?? projected;
+}
+
+
 
 /**
  * Project a camera-space curve, splitting it into visible runs when samples
@@ -138,77 +280,9 @@ export function projectWorldPoint(point, projection) {
   return { x, y: -y };
 }
 
-export function projectWorldMeshes(meshes, {
-  camera = null,
-  projection = '3d',
-  fit = 0,
-  depthFade = true,
-  depthStrength = 0.55,
-} = {}) {
-  const source = meshes ?? [];
-  const safeCamera = cameraForScene(camera, source.map((mesh) => mesh.vertices));
-  return source.map((mesh) => projectMesh(mesh, {
-    camera: safeCamera,
-    projection,
-    fit,
-    depthFade,
-    depthStrength,
-  }));
-}
-
-export function projectMesh(mesh, {
-  camera = null,
-  projection = '3d',
-  fit = 0,
-  depthFade = true,
-  depthStrength = 0.55,
-} = {}) {
-  if (!isMesh(mesh)) return mesh;
-  const cam = camera ?? cameraFrom(null);
-  const projected = mesh.vertices.map((point) => {
-    if (projection === '3d') {
-      const p = project3D(point.x, point.y, point.z, cam, { depthFade, fadeStrength: depthStrength });
-      return p ? { x: p.x, y: p.y, depth: p.depth, depthAlpha: p.depthAlpha } : null;
-    }
-    const p = projectWorldPoint(point, projection);
-    return { x: p.x, y: p.y, depthAlpha: 1 };
-  });
-  const fitted = fit > 0 ? fitVertices(projected, fit) : centerVertices(projected);
-  return { ...mesh, vertices: fitted, faces: mesh.faces, normals: mesh.normals, faceNormals: mesh.faceNormals };
-}
-
 export function projectSurface(surface, _options = {}) {
   if (!isSurface(surface)) return surface;
   // Surfaces are tessellated by the geometry layer; this helper is kept for
   // callers that only need the grid corners projected.
   return surface;
-}
-
-function visibleVertices(vertices) {
-  return vertices.filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
-}
-
-function centerVertices(vertices) {
-  const visible = visibleVertices(vertices);
-  if (!visible.length) return vertices.map(() => null);
-  const box = bbox(visible);
-  return vertices.map((point) => (
-    point ? { ...point, x: point.x - box.cx, y: point.y - box.cy } : null
-  ));
-}
-
-function fitVertices(vertices, size) {
-  const visible = visibleVertices(vertices);
-  if (!visible.length) return vertices.map(() => null);
-  const box = bbox(visible);
-  const scale = size / Math.max(box.width, box.height, 1e-9);
-  return vertices.map((point) => (
-    point
-      ? {
-        ...point,
-        x: (point.x - box.cx) * scale,
-        y: (point.y - box.cy) * scale,
-      }
-      : null
-  ));
 }

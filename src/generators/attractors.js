@@ -26,7 +26,6 @@
 import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { createNoise2D } from '../math/noise.js';
-import { fitCurves } from '../sampling/sampling.js';
 import { TAU } from './helpers.js';
 
 /**
@@ -109,8 +108,7 @@ function iterate({ step, x0, y0, z0, samples, skip, dims }) {
 }
 
 /** Common post-processing: optional fit. (Center happens once at the end.) */
-function finalize(curves, fit) {
-  if (fit > 0) return fitCurves(curves, fit);
+function finalize(curves) {
   return curves;
 }
 
@@ -136,7 +134,7 @@ Generators.register({
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
   sample(params, _ctx) {
-    const { samples, trajectories, dt, skip, seed, fit, sigma, rho, beta, projection } = params;
+    const { samples, trajectories, dt, skip, seed, sigma, rho, beta, projection } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y, z) => ({
       x: x + sigma * (y - x) * dt,
@@ -172,7 +170,7 @@ Generators.register({
         meta: { source: 'lorenz', branch: i },
       });
     }
-    return finalize(curves, fit);
+    return finalize(curves);
   },
 });
 
@@ -193,7 +191,7 @@ Generators.register({
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
   sample(params, _ctx) {
-    const { samples, trajectories, skip, seed, fit, a, b, c, d } = params;
+    const { samples, trajectories, skip, seed, a, b, c, d } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y) => ({
       x: Math.sin(a * y) + c * Math.cos(a * x),
@@ -211,7 +209,7 @@ Generators.register({
         meta: { source: 'clifford', branch: i },
       });
     }
-    return finalize(curves, fit);
+    return finalize(curves);
   },
 });
 
@@ -232,7 +230,7 @@ Generators.register({
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
   sample(params, _ctx) {
-    const { samples, trajectories, skip, seed, fit, a, b, c, d } = params;
+    const { samples, trajectories, skip, seed, a, b, c, d } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y) => ({
       x: Math.sin(a * y) - Math.cos(b * x),
@@ -250,7 +248,7 @@ Generators.register({
         meta: { source: 'dejong', branch: i },
       });
     }
-    return finalize(curves, fit);
+    return finalize(curves);
   },
 });
 
@@ -273,7 +271,7 @@ Generators.register({
   domain: () => ({ t0: 0, t1: TAU, closed: false }),
 
   sample(params, _ctx) {
-    const { samples, trajectories, dt, skip, seed, fit, a, b, c, d, e, f } = params;
+    const { samples, trajectories, dt, skip, seed, a, b, c, d, e, f } = params;
     const starts = startingPoints(trajectories, seed);
     const step = (x, y, z) => {
       const dx = (z - b) * x - d * y;
@@ -308,7 +306,7 @@ Generators.register({
         meta: { source: 'aizawa', branch: i },
       });
     }
-    return finalize(curves, fit);
+    return finalize(curves);
   },
 });
 

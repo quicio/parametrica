@@ -10,7 +10,7 @@ import { APP_ID } from '../core/document.js';
 import { RenderPasses } from '../core/registry.js';
 import { analyzeAll } from '../analysis/differential.js';
 import { bboxAll } from '../sampling/sampling.js';
-import { projectCurves, projectionFor } from '../render/projection.js';
+import { buildRenderScene } from '../application/renderSceneBuilder.js';
 import { drawOverlays } from '../viz/overlays.js';
 import { SvgContext } from './svgContext.js';
 
@@ -166,36 +166,15 @@ export class Exporter {
     const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
-    const evaluation = this.app.evaluation;
-    const projection = evaluation.viewProjection ?? projectionFor(evaluation.curves, doc.view.projection ?? '3d');
-    const layers = projection === '3d'
-      ? evaluation.layers
-      : evaluation.layers?.map((layer) => {
-        const applied = layer.appliedProjection ?? evaluation.appliedProjection ?? null;
-        return applied === projection
-          ? layer
-          : {
-            ...layer,
-            curves: projectCurves(layer.curves, projection, {
-              fit: Number(layer.generator?.params?.fit) || 0,
-            }),
-          };
-      });
-    const applied = evaluation.appliedProjection ?? null;
-    const curves = projection === '3d' || applied === projection
-      ? evaluation.curves
-      : projectCurves(evaluation.curves, projection, {
-        fit: Number(doc.generator?.params?.fit) || 0,
-      });
-    const exportLayers = evaluation.layers ?? [{
-      visible: true,
-      meshes: evaluation.meshes ?? [],
-      renderMeshes: evaluation.renderMeshes ?? [],
-      style: doc.view.style,
-    }];
-    const omitted = new Set(unsupportedSvgFeatures(doc.view, exportLayers));
+    const scene = buildRenderScene({
+      evaluation: this.app.evaluation,
+      document: doc,
+      view: doc.view,
+    });
+    const layers = scene.layers;
+    const curves = layers.flatMap((layer) => layer.curves);
+    const omitted = new Set(unsupportedSvgFeatures(doc.view, layers));
     const svg = Exporter.buildSVG(curves, doc.view, { w, h }, doc, layers, {
-      meshes: evaluation.renderMeshes ?? [],
       time: doc.animation.time,
       onUnsupported: (name) => omitted.add(name),
     });
@@ -252,27 +231,13 @@ export class Exporter {
     const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
-    const evaluation = this.app.evaluation;
-    const projection = evaluation.viewProjection ?? projectionFor(evaluation.curves, doc.view.projection ?? '3d');
-    const layers = projection === '3d'
-      ? evaluation.layers
-      : evaluation.layers?.map((layer) => {
-        const applied = layer.appliedProjection ?? evaluation.appliedProjection ?? null;
-        return applied === projection
-          ? layer
-          : {
-            ...layer,
-            curves: projectCurves(layer.curves, projection, {
-              fit: Number(layer.generator?.params?.fit) || 0,
-            }),
-          };
-      });
-    const curves = projection === '3d'
-      ? evaluation.curves
-      : projectCurves(evaluation.curves, projection, {
-        fit: Number(doc.generator?.params?.fit) || 0,
-      });
-    const svg = Exporter.buildPlotterSVG(curves, doc.view, { w, h }, doc, layers);
+    const scene = buildRenderScene({
+      evaluation: this.app.evaluation,
+      document: doc,
+      view: doc.view,
+    });
+    const curves = scene.layers.flatMap((layer) => layer.curves);
+    const svg = Exporter.buildPlotterSVG(curves, doc.view, { w, h }, doc, scene.layers);
     downloadFile(`parametrica-plotter-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 
