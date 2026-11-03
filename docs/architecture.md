@@ -103,6 +103,7 @@ src/
 ├── view/
 │   ├── camera.js                 pinhole camera + project3D
 │   ├── transform.js              P/W/A contracts, effective camera, frame
+│   ├── spatialReference.js       axes/ground geometry, reference extent
 │   ├── projection.js             camera/orthographic world projection
 │   └── cameraController.js       orbit/zoom state transitions
 │
@@ -151,6 +152,7 @@ src/
 │   ├── projection.js             legacy curve projection compatibility
 │   ├── camera3d.js               compatibility re-export of view/camera
 │   ├── scene.js                  backend-neutral RenderScene contract
+│   ├── reference.js              quiet axes/ground renderer
 │   ├── palettes.js               artboard presets, curated/custom palette store
 │   └── passes/
 │       ├── core.js               stroke / points / wireframe
@@ -361,6 +363,34 @@ curve in the plane. The engine fits/centers it immediately after sampling and
 before operators. Spatial generators always emit world geometry and never see
 the camera or the artboard.
 
+#### Spatial reference
+
+`view.reference` is a UI-only inspection aid:
+
+```js
+reference: { enabled: false, ground: false }
+```
+
+`src/view/spatialReference.js` builds axes, labels and an optional low-density
+ground plane in world space, then projects them through the scene's
+`referenceTransform`. The reference is **not** part of the artboard frame:
+toggling it cannot change scale, position or fit. It is excluded from SVG,
+plotter, PNG and GIF captures.
+
+- `scene` mode: the reference uses the shared scene transform.
+- `composition` mode: it follows the active spatial layer; planar active layers
+  have no reference transform.
+- `world` mode: the reference uses the world-anchored transform.
+- Quad: each panel builds its own reference; axes appear in every panel, while
+  the ground plane is restricted to the 3D and XY panels.
+- Reference extent is derived from world bounds but capped by the framed view
+  so a very deep shape does not push axes off-screen. The cap is presentation
+  only and never feeds back into the frame.
+
+This is deliberately separate from **CAD Guides**, which are artboard
+crosshairs/margins. The reference is also not exported and does not define
+physical units, snapping or a CAD grid.
+
 ### 3.4 Rendering
 
 ```
@@ -378,6 +408,8 @@ P5Adapter.drawFrame(p)
    │     └─ derive wireframes from projected meshes
    │
    ├─ if doc.view.guides and not capture: drawGuides(p)
+   ├─ if image underlay and not capture: drawUnderlay(p)
+   ├─ if reference enabled and not capture: draw spatial axes/ground
    │
    ├─ for each layer and modeId:
    │     RenderPasses.get(modeId).draw(p, layerData)
@@ -558,8 +590,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 30 | parametric surfaces | surface generation, normal/twisted seam welding, normals, projection, caches and render passes |
 | 31 | preset library | favorites/recents persistence, preview keys/cache, deletion cleanup, metadata pruning |
 | 32 | spatial contracts | P/W/A ids, frame sanitization and scales, world-origin anchoring, shared multi-mesh/multi-layer framing, scene/export parity, planarity preservation, quad reprojection |
+| 33 | spatial reference | reference config, world origin, axis visibility by projection, ground divisions, frame independence, composition anchoring and planar exclusion |
 
-1734 checks total.
+1752 checks total.
 
 ### Panel behavior
 

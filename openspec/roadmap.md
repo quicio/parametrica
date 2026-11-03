@@ -139,6 +139,7 @@ extraction and conversion to a Fourier document.
 | Per-layer render modes, pass opacity, color metrics and custom palettes | shipped (2026-11-02) |
 | Parametric edge overlay for active-shape properties | shipped (2026-11-02) |
 | Explicit P/W/A coordinate contracts and shared ViewTransform | shipped (2026-11-02) |
+| Spatial reference: world origin, XYZ axes, labels and optional ground | shipped (2026-11-03) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
@@ -440,6 +441,7 @@ generation metadata in the notebook; unit group 24.
 | `custom-palettes` | archived | shipped |
 | `parametric-overlay` | archived | shipped |
 | `coordinate-contracts` | archived | shipped |
+| `spatial-reference` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

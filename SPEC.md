@@ -318,6 +318,11 @@ and fall back to the camera view instead of collapsing to a line.
 `view.colorRamp` is an optional array of 2–6 hex colors for the gradient
 pass; the default is yellow → purple → blue.
 
+`view.reference` enables a UI-only spatial reference: `{ enabled, ground }`.
+It draws the world origin, XYZ axes and an optional low-density z = 0 ground
+plane through the scene transform. It is excluded from the frame, SVG,
+plotter, PNG and GIF, and is separate from the artboard CAD guides.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.
