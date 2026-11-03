@@ -775,6 +775,133 @@ html, body {
   width: calc(100% - 24px);
 }
 
+.parametrics {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.parametrics-toggle {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  background: rgba(8, 8, 8, 0.82);
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.parametrics-toggle:hover,
+.parametrics-toggle[aria-expanded="true"] {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+.parametrics-body {
+  width: 242px;
+  max-height: calc(100vh - 180px);
+  margin-top: 6px;
+  padding: 9px 11px 8px;
+  overflow: auto;
+  border-left: 1px solid var(--ink-faint);
+  background: rgba(5, 5, 5, 0.78);
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  pointer-events: auto;
+}
+
+.parametrics-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #181818;
+}
+
+.parametrics-title {
+  color: var(--ink);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parametrics-generator {
+  color: var(--ink-dim);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.parametrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.parametrics-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 8.5px;
+  line-height: 1.35;
+}
+
+.parametrics-key {
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parametrics-value {
+  color: var(--ink);
+  text-align: right;
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parametrics-row.advanced .parametrics-key,
+.parametrics-row.advanced .parametrics-value {
+  opacity: 0.56;
+}
+
+.parametrics-foot {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid #181818;
+  color: var(--ink-faint);
+  font-size: 7.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .parametrics {
+    top: 10px;
+    right: 10px;
+  }
+
+  .parametrics-body {
+    width: 190px;
+    max-height: 30vh;
+  }
+}
+
 /* ——— Notices ——— */
 
 #notice {
