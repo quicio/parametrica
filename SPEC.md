@@ -336,6 +336,12 @@ so welded seam vertices can carry distinct UVs. The mapping is generated with
 the mesh, cached with it and exposed as `evaluation.surfaceMappings`; it does
 not enter RenderScene, rendering, picking or export yet.
 
+Mesh projection can opt into a `mesh-projection-source` sidecar with
+`preserveSource`. It aliases the canonical world vertices, records explicit
+source vertex indices and, for orthographic views, carries `orthoDepth` on the
+dropped world axis (XY = `-z`, XZ = `-y`, YZ = `-x`). Per-vertex render depth
+stays unchanged, so painter order and exports are unaffected.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

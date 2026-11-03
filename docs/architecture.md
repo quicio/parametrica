@@ -105,7 +105,7 @@ src/
 │   ├── camera.js                 pinhole camera + project3D
 │   ├── transform.js              P/W/A contracts, effective camera, frame
 │   ├── spatialReference.js       axes/ground geometry, reference extent
-│   ├── projection.js             camera/orthographic world projection
+│   ├── projection.js             camera/orthographic projection + source sidecar
 │   └── cameraController.js       orbit/zoom state transitions
 │
 ├── generators/                   24 registered models across 17 modules
@@ -437,6 +437,59 @@ re-evaluation or topology change replaces the mapping together with the mesh.
 `RenderScene`, `ViewTransform`, render passes and exporters do not consume it
 yet.
 
+#### Projection source
+
+Mesh projection keeps the render contract unchanged by default. Callers that
+need the origin correspondence opt in with `preserveSource`:
+
+```js
+projectMeshToView(mesh, { projection: 'xy', preserveSource: true })
+projectWorldMeshesToView(meshes, { projection: 'xz', preserveSource: true })
+projectWorldMeshes(meshes, { projection: 'yz', preserveSource: true })
+projectMesh(mesh, { projection: 'xy', preserveSource: true })
+```
+
+The projected mesh gains an explicit `source` sidecar:
+
+```text
+mesh-projection-source {
+  view: '3d' | 'xy' | 'xz' | 'yz',
+  sourceMeshId,
+  sourceVertices,       // alias to canonical world vertices, not a copy
+  sourceIndices,        // explicit vertex identity, currently 0..n-1
+  sourceVertexCount,
+  orthoDepth: null | {
+    axis: 'x' | 'y' | 'z',
+    sign: -1,
+    values: number[],
+  },
+}
+```
+
+Orthographic depth is the dropped world coordinate with an implied eye on the
+positive side of the axis:
+
+| View | Dropped axis | `orthoDepth` | Implied eye |
+|---|---|---|---|
+| XY (planta) | Z | `-z` | +Z looking toward −Z |
+| XZ (alzado) | Y | `-y` | +Y looking toward −Y |
+| YZ (perfil) | X | `-x` | +X looking toward −X |
+
+Larger `orthoDepth` values are farther from the implied viewer. The existing
+per-vertex `depth` stays `0` in orthographic views, so painter ordering and
+visual output are unchanged. Perspective keeps its existing normalized
+per-vertex `depth` and `source.orthoDepth = null`.
+
+`sourceVertices` is an alias, not a duplicate: the source mesh remains the
+owner and must be treated as immutable. Projection source is derived on demand
+and not cached. If a consumer caches projected meshes, `preserveSource` must be
+part of its cache signature. The normal render path does not request it, so it
+pays no source-array allocation.
+
+`SurfaceMapping.meshId` and `mesh-projection-source.sourceMeshId` link the
+parametric mapping and the projected geometry. Mapping face indices refer to
+the same source vertex identities, and projected faces keep their indices.
+
 ### 3.4 Rendering
 
 ```
@@ -639,8 +692,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 33 | spatial reference | reference config, world origin, axis visibility by projection, ground divisions, frame independence, composition anchoring and planar exclusion |
 | 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
 | 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
+| 36 | projection source | opt-in world aliases, vertex identity, XY/XZ/YZ orthographic depth, shared projected positions with different depth, SurfaceMapping compatibility, cache invalidation and export exclusion |
 
-1812 checks total.
+1840 checks total.
 
 ### Panel behavior
 

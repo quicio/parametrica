@@ -14,6 +14,10 @@
 > sidecar de evaluación generado junto a la teselación. Conserva dominio,
 > celda/triángulo y UV por esquina. Siguen fuera de alcance picking, UI,
 > RenderScene y cualquier cambio de render.
+>
+> **Actualización Fase 3B:** la proyección de mallas puede preservar un
+> `mesh-projection-source` opt-in con alias world, identidad de vértice y
+> `orthoDepth` por vista. El render normal sigue sin asignar ese sidecar.
 
 ---
 
