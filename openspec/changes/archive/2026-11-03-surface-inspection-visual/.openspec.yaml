@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Add UI-only visual inspection overlays and pin/release without changing
+  geometry, mapping, projection, scene or exports.

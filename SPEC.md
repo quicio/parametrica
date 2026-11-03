@@ -355,6 +355,13 @@ in `composition` mode each layer has its own frame, so inspection follows the
 active layer. Quad state uses the renderer's actual `quadActive`, not only the
 declared layout. Malformed mappings report `mismatch` and never invent UVs.
 
+Inspection also exposes UI-only overlays derived from the pick: a world-point
+marker, the selected mesh triangle and, when the mapping is valid, the four
+corners of its parametric cell. A Pin control freezes the current result;
+pinned results are revalidated against the current evidence and released on
+projection/camera/topology/layer changes. Overlays never enter the render
+scene, captures or exports.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

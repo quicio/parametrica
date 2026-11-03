@@ -536,6 +536,21 @@ declared layout; an active planar layer can keep a declared quad layout in
 single rendering. Quad shows “Single view only”. Picking is linear over
 inspectable surface triangles; no BVH is introduced yet.
 
+Inspection visuals are derived UI overlays, not scene geometry:
+
+- a screen-constant marker at the picked world point;
+- a white triangle highlight;
+- a red outline/fill for the four corners of the logical parametric cell when
+  the mapping is valid;
+- dashed/dim triangle and no cell when mapping is `missing`/`mismatch`.
+
+`Pin` freezes the current pick. The pinned result is validated against the
+current evaluation (mesh id, face indices, barycentric world point, mapping
+status and UV/cell). It is released on projection/camera/artboard/layer changes
+and on geometry/topology changes; viewport resize keeps the pin and reprojects
+the overlay. The overlay is skipped in `captureMode`, so PNG/GIF/SVG/plotter are
+unchanged.
+
 ### 3.4 Rendering
 
 ```
@@ -739,9 +754,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 34 | uv domain | real Surface.domain bounds, reversed/non-normalized ranges, closure/seams, invalid domains, active-layer resolution, geometry/frame/bbox independence and export exclusion |
 | 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
 | 36 | projection source | opt-in world aliases, vertex identity, XY/XZ/YZ orthographic depth, shared projected positions with different depth, SurfaceMapping compatibility, cache invalidation and export exclusion |
-| 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle and render/export isolation |
+| 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle, marker/triangle/cell overlays, pin/release and render/export isolation |
 
-1885 checks total.
+1894 checks total.
 
 ### Panel behavior
 
