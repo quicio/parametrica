@@ -50,6 +50,7 @@ export function projectWorldMeshesToView(meshes, {
   projection = '3d',
   depthFade = true,
   depthStrength = 0.55,
+  preserveSource = false,
 } = {}) {
   const source = Array.isArray(meshes) ? meshes : [];
   const cam = camera ?? cameraFrom(null);
@@ -58,6 +59,7 @@ export function projectWorldMeshesToView(meshes, {
     projection,
     depthFade,
     depthStrength,
+    preserveSource,
   }));
 }
 
@@ -66,6 +68,7 @@ export function projectMeshToView(mesh, {
   projection = '3d',
   depthFade = true,
   depthStrength = 0.55,
+  preserveSource = false,
 } = {}) {
   if (!isMesh(mesh)) return mesh;
   const cam = camera ?? cameraFrom(null);
@@ -82,7 +85,55 @@ export function projectMeshToView(mesh, {
       depthAlpha: projected.depthAlpha,
     };
   });
-  return { ...mesh, vertices, faces: mesh.faces, normals: mesh.normals, faceNormals: mesh.faceNormals };
+  const projectedMesh = {
+    ...mesh,
+    vertices,
+    faces: mesh.faces,
+    normals: mesh.normals,
+    faceNormals: mesh.faceNormals,
+  };
+  if (preserveSource) projectedMesh.source = meshProjectionSource(mesh, projection);
+  else delete projectedMesh.source;
+  return projectedMesh;
+}
+
+/**
+ * Orthographic depth is the world coordinate along the dropped axis, signed
+ * for an implied eye on the positive side of that axis:
+ *
+ *   XY (planta)  look from +Z: orthoDepth = -z
+ *   XZ (alzado)  look from +Y: orthoDepth = -y
+ *   YZ (perfil)  look from +X: orthoDepth = -x
+ *
+ * Larger values are farther from the implied viewer. The existing vertex
+ * `depth` stays 0 in orthographic views so painter behavior is unchanged.
+ */
+const ORTHO_DEPTH = Object.freeze({
+  xy: Object.freeze({ axis: 'z', sign: -1 }),
+  xz: Object.freeze({ axis: 'y', sign: -1 }),
+  yz: Object.freeze({ axis: 'x', sign: -1 }),
+});
+
+function meshProjectionSource(mesh, projection) {
+  const sourceIndices = mesh.vertices.map((_, index) => index);
+  const depth = ORTHO_DEPTH[projection] ?? null;
+  return {
+    kind: 'mesh-projection-source',
+    view: projection,
+    sourceMeshId: mesh.id ?? null,
+    sourceVertices: mesh.vertices,
+    sourceIndices,
+    sourceVertexCount: sourceIndices.length,
+    orthoDepth: depth
+      ? {
+        axis: depth.axis,
+        sign: depth.sign,
+        values: mesh.vertices.map((point) => (
+          depth.sign * Number(point?.[depth.axis] ?? 0)
+        )),
+      }
+      : null,
+  };
 }
 
 export function applyViewTransformToCurves(curves, transform) {
@@ -137,6 +188,7 @@ export function projectWorldMeshes(meshes, {
   depthFade = true,
   depthStrength = 0.55,
   transform = null,
+  preserveSource = false,
 } = {}) {
   const source = Array.isArray(meshes) ? meshes : [];
   const safeCamera = transform?.camera
@@ -147,6 +199,7 @@ export function projectWorldMeshes(meshes, {
     projection: projectionId,
     depthFade,
     depthStrength,
+    preserveSource,
   });
   const resolved = transform ?? createViewTransform({
     projection: projectionId,
@@ -174,6 +227,7 @@ export function projectMesh(mesh, {
   depthFade = true,
   depthStrength = 0.55,
   transform = null,
+  preserveSource = false,
 } = {}) {
   if (!isMesh(mesh)) return mesh;
   const cam = transform?.camera ?? camera ?? cameraFrom(null);
@@ -183,6 +237,7 @@ export function projectMesh(mesh, {
     projection: projectionId,
     depthFade,
     depthStrength,
+    preserveSource,
   });
   const resolved = transform ?? createViewTransform({
     projection: projectionId,

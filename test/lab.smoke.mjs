@@ -67,7 +67,7 @@ import { warpExpressions } from '../src/operators/geometry/deform.js';
 import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
 import { project3D } from '../src/view/camera.js';
 import { zoomCamera } from '../src/view/cameraController.js';
-import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
+import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh, projectMeshToView, projectWorldMeshesToView, applyViewTransformToMeshes } from '../src/view/projection.js';
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
 import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
@@ -3413,6 +3413,132 @@ console.log('35. surface mapping');
   assert(JSON.stringify(scene.transform.frame) === before.frame, 'mapping does not mutate the frame');
   assert(JSON.stringify(scene.meta.bbox) === before.bbox, 'mapping does not mutate the bbox');
   assert(!svg.includes('surface-mapping'), 'mapping never enters SVG export');
+}
+
+/* ——— 36. Projection source ——— */
+console.log('36. projection source');
+{
+  const depthMesh = createMesh({
+    id: 'depth-mesh',
+    vertices: [
+      { x: 1, y: 2, z: 10 },
+      { x: 1, y: 2, z: 20 },
+      { x: 2, y: 2, z: 20 },
+    ],
+    faces: [[0, 1, 2]],
+  });
+  const plain = projectMeshToView(depthMesh, { projection: 'xy' });
+  const preserved = projectMeshToView(depthMesh, { projection: 'xy', preserveSource: true });
+  assert(!('source' in plain), 'normal projection does not allocate a source sidecar');
+  assert(preserved.source?.kind === 'mesh-projection-source', 'preserved projection exposes an explicit source contract');
+  assert(preserved.source.view === 'xy', 'source records the orthographic view');
+  assert(preserved.source.sourceMeshId === depthMesh.id, 'source records the origin mesh id');
+  assert(preserved.source.sourceVertices === depthMesh.vertices, 'source aliases the canonical world vertices');
+  assert(JSON.stringify(preserved.source.sourceIndices) === '[0,1,2]', 'source records explicit vertex identity');
+  assert(preserved.source.sourceVertexCount === depthMesh.vertices.length, 'source records the vertex count');
+  assert(preserved.source.orthoDepth.axis === 'z' && preserved.source.orthoDepth.sign === -1, 'XY orthographic depth uses -Z');
+  assert(
+    JSON.stringify(preserved.source.orthoDepth.values) === JSON.stringify([-10, -20, -20]),
+    'XY preserves distinct orthographic depth for shared projected positions',
+  );
+  assert(
+    preserved.vertices[0].x === plain.vertices[0].x
+    && preserved.vertices[0].y === plain.vertices[0].y
+    && preserved.vertices[0].depth === 0,
+    'preserving source keeps the existing projected render coordinates and depth',
+  );
+  assert(JSON.stringify(preserved.faces) === JSON.stringify(plain.faces), 'preserving source does not alter faces');
+  assert(!('source' in projectMeshToView(preserved, { projection: 'xy' })), 're-projection without preserveSource strips stale source');
+
+  const axisMesh = createMesh({
+    id: 'axis-mesh',
+    vertices: [
+      { x: 1, y: 2, z: 3 },
+      { x: 4, y: 5, z: 6 },
+      { x: 7, y: 8, z: 9 },
+    ],
+    faces: [[0, 1, 2]],
+  });
+  const xz = projectMeshToView(axisMesh, { projection: 'xz', preserveSource: true });
+  const yz = projectMeshToView(axisMesh, { projection: 'yz', preserveSource: true });
+  assert(xz.source.orthoDepth.axis === 'y' && xz.source.orthoDepth.sign === -1, 'XZ orthographic depth uses -Y');
+  assert(yz.source.orthoDepth.axis === 'x' && yz.source.orthoDepth.sign === -1, 'YZ orthographic depth uses -X');
+  assert(JSON.stringify(xz.source.orthoDepth.values) === JSON.stringify([-2, -5, -8]), 'XZ preserves the dropped Y coordinate');
+  assert(JSON.stringify(yz.source.orthoDepth.values) === JSON.stringify([-1, -4, -7]), 'YZ preserves the dropped X coordinate');
+
+  const viewProjected = projectWorldMeshesToView([depthMesh], {
+    projection: 'xy',
+    preserveSource: true,
+  })[0];
+  assert(viewProjected.source.sourceMeshId === depthMesh.id, 'projectWorldMeshesToView forwards source preservation');
+  const transformed = applyViewTransformToMeshes([viewProjected], createViewTransform({
+    projection: 'xy',
+    frame: { mode: 'composition', anchor: 'bbox', fit: 100 },
+    bounds: { width: 10, height: 10, cx: 0, cy: 0 },
+  }))[0];
+  assert(transformed.source === viewProjected.source, 'frame application preserves the source sidecar');
+
+  const camera3d = { yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320 };
+  const perspective = projectMeshToView(depthMesh, {
+    projection: '3d',
+    camera: camera3d,
+    preserveSource: true,
+  });
+  assert(perspective.source.orthoDepth === null, 'perspective depth stays in per-vertex depth');
+  assert(perspective.vertices.some((point) => point && point.depth > 0), 'perspective vertices keep normalized depth');
+
+  const surface = createSurface({
+    id: 'mapping-source-surface',
+    domain: { u: [0, 1], v: [0, 1], closedU: false, closedV: false, seamU: 'normal', seamV: 'normal' },
+    grid: {
+      rows: 3,
+      cols: 3,
+      points: [
+        [{ x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 2, z: 0 }],
+        [{ x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }, { x: 1, y: 2, z: 0 }],
+        [{ x: 2, y: 0, z: 0 }, { x: 2, y: 1, z: 0 }, { x: 2, y: 2, z: 0 }],
+      ],
+    },
+    meta: {},
+  });
+  const { mesh: surfaceMesh, mapping } = tessellateSurfaceWithMapping(surface);
+  const mappedProjection = projectMeshToView(surfaceMesh, { projection: 'xy', preserveSource: true });
+  assert(mappedProjection.source.sourceMeshId === mapping.meshId, 'projection source matches SurfaceMapping mesh identity');
+  assert(mapping.faces.every((face) => face.indices.every((index) => index < mappedProjection.source.sourceVertexCount)),
+    'SurfaceMapping indices remain valid against projected source vertices');
+  assert(mapping.domain.u[0] === 0 && mapping.domain.u[1] === 1, 'projection source does not alter SurfaceMapping');
+
+  const surfaceDoc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        samplesU: 8, samplesV: 8, closedU: true, closedV: true,
+        exprX: 'cos(u) * (2 + cos(v))',
+        exprY: 'sin(u) * (2 + cos(v))',
+        exprZ: 'sin(v)',
+        fit: 300,
+      },
+    },
+  });
+  const first = evaluateDocument(surfaceDoc, { time: 0 });
+  const firstVertex = first.renderMeshes[0].vertices[0];
+  const firstMapping = first.surfaceMappings[0];
+  surfaceDoc.view.camera.yaw += 0.4;
+  const second = evaluateDocument(surfaceDoc, { time: 0 });
+  assert(JSON.stringify(second.renderMeshes[0].vertices[0]) !== JSON.stringify(firstVertex), 'camera changes invalidate projected mesh vertices');
+  assert(second.surfaceMappings[0] === firstMapping, 'projection cache invalidation leaves SurfaceMapping stable');
+
+  const scene = buildRenderScene({ evaluation: second, document: surfaceDoc, view: surfaceDoc.view });
+  const before = { frame: JSON.stringify(scene.transform.frame), bbox: JSON.stringify(scene.meta.bbox) };
+  const svg = Exporter.buildSVG(
+    scene.layers.flatMap((layer) => layer.curves),
+    surfaceDoc.view,
+    { w: 900, h: 900 },
+    surfaceDoc,
+    scene.layers,
+  );
+  assert(JSON.stringify(scene.transform.frame) === before.frame, 'projection source does not alter the frame');
+  assert(JSON.stringify(scene.meta.bbox) === before.bbox, 'projection source does not alter the bbox');
+  assert(!svg.includes('mesh-projection-source') && !svg.includes('surface-mapping'), 'projection source never enters SVG export');
 }
 
 /* ——— Snapshots ——— */
