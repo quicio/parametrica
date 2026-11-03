@@ -21,7 +21,7 @@ import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '.
 import { resolveFrame, SPACE } from '../view/transform.js';
 import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
-import { isSurface } from '../geometry/contracts.js';
+import { isSurface, isMesh } from '../geometry/contracts.js';
 
 const STAGE_CACHE = new WeakMap();
 const ANALYSIS_CACHE = new WeakMap();
@@ -198,7 +198,26 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
   const params = resolveParams(generatorDef.params, document.generator.params, document.generator.mods, {
     ...ctx, stagePath: 'generator.params',
   }, tagErrors(errors, 'generator', 0));
-  const signature = JSON.stringify([WORLD_CACHE_VERSION, seed, time, quality, generatorDef.id, worldParamView(params), document.generator.mods]);
+  const stages = [document.generator, ...(document.operators ?? [])];
+  const worldOps = [];
+  const viewOps = [];
+  for (let i = 1; i < stages.length; i++) {
+    const stage = stages[i];
+    if (stage.enabled === false) continue;
+    const def = Operators.get(stage.id);
+    if (def.space === 'world') worldOps.push({ stage, def, index: i - 1 });
+    else viewOps.push({ stage, def, index: i - 1 });
+  }
+  const signature = JSON.stringify([
+    WORLD_CACHE_VERSION,
+    seed,
+    time,
+    quality,
+    generatorDef.id,
+    worldParamView(params),
+    document.generator.mods,
+    worldOps.map(({ stage, def }) => [def.id, stage.params, stage.mods, stage.enabled]),
+  ]);
   const cacheKey = options.cacheKey ?? document;
   let surfaces;
   const cached = options.bypassCache ? null : SURFACE_CACHE.get(cacheKey);
@@ -207,14 +226,35 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
   } else {
     surfaces = runGuarded(() => generatorDef.generate(params, ctx), errors, 'generator', 0) ?? [];
     surfaces = sanitizeGeometry(surfaces, errors, 'generator', 0).filter((item) => isSurface(item));
+    for (const { stage, def, index } of worldOps) {
+      const rejected = surfaces.find((item) => !operatorAccepts(def, item));
+      if (rejected) {
+        errors.push({
+          stage: 'operator',
+          index,
+          message: `${def.name} does not accept ${rejected.kind} geometry`,
+        });
+        continue;
+      }
+      const opParams = resolveParams(def.params, stage.params, stage.mods, {
+        ...ctx, stagePath: `operators[${index}].params`,
+      }, tagErrors(errors, 'operator', index));
+      surfaces = runGuarded(() => def.apply(surfaces, opParams, ctx), errors, 'operator', index) ?? surfaces;
+      surfaces = sanitizeGeometry(surfaces, errors, 'operator', index);
+    }
     if (!errors.length && !options.bypassCache) SURFACE_CACHE.set(cacheKey, { signature, surfaces });
   }
 
   let meshEntry = MESH_CACHE.get(surfaces);
   if (!meshEntry) {
-    const built = surfaces.map((surface) => {
+    const built = surfaces.map((item) => {
+      if (isMesh(item)) return { mesh: item, mapping: null };
+      if (!isSurface(item)) {
+        errors.push({ stage: 'generator', index: 0, message: `surface pipeline cannot render ${item?.kind ?? 'unknown'} geometry` });
+        return null;
+      }
       try {
-        return tessellateSurfaceWithMapping(surface);
+        return tessellateSurfaceWithMapping(item);
       } catch (error) {
         errors.push({ stage: 'generator', index: 0, message: error.message });
         return null;
@@ -222,7 +262,7 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     }).filter(Boolean);
     meshEntry = {
       meshes: built.map((entry) => entry.mesh),
-      surfaceMappings: built.map((entry) => entry.mapping),
+      surfaceMappings: built.map((entry) => entry.mapping).filter(Boolean),
     };
     if (!errors.length && built.length === surfaces.length) MESH_CACHE.set(surfaces, meshEntry);
   }
@@ -241,7 +281,16 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     meshViews = { signature: viewSignature, meshes: projected, curves: meshWireframeCurves(projected) };
     MESH_VIEW_CACHE.set(meshes, meshViews);
   }
-  const curves = enforceBudget(meshViews.curves);
+  let curves = enforceBudget(meshViews.curves);
+  for (const { stage, def, index } of viewOps) {
+    const opParams = resolveParams(def.params, stage.params, stage.mods, {
+      ...ctx, stagePath: `operators[${index}].params`,
+    }, tagErrors(errors, 'operator', index));
+    curves = runGuarded(() => def.apply(curves, opParams, ctx), errors, 'operator', index) ?? curves;
+    curves = sanitizeCurves(curves);
+    curves = enforceBudget(curves);
+  }
+  curves = enforceBudget(curves);
   const pointCount = totalPoints(curves);
   const stats = {
     evalMs: now() - t0,

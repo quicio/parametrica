@@ -7,7 +7,8 @@
  */
 
 import GUI from 'lil-gui';
-import { Operators } from '../../core/registry.js';
+import { Generators, Operators } from '../../core/registry.js';
+import { supportsSpatial } from '../../core/capabilities.js';
 import { isBindable } from '../params/ParamRegistry.js';
 import {
   bindStageParams,
@@ -57,11 +58,19 @@ export class OperatorStack {
     placeholder.disabled = true;
     placeholder.selected = true;
     select.appendChild(placeholder);
+    const activeGeneratorId = this.app.activeLayer?.generator?.id;
+    const activeGenerator = activeGeneratorId && Generators.has(activeGeneratorId)
+      ? Generators.get(activeGeneratorId)
+      : null;
+    const geometryKind = activeGenerator?.capabilities?.geometryKind
+      ?? (supportsSpatial(activeGenerator) ? 'curve3d' : 'curve2d');
+    const spatialLayer = ['surface', 'mesh', 'solid'].includes(geometryKind);
     for (const category of ['geometry', 'topology']) {
       const group = document.createElement('optgroup');
       group.label = category.toUpperCase();
       for (const def of Operators.list()) {
         if (def.category !== category || def.hidden) continue;
+        if (spatialLayer && Array.isArray(def.accepts) && !def.accepts.includes(geometryKind)) continue;
         const option = document.createElement('option');
         option.value = def.id;
         option.textContent = def.name;

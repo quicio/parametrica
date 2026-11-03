@@ -454,3 +454,131 @@ test('parametric surface evaluates, tessellates and renders fill', async ({ page
   const after = await canvas.screenshot();
   expect(Buffer.compare(before, after)).not.toBe(0);
 });
+
+test('surface operators run before tessellation and keep mappings aligned', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.setGenerator('parametric-surface');
+    app.document.operators = [];
+    app.document.generator.params.samplesU = 12;
+    app.document.generator.params.samplesV = 8;
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+
+  const operators = await openSection(page, 'Operators');
+  const select = operators.locator('.op-add-row select');
+  await select.selectOption('translate');
+  await operators.locator('.op-add-row button', { hasText: '+ ADD' }).click();
+  await page.waitForTimeout(250);
+
+  const before = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      bbox: app.evaluation.worldBBox,
+      meshes: app.evaluation.meshes.length,
+      errors: app.evaluation.errors.length,
+    };
+  });
+  expect(before.errors).toBe(0);
+  expect(before.meshes).toBe(1);
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.operators[0].params.dx = 40;
+    app.document.operators[0].params.dz = 12;
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+
+  const translated = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const evaluation = app.evaluation;
+    return {
+      errors: evaluation.errors.length,
+      bbox: evaluation.worldBBox,
+      meshes: evaluation.meshes.length,
+      mappings: evaluation.surfaceMappings.length,
+      mappingAligned: evaluation.surfaceMappings.every((mapping, index) => (
+        mapping.meshId === evaluation.meshes[index].id
+        && mapping.faces.length === evaluation.meshes[index].faces.length
+      )),
+    };
+  });
+  expect(translated.errors).toBe(0);
+  expect(translated.meshes).toBe(1);
+  expect(translated.mappings).toBe(1);
+  expect(translated.mappingAligned).toBe(true);
+  expect(translated.bbox.minX).toBeGreaterThan(before.bbox.minX + 30);
+
+  await select.selectOption('mirror');
+  await operators.locator('.op-add-row button', { hasText: '+ ADD' }).click();
+  await page.waitForTimeout(350);
+  const mirrored = await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    return {
+      errors: evaluation.errors.length,
+      surfaces: evaluation.geometry.length,
+      mappings: evaluation.surfaceMappings.length,
+      aligned: evaluation.surfaceMappings.every((mapping, index) => mapping.meshId === evaluation.meshes[index].id),
+    };
+  });
+  expect(mirrored.errors).toBe(0);
+  expect(mirrored.surfaces).toBe(2);
+  expect(mirrored.mappings).toBe(2);
+  expect(mirrored.aligned).toBe(true);
+
+  await select.selectOption('linear-array');
+  await operators.locator('.op-add-row button', { hasText: '+ ADD' }).click();
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    const last = app.document.operators[app.document.operators.length - 1];
+    last.params.count = 2;
+    app.rebuild();
+  });
+  await page.waitForTimeout(400);
+  const arrayed = await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    return {
+      errors: evaluation.errors.length,
+      surfaces: evaluation.geometry.length,
+      mappings: evaluation.surfaceMappings.length,
+      distinct: new Set(evaluation.geometry.map((item) => item.id)).size,
+      finite: evaluation.geometry.every((item) => item.grid.points.every((row) => (
+        row.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))
+      ))),
+    };
+  });
+  expect(arrayed.errors).toBe(0);
+  expect(arrayed.surfaces).toBe(4);
+  expect(arrayed.mappings).toBe(4);
+  expect(arrayed.distinct).toBe(4);
+  expect(arrayed.finite).toBe(true);
+
+  await expect(select.locator('option[value="twist"]')).toHaveCount(0);
+  await expect(select.locator('option[value="translate"]')).toHaveCount(1);
+
+  const worldBefore = await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    return {
+      bbox: evaluation.worldBBox,
+      ids: evaluation.geometry.map((item) => item.id),
+    };
+  });
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.camera.yaw += 0.4;
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const worldAfter = await page.evaluate(() => {
+    const evaluation = window.__parametrica.evaluation;
+    return {
+      bbox: evaluation.worldBBox,
+      ids: evaluation.geometry.map((item) => item.id),
+    };
+  });
+  expect(worldAfter).toEqual(worldBefore);
+});

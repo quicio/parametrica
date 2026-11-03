@@ -2789,6 +2789,130 @@ console.log('30. parametric surfaces');
   assert(first.curves.length > 0, 'surface emits wireframe curves for stroke compatibility');
 }
 
+/* ——— 30b. surface workbench operators ——— */
+console.log('30b. surface workbench operators');
+{
+  const makeDoc = () => createDocument('parametric-surface', {
+    generator: { params: { samplesU: 8, samplesV: 6, closedU: false, closedV: false, fit: 300 } },
+  });
+
+  const base = evaluateDocument(makeDoc(), { time: 0 });
+  const baseSurface = base.geometry[0];
+  const baseFirst = baseSurface.grid.points[0][0];
+  const baseMapping = base.surfaceMappings[0];
+
+  const translatedDoc = makeDoc();
+  translatedDoc.operators = [
+    { id: 'translate', enabled: true, params: { dx: 10, dy: -4, dz: 3 } },
+  ];
+  const translated = evaluateDocument(translatedDoc, { time: 0 });
+  assert(translated.errors.length === 0, 'surface translate evaluates without errors');
+  assert(translated.geometry.length === 1 && translated.geometry[0].kind === 'surface', 'translate preserves Surface kind');
+  const translatedFirst = translated.geometry[0].grid.points[0][0];
+  assert(Math.abs(translatedFirst.x - (baseFirst.x + 10)) < 1e-9, 'surface translate moves world x');
+  assert(Math.abs(translatedFirst.y - (baseFirst.y - 4)) < 1e-9, 'surface translate moves world y');
+  assert(Math.abs(translatedFirst.z - (baseFirst.z + 3)) < 1e-9, 'surface translate moves world z');
+  assert(translated.geometry[0].grid.rows === baseSurface.grid.rows, 'translate preserves grid rows');
+  assert(JSON.stringify(translated.surfaceMappings[0].domain) === JSON.stringify(baseMapping.domain), 'translate preserves mapping domain');
+  assert(translated.surfaceMappings[0].grid.uCells === baseMapping.grid.uCells, 'translate preserves mapping cells');
+  assert(translated.surfaceMappings[0].faces.length === translated.meshes[0].faces.length, 'translated mapping matches tessellated faces');
+
+  const translatedGeometry = translated.geometry[0];
+  const translatedMapping = translated.surfaceMappings[0];
+  translatedDoc.view.camera.yaw += 0.6;
+  const cameraOnly = evaluateDocument(translatedDoc, { time: 0 });
+  assert(cameraOnly.geometry[0] === translatedGeometry, 'camera-only change reuses operated Surface');
+  assert(cameraOnly.surfaceMappings[0] === translatedMapping, 'camera-only change reuses SurfaceMapping');
+
+  const rotatedDoc = makeDoc();
+  rotatedDoc.operators = [
+    { id: 'rotate', enabled: true, params: { angle: 90, cx: 0, cy: 0 } },
+  ];
+  const rotated = evaluateDocument(rotatedDoc, { time: 0 });
+  assert(rotated.errors.length === 0, 'surface rotate evaluates without errors');
+  assert(rotated.geometry[0].kind === 'surface' && rotated.meshes.length === 1, 'rotate keeps one Surface and one Mesh');
+  const rotatedFirst = rotated.geometry[0].grid.points[0][0];
+  assert(Math.abs(rotatedFirst.x + baseFirst.y) < 1e-9, 'surface rotate maps x around world origin');
+  assert(Math.abs(rotatedFirst.y - baseFirst.x) < 1e-9, 'surface rotate maps y around world origin');
+  assert(rotated.surfaceMappings[0].faces.length === rotated.meshes[0].faces.length, 'rotated mapping stays aligned');
+
+  const scaledDoc = makeDoc();
+  scaledDoc.operators = [
+    { id: 'scale', enabled: true, params: { sx: 2, sy: 0.5, sz: 3 } },
+  ];
+  const scaled = evaluateDocument(scaledDoc, { time: 0 });
+  assert(scaled.errors.length === 0, 'surface scale evaluates without errors');
+  const scaledFirst = scaled.geometry[0].grid.points[0][0];
+  assert(Math.abs(scaledFirst.x - baseFirst.x * 2) < 1e-9, 'surface scale applies x');
+  assert(Math.abs(scaledFirst.y - baseFirst.y * 0.5) < 1e-9, 'surface scale applies y');
+  assert(Math.abs(scaledFirst.z - baseFirst.z * 3) < 1e-9, 'surface scale applies z');
+
+  const mirroredDoc = makeDoc();
+  mirroredDoc.operators = [
+    { id: 'mirror', enabled: true, params: { axis: 'vertical', keepOriginal: true } },
+  ];
+  const mirrored = evaluateDocument(mirroredDoc, { time: 0 });
+  assert(mirrored.errors.length === 0, 'surface mirror evaluates without errors');
+  assert(mirrored.geometry.length === 2 && mirrored.meshes.length === 2, 'mirror with original emits two Surfaces');
+  assert(mirrored.surfaceMappings.length === 2, 'each mirrored Surface gets a mapping');
+  const mirroredBack = mirrored.geometry[1].grid.points[0][0];
+  assert(Math.abs(mirroredBack.x + baseFirst.x) < 1e-9, 'mirror reflects world x');
+  assert(mirrored.meshes.every((mesh, index) => mirrored.surfaceMappings[index].meshId === mesh.id), 'mirrored mappings target their own mesh');
+
+  const arrayDoc = makeDoc();
+  arrayDoc.operators = [
+    { id: 'linear-array', enabled: true, params: { count: 3, spacing: 20, angle: 0 } },
+  ];
+  const arrayed = evaluateDocument(arrayDoc, { time: 0 });
+  assert(arrayed.errors.length === 0, 'surface linear array evaluates without errors');
+  assert(arrayed.geometry.length === 3 && arrayed.meshes.length === 3, 'linear array repeats the Surface');
+  assert(arrayed.surfaceMappings.length === 3, 'arrayed Surfaces keep one mapping each');
+  assert(new Set(arrayed.geometry.map((item) => item.id)).size === 3, 'arrayed Surfaces have distinct ids');
+  assert(arrayed.surfaceMappings.every((mapping) => mapping.grid.rows === baseMapping.grid.rows && mapping.grid.cols === baseMapping.grid.cols), 'topology-changing repeat regenerates matching mappings');
+
+  const chainedDoc = makeDoc();
+  chainedDoc.operators = [
+    { id: 'translate', enabled: true, params: { dx: 5, dy: 0, dz: 0 } },
+    { id: 'mirror', enabled: true, params: { axis: 'horizontal', keepOriginal: false } },
+    { id: 'scale', enabled: true, params: { sx: 1, sy: 1, sz: 1 } },
+  ];
+  const chained = evaluateDocument(chainedDoc, { time: 0 });
+  assert(chained.errors.length === 0, 'world operators chain before tessellation');
+  assert(chained.geometry.length === 1 && chained.geometry[0].kind === 'surface', 'chained transforms keep one Surface');
+
+  Operators.register({
+    id: 'test-curve-only',
+    name: 'Curve only (test)',
+    category: 'geometry',
+    hidden: true,
+    space: 'world',
+    accepts: ['curve2d'],
+    produces: ['curve2d'],
+    params: {},
+    apply: (curves) => curves,
+  });
+  const unsupportedDoc = makeDoc();
+  unsupportedDoc.operators = [
+    { id: 'test-curve-only', enabled: true, params: {} },
+  ];
+  const unsupported = evaluateDocument(unsupportedDoc, { time: 0 });
+  assert(unsupported.errors.length === 1, 'unsupported surface operator reports one error');
+  assert(unsupported.errors[0].stage === 'operator' && unsupported.errors[0].index === 0, 'unsupported operator error is keyed');
+  assert(unsupported.errors[0].message.includes('does not accept surface'), 'unsupported operator names the geometry kind');
+  Operators.map.delete('test-curve-only');
+
+  const finite = [translated, rotated, scaled, mirrored, arrayed, chained];
+  assert(finite.every((evaluation) => evaluation.geometry.every((item) => item.grid.points.flat().every((point) => (
+    Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)
+  )))), 'surface operators preserve finite world coordinates');
+
+  const curveDoc = createDocument('parametric', {});
+  curveDoc.operators = [{ id: 'translate', enabled: true, params: { dx: 7, dy: 2, dz: 0 } }];
+  const curveEval = evaluateDocument(curveDoc, { time: 0 });
+  assert(curveEval.errors.length === 0, 'translate accepts curve documents');
+  assert(curveEval.curves[0].points[0].z === undefined, 'curve translate does not add a z coordinate');
+}
+
 /* ——— 31. preset library ——— */
 console.log('31. preset library');
 {

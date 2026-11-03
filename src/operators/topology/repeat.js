@@ -5,19 +5,21 @@
 
 import { Operators } from '../../core/registry.js';
 import { TYPE } from '../../core/schema.js';
+import { mapGeometryPoints } from '../../geometry/transformGeometry.js';
 
 let id = 0;
 const opId = () => `rp-${id++}`;
 
-const transform = (c, fn) => ({ ...c, id: opId(), points: c.points.map(fn) });
+const SPATIAL_KINDS = ['curve2d', 'curve3d', 'surface', 'mesh'];
+const transform = (item, fn) => mapGeometryPoints(item, fn, { id: opId() });
 
 Operators.register({
   id: 'duplicate',
   name: 'Duplicate',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     count: { label: 'Copies', type: TYPE.NUMBER, min: 1, max: 24, step: 1, default: 3 },
     dx: { label: 'Δx / copy', type: TYPE.NUMBER, min: -300, max: 300, step: 1, default: 60 },
@@ -72,8 +74,8 @@ Operators.register({
   name: 'Radial Array',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     count: { label: 'Copies', type: TYPE.NUMBER, min: 2, max: 48, step: 1, default: 8 },
     sweep: { label: 'Sweep (°)', type: TYPE.NUMBER, min: -720, max: 720, step: 1, default: 360,
@@ -123,8 +125,8 @@ Operators.register({
   name: 'Linear Array',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     count: { label: 'Copies', type: TYPE.NUMBER, min: 1, max: 64, step: 1, default: 5 },
     spacing: { label: 'Spacing', type: TYPE.NUMBER, min: -400, max: 400, step: 1, default: 60 },
@@ -162,8 +164,8 @@ Operators.register({
   name: 'Polar Repeat (rings)',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     rings: { label: 'Rings', type: TYPE.NUMBER, min: 1, max: 12, step: 1, default: 3 },
     ringScale: { label: 'Scale / Ring', type: TYPE.NUMBER, min: 0.3, max: 1.5, step: 0.01, default: 0.75 },
@@ -191,8 +193,8 @@ Operators.register({
   name: 'Grid Repeat',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     cols: { label: 'Columns', type: TYPE.NUMBER, min: 1, max: 12, step: 1, default: 3 },
     rows: { label: 'Rows', type: TYPE.NUMBER, min: 1, max: 12, step: 1, default: 1 },
@@ -221,8 +223,8 @@ Operators.register({
   name: 'Recursive Repeat',
   category: 'topology',
   space: 'world',
-  accepts: ['curve2d', 'curve3d'],
-  produces: ['curve2d', 'curve3d'],
+  accepts: SPATIAL_KINDS,
+  produces: SPATIAL_KINDS,
   params: {
     depth: { label: 'Depth', type: TYPE.NUMBER, min: 1, max: 8, step: 1, default: 3 },
     scale: { label: 'Scale / Level', type: TYPE.NUMBER, min: 0.2, max: 0.95, step: 0.01, default: 0.6 },
