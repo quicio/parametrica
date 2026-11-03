@@ -26,6 +26,7 @@ import {
 } from '../view/projection.js';
 import { isMesh } from '../geometry/contracts.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
+import { sanitizeReference } from '../view/spatialReference.js';
 import { createRenderLayer, createRenderScene } from '../render/scene.js';
 
 const SCENE_CACHE = new WeakMap();
@@ -37,6 +38,7 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
     view?.projection,
     view?.camera,
     view?.frame,
+    view?.reference,
     view?.modes,
     view?.passOpacity,
     view?.style,
@@ -113,6 +115,11 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
   const layers = layerResults.map(({ entry }) => entry);
   const curves = layers.flatMap((layer) => layer.curves);
   const hasArtboard = groups.some((group) => !isSpatialGroup(group));
+  const activeId = doc?.layers?.[doc.activeLayer ?? 0]?.id;
+  const activeResult = layerResults.find((result) => result.entry.id === activeId && result.transform);
+  const referenceTransform = spatial.length
+    ? (frameSpec.mode === 'composition' ? (activeResult?.transform ?? null) : sceneTransform)
+    : null;
   const scene = createRenderScene({
     artboard,
     view,
@@ -121,10 +128,13 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
     meta: {
       projection,
       bbox: curves.length ? bboxAll(curves) : (evaluation.bbox ?? null),
+      worldBBox: spatial.length ? (evaluation.worldBBox ?? worldBoundsOfGroups(spatial)) : null,
       space: spatial.length
         ? (hasArtboard ? SPACE.MIXED : SPACE.WORLD)
         : SPACE.ARTBOARD,
       frame: sceneTransform?.frame ?? null,
+      reference: sanitizeReference(view?.reference),
+      referenceTransform,
     },
   });
   SCENE_CACHE.set(evaluation, { signature, scene });
@@ -142,7 +152,7 @@ function sourceGroups(evaluation, doc, view) {
     ));
   }
   return [{
-    id: 'layer-0',
+    id: doc?.layers?.[0]?.id ?? 'layer-0',
     name: doc?.name,
     curves: evaluation.curves ?? [],
     meshes: evaluation.meshes ?? [],
@@ -280,6 +290,8 @@ function renderLayer(group, {
       renderMeshes: meshes,
       bbox: curves.length ? bboxAll(curves) : (meshBBox(meshes) ?? group.bbox ?? null),
       appliedProjection: projection,
+      space,
+      transform,
     }),
   };
 }
@@ -305,6 +317,33 @@ function resolveSceneFit(view, doc, spatialGroups) {
 function meshBBox(meshes) {
   const points = (meshes ?? []).flatMap((mesh) => mesh.vertices ?? []).filter(Boolean);
   return points.length ? bboxAll([{ points }]) : null;
+}
+
+function worldBoundsOfGroups(groups) {
+  let minX = Infinity; let minY = Infinity; let minZ = Infinity;
+  let maxX = -Infinity; let maxY = -Infinity; let maxZ = -Infinity;
+  for (const group of groups) {
+    for (const points of groupWorldPointLists(group)) {
+      for (const point of points) {
+        if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) continue;
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+        const z = Number.isFinite(point.z) ? point.z : 0;
+        minZ = Math.min(minZ, z);
+        maxZ = Math.max(maxZ, z);
+      }
+    }
+  }
+  if (!Number.isFinite(minX)) return null;
+  return {
+    minX, minY, minZ, maxX, maxY, maxZ,
+    width: maxX - minX,
+    height: maxY - minY,
+    depth: maxZ - minZ,
+    diagonal: Math.hypot(maxX - minX, maxY - minY, maxZ - minZ),
+  };
 }
 
 function legacyFit(group, doc) {

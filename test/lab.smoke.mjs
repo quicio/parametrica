@@ -69,6 +69,7 @@ import { project3D } from '../src/view/camera.js';
 import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
+import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
 import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
@@ -3044,6 +3045,100 @@ console.log('32. spatial contracts');
   );
 
   assert(sceneTransform.space === SPACE.WORLD && sceneTransform.projection === 'xy', 'ViewTransform declares source space and projection');
+}
+
+/* ——— 33. Spatial reference ——— */
+console.log('33. spatial reference');
+{
+  const defaults = createReference();
+  assert(defaults.enabled === false && defaults.ground === false, 'spatial reference is off by default');
+  const sanitized = sanitizeReference({ enabled: 1, ground: 'yes', extra: true });
+  assert(sanitized.enabled === true && sanitized.ground === true && !('extra' in sanitized), 'reference config is sanitized');
+  assert(referenceExtent({ width: 100, height: 50, depth: 20 }) === 75, 'reference extent follows world size');
+  assert(referenceExtent(
+    { width: 1000, height: 1000, depth: 1000 },
+    { bounds: { width: 100, height: 100 }, scale: 1 },
+  ) === 45, 'reference extent is capped by the framed view');
+
+  const ortho = createViewTransform({
+    projection: 'xy',
+    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+  });
+  const reference = buildSpatialReference({
+    transform: ortho,
+    worldBBox: { width: 100, height: 50, depth: 20 },
+    ground: true,
+    divisions: 2,
+  });
+  assert(Math.abs(reference.origin.x) < 1e-9 && Math.abs(reference.origin.y) < 1e-9, 'reference origin is the world origin');
+  assert(reference.axes.length === 2, 'orthographic XY hides the perpendicular Z axis');
+  const axisX = reference.axes.find((axis) => axis.id === 'x');
+  const axisY = reference.axes.find((axis) => axis.id === 'y');
+  assert(Math.abs(axisX.labelPoint.x - reference.extent * 0.86) < 1e-9, 'X axis follows world scale');
+  assert(Math.abs(axisY.labelPoint.y + reference.extent * 0.86) < 1e-9, 'Y axis follows the orthographic projection');
+  assert(reference.ground.length === 10, 'ground uses a low number of divisions');
+
+  const perspective = createViewTransform({
+    projection: '3d',
+    camera: { yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320 },
+    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
+  });
+  const perspectiveReference = buildSpatialReference({
+    transform: perspective,
+    worldBBox: { width: 100, height: 100, depth: 100 },
+  });
+  assert(perspectiveReference.axes.length === 3, 'perspective keeps all three axes');
+
+  const doc = createDocument('helix', { generator: { params: { samples: 160, fit: 340 } } });
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const before = buildRenderScene({ evaluation, document: doc, view: doc.view });
+  assert(before.meta.reference.enabled === false, 'reference is absent from the default scene');
+  const frameBefore = JSON.stringify(before.transform.frame);
+  const bboxBefore = JSON.stringify(before.meta.bbox);
+
+  doc.view.reference.enabled = true;
+  doc.view.reference.ground = true;
+  const after = buildRenderScene({ evaluation, document: doc, view: doc.view });
+  assert(after.meta.reference.enabled === true, 'reference configuration reaches the scene');
+  assert(JSON.stringify(after.transform.frame) === frameBefore, 'toggling the reference never changes the frame');
+  assert(JSON.stringify(after.meta.bbox) === bboxBefore, 'toggling the reference never changes the artwork bbox');
+  assert(after.meta.referenceTransform === after.transform, 'scene mode shares one reference transform');
+  const projectedOrigin = after.transform.toArtboard({ x: 0, y: 0, z: 0 });
+  const sceneReference = buildSpatialReference({
+    transform: after.meta.referenceTransform,
+    worldBBox: after.meta.worldBBox,
+    ground: after.meta.reference.ground,
+  });
+  assert(
+    Math.abs(sceneReference.origin.x - projectedOrigin.x) < 1e-9
+    && Math.abs(sceneReference.origin.y - projectedOrigin.y) < 1e-9,
+    'reference origin matches the scene transform',
+  );
+
+  const compositionDoc = createDocument('parametric-3d', {
+    generator: { params: { exprX: 'cos(t)', exprY: 'sin(t)', exprZ: '0', samples: 64, fit: 160 } },
+    view: { frame: { mode: 'composition' } },
+  });
+  compositionDoc.layers.push(createLayer('parametric-3d', {
+    name: 'Second',
+    generator: { params: { exprX: 'cos(t) + 20', exprY: 'sin(t)', exprZ: '0', samples: 64, fit: 160 } },
+  }));
+  compositionDoc.activeLayer = 1;
+  const compositionEval = evaluateDocument(compositionDoc, { time: 0 });
+  const compositionScene = buildRenderScene({
+    evaluation: compositionEval,
+    document: compositionDoc,
+    view: compositionDoc.view,
+  });
+  assert(
+    compositionScene.meta.referenceTransform === compositionScene.layers[1].transform,
+    'composition mode anchors the reference to the active spatial layer',
+  );
+
+  const flatDoc = createDocument('parametric', { generator: { params: { samples: 96, fit: 340 } } });
+  const flatEval = evaluateDocument(flatDoc, { time: 0 });
+  const flatScene = buildRenderScene({ evaluation: flatEval, document: flatDoc, view: flatDoc.view });
+  assert(flatScene.meta.referenceTransform === null, 'planar-only scenes have no spatial reference transform');
 }
 
 /* ——— Snapshots ——— */

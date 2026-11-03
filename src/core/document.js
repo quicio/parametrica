@@ -15,6 +15,7 @@ import { OVERLAYS } from '../viz/overlays.js';
 import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
 import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
+import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
 
 export const DOCUMENT_VERSION = 3;
 
@@ -103,6 +104,7 @@ export function createDefaultView() {
     passOpacity: {},
     colorRamp: null,
     frame: createFrame(),
+    reference: createReference(),
   };
 }
 
@@ -122,6 +124,7 @@ export const DEFAULT_VIEW = Object.freeze({
   passOpacity: Object.freeze({}),
   colorRamp: null,
   frame: Object.freeze({ ...DEFAULT_FRAME }),
+  reference: Object.freeze({ ...DEFAULT_REFERENCE }),
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({
@@ -158,6 +161,7 @@ function mergeView(base, raw) {
       ...(source.artboard && typeof source.artboard === 'object' ? source.artboard : {}),
     },
     frame: sanitizeFrame(source.frame, base.frame),
+    reference: sanitizeReference(source.reference),
     passOpacity: {
       ...base.passOpacity,
       ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),

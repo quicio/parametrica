@@ -70,6 +70,53 @@ test('parametric overlay shows active-layer properties and toggles', async ({ pa
   await expect(radiusRow.locator('.parametrics-value')).toHaveText('200');
 });
 
+test('spatial reference toggles without changing the frame or export', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Básica'));
+  await page.waitForTimeout(300);
+  const canvas = await openSection(page, 'Canvas');
+  const reference = canvas.locator('.reference-toggle-checkbox');
+  const ground = canvas.locator('.reference-ground-checkbox');
+
+  await expect(reference).not.toBeChecked();
+  await expect(ground).toBeDisabled();
+
+  const before = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      bbox: app.evaluation.bbox,
+      rect: app.renderer.artboardRect(),
+    };
+  });
+
+  await reference.check();
+  await expect(ground).toBeEnabled();
+  await ground.check();
+  await page.waitForTimeout(250);
+
+  const after = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      enabled: app.document.view.reference.enabled,
+      ground: app.document.view.reference.ground,
+      bbox: app.evaluation.bbox,
+      rect: app.renderer.artboardRect(),
+      svg: app.exporter.buildSVGFromCurrent().svg,
+    };
+  });
+
+  expect(after.enabled).toBe(true);
+  expect(after.ground).toBe(true);
+  expect(after.bbox).toEqual(before.bbox);
+  expect(after.rect).toEqual(before.rect);
+  expect(after.svg).not.toContain('data-reference');
+  expect(after.svg).not.toContain('spatial-reference');
+
+  await reference.uncheck();
+  await expect(ground).toBeDisabled();
+  await page.waitForTimeout(150);
+});
+
 test('workspace modes and accordion state persist', async ({ page }) => {
   await boot(page);
   await expect(page.locator('.panel-mode[data-mode="form"]')).toHaveAttribute('aria-selected', 'true');

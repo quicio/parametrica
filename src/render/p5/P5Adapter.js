@@ -13,6 +13,8 @@ import { supportsSpatial } from '../../core/capabilities.js';
 import { analyzeAll } from '../../analysis/differential.js';
 import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.js';
+import { buildSpatialReference } from '../../view/spatialReference.js';
+import { drawSpatialReference } from '../reference.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
 import { AnimationController } from '../../application/animationController.js';
 
@@ -328,16 +330,28 @@ export class P5Adapter extends Renderer {
     const evaluation = app.evaluation;
     const spatial = supportsSpatial(Generators.get(doc.generator.id));
     const quad = doc.view.layout === 'quad' && spatial;
+    const scene = evaluation && !quad
+      ? buildRenderScene({ evaluation, document: doc, view: doc.view })
+      : null;
 
     if (doc.view.guides && !quad && !this.captureMode) this.drawGuides(p, artboard);
     if (!this.captureMode && !quad) this.drawUnderlay(p, artboard);
+    if (scene && !quad && !this.captureMode) {
+      this.drawReference(p, scene, rect.scale, {
+        clip: {
+          x: -artboard.width / 2,
+          y: -artboard.height / 2,
+          w: artboard.width,
+          h: artboard.height,
+        },
+      });
+    }
 
     if (evaluation) {
       if (quad) {
         this.drawQuadView(p, evaluation, doc, artboard);
       } else {
         const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
-        const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
         const analysisByLayer = new Map(
           (evaluation.layers ?? []).map((layer) => [layer.id, layer.analysis]),
         );
@@ -460,6 +474,16 @@ export class P5Adapter extends Renderer {
       p.push();
       p.translate(x + width / 2, y + height / 2);
       p.scale(panelScale);
+      if (!this.captureMode) {
+        const ground = Boolean(scene.meta.reference?.ground)
+          && (panel.projection === '3d' || panel.projection === 'xy');
+        this.drawReference(
+          p,
+          scene,
+          (this._artboardRect?.scale ?? 1) * panelScale,
+          { ground },
+        );
+      }
       this.drawSceneContent(p, scene, {
         document: doc,
         time: doc.animation.time,
@@ -504,6 +528,32 @@ export class P5Adapter extends Renderer {
     ctx.rotate(Number(underlay.rotation) || 0);
     ctx.drawImage(image, -w / 2, -h / 2, w, h);
     ctx.restore();
+  }
+
+  drawReference(p, scene, scale, { ground = null, clip = null } = {}) {
+    const config = scene?.meta?.reference;
+    const transform = scene?.meta?.referenceTransform;
+    if (!config?.enabled || !transform) return;
+    const showGround = ground === null ? Boolean(config.ground) : Boolean(ground);
+    const reference = buildSpatialReference({
+      transform,
+      worldBBox: scene.meta.worldBBox,
+      ground: showGround,
+    });
+    const ctx = p.drawingContext;
+    let clipped = false;
+    if (clip && ctx) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clip.x, clip.y, clip.w, clip.h);
+      ctx.clip();
+      clipped = true;
+    }
+    try {
+      drawSpatialReference(p, reference, { scale, ground: showGround });
+    } finally {
+      if (clipped) ctx.restore();
+    }
   }
 
   drawGuides(p, artboard) {

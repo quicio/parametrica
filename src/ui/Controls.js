@@ -703,6 +703,30 @@ export class Controls {
     });
     row('Parametrics', this.parametricsToggle);
 
+    const reference = view.reference;
+    const referenceToggle = document.createElement('input');
+    referenceToggle.className = 'artboard-check reference-toggle-checkbox';
+    referenceToggle.type = 'checkbox';
+    referenceToggle.checked = Boolean(reference.enabled);
+    referenceToggle.title = 'Show world origin and XYZ axes. UI-only; never included in exports.';
+    const groundToggle = document.createElement('input');
+    groundToggle.className = 'artboard-check reference-ground-checkbox';
+    groundToggle.type = 'checkbox';
+    groundToggle.checked = Boolean(reference.ground);
+    groundToggle.disabled = !reference.enabled;
+    groundToggle.title = 'Show a low-density ground plane at z = 0.';
+    referenceToggle.addEventListener('change', () => {
+      reference.enabled = referenceToggle.checked;
+      groundToggle.disabled = !reference.enabled;
+      rebuild();
+    });
+    groundToggle.addEventListener('change', () => {
+      reference.ground = groundToggle.checked;
+      rebuild();
+    });
+    row('Reference', referenceToggle);
+    row('Ground', groundToggle);
+
     const sync = () => {
       widthInput.value = String(ab.width);
       heightInput.value = String(ab.height);
