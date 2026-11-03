@@ -16,7 +16,7 @@ import { validateSurface } from './validate.js';
  * which produces a half-twisted but crack-free mesh (Möbius band).
  */
 export function tessellateSurface(surface, options = {}) {
-  return buildSurfaceTessellation(surface, options).mesh;
+  return buildSurfaceTessellation(surface, { ...options, mapping: false }).mesh;
 }
 
 /**
@@ -24,10 +24,10 @@ export function tessellateSurface(surface, options = {}) {
  * Both are produced in the same logical-cell loop so they cannot drift.
  */
 export function tessellateSurfaceWithMapping(surface, options = {}) {
-  return buildSurfaceTessellation(surface, options);
+  return buildSurfaceTessellation(surface, { ...options, mapping: true });
 }
 
-function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = {}) {
+function buildSurfaceTessellation(surface, { id = surface.id, smooth = true, mapping = true } = {}) {
   const validation = validateSurface(surface);
   if (!validation.ok) {
     const error = new Error(`surface tessellation: ${validation.errors[0]}`);
@@ -51,7 +51,10 @@ function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = 
     throw new Error('surface tessellation: grid needs at least one cell in U and V');
   }
 
-  const domain = domainOf(surface, { seamU, seamV, twistU, twistV });
+  const mappingEnabled = mapping !== false;
+  const domain = mappingEnabled
+    ? domainOf(surface, { seamU, seamV, twistU, twistV })
+    : null;
 
   const vertices = [];
   for (let u = 0; u < uniqueRows; u++) {
@@ -75,15 +78,17 @@ function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = 
     return indexOf(ui, vi);
   };
 
-  const uStep = (domain.u[1] - domain.u[0]) / uCells;
-  const vStep = (domain.v[1] - domain.v[0]) / vCells;
-  const uvAt = (u, v) => ({
-    u: domain.u[0] + uStep * u,
-    v: domain.v[0] + vStep * v,
-  });
+  const uStep = mappingEnabled ? (domain.u[1] - domain.u[0]) / uCells : 0;
+  const vStep = mappingEnabled ? (domain.v[1] - domain.v[0]) / vCells : 0;
+  const uvAt = mappingEnabled
+    ? (u, v) => ({
+      u: domain.u[0] + uStep * u,
+      v: domain.v[0] + vStep * v,
+    })
+    : null;
   const corner = (u, v) => ({
     index: cornerIndex(u, v),
-    uv: uvAt(u, v),
+    uv: mappingEnabled ? uvAt(u, v) : null,
   });
 
   const faces = [];
@@ -99,10 +104,12 @@ function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = 
       const tri0 = [a, b, c];
       const tri1 = [a, c, d];
       faces.push(tri0.map((cornerPoint) => cornerPoint.index), tri1.map((cornerPoint) => cornerPoint.index));
-      mappingFaces.push(
-        mappingFace(tri0, u, v, 0),
-        mappingFace(tri1, u, v, 1),
-      );
+      if (mappingEnabled) {
+        mappingFaces.push(
+          mappingFace(tri0, u, v, 0),
+          mappingFace(tri1, u, v, 1),
+        );
+      }
       faceNormals.push(faceNormal(vertices[a.index], vertices[b.index], vertices[c.index]));
       faceNormals.push(faceNormal(vertices[a.index], vertices[c.index], vertices[d.index]));
     }
@@ -131,21 +138,23 @@ function buildSurfaceTessellation(surface, { id = surface.id, smooth = true } = 
     },
   });
 
-  const mapping = {
-    kind: 'surface-mapping',
-    surfaceId: surface.id ?? null,
-    meshId: mesh.id,
-    domain,
-    grid: {
-      rows: uniqueRows,
-      cols: uniqueCols,
-      uCells,
-      vCells,
-    },
-    faces: mappingFaces,
-  };
+  const surfaceMapping = mappingEnabled
+    ? {
+      kind: 'surface-mapping',
+      surfaceId: surface.id ?? null,
+      meshId: mesh.id,
+      domain,
+      grid: {
+        rows: uniqueRows,
+        cols: uniqueCols,
+        uCells,
+        vCells,
+      },
+      faces: mappingFaces,
+    }
+    : null;
 
-  return { mesh, mapping };
+  return { mesh, mapping: surfaceMapping };
 }
 
 function mappingFace(tri, cellU, cellV, triangle) {
