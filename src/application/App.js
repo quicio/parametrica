@@ -31,6 +31,7 @@ import { DialogService } from '../ui/dialogs.js';
 import { ParametricOverlay } from '../ui/ParametricOverlay.js';
 import { UVDomainInset } from '../ui/UVDomainInset.js';
 import { SurfaceInspector } from '../ui/SurfaceInspector.js';
+import { SeamLegend } from '../ui/SeamLegend.js';
 import { buildRenderScene } from './renderSceneBuilder.js';
 import { artboardPointFromCanvas } from '../interaction/ray.js';
 import { pickSurface } from '../interaction/surfacePicker.js';
@@ -76,6 +77,7 @@ export class App {
     this.parametricOverlay = new ParametricOverlay(canvasContainer, this);
     this.uvDomainInset = new UVDomainInset(canvasContainer, this);
     this.surfaceInspector = new SurfaceInspector(canvasContainer, this);
+    this.seamLegend = new SeamLegend(canvasContainer, this);
     this.renderer = new P5Adapter(canvasContainer, this);
     this.exporter = new Exporter(this);
     this.controls = new Controls(this, uiContainer);
@@ -701,6 +703,15 @@ export class App {
 
   clearSurfaceInspection() {
     this.surfaceInspector?.clear();
+  }
+
+  setSeamsVisible(visible) {
+    this.seamLegend?.setEnabled(visible);
+    this.controls?.syncSeamsToggle?.();
+  }
+
+  isSeamsVisible() {
+    return Boolean(this.seamLegend?.enabled);
   }
 
   resetCamera() {

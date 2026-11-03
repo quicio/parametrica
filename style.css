@@ -1129,6 +1129,69 @@ html, body {
   }
 }
 
+.seam-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-left: 1px solid var(--ink-faint);
+  background: rgba(5, 5, 5, 0.78);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.seam-legend[hidden] {
+  display: none;
+}
+
+.seam-legend-title {
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+}
+
+.seam-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sl-line {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  border-top: 1px solid #969696;
+}
+
+.sl-seam {
+  border-top: 1px dashed var(--swiss-red);
+}
+
+.sl-twist {
+  border-top: 1px dotted var(--swiss-red);
+}
+
+.seam-legend-status {
+  color: var(--ink-faint);
+  padding-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .seam-legend {
+    bottom: 10px;
+    gap: 7px;
+    font-size: 7px;
+  }
+}
+
 /* ——— Notices ——— */
 
 #notice {

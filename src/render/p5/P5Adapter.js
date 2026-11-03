@@ -16,6 +16,7 @@ import { buildRenderScene } from '../../application/renderSceneBuilder.js';
 import { buildSpatialReference } from '../../view/spatialReference.js';
 import { drawSpatialReference } from '../reference.js';
 import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.js';
+import { buildSeamOverlay } from '../../interaction/seamOverlay.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
 import { AnimationController } from '../../application/animationController.js';
 
@@ -58,6 +59,7 @@ export class P5Adapter extends Renderer {
     this.captureContext = null;
     this.lastScene = null;
     this.quadActive = false;
+    this._seamOverlays = new WeakMap();
 
     // p5 is the largest dependency in the bundle. Importing it lazily
     // keeps the first paint and the control panel responsive while the
@@ -346,7 +348,10 @@ export class P5Adapter extends Renderer {
     const quad = doc.view.layout === 'quad' && spatial;
     if (quad !== this.quadActive) {
       this.quadActive = quad;
-      if (!this.captureMode) this.app.surfaceInspector?.onLayoutChange?.(quad);
+      if (!this.captureMode) {
+        this.app.surfaceInspector?.onLayoutChange?.(quad);
+        this.app.seamLegend?.onLayoutChange?.(quad);
+      }
     }
     const scene = evaluation && !quad
       ? buildRenderScene({ evaluation, document: doc, view: doc.view })
@@ -382,7 +387,10 @@ export class P5Adapter extends Renderer {
           analysisByLayer,
           combinedAnalysis: needsAnalysis(doc.view) ? evaluation.analysis : undefined,
         });
-        if (!this.captureMode) this.drawInspectionOverlay(p, scene, rect);
+        if (!this.captureMode) {
+          this.drawSeamOverlay(p, scene, rect);
+          this.drawInspectionOverlay(p, scene, rect);
+        }
       }
     }
 
@@ -550,6 +558,44 @@ export class P5Adapter extends Renderer {
     ctx.restore();
   }
 
+  drawSeamOverlay(p, scene, rect) {
+    if (!this.app.isSeamsVisible?.()) return;
+    let overlay = this._seamOverlays.get(scene);
+    if (!overlay) {
+      overlay = buildSeamOverlay({ evaluation: this.app.evaluation, scene });
+      this._seamOverlays.set(scene, overlay);
+    }
+    this.app.seamLegend?.setStatus?.(overlay.status);
+    if (!overlay.edges.length) return;
+    const scale = rect.scale > 0 ? rect.scale : 1;
+    const artboard = rect.artboard;
+    const ctx = p.drawingContext;
+    if (ctx && artboard) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
+      ctx.clip();
+    }
+    p.push();
+    drawSeamEdges(p, ctx, overlay.edges.filter((edge) => edge.kind.startsWith('border-')), {
+      color: [150, 150, 150, 120],
+      weight: 1 / scale,
+      dash: null,
+    });
+    drawSeamEdges(p, ctx, overlay.edges.filter((edge) => edge.kind === 'seam-u' || edge.kind === 'seam-v'), {
+      color: [227, 6, 19, 190],
+      weight: 1.2 / scale,
+      dash: [5 / scale, 4 / scale],
+    });
+    drawSeamEdges(p, ctx, overlay.edges.filter((edge) => edge.kind.endsWith('-twist')), {
+      color: [227, 6, 19, 225],
+      weight: 1.4 / scale,
+      dash: [2 / scale, 3 / scale],
+    });
+    p.pop();
+    if (ctx && artboard) ctx.restore();
+  }
+
   drawInspectionOverlay(p, scene, rect) {
     const result = this.app.surfaceInspector?.activeResult?.();
     if (!result) return;
@@ -668,4 +714,15 @@ function drawOverlayShape(p, points) {
   p.beginShape();
   for (const point of points) p.vertex(point.x, point.y);
   p.endShape(p.CLOSE);
+}
+
+function drawSeamEdges(p, ctx, edges, { color, weight, dash }) {
+  if (!edges.length) return;
+  p.stroke(...color);
+  p.strokeWeight(weight);
+  if (ctx) ctx.setLineDash(dash ?? []);
+  for (const edge of edges) {
+    p.line(edge.points[0].x, edge.points[0].y, edge.points[1].x, edge.points[1].y);
+  }
+  if (ctx) ctx.setLineDash([]);
 }

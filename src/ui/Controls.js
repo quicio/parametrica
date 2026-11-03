@@ -211,6 +211,12 @@ export class Controls {
     }
   }
 
+  syncSeamsToggle() {
+    if (this.seamsToggle) {
+      this.seamsToggle.checked = this.app.isSeamsVisible();
+    }
+  }
+
   refreshStatus() {
     if (!this.statusEl || !this.statusText) return;
     const doc = this.app.document;
@@ -758,6 +764,16 @@ export class Controls {
       this.app.setSurfaceInspectorEnabled(this.surfaceInspectorToggle.checked);
     });
     row('Inspect', this.surfaceInspectorToggle);
+
+    this.seamsToggle = document.createElement('input');
+    this.seamsToggle.className = 'artboard-check seams-toggle-checkbox';
+    this.seamsToggle.type = 'checkbox';
+    this.seamsToggle.checked = this.app.isSeamsVisible();
+    this.seamsToggle.title = 'Show declared UV domain borders, seams and reverse/twist seams.';
+    this.seamsToggle.addEventListener('change', () => {
+      this.app.setSeamsVisible(this.seamsToggle.checked);
+    });
+    row('Seams', this.seamsToggle);
 
     const sync = () => {
       widthInput.value = String(ab.width);

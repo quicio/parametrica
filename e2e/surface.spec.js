@@ -302,6 +302,51 @@ test('surface inspector pin follows projection, playback and layer lifecycle', a
   await expect(inspector.locator('.si-pin')).toHaveText('PIN');
 });
 
+test('surface seams toggle overlays, legend and export isolation', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(500);
+  await page.waitForFunction(() => Boolean(window.__parametrica.renderer.lastScene));
+  const canvas = await openSection(page, 'Canvas');
+  const toggle = canvas.locator('.seams-toggle-checkbox');
+  const legend = page.locator('#seam-legend');
+  const surface = page.locator('#canvas-container canvas');
+  await expect(toggle).not.toBeChecked();
+  await expect(legend).toBeHidden();
+
+  const before = await surface.screenshot();
+  const pngBefore = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  await toggle.check();
+  await page.waitForTimeout(350);
+  await expect(legend).toBeVisible();
+  await expect(legend.locator('.seam-legend-status')).toHaveText('declared seams');
+  const after = await surface.screenshot();
+  expect(Buffer.compare(before, after)).not.toBe(0);
+  const pngAfter = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  expect(pngAfter).toBe(pngBefore);
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.layout = 'quad';
+    app.rebuild();
+  });
+  await page.waitForTimeout(350);
+  await expect(legend).toBeHidden();
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.layout = 'single';
+    app.rebuild();
+  });
+  await page.waitForTimeout(350);
+  await expect(legend).toBeVisible();
+
+  await page.evaluate(() => window.__parametrica.setGenerator('parametric'));
+  await page.waitForTimeout(300);
+  await expect(legend.locator('.seam-legend-status')).toHaveText('mapping unavailable');
+  await toggle.uncheck();
+  await expect(legend).toBeHidden();
+});
+
 test('surface inspector preference persists across reload', async ({ page }) => {
   await boot(page);
   let canvas = await openSection(page, 'Canvas');
