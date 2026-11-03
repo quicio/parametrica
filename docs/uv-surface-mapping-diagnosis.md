@@ -28,6 +28,10 @@
 > limitada a la capa activa, Quad detectado por estado real del renderer,
 > refresco por resize, mapping malformado marcado como mismatch y caché de
 > mensajes del inspector.
+>
+> **Fase 3D/3E:** marcador, triángulo, celda y pin; overlay de bordes/seams/
+> twists declarados. No se afirma continuidad geométrica ni se dibujan pares
+> de seam u orientación de twist que el mapping no demuestre.
 
 ---
 

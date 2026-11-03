@@ -456,12 +456,13 @@ veracidad, la estabilidad de cámara y la exportación del estado actual.
 | La malla proyectada perdía world y profundidad ortográfica | **Resuelto con alcance** | `preserveSource` opt-in añade `mesh-projection-source` con alias world, identidad de vértice y `orthoDepth` XY/XZ/YZ; el render normal no paga la asignación. |
 | No se podía inspeccionar una superficie bajo el cursor | **Resuelto con alcance** | Surface Inspector en Canvas single: rayo world, intersección de triángulos, oclusión por distancia, UV reales por esquina y XYZ; sin edición, Quad ni export. |
 | La inspección no tenía feedback visual en el canvas | **Resuelto con alcance** | Overlays UI-only de marcador, triángulo y celda paramétrica, con estados missing/mismatch y pin/release; fuera de escena y exports. |
+| Los seams/twists no se podían distinguir visualmente | **Resuelto con alcance** | Overlay UI-only: bordes grises, seams rojos discontinuos y twists punteados, con leyenda explícita. Solo declara topología; no afirma continuidad geométrica. |
 | Quad en SVG/plotter | Limitación conocida | Quad sigue siendo canvas-only; la exportación usa la proyección activa. |
 | Unidades físicas | Fuera de alcance | `A` es abstracto; la referencia espacial no muestra unidades físicas y el plotter aún no declara mm. |
 
 ### Estado de la suite
 
-- `npm run check`: lint, **1894/1894** checks y build.
-- `npm run test:e2e`: **113/113** tests.
+- `npm run check`: lint, **1922/1922** checks y build.
+- `npm run test:e2e`: **114/114** tests.
 - `openspec validate --specs --strict`: **73/73** specs.
 - No hay cambios OpenSpec activos.

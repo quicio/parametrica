@@ -362,6 +362,15 @@ pinned results are revalidated against the current evidence and released on
 projection/camera/topology/layer changes. Overlays never enter the render
 scene, captures or exports.
 
+A separate UI-only seam overlay derives open domain borders and closed seams
+from `SurfaceMapping.domain` and per-corner UVs. Open axes show both borders in
+gray; closed axes show one declared seam at `u1`/`v1` in dashed red; reverse
+seams use a dotted twist style. The legend states `border`, `seam` and `twist`.
+A declared seam is not a claim of geometric continuity, and seam pairing or
+twist orientation is not drawn because the current mapping does not prove it.
+Missing mappings are unavailable; malformed data is partial. The overlay is
+single-Canvas and excluded from render, captures and exports.
+
 ## 12. Animation
 
 - `time` is injected into **every** expression and every generator.

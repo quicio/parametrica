@@ -92,7 +92,9 @@ src/
 │
 ├── interaction/
 │   ├── ray.js                    cursor → artboard → world ray, triangle hit
-│   └── surfacePicker.js          world surface hits, occlusion, mapping UVs
+│   ├── surfacePicker.js          world surface hits, occlusion, mapping UVs
+│   ├── inspectionOverlay.js      pick marker/triangle/cell derivation
+│   └── seamOverlay.js            declared borders/seams/twists derivation
 │
 ├── geometry/
 │   ├── contracts.js              Curve2D/Curve3D/Surface/Mesh/Solid
@@ -202,6 +204,7 @@ src/
 │   ├── ParametricOverlay.js      canvas-edge property HUD
 │   ├── UVDomainInset.js          compact surface parameter-domain chart
 │   ├── SurfaceInspector.js       hover surface UV/XYZ/depth readout
+│   ├── SeamLegend.js             declared border/seam/twist legend
 │   ├── Controls.js               mode bar, accordions and instrument panel
 │   ├── dialogs.js                injectable prompt / confirm service
 │   ├── params/
@@ -551,6 +554,32 @@ and on geometry/topology changes; viewport resize keeps the pin and reprojects
 the overlay. The overlay is skipped in `captureMode`, so PNG/GIF/SVG/plotter are
 unchanged.
 
+#### Seams and twists
+
+`src/interaction/seamOverlay.js` derives a UI-only seam map from the existing
+`SurfaceMapping` and mesh:
+
+- an **open** axis draws both domain borders (`u0/u1` or `v0/v1`) in gray;
+- a **closed** axis draws one declared seam at its logical end (`u1`/`v1`) in
+  dashed red;
+- a closed axis with `seam = reverse` draws a dotted red **twist** seam;
+- `u0`/`v0` of a closed axis is the same seam and is not duplicated;
+- inverted domains keep the logical ends, not min/max;
+- missing mapping → `mapping unavailable`; malformed faces → `partial data`;
+  no cell/seam relationship is invented.
+
+The legend is explicit: `border`, `seam`, `twist`. “Declared” means the
+`closed`/`seam` metadata says so; it is **not** a claim of geometric
+continuity or a crack-free seam. The mesh is welded and the mapping does not
+retain enough original-grid information to prove continuity. Seam pairs and
+twist orientation are not drawn because the current contract does not expose
+them.
+
+`P5Adapter` caches the derived map per scene and draws it after geometry,
+before the pick overlay. It is single-Canvas only, clipped to the artboard and
+skipped in `captureMode`; the DOM legend is hidden in Quad. No geometry,
+RenderScene, frame, bbox or export contract changes.
+
 ### 3.4 Rendering
 
 ```
@@ -755,8 +784,9 @@ for `renderer.readyPromise` before touching the canvas.
 | 35 | surface mapping | per-cell triangle/UV mapping, open/closed/reverse seams, twists, shared XYZ with distinct UVs, invalid/degenerate domains, engine sidecar invalidation and export exclusion |
 | 36 | projection source | opt-in world aliases, vertex identity, XY/XZ/YZ orthographic depth, shared projected positions with different depth, SurfaceMapping compatibility, cache invalidation and export exclusion |
 | 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle, marker/triangle/cell overlays, pin/release and render/export isolation |
+| 38 | surface seams | open borders, closed seams, reverse/twist styles, inverted domains, missing/malformed/zero-span mappings, perspective projection, no mutation and single-view export isolation |
 
-1894 checks total.
+1922 checks total.
 
 ### Panel behavior
 

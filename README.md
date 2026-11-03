@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (1894 checks)
+npm test             # node-only verification suite (1922 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (113 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (114 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1894 checks across 37 groups (expression
+Runs `test/lab.smoke.mjs` — 1922 checks across 38 groups (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (113 tests) against a Vite server started by Playwright itself.
+suite (114 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -253,6 +253,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **SurfaceMapping sidecar** with per-cell triangle topology and real per-corner UVs, including seams and twists; not yet consumed by picking or render
 - **Projection source** opt-in sidecar that preserves world-vertex identity and real orthographic depth without changing the normal render path
 - **Surface inspector** for single Canvas: hover a surface to read surface, triangle, cell, real UV, XYZ and depth, with marker/triangle/cell overlays and pin/release inspection
+- **Seam overlay** for declared domain borders, closed seams and reverse/twist seams, with an explicit legend; UI-only and never exported
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions

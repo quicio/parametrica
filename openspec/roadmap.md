@@ -146,6 +146,7 @@ extraction and conversion to a Fourier document.
 | Surface inspection: world ray picking, UV/XYZ readout and occlusion | shipped (2026-11-03) |
 | Surface inspection audit: composition/Quad/tolerance/lifecycle fixes | shipped (2026-11-03) |
 | Surface inspection visuals: marker, triangle/cell overlays and pin | shipped (2026-11-03) |
+| Surface seam overlay: borders, declared seams and reverse/twist styles | shipped (2026-11-03) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
 
@@ -454,6 +455,7 @@ generation metadata in the notebook; unit group 24.
 | `surface-inspection` | archived | shipped |
 | `surface-inspection-audit` | archived | shipped |
 | `surface-inspection-visual` | archived | shipped |
+| `surface-seams` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
