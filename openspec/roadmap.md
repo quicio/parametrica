@@ -462,18 +462,17 @@ generation metadata in the notebook; unit group 24.
 | `surface-inspection-visual` | archived | shipped |
 | `surface-seams` | archived | shipped |
 | `surface-inspection-integration` | archived | shipped |
-| `surface-workbench` | active | specified, not implemented |
-| `physical-units` | active | specified, not implemented |
-| `fabrication-export` | active | specified, not implemented |
-| `make-mvp` | active | specified, not implemented |
+| `surface-workbench` | archived | shipped |
+| `physical-units` | archived | shipped |
+| `fabrication-export` | archived | shipped |
+| `make-mvp` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
 
-## 5.2 Post-3F track — Surface Workbench & Fabrication (Fases 4A–4D, specified)
+## 5.2 Post-3F track — Surface Workbench & Fabrication (Fases 4A–4D, shipped)
 
-The next vertical slices are specified in four active OpenSpec changes. They
-must be implemented in order; none is archived yet.
+The four Phase 4 slices were implemented in order, validated with `npm run check`, `npm run test:e2e` and strict OpenSpec validation, and archived. See `docs/phase-4-surface-fabrication.md` for semantics and limits.
 
 | Order | Change | Scope | Depends on |
 |---|---|---|---|
@@ -484,12 +483,11 @@ must be implemented in order; none is archived yet.
 
 Rules:
 
-- Do not start 4D before 4B and 4C validate the physical/export pipeline.
-- Do not add CSG, caps, repair or multi-body to 4D.
-- 4A is the preferred first slice because fabrication needs forms worth making.
-- If MAKE is the immediate business priority, the minimum path is 4B → 4C → 4D,
-  then 4A; this is explicitly a product-order exception, not an architectural
-  one.
+- 4D depends on the physical-unit and STL pipelines from 4B and 4C.
+- 4D remains read-only: no CSG, caps, repair or multi-body.
+- 4A shipped first because fabrication needs forms worth making.
+- The MAKE-first exception (4B → 4C → 4D → 4A) was not needed; all four are
+  now shipped.
 
 ### Phase 5 — Solid foundations (not specified)
 
