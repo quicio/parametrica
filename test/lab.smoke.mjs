@@ -70,6 +70,7 @@ import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh } from '../src/view/projection.js';
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
+import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
 import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
@@ -3139,6 +3140,85 @@ console.log('33. spatial reference');
   const flatEval = evaluateDocument(flatDoc, { time: 0 });
   const flatScene = buildRenderScene({ evaluation: flatEval, document: flatDoc, view: flatDoc.view });
   assert(flatScene.meta.referenceTransform === null, 'planar-only scenes have no spatial reference transform');
+}
+
+/* ——— 34. UV domain ——— */
+console.log('34. uv domain');
+{
+  const doc = createDocument('parametric-surface', {
+    generator: {
+      params: {
+        exprX: 'cos(u) * (3 + cos(v))',
+        exprY: 'sin(u) * (3 + cos(v))',
+        exprZ: 'sin(v)',
+        u0: -1.5, u1: 2.5,
+        v0: 10, v1: -2,
+        samplesU: 8, samplesV: 6,
+        closedU: true, closedV: false,
+        seamU: 'reverse', seamV: 'normal',
+        fit: 300,
+      },
+    },
+  });
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  const surface = evaluation.geometry[0];
+  const summary = summarizeSurfaceDomain(surface);
+  assert(summary && summary.valid, 'valid surface domain produces a summary');
+  assert(summary.u.start === -1.5 && summary.u.end === 2.5, 'U endpoints come from Surface.domain');
+  assert(summary.u.min === -1.5 && summary.u.max === 2.5 && summary.u.reversed === false, 'U bounds are not normalized to [0,1]');
+  assert(summary.v.start === 10 && summary.v.end === -2, 'V endpoints preserve their real orientation');
+  assert(summary.v.min === -2 && summary.v.max === 10 && summary.v.reversed === true, 'V bounds preserve min/max and reversal');
+  assert(summary.rows === 9 && summary.cols === 9, 'domain summary reads actual grid samples');
+  assert(summary.u.closed === true && summary.u.seam === 'reverse', 'closed U and reverse seam are preserved');
+  assert(summary.v.closed === false && summary.v.seam === 'normal', 'open V remains open');
+  assert(formatDomainValue(6.283185) === '6.2832', 'domain values use compact numeric formatting');
+
+  assert(summarizeSurfaceDomain({ kind: 'curve2d' }) === null, 'non-surface geometry has no UV domain');
+  assert(summarizeSurfaceDomain({
+    kind: 'surface',
+    domain: { u: [0, 1] },
+    grid: { rows: 2, cols: 2, points: [] },
+  }) === null, 'missing V domain is invalid');
+  assert(summarizeSurfaceDomain({
+    kind: 'surface',
+    domain: { u: [0, 0], v: [0, 1] },
+    grid: { rows: 2, cols: 2, points: [] },
+  }) === null, 'degenerate U domain is invalid');
+
+  const active = activeSurfaceDomain(evaluation, doc);
+  assert(active?.layerName === doc.layers[0].name, 'active surface domain resolves the active layer');
+  assert(active?.surfaceCount === 1, 'active surface domain counts surfaces');
+
+  const flatDoc = createDocument('parametric', { generator: { params: { samples: 64, fit: 340 } } });
+  const flatEval = evaluateDocument(flatDoc, { time: 0 });
+  assert(activeSurfaceDomain(flatEval, flatDoc) === null, 'planar active layers have no UV domain');
+
+  doc.layers[0].visible = false;
+  const hiddenEval = evaluateDocument(doc, { time: 0 });
+  assert(activeSurfaceDomain(hiddenEval, doc) === null, 'hidden surface layers have no active UV domain');
+  doc.layers[0].visible = true;
+
+  const visibleEval = evaluateDocument(doc, { time: 0 });
+  const scene = buildRenderScene({ evaluation: visibleEval, document: doc, view: doc.view });
+  const before = {
+    geometry: JSON.stringify(visibleEval.geometry),
+    frame: JSON.stringify(scene.transform.frame),
+    bbox: JSON.stringify(scene.meta.bbox),
+  };
+  const domain = activeSurfaceDomain(visibleEval, doc);
+  assert(domain && domain.u.start === -1.5, 'domain summary reads the evaluated surface');
+  assert(JSON.stringify(visibleEval.geometry) === before.geometry, 'UV summary does not mutate geometry');
+  assert(JSON.stringify(scene.transform.frame) === before.frame, 'UV summary does not mutate the frame');
+  assert(JSON.stringify(scene.meta.bbox) === before.bbox, 'UV summary does not mutate the bbox');
+
+  const svg = Exporter.buildSVG(
+    scene.layers.flatMap((layer) => layer.curves),
+    doc.view,
+    { w: 900, h: 900 },
+    doc,
+    scene.layers,
+  );
+  assert(!svg.includes('uv-domain') && !svg.includes('UV DOMAIN'), 'UV domain never enters SVG export');
 }
 
 /* ——— Snapshots ——— */

@@ -902,6 +902,119 @@ html, body {
   }
 }
 
+.uv-domain {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  width: 208px;
+  padding: 8px 10px 7px;
+  border-left: 1px solid var(--ink-faint);
+  background: rgba(5, 5, 5, 0.82);
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  pointer-events: none;
+}
+
+.uv-domain[hidden] {
+  display: none;
+}
+
+.uv-domain-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #181818;
+}
+
+.uv-domain-title {
+  color: var(--ink);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+}
+
+.uv-domain-layer {
+  min-width: 0;
+  color: var(--ink-faint);
+  font-size: 7.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uv-domain-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.uv-domain-grid line {
+  stroke: #1c1c1c;
+  stroke-width: 1;
+}
+
+.uv-domain-border {
+  fill: none;
+  stroke: #3a3a3a;
+  stroke-width: 1;
+}
+
+.uv-domain-seam {
+  stroke: #8a8a8a;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.72;
+}
+
+.uv-domain-axis line,
+.uv-domain-axis path {
+  fill: none;
+  stroke: #8a8a8a;
+  stroke-width: 1;
+}
+
+.uv-domain-axis text {
+  fill: #9a9a9a;
+  font-size: 9px;
+  font-family: var(--mono);
+}
+
+.uv-domain-corner {
+  fill: var(--ink-faint);
+  font-size: 7.5px;
+  font-family: var(--mono);
+}
+
+.uv-domain-foot {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #181818;
+  font-size: 7.5px;
+  line-height: 1.45;
+}
+
+.uv-domain-range {
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+
+.uv-domain-meta {
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .uv-domain {
+    right: 10px;
+    bottom: 10px;
+    width: 176px;
+  }
+}
+
 /* ——— Notices ——— */
 
 #notice {

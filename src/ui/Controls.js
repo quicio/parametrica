@@ -199,6 +199,12 @@ export class Controls {
     }
   }
 
+  syncUVDomainToggle() {
+    if (this.uvDomainToggle) {
+      this.uvDomainToggle.checked = this.app.isUVDomainVisible();
+    }
+  }
+
   refreshStatus() {
     if (!this.statusEl || !this.statusText) return;
     const doc = this.app.document;
@@ -726,6 +732,16 @@ export class Controls {
     });
     row('Reference', referenceToggle);
     row('Ground', groundToggle);
+
+    this.uvDomainToggle = document.createElement('input');
+    this.uvDomainToggle.className = 'artboard-check uv-domain-toggle-checkbox';
+    this.uvDomainToggle.type = 'checkbox';
+    this.uvDomainToggle.checked = this.app.isUVDomainVisible();
+    this.uvDomainToggle.title = 'Show the active surface UV domain inset. UI-only; never included in exports.';
+    this.uvDomainToggle.addEventListener('change', () => {
+      this.app.setUVDomainVisible(this.uvDomainToggle.checked);
+    });
+    row('UV Domain', this.uvDomainToggle);
 
     const sync = () => {
       widthInput.value = String(ab.width);
