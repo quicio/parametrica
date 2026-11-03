@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Add a Coordinates section and a shared viewport descriptor so orthographic
+  planes can show axis labels, ticks, world/physical values and cursor readout
+  without changing geometry or exports.

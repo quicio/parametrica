@@ -172,6 +172,7 @@ extraction and conversion to a Fourier document.
 | `physical-units` | Explicit world/artboard units and scale |
 | `fabrication-export` | Validated binary STL for closed Mesh/Solid |
 | `make-mvp` | Read-only Fabricate mode for validated watertight geometry |
+| `viewport-coordinates` | Coordinates section, per-panel axes, ticks, values and cursor readout |
 | `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -466,6 +467,7 @@ generation metadata in the notebook; unit group 24.
 | `physical-units` | archived | shipped |
 | `fabrication-export` | archived | shipped |
 | `make-mvp` | archived | shipped |
+| `viewport-coordinates` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -488,6 +490,14 @@ Rules:
 - 4A shipped first because fabrication needs forms worth making.
 - The MAKE-first exception (4B → 4C → 4D → 4A) was not needed; all four are
   now shipped.
+
+### 4E — Viewport coordinates (specified, not implemented)
+
+`2026-11-03-viewport-coordinates` refactors the viewport side of Look. It adds a
+Coordinates section and a pure descriptor for XY/XZ/YZ panels: axis signs,
+origin, ticks, unit-aware values and cursor readout. It is UI-only, excludes
+exports and requires no geometry or document-format change beyond optional
+`view.coordinates` metadata.
 
 ### Phase 5 — Solid foundations (not specified)
 
