@@ -126,9 +126,9 @@ A form is a JSON document:
     id: 'layer-1', name: 'Lissajous 3:5', visible: true, locked: false, seed: 1,
     generator: { id: 'lissajous', params: { a: 3, b: 5, delta: 1.5708, size: 340 }, mods: {} },
     operators: [],
-    style: { stroke: { color: '#ffffff', width: 2, opacity: 1, cap: 'round', join: 'round' }, fill: { enabled: false, color: '#ffffff', opacity: 1 }, blend: 'normal' },
+    style: { stroke: { color: '#ffffff', width: 1, opacity: 1, cap: 'round', join: 'round' }, fill: { enabled: false, color: '#ffffff', opacity: 1 }, blend: 'normal' },
   }],
-  view: { modes: ['stroke'], overlays: {}, strokeWeight: 2, guides: true, artboard: { width: 900, height: 900, background: '#000000', margin: 0 } },
+  view: { modes: ['stroke'], overlays: {}, strokeWeight: 1, guides: true, artboard: { width: 900, height: 900, background: '#000000', margin: 0 } },
   animation: { playing: false, speed: 1, time: 0 },
 }
 ```
@@ -271,7 +271,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Helix Lab** with generalized radial/pitch modulation, torsion, orthographic views, a metric-aware gradient wireframe and a 2×2 quad view (3D + XY/XZ/YZ)
 - **Clone ×3** quick action via the Grid Repeat operator (side-by-side copies remain editable)
 - **CodeMirror formula editor** with math-aware highlighting and inline errors
-- **Session recovery** with local autosave and an explicit Restore/Dismiss banner
+- **Startup continuity** that restores the last document, generator and view automatically from local autosave
 - **Panel clarity** with Form/Look/Explore/Perform/Ingest/Keep/Fabricate modes, persisted accordions, essential/advanced parameters, per-layer render overrides, per-pass opacity, layer warnings and a Clone ×3 operator
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)

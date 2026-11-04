@@ -48,6 +48,14 @@ export class App {
     this.dialogs = new DialogService();
     this.document = createDocument('parametric');
 
+    // Restore the last document before history, evaluation or UI creation so
+    // the first paint already shows the generator/view the user left.
+    this.session = new SessionStore();
+    const lastSession = this.session.load();
+    this.autoRestoredSession = Boolean(lastSession?.document);
+    if (lastSession?.document) this.document = lastSession.document;
+    this.sessionErrorShown = false;
+
     // UI-only reference state: never serialised with the document.
     this.imageUnderlay = null;
     this.imageInput = null;
@@ -69,11 +77,6 @@ export class App {
     if (this.notebook.lastError) {
       this.notify(`Notebook storage: ${this.notebook.lastError}`, 'error');
     }
-
-    this.session = new SessionStore();
-    this.pendingSession = this.session.load();
-    this.sessionPaused = Boolean(this.pendingSession);
-    this.sessionErrorShown = false;
 
     this.evaluate();
     this.parametricOverlay = new ParametricOverlay(canvasContainer, this);
@@ -99,7 +102,7 @@ export class App {
     this.onBeforeUnload = () => this.flushSession();
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('beforeunload', this.onBeforeUnload);
-    this.mountSessionRecovery();
+    if (this.autoRestoredSession) this.notify('Restored last session');
   }
 
   get evaluation() {
@@ -303,72 +306,18 @@ export class App {
     return candidate;
   }
 
-  /* ———————— session recovery ———————— */
+  /* ———————— session continuity ———————— */
 
   scheduleSessionSave() {
-    if (this.sessionPaused) return;
     this.session.schedule(this.document);
   }
 
   flushSession() {
-    if (this.sessionPaused) return;
     const ok = this.session.flush(this.document);
     if (!ok && this.session.lastError && !this.sessionErrorShown) {
       this.sessionErrorShown = true;
       this.notify(`Session storage: ${this.session.lastError}`, 'error');
     }
-  }
-
-  mountSessionRecovery() {
-    if (!this.pendingSession) return;
-    const banner = document.createElement('div');
-    banner.id = 'recovery';
-    banner.className = 'recovery';
-    banner.setAttribute('role', 'status');
-    banner.setAttribute('aria-live', 'polite');
-
-    const text = document.createElement('span');
-    text.className = 'recovery-text';
-    const when = new Date(this.pendingSession.savedAt).toLocaleString();
-    text.textContent = `Previous session found · ${when}`;
-
-    const restore = document.createElement('button');
-    restore.className = 'lab-button recovery-restore';
-    restore.textContent = 'Restore';
-    restore.addEventListener('click', () => this.restoreSession(banner));
-
-    const discard = document.createElement('button');
-    discard.className = 'lab-button recovery-discard';
-    discard.textContent = 'Dismiss';
-    discard.addEventListener('click', () => this.discardSession(banner));
-
-    banner.append(text, restore, discard);
-    document.body.appendChild(banner);
-  }
-
-  restoreSession(banner) {
-    const snapshot = this.pendingSession;
-    if (!snapshot) return;
-    this.pendingSession = null;
-    this.sessionPaused = false;
-    try {
-      this.adoptDocument(snapshot.document);
-      this.session.save(this.document);
-      banner?.remove();
-      this.notify('Previous session restored');
-    } catch (error) {
-      this.sessionPaused = true;
-      this.pendingSession = snapshot;
-      this.notify(`Could not restore session: ${error.message}`, 'error');
-    }
-  }
-
-  discardSession(banner) {
-    this.pendingSession = null;
-    this.sessionPaused = false;
-    this.session.clear();
-    banner?.remove();
-    this.notify('Previous session discarded');
   }
 
   /* ———————— history ———————— */

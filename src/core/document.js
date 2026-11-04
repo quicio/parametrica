@@ -47,7 +47,7 @@ const DEFAULT_ARTBOARD = {
 };
 
 const DEFAULT_STYLE = {
-  stroke: { color: '#ffffff', width: 2, opacity: 1, cap: 'round', join: 'round' },
+  stroke: { color: '#ffffff', width: 1, opacity: 1, cap: 'round', join: 'round' },
   fill: { enabled: false, color: '#ffffff', opacity: 1, gradient: createDefaultFillGradient() },
   blend: 'normal',
 };
@@ -95,7 +95,7 @@ export function createDefaultView() {
   return {
     modes: ['stroke'],
     overlays: { ...DEFAULT_OVERLAYS },
-    strokeWeight: 2,
+    strokeWeight: 1,
     guides: true,
     camera: { ...DEFAULT_CAMERA },
     artboard: createDefaultArtboard(),
@@ -204,7 +204,7 @@ function sanitizePassOpacity(raw) {
   return out;
 }
 
-function sanitizeStyle(raw, fallbackWidth = 2) {
+function sanitizeStyle(raw, fallbackWidth = 1) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const stroke = source.stroke && typeof source.stroke === 'object' ? source.stroke : {};
   const fill = source.fill && typeof source.fill === 'object' ? source.fill : {};
