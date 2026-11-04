@@ -475,7 +475,7 @@ generation metadata in the notebook; unit group 24.
 | `look-presets` | archived | shipped |
 | `startup-continuity` | archived | shipped |
 | `instance-layers` | archived | shipped |
-| `vortex-stack-preset` | active | specified, not implemented |
+| `vortex-stack-preset` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -525,6 +525,12 @@ instance layers with shared parameters, per-instance transforms, deterministic
 identity, regenerated SurfaceMapping and source-aware inspection. Limits: 24
 instances / 32 layers. Mirror and multi-body export remain out. See
 `docs/phase-4h-instance-layers-design.md`.
+
+### 4I — Vortex Stack preset (shipped)
+
+`2026-11-04-vortex-stack-preset` shipped. The preset library includes **Vortex
+Stack** under **Compositions**, with stable composition previews and
+source-generator badges. See `docs/phase-4h-instance-layers-design.md`.
 
 ### Phase 5 — Solid foundations (not specified)
 
