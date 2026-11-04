@@ -175,6 +175,7 @@ extraction and conversion to a Fourier document.
 | `viewport-coordinates` | Coordinates section, per-panel axes, ticks, values and cursor readout |
 | `look-presets` | Named visual presets and explicit render-pass applicability |
 | `startup-continuity` | Last-session restore and default stroke width 1 |
+| `instance-layers` | Source-shared instance layers, mapping identity and single-body fabrication |
 | `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -472,6 +473,7 @@ generation metadata in the notebook; unit group 24.
 | `viewport-coordinates` | archived | shipped |
 | `look-presets` | archived | shipped |
 | `startup-continuity` | archived | shipped |
+| `instance-layers` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -513,6 +515,14 @@ unavailable controls explain why. See `docs/look-presets.md`.
 `2026-11-03-startup-continuity` shipped. The app restores the last valid session
 document, generator, params, operators and view automatically on startup. New
 documents use stroke width 1. See `docs/startup-continuity.md`.
+
+### 4H — Instance Layers (shipped)
+
+`2026-11-04-instance-layers` shipped. Generator layers can be referenced by
+instance layers with shared parameters, per-instance transforms, deterministic
+identity, regenerated SurfaceMapping and source-aware inspection. Limits: 24
+instances / 32 layers. Mirror and multi-body export remain out. See
+`docs/phase-4h-instance-layers-design.md`.
 
 ### Phase 5 — Solid foundations (not specified)
 
