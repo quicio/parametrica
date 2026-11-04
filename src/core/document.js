@@ -17,6 +17,7 @@ import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT 
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
+import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
 
 export const DOCUMENT_VERSION = 3;
 
@@ -107,6 +108,7 @@ export function createDefaultView() {
     frame: createFrame(),
     reference: createReference(),
     units: createDefaultUnits(),
+    coordinates: createCoordinates(),
   };
 }
 
@@ -128,6 +130,7 @@ export const DEFAULT_VIEW = Object.freeze({
   frame: Object.freeze({ ...DEFAULT_FRAME }),
   reference: Object.freeze({ ...DEFAULT_REFERENCE }),
   units: DEFAULT_UNITS,
+  coordinates: DEFAULT_COORDINATES,
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({
@@ -166,6 +169,7 @@ function mergeView(base, raw) {
     frame: sanitizeFrame(source.frame, base.frame),
     reference: sanitizeReference(source.reference),
     units: sanitizeUnits(source.units ?? base.units),
+    coordinates: sanitizeCoordinates(source.coordinates ?? base.coordinates),
     passOpacity: {
       ...base.passOpacity,
       ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),

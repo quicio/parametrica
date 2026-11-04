@@ -14,10 +14,22 @@ import { analyzeAll } from '../../analysis/differential.js';
 import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.js';
 import { buildSpatialReference } from '../../view/spatialReference.js';
+import {
+  buildCoordinateTicks,
+  buildViewportDescriptor,
+  formatCoordinate,
+  formatCoordinateReadout,
+  isOrthographicProjection,
+  localPointInPanel,
+  panelAtPoint,
+  quadPanelLayout,
+  worldFromArtboardPoint,
+} from '../../view/viewportCoordinates.js';
 import { drawSpatialReference } from '../reference.js';
 import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.js';
 import { buildSeamOverlay } from '../../interaction/seamOverlay.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
+import { artboardPointFromCanvas } from '../../interaction/ray.js';
 import { AnimationController } from '../../application/animationController.js';
 
 const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);
@@ -60,6 +72,7 @@ export class P5Adapter extends Renderer {
     this.lastScene = null;
     this.quadActive = false;
     this._seamOverlays = new WeakMap();
+    this._coordinatePointer = null;
 
     // p5 is the largest dependency in the bundle. Importing it lazily
     // keeps the first paint and the control panel responsive while the
@@ -102,7 +115,10 @@ export class P5Adapter extends Renderer {
       if (canvas) {
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', 'Parametric geometry canvas');
-        canvas.addEventListener('mouseleave', () => this.app.clearSurfaceInspection?.());
+        canvas.addEventListener('mouseleave', () => {
+          this._coordinatePointer = null;
+          this.app.clearSurfaceInspection?.();
+        });
       }
     };
     p.draw = () => this.drawFrame(p);
@@ -127,6 +143,7 @@ export class P5Adapter extends Renderer {
     p.mousePressed = (event) => {
       if (p.mouseButton !== p.LEFT) return;
       if (!isOverCanvas(event)) return;
+      this._coordinatePointer = { x: p.mouseX, y: p.mouseY };
       // Orthographic views have no camera to rotate.
       if ((this.app.document.view.projection ?? '3d') !== '3d') return;
       this.dragState = { startX: p.mouseX, startY: p.mouseY, yaw: this.app.document.view.camera.yaw, pitch: this.app.document.view.camera.pitch };
@@ -135,6 +152,7 @@ export class P5Adapter extends Renderer {
     p.mouseDragged = (event) => {
       if (!this.dragState) return;
       if (!isOverCanvas(event)) return;
+      this._coordinatePointer = { x: p.mouseX, y: p.mouseY };
       const dx = p.mouseX - this.dragState.startX;
       const dy = p.mouseY - this.dragState.startY;
       const next = orbitCamera(this.app.document.view.camera, this.dragState, dx, dy);
@@ -147,10 +165,14 @@ export class P5Adapter extends Renderer {
       // canvas. Don't require isOverCanvas here.
       this.dragState = null;
       this.app.pointerDragging = false;
-      if (isOverCanvas(event)) this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
+      if (isOverCanvas(event)) {
+        this._coordinatePointer = { x: p.mouseX, y: p.mouseY };
+        this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
+      }
     };
     p.mouseMoved = (event) => {
       if (this.captureMode || !isOverCanvas(event)) return;
+      this._coordinatePointer = { x: p.mouseX, y: p.mouseY };
       if (this.quadActive) return;
       this.app.inspectAtCanvas?.(p.mouseX, p.mouseY);
     };
@@ -390,6 +412,15 @@ export class P5Adapter extends Renderer {
         if (!this.captureMode) {
           this.drawSeamOverlay(p, scene, rect);
           this.drawInspectionOverlay(p, scene, rect);
+          this.drawCoordinates(p, {
+            view: doc.view,
+            projection: scene?.meta?.projection ?? doc.view.projection ?? '3d',
+            transform: scene?.meta?.referenceTransform ?? scene?.transform ?? null,
+            units: doc.view.units,
+            panelSize: { w: artboard.width, h: artboard.height },
+            pixelsPerArtboardUnit: rect.scale,
+            cursor: this.coordinatePointerArtboardPoint(),
+          });
         }
       }
     }
@@ -460,25 +491,14 @@ export class P5Adapter extends Renderer {
   }
 
   drawQuadView(p, evaluation, doc, artboard) {
-    const panels = [
-      { projection: '3d', label: '3D' },
-      { projection: 'xy', label: 'XY · Planta' },
-      { projection: 'xz', label: 'XZ · Alzado' },
-      { projection: 'yz', label: 'YZ · Perfil' },
-    ];
-    const gap = Math.max(8, Math.min(artboard.width, artboard.height) * 0.025);
-    const width = (artboard.width - gap) / 2;
-    const height = (artboard.height - gap) / 2;
-    const positions = [
-      [-artboard.width / 2, -artboard.height / 2],
-      [gap / 2, -artboard.height / 2],
-      [-artboard.width / 2, gap / 2],
-      [gap / 2, gap / 2],
-    ];
-    const panelScale = Math.min(1, Math.min(width, height) / 380);
+    const panels = quadPanelLayout(artboard.width, artboard.height);
+    const panelScale = Math.min(1, Math.min(panels[0].w, panels[0].h) / 380);
     const modes = Array.isArray(doc.view.modes) ? doc.view.modes : ['stroke'];
-    panels.forEach((panel, index) => {
-      const [x, y] = positions[index];
+    const artboardPoint = this.coordinatePointerArtboardPoint();
+    const hoveredPanel = panelAtPoint(panels, artboardPoint);
+    panels.forEach((panel) => {
+      const x = panel.cx - panel.w / 2;
+      const y = panel.cy - panel.h / 2;
       const view = { ...doc.view, projection: panel.projection, layout: 'single' };
       const scene = buildRenderScene({
         evaluation,
@@ -494,13 +514,13 @@ export class P5Adapter extends Renderer {
       p.noFill();
       p.stroke(255, 28);
       p.strokeWeight(1);
-      p.rect(x, y, width, height);
+      p.rect(x, y, panel.w, panel.h);
       context.save();
       context.beginPath();
-      context.rect(x, y, width, height);
+      context.rect(x, y, panel.w, panel.h);
       context.clip();
       p.push();
-      p.translate(x + width / 2, y + height / 2);
+      p.translate(panel.cx, panel.cy);
       p.scale(panelScale);
       if (!this.captureMode) {
         const ground = Boolean(scene.meta.reference?.ground)
@@ -520,6 +540,17 @@ export class P5Adapter extends Renderer {
         analysisByLayer,
         combinedAnalysis,
       });
+      if (!this.captureMode) {
+        this.drawCoordinates(p, {
+          view: doc.view,
+          projection: panel.projection,
+          transform: scene?.meta?.referenceTransform ?? scene?.transform ?? null,
+          units: doc.view.units,
+          panelSize: { w: panel.w / panelScale, h: panel.h / panelScale },
+          pixelsPerArtboardUnit: (this._artboardRect?.scale ?? 1) * panelScale,
+          cursor: hoveredPanel === panel ? localPointInPanel(artboardPoint, panel) : null,
+        });
+      }
       p.pop();
       context.restore();
       p.pop();
@@ -532,6 +563,161 @@ export class P5Adapter extends Renderer {
       p.text(panel.label, x + 8, y + 8);
       p.pop();
     });
+  }
+
+  /** Pointer position in local artboard coordinates, or null outside. */
+  coordinatePointerArtboardPoint() {
+    const pointer = this._coordinatePointer;
+    const rect = this._artboardRect;
+    if (!pointer || !rect) return null;
+    const x = (pointer.x - rect.x - rect.w / 2) / rect.scale;
+    const y = (pointer.y - rect.y - rect.h / 2) / rect.scale;
+    const artboard = rect.artboard;
+    if (Math.abs(x) > artboard.width / 2 || Math.abs(y) > artboard.height / 2) return null;
+    return { x, y };
+  }
+
+  /**
+   * Resolve the readable world coordinates at a canvas point using the same
+   * panel descriptor as the overlay. Useful for tests and future inspectors.
+   */
+  coordinateReadoutAtCanvas(canvasX, canvasY) {
+    const doc = this.app.document;
+    const evaluation = this.app.evaluation;
+    if (!evaluation || !doc) return null;
+    const rect = this.artboardRect();
+    const artboardPoint = artboardPointFromCanvas({ x: canvasX, y: canvasY }, rect);
+    if (!artboardPoint) return null;
+    const units = doc.view.units;
+    const unitDisplay = doc.view.coordinates?.unitDisplay ?? 'auto';
+    const spatial = supportsSpatial(Generators.get(doc.generator.id));
+    const quad = doc.view.layout === 'quad' && spatial;
+    if (quad) {
+      const panels = quadPanelLayout(rect.artboard.width, rect.artboard.height);
+      const panel = panelAtPoint(panels, artboardPoint);
+      if (!panel || !isOrthographicProjection(panel.projection)) return null;
+      const view = { ...doc.view, projection: panel.projection, layout: 'single' };
+      const scene = buildRenderScene({
+        evaluation,
+        document: doc,
+        view,
+        projectionOverride: panel.projection,
+      });
+      const descriptor = buildViewportDescriptor({
+        projection: panel.projection,
+        transform: scene.meta.referenceTransform ?? scene.transform,
+        units,
+        unitDisplay,
+        panelSize: { w: panel.w, h: panel.h },
+      });
+      const world = worldFromArtboardPoint({
+        descriptor,
+        point: localPointInPanel(artboardPoint, panel),
+      });
+      return world
+        ? { projection: panel.projection, world, text: formatCoordinateReadout(world, descriptor.units) }
+        : null;
+    }
+    const projection = doc.view.projection ?? '3d';
+    if (!isOrthographicProjection(projection)) return null;
+    const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
+    const descriptor = buildViewportDescriptor({
+      projection,
+      transform: scene.meta.referenceTransform ?? scene.transform,
+      units,
+      unitDisplay,
+      panelSize: { w: rect.artboard.width, h: rect.artboard.height },
+    });
+    const world = worldFromArtboardPoint({ descriptor, point: artboardPoint });
+    return world
+      ? { projection, world, text: formatCoordinateReadout(world, descriptor.units) }
+      : null;
+  }
+
+  drawCoordinates(p, {
+    view,
+    projection,
+    transform,
+    units,
+    panelSize,
+    pixelsPerArtboardUnit,
+    cursor = null,
+  }) {
+    const config = view?.coordinates;
+    if (!config || (!config.enabled && !config.cursor)) return;
+    if (!isOrthographicProjection(projection) || !transform) return;
+    const descriptor = buildViewportDescriptor({
+      projection,
+      transform,
+      units,
+      unitDisplay: config.unitDisplay,
+      panelSize,
+    });
+    if (!descriptor.ranges) return;
+    const model = buildCoordinateTicks({
+      descriptor,
+      panelSize,
+      step: config.step,
+      pixelsPerArtboardUnit,
+    });
+    if (!model) return;
+
+    const pixels = Number(pixelsPerArtboardUnit);
+    const scale = Number.isFinite(pixels) && pixels > 0 ? pixels : 1;
+    const px = (value) => value / scale;
+    const halfW = panelSize.w / 2;
+    const halfH = panelSize.h / 2;
+    const unitInfo = descriptor.units;
+
+    p.push();
+    p.noStroke();
+    if (config.enabled && config.grid) {
+      p.stroke(255, 255, 255, 22);
+      p.strokeWeight(px(0.55));
+      for (const tick of model.horizontal.ticks) {
+        p.line(tick.position, -halfH, tick.position, halfH);
+      }
+      for (const tick of model.vertical.ticks) {
+        p.line(-halfW, tick.position, halfW, tick.position);
+      }
+    }
+
+    if (config.enabled) {
+      p.stroke(255, 255, 255, 88);
+      p.strokeWeight(px(0.75));
+      p.fill(205, 205, 205, 205);
+      p.textSize(px(8));
+      p.textAlign(p.CENTER, p.BOTTOM);
+      for (const tick of model.horizontal.ticks) {
+        p.line(tick.position, halfH, tick.position, halfH - px(5));
+        p.text(formatCoordinate(tick.value, unitInfo), tick.position, halfH - px(6));
+      }
+      p.textAlign(p.LEFT, p.CENTER);
+      for (const tick of model.vertical.ticks) {
+        p.line(-halfW, tick.position, -halfW + px(5), tick.position);
+        p.text(formatCoordinate(tick.value, unitInfo), -halfW + px(7), tick.position);
+      }
+      p.noStroke();
+      p.fill(180, 180, 180, 210);
+      p.textAlign(p.RIGHT, p.BOTTOM);
+      p.text(
+        `${descriptor.axes.horizontal.label} →  ${descriptor.axes.vertical.label} ↑${unitInfo.suffix ? `  [${unitInfo.suffix}]` : ''}`,
+        halfW - px(7),
+        halfH - px(5),
+      );
+    }
+
+    if (config.cursor && cursor && !this.captureMode) {
+      const world = worldFromArtboardPoint({ point: cursor, descriptor });
+      if (world) {
+        p.noStroke();
+        p.fill(230, 230, 230, 225);
+        p.textSize(px(8));
+        p.textAlign(p.RIGHT, p.TOP);
+        p.text(formatCoordinateReadout(world, unitInfo), halfW - px(7), -halfH + px(7));
+      }
+    }
+    p.pop();
   }
 
   /**

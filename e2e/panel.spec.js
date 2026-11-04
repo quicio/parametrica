@@ -74,9 +74,9 @@ test('spatial reference toggles without changing the frame or export', async ({ 
   await boot(page);
   await page.evaluate(() => window.__parametrica.applyPreset('Básica'));
   await page.waitForTimeout(300);
-  const canvas = await openSection(page, 'Canvas');
-  const reference = canvas.locator('.reference-toggle-checkbox');
-  const ground = canvas.locator('.reference-ground-checkbox');
+  const coordinates = await openSection(page, 'Coordinates');
+  const reference = coordinates.locator('.reference-toggle-checkbox');
+  const ground = coordinates.locator('.reference-ground-checkbox');
 
   await expect(reference).not.toBeChecked();
   await expect(ground).toBeDisabled();

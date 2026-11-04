@@ -331,6 +331,7 @@ export class Controls {
     this.buildOperatorsSection();
     this.buildCameraSection();
     this.buildCanvasSection();
+    this.buildCoordinatesSection();
     this.buildUnitsSection();
     this.buildFabricateSection();
     this.buildStyleSection();
@@ -734,30 +735,6 @@ export class Controls {
     });
     row('Parametrics', this.parametricsToggle);
 
-    const reference = view.reference;
-    const referenceToggle = document.createElement('input');
-    referenceToggle.className = 'artboard-check reference-toggle-checkbox';
-    referenceToggle.type = 'checkbox';
-    referenceToggle.checked = Boolean(reference.enabled);
-    referenceToggle.title = 'Show world origin and XYZ axes. UI-only; never included in exports.';
-    const groundToggle = document.createElement('input');
-    groundToggle.className = 'artboard-check reference-ground-checkbox';
-    groundToggle.type = 'checkbox';
-    groundToggle.checked = Boolean(reference.ground);
-    groundToggle.disabled = !reference.enabled;
-    groundToggle.title = 'Show a low-density ground plane at z = 0.';
-    referenceToggle.addEventListener('change', () => {
-      reference.enabled = referenceToggle.checked;
-      groundToggle.disabled = !reference.enabled;
-      rebuild();
-    });
-    groundToggle.addEventListener('change', () => {
-      reference.ground = groundToggle.checked;
-      rebuild();
-    });
-    row('Reference', referenceToggle);
-    row('Ground', groundToggle);
-
     this.uvDomainToggle = document.createElement('input');
     this.uvDomainToggle.className = 'artboard-check uv-domain-toggle-checkbox';
     this.uvDomainToggle.type = 'checkbox';
@@ -797,6 +774,134 @@ export class Controls {
       presetSelect.value = preset?.id ?? 'custom';
     };
     sync();
+    body.appendChild(grid);
+  }
+
+  buildCoordinatesSection() {
+    const body = this.section('Coordinates', { id: 'coordinates', mode: 'look' });
+    const view = this.app.document.view;
+    const reference = view.reference;
+    const coordinates = view.coordinates;
+    body.appendChild(this.panelHint(
+      'Global viewport · UI-only. Origin, axes, ticks and cursor readout never enter exports.',
+    ));
+
+    const grid = document.createElement('div');
+    grid.className = 'artboard-grid coordinates-grid';
+    const row = (label, control) => {
+      const el = document.createElement('label');
+      el.className = 'artboard-row';
+      const name = document.createElement('span');
+      name.className = 'artboard-label';
+      name.textContent = label;
+      el.append(name, control);
+      grid.appendChild(el);
+      return el;
+    };
+    const checkbox = (className, checked, title) => {
+      const input = document.createElement('input');
+      input.className = `artboard-check ${className}`;
+      input.type = 'checkbox';
+      input.checked = checked;
+      input.title = title;
+      return input;
+    };
+    const rebuild = () => this.app.rebuild();
+
+    const referenceToggle = checkbox(
+      'reference-toggle-checkbox',
+      Boolean(reference.enabled),
+      'Show world origin and XYZ axes. UI-only; never included in exports.',
+    );
+    const groundToggle = checkbox(
+      'reference-ground-checkbox',
+      Boolean(reference.ground),
+      'Show a low-density ground plane at z = 0.',
+    );
+    groundToggle.disabled = !reference.enabled;
+    referenceToggle.addEventListener('change', () => {
+      reference.enabled = referenceToggle.checked;
+      groundToggle.disabled = !reference.enabled;
+      rebuild();
+    });
+    groundToggle.addEventListener('change', () => {
+      reference.ground = groundToggle.checked;
+      rebuild();
+    });
+    row('Reference', referenceToggle);
+    row('Ground', groundToggle);
+
+    const coordinatesToggle = checkbox(
+      'coordinates-toggle-checkbox',
+      Boolean(coordinates.enabled),
+      'Show world-axis ticks and values in orthographic panels.',
+    );
+    const gridToggle = checkbox(
+      'coordinates-grid-checkbox',
+      Boolean(coordinates.grid),
+      'Draw a light grid at coordinate ticks.',
+    );
+    gridToggle.disabled = !coordinates.enabled;
+    coordinatesToggle.addEventListener('change', () => {
+      coordinates.enabled = coordinatesToggle.checked;
+      gridToggle.disabled = !coordinates.enabled;
+      stepInput.disabled = !coordinates.enabled;
+      rebuild();
+    });
+    gridToggle.addEventListener('change', () => {
+      coordinates.grid = gridToggle.checked;
+      rebuild();
+    });
+    row('Values', coordinatesToggle);
+    row('Grid', gridToggle);
+
+    const cursorToggle = checkbox(
+      'coordinates-cursor-checkbox',
+      Boolean(coordinates.cursor),
+      'Show the two in-plane world coordinates under the cursor.',
+    );
+    cursorToggle.addEventListener('change', () => {
+      coordinates.cursor = cursorToggle.checked;
+      rebuild();
+    });
+    row('Cursor XYZ', cursorToggle);
+
+    const stepInput = document.createElement('input');
+    stepInput.className = 'artboard-input coordinates-step';
+    stepInput.type = 'number';
+    stepInput.min = '0.000001';
+    stepInput.step = '0.1';
+    stepInput.placeholder = 'auto';
+    stepInput.value = coordinates.step === null ? '' : String(coordinates.step);
+    stepInput.disabled = !coordinates.enabled;
+    stepInput.title = 'World units between ticks. Empty means automatic 1/2/5 spacing.';
+    stepInput.addEventListener('change', () => {
+      const value = Number(stepInput.value);
+      coordinates.step = Number.isFinite(value) && value > 0 ? value : null;
+      if (!coordinates.step) stepInput.value = '';
+      rebuild();
+    });
+    row('Tick step', stepInput);
+
+    const unitsSelect = document.createElement('select');
+    unitsSelect.className = 'artboard-input coordinates-units-select';
+    for (const [value, label] of [
+      ['auto', 'Auto · mm when scaled'],
+      ['world', 'World units'],
+      ['physical', 'Physical · mm'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      unitsSelect.appendChild(option);
+    }
+    unitsSelect.value = coordinates.unitDisplay;
+    unitsSelect.addEventListener('change', () => {
+      coordinates.unitDisplay = unitsSelect.value;
+      rebuild();
+    });
+    row('Values in', unitsSelect);
+
     body.appendChild(grid);
   }
 
