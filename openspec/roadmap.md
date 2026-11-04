@@ -467,7 +467,7 @@ generation metadata in the notebook; unit group 24.
 | `physical-units` | archived | shipped |
 | `fabrication-export` | archived | shipped |
 | `make-mvp` | archived | shipped |
-| `viewport-coordinates` | active | specified, not implemented |
+| `viewport-coordinates` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -491,13 +491,12 @@ Rules:
 - The MAKE-first exception (4B → 4C → 4D → 4A) was not needed; all four are
   now shipped.
 
-### 4E — Viewport coordinates (specified, not implemented)
+### 4E — Viewport coordinates (shipped)
 
-`2026-11-03-viewport-coordinates` refactors the viewport side of Look. It adds a
-Coordinates section and a pure descriptor for XY/XZ/YZ panels: axis signs,
-origin, ticks, unit-aware values and cursor readout. It is UI-only, excludes
-exports and requires no geometry or document-format change beyond optional
-`view.coordinates` metadata.
+`2026-11-03-viewport-coordinates` shipped. Look now has a Coordinates section
+and a pure descriptor for XY/XZ/YZ panels: axis signs, origin, ticks,
+unit-aware values and cursor readout. It is UI-only, excludes exports and adds
+only optional `view.coordinates` metadata. See `docs/viewport-coordinates.md`.
 
 ### Phase 5 — Solid foundations (not specified)
 
