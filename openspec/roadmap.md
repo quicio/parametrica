@@ -173,6 +173,7 @@ extraction and conversion to a Fourier document.
 | `fabrication-export` | Validated binary STL for closed Mesh/Solid |
 | `make-mvp` | Read-only Fabricate mode for validated watertight geometry |
 | `viewport-coordinates` | Coordinates section, per-panel axes, ticks, values and cursor readout |
+| `look-presets` | Named visual presets and explicit render-pass applicability |
 | `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -468,6 +469,7 @@ generation metadata in the notebook; unit group 24.
 | `fabrication-export` | archived | shipped |
 | `make-mvp` | archived | shipped |
 | `viewport-coordinates` | archived | shipped |
+| `look-presets` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -497,6 +499,12 @@ Rules:
 and a pure descriptor for XY/XZ/YZ panels: axis signs, origin, ticks,
 unit-aware values and cursor readout. It is UI-only, excludes exports and adds
 only optional `view.coordinates` metadata. See `docs/viewport-coordinates.md`.
+
+### 4F — Look presets and control clarity (shipped)
+
+`2026-11-03-look-presets` shipped. Look has named visual presets and a clearer
+render contract: checkbox enables a pass, opacity adjusts strength, and
+unavailable controls explain why. See `docs/look-presets.md`.
 
 ### Phase 5 — Solid foundations (not specified)
 

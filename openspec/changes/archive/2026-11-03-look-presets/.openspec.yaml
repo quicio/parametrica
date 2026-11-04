@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Add built-in visual Look presets and make render/control applicability
+  explicit so users understand what each pass does and why some controls are
+  unavailable.
