@@ -63,6 +63,7 @@ import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
 import { exportBinarySTL, BinaryStlExporter, FabricationExportError } from '../src/export/stl.js';
 import { buildFabricationReport, resolveFabricationSource } from '../src/application/fabricationSource.js';
+import { getLookPreset, LOOK_PRESETS, lookPresetAvailability, lookPresetMatchesView, resolveLookPreset } from '../src/render/lookPresets.js';
 import { encodeGIF, gifFrameTimes, GIF_MAX_FRAMES } from '../src/export/gif.js';
 import { analyzeCurve } from '../src/analysis/differential.js';
 import { warpExpressions } from '../src/operators/geometry/deform.js';
@@ -3200,6 +3201,44 @@ console.log('30f. viewport coordinates');
   const afterGeometry = JSON.stringify(evaluateDocument(doc, { time: 0 }).geometry[0].grid.points);
   assert(afterGeometry === beforeGeometry, 'coordinate settings never change geometry');
   assert(createCoordinates({ extra: true }).enabled === false, 'createCoordinates keeps unknown fields out of the contract');
+}
+
+/* ——— 30g. look presets ——— */
+console.log('30g. look presets');
+{
+  assert(LOOK_PRESETS.length === 7, 'seven built-in look presets are defined');
+  assert(new Set(LOOK_PRESETS.map((preset) => preset.id)).size === LOOK_PRESETS.length, 'look preset ids are unique');
+  assert(getLookPreset('surface')?.requires === 'surface', 'surface preset declares its requirement');
+  assert(getLookPreset('missing') === null, 'unknown look preset returns null');
+
+  const noSurface = lookPresetAvailability(getLookPreset('surface'), { hasSurface: false });
+  assert(noSurface.available === false && noSurface.reason.includes('surface'), 'surface preset is unavailable without meshes');
+  assert(lookPresetAvailability(getLookPreset('surface'), { hasSurface: true }).available === true, 'surface preset enables with meshes');
+  assert(lookPresetAvailability(getLookPreset('epicycles'), { generatorId: 'fourier' }).available === true, 'epicycles preset enables on Fourier');
+  const notFourier = lookPresetAvailability(getLookPreset('epicycles'), { generatorId: 'parametric' });
+  assert(notFourier.available === false && notFourier.reason.includes('Fourier'), 'epicycles preset explains the Fourier requirement');
+  assert(lookPresetAvailability(getLookPreset('line'), {}).available === true, 'line preset is always available');
+
+  const surface = resolveLookPreset(getLookPreset('surface'));
+  assert(surface.modes.includes('surface-fill') && surface.modes.includes('surface-wireframe'), 'surface preset resolves surface passes');
+  assert(surface.colorMetric === 'auto' && surface.guides === false, 'surface preset resolves view fields');
+  const technical = resolveLookPreset(getLookPreset('technical'));
+  assert(technical.overlays.inflections === true && technical.overlays.bboxt === undefined, 'preset overlays only include known ids');
+  assert(technical.overlays.bbox === true && technical.overlays.ruler === true, 'technical preset enables overlays');
+  assert(Object.keys(technical.overlays).length > 0, 'resolved overlays are explicit');
+
+  const view = {
+    modes: [...technical.modes],
+    overlays: technical.overlays,
+    colorMetric: technical.colorMetric,
+    guides: technical.guides,
+  };
+  assert(lookPresetMatchesView(getLookPreset('technical'), view), 'matching view detects the technical preset');
+  assert(!lookPresetMatchesView(getLookPreset('line'), view), 'a different preset does not match');
+  view.modes = [...view.modes, 'points', 'points'];
+  assert(lookPresetMatchesView(getLookPreset('technical'), view), 'mode matching ignores duplicates');
+  view.colorMetric = 'height';
+  assert(!lookPresetMatchesView(getLookPreset('technical'), view), 'color metric mismatch rejects a preset match');
 }
 
 /* ——— 31. preset library ——— */

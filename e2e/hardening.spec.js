@@ -253,7 +253,7 @@ test('per-pass opacity changes the pass and persists on the view', async ({ page
   await page.evaluate(() => window.__parametrica.applyPreset('Lissajous 3:5'));
   await page.waitForTimeout(300);
   const render = await openSection(page, 'Render');
-  const points = render.locator('.mode-toggle', { hasText: 'Points' });
+  const points = render.locator('.mode-toggle[data-pass="points"]');
   await points.locator('input[type="checkbox"]').check();
   await page.waitForTimeout(300);
   const canvas = page.locator('#canvas-container canvas');

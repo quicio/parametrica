@@ -410,6 +410,8 @@ test('surface overlays coexist and preserve exports', async ({ page }) => {
 
 test('surface inspector preference persists across reload', async ({ page }) => {
   await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(400);
   let canvas = await openSection(page, 'Canvas');
   const toggle = canvas.locator('.surface-inspector-toggle-checkbox');
   await toggle.check();

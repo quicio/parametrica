@@ -61,7 +61,7 @@ test('editing a harmonic row updates the document', async ({ page }) => {
 
 test('render modes stay an array when toggled', async ({ page }) => {
   await openSection(page, 'Render');
-  const points = page.locator('.mode-toggle', { hasText: 'Points' }).locator('input[type="checkbox"]');
+  const points = page.locator('.mode-toggle[data-pass="points"]').locator('input[type="checkbox"]');
   await points.check();
   await page.waitForTimeout(200);
 

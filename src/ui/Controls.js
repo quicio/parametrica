@@ -28,6 +28,7 @@ import { ExplorePanel } from './widgets/ExplorePanel.js';
 import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
+import { LOOK_PRESETS, lookPresetMatchesView } from '../render/lookPresets.js';
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
 import {
   PHYSICAL_UNIT_SYSTEMS,
@@ -329,6 +330,7 @@ export class Controls {
     this.buildEquationsSection();
     this.buildHarmonicsSection();
     this.buildOperatorsSection();
+    this.buildLooksSection();
     this.buildCameraSection();
     this.buildCanvasSection();
     this.buildCoordinatesSection();
@@ -572,6 +574,79 @@ export class Controls {
     return el;
   }
 
+  activeGeneratorDefinition() {
+    const generatorId = this.app.activeLayer?.generator?.id;
+    return generatorId && Generators.has(generatorId) ? Generators.get(generatorId) : null;
+  }
+
+  activeLayerGeometryKind() {
+    const generator = this.activeGeneratorDefinition();
+    return generator?.capabilities?.geometryKind
+      ?? (supportsSpatial(generator) ? 'curve3d' : 'curve2d');
+  }
+
+  activeLayerHasSurface() {
+    const kind = this.activeLayerGeometryKind();
+    if (kind === 'surface' || kind === 'mesh' || kind === 'solid') return true;
+    const index = this.app.document.activeLayer ?? 0;
+    const layer = this.app.evaluation?.layers?.[index] ?? this.app.evaluation ?? null;
+    return Boolean(layer?.meshes?.length);
+  }
+
+  activeLayerIsSpatial() {
+    return supportsSpatial(this.activeGeneratorDefinition());
+  }
+
+  buildLooksSection() {
+    const body = this.section('Looks', { id: 'looks', mode: 'look' });
+    body.appendChild(this.panelHint(
+      'View recipes · passes, overlays, color metric and guides only. Geometry and style are untouched.',
+    ));
+    const grid = document.createElement('div');
+    grid.className = 'look-preset-grid';
+    this.lookPresetButtons = new Map();
+    for (const preset of LOOK_PRESETS) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'look-preset';
+      button.dataset.preset = preset.id;
+      const name = document.createElement('span');
+      name.className = 'look-preset-name';
+      name.textContent = preset.name;
+      const description = document.createElement('span');
+      description.className = 'look-preset-desc';
+      description.textContent = preset.description;
+      button.append(name, description);
+      button.addEventListener('click', () => {
+        if (this.app.applyLookPreset(preset.id)) this.refreshLookPresets();
+      });
+      grid.appendChild(button);
+      this.lookPresetButtons.set(preset.id, { button, preset });
+    }
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'lab-button look-preset-reset';
+    reset.textContent = 'RESET LOOK';
+    reset.title = 'Apply the Line preset and clear diagnostic overlays';
+    reset.addEventListener('click', () => {
+      if (this.app.applyLookPreset('line')) this.refreshLookPresets();
+    });
+    body.append(grid, reset);
+    this.refreshLookPresets();
+  }
+
+  refreshLookPresets() {
+    if (!this.lookPresetButtons) return;
+    const view = this.app.document.view;
+    for (const [id, entry] of this.lookPresetButtons) {
+      const availability = this.app.lookPresetState(id);
+      entry.button.disabled = !availability.available;
+      entry.button.dataset.available = String(availability.available);
+      entry.button.classList.toggle('active', availability.available && lookPresetMatchesView(entry.preset, view));
+      entry.button.title = availability.reason ?? entry.preset.description;
+    }
+  }
+
   buildCameraSection() {
     const body = this.section('Camera', { id: 'camera', mode: 'look' });
     const view = this.app.document.view;
@@ -635,6 +710,7 @@ export class Controls {
     const body = this.section('Canvas', { id: 'canvas', mode: 'look' });
     const view = this.app.document.view;
     const ab = view.artboard;
+    const surfaceAvailable = this.activeLayerHasSurface();
     body.appendChild(this.panelHint('Global canvas · applied to the whole document.'));
     const grid = document.createElement('div');
     grid.className = 'artboard-grid';
@@ -765,6 +841,13 @@ export class Controls {
     });
     row('Seams', this.seamsToggle);
 
+    if (!surfaceAvailable) {
+      for (const control of [this.uvDomainToggle, this.surfaceInspectorToggle, this.seamsToggle]) {
+        control.disabled = true;
+        control.title = `${control.title} Requires surface or mesh geometry.`;
+      }
+    }
+
     const sync = () => {
       widthInput.value = String(ab.width);
       heightInput.value = String(ab.height);
@@ -775,6 +858,11 @@ export class Controls {
     };
     sync();
     body.appendChild(grid);
+    if (!surfaceAvailable) {
+      const note = this.panelHint('UV Domain, Inspect and Seams require surface or mesh geometry.');
+      note.classList.add('control-reason');
+      body.appendChild(note);
+    }
   }
 
   buildCoordinatesSection() {
@@ -782,6 +870,7 @@ export class Controls {
     const view = this.app.document.view;
     const reference = view.reference;
     const coordinates = view.coordinates;
+    const spatialAvailable = this.activeLayerIsSpatial();
     body.appendChild(this.panelHint(
       'Global viewport · UI-only. Origin, axes, ticks and cursor readout never enter exports.',
     ));
@@ -901,6 +990,21 @@ export class Controls {
       rebuild();
     });
     row('Values in', unitsSelect);
+
+    if (!spatialAvailable) {
+      for (const control of [
+        referenceToggle, groundToggle, coordinatesToggle, gridToggle,
+        cursorToggle, stepInput, unitsSelect,
+      ]) {
+        control.disabled = true;
+      }
+      for (const control of [referenceToggle, coordinatesToggle, cursorToggle]) {
+        control.title = `${control.title} Requires a spatial (3D) layer.`;
+      }
+      const note = this.panelHint('Coordinates require a spatial layer with a world transform.');
+      note.classList.add('control-reason');
+      body.appendChild(note);
+    }
 
     body.appendChild(grid);
   }
@@ -1581,11 +1685,12 @@ export class Controls {
   buildRenderSection() {
     const body = this.section('Render', { id: 'render', mode: 'look' });
     const view = this.app.document.view;
-    body.appendChild(this.panelHint('Global render passes · layer styles apply per layer.'));
+    body.appendChild(this.panelHint(
+      'Global render passes · checkbox enables a pass · opacity only adjusts its strength.',
+    ));
     const order = RenderPasses.ids();
+    view.modes = normalizeModes(view.modes, order);
     const passApplies = new Map(RenderPasses.list().map((def) => [def.id, this.renderPassApplies(def)]));
-    const applicableModes = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
-    view.modes = applicableModes.length ? applicableModes : ['stroke'];
     const modeInputs = [];
     const groups = new Map();
     for (const def of RenderPasses.list()) {
@@ -1614,26 +1719,48 @@ export class Controls {
       modesBody.className = 'mode-toggles render-mode-toggles';
       for (const def of defs) {
         const applies = passApplies.get(def.id) !== false;
-        const row = document.createElement('label');
-        row.className = 'mode-toggle';
+        const checked = view.modes.includes(def.id);
+        const reason = applies ? '' : this.renderPassReason(def);
+        const row = document.createElement('div');
+        row.className = 'mode-toggle render-mode-row';
+        row.dataset.pass = def.id;
         row.classList.toggle('inapplicable', !applies);
-        row.title = applies
-          ? (def.description ?? def.name)
-          : 'Not applicable to the current geometry';
+        row.classList.toggle('off', !checked);
+        row.title = applies ? (def.description ?? def.name) : reason;
         if (def.description) row.setAttribute('aria-description', def.description);
         if (!applies) row.setAttribute('aria-disabled', 'true');
+
+        const main = document.createElement('label');
+        main.className = 'mode-toggle-main';
         const input = document.createElement('input');
         input.type = 'checkbox';
-        input.checked = view.modes.includes(def.id);
+        input.checked = checked;
         input.disabled = !applies;
         input.addEventListener('change', () => {
           const next = toggleMode(this.app.document.view.modes, def.id, input.checked, order);
           this.app.document.view.modes = next;
-          for (const entry of modeInputs) entry.input.checked = next.includes(entry.id);
+          for (const entry of modeInputs) {
+            entry.input.checked = next.includes(entry.id);
+            entry.syncState();
+          }
           this.app.rebuild();
         });
-        const text = document.createElement('span');
-        text.textContent = def.name;
+        const labels = document.createElement('span');
+        labels.className = 'mode-toggle-labels';
+        const name = document.createElement('span');
+        name.className = 'mode-toggle-name';
+        name.textContent = def.name;
+        const reasonEl = document.createElement('span');
+        reasonEl.className = 'mode-toggle-reason';
+        reasonEl.textContent = reason;
+        labels.append(name, reasonEl);
+        main.append(input, labels);
+
+        const mix = document.createElement('span');
+        mix.className = 'mode-toggle-mix';
+        const mixLabel = document.createElement('span');
+        mixLabel.className = 'mode-toggle-mix-label';
+        mixLabel.textContent = 'Opacity';
         const opacity = document.createElement('input');
         opacity.type = 'range';
         opacity.className = 'pass-opacity';
@@ -1642,18 +1769,47 @@ export class Controls {
         opacity.step = '0.05';
         opacity.value = String(view.passOpacity?.[def.id] ?? 1);
         opacity.title = `${def.name} opacity`;
-        opacity.disabled = !applies;
+        const percent = document.createElement('span');
+        percent.className = 'mode-toggle-mix-value';
+        percent.textContent = `${Math.round((Number(opacity.value) || 0) * 100)}%`;
         opacity.addEventListener('click', (event) => event.stopPropagation());
         opacity.addEventListener('input', () => {
           view.passOpacity = {
             ...(view.passOpacity ?? {}),
             [def.id]: Number(opacity.value),
           };
+          percent.textContent = `${Math.round(Number(opacity.value) * 100)}%`;
           this.app.rebuild();
         });
-        row.append(input, text, opacity);
+        mix.append(mixLabel, opacity, percent);
+
+        const badge = document.createElement('span');
+        badge.className = 'mode-toggle-badge';
+        badge.textContent = 'N/A';
+        badge.hidden = applies;
+
+        row.append(main, mix, badge);
         modesBody.appendChild(row);
-        modeInputs.push({ id: def.id, input, row, def });
+        const entry = {
+          id: def.id,
+          input,
+          row,
+          def,
+          opacity,
+          percent,
+          badge,
+          reasonEl,
+          syncState() {
+            const enabled = applies && input.checked;
+            opacity.disabled = !enabled;
+            row.classList.toggle('off', !input.checked);
+            row.classList.toggle('inapplicable', !applies);
+            badge.hidden = applies;
+            reasonEl.textContent = applies ? '' : reason;
+          },
+        };
+        entry.syncState();
+        modeInputs.push(entry);
       }
       groupEl.append(heading, modesBody);
       body.appendChild(groupEl);
@@ -1772,29 +1928,33 @@ export class Controls {
     if (!this.modeToggles?.length) return;
     const view = this.app.document.view;
     const order = RenderPasses.ids();
-    const passApplies = new Map(
-      this.modeToggles.map((entry) => [entry.id, this.renderPassApplies(entry.def)]),
-    );
-    const allowed = normalizeModes(view.modes, order).filter((id) => passApplies.get(id) !== false);
-    const nextModes = allowed.length ? allowed : ['stroke'];
-    if (nextModes.join('|') !== view.modes.join('|')) view.modes = nextModes;
+    view.modes = normalizeModes(view.modes, order);
     for (const entry of this.modeToggles) {
-      const applies = passApplies.get(entry.id) !== false;
+      const applies = this.renderPassApplies(entry.def);
       const checked = view.modes.includes(entry.id);
-      if (entry.input.disabled !== !applies) entry.input.disabled = !applies;
-      if (entry.input.checked !== checked) entry.input.checked = checked;
-      if (entry.row.classList.contains('inapplicable') !== !applies) {
-        entry.row.classList.toggle('inapplicable', !applies);
-      }
-      const title = applies
-        ? (entry.def.description ?? entry.def.name)
-        : 'Not applicable to the current geometry';
-      if (entry.row.title !== title) entry.row.title = title;
-      const ariaDisabled = String(!applies);
-      if (entry.row.getAttribute('aria-disabled') !== ariaDisabled) {
-        entry.row.setAttribute('aria-disabled', ariaDisabled);
-      }
+      const reason = applies ? '' : this.renderPassReason(entry.def);
+      entry.input.disabled = !applies;
+      entry.input.checked = checked;
+      entry.row.classList.toggle('inapplicable', !applies);
+      entry.row.classList.toggle('off', !checked);
+      entry.badge.hidden = applies;
+      entry.reasonEl.textContent = reason;
+      entry.opacity.disabled = !applies || !checked;
+      const title = applies ? (entry.def.description ?? entry.def.name) : reason;
+      entry.row.title = title;
+      entry.row.setAttribute('aria-disabled', String(!applies));
     }
+  }
+
+  /** Explain why a pass cannot act on the current visible geometry. */
+  renderPassReason(def) {
+    if (def.id === 'surface-wireframe' || def.id === 'surface-fill') {
+      return 'Requires surface or mesh geometry';
+    }
+    if (def.id === 'epicycles') return 'Requires the Fourier generator';
+    if (def.id === 'control-polygon') return 'Requires spline control points';
+    if (def.id === 'negative-space') return 'Requires a closed curve';
+    return 'Not applicable to the current geometry';
   }
 
   /** Does a render pass apply to at least one visible layer? */

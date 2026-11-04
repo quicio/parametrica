@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2060 checks)
+npm test             # node-only verification suite (2078 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (119 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (124 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -250,6 +250,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Explicit coordinate contracts** for parameter, world and artboard spaces, with one `ViewTransform` shared by canvas, Quad, SVG and plotter
 - **Spatial reference** with world origin, XYZ axes and an optional low-density ground plane; UI-only and excluded from exports
 - **Coordinates** in Look with orthographic XY/XZ/YZ ticks, unit-aware values, optional grid and cursor X/Y/Z readout
+- **Look presets** for Line, Technical, Surface, Gradient, Diagnostic, Field and Epicycles, plus explicit render-pass enable/opacity controls and visible N/A reasons
 - **UV Domain inset** for parametric surfaces: real U/V bounds, low-density grid, axis orientation and closure/seam markers; UI-only and never exported
 - **SurfaceMapping sidecar** with per-cell triangle topology and real per-corner UVs, including seams and twists; consumed by picking, the surface inspector and seam overlay
 - **Projection source** opt-in sidecar that preserves world-vertex identity and real orthographic depth without changing the normal render path

@@ -8,7 +8,7 @@
  */
 
 import { createDocument, sanitizeDocument, createLayer, attachLayerAliases } from '../core/document.js';
-import { Generators, Operators } from '../core/registry.js';
+import { Generators, Operators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
 import { evaluateDocument } from '../core/engine.js';
 import { schemaDefaults } from '../core/schema.js';
@@ -35,6 +35,8 @@ import { SeamLegend } from '../ui/SeamLegend.js';
 import { buildRenderScene } from './renderSceneBuilder.js';
 import { artboardPointFromCanvas } from '../interaction/ray.js';
 import { pickSurface } from '../interaction/surfacePicker.js';
+import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
+import { normalizeModes } from '../ui/widgets/modeToggles.js';
 
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
@@ -137,6 +139,7 @@ export class App {
     this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
     this.controls?.refreshRenderModes?.();
     this.controls?.refreshFabricate?.();
+    this.controls?.refreshLookPresets?.();
     this.controls?.showErrors(this._evaluation.errors);
     this.updateTelemetry();
     this.parametricOverlay?.refresh();
@@ -721,6 +724,50 @@ export class App {
     camera.pitch = DEFAULT_CAMERA.pitch;
     camera.fov = DEFAULT_CAMERA.fov;
     this.rebuild();
+  }
+
+  /* ———————— look presets ———————— */
+
+  lookPresetContext() {
+    const layerIndex = this.document.activeLayer ?? 0;
+    const layer = this.evaluation?.layers?.[layerIndex] ?? this.evaluation ?? null;
+    const meshes = layer?.meshes ?? [];
+    const geometry = layer?.geometry ?? [];
+    const hasSurface = meshes.length > 0 || geometry.some((item) => (
+      item?.kind === 'surface' || item?.kind === 'mesh' || item?.kind === 'solid'
+    ));
+    const curves = layer?.curves ?? [];
+    return {
+      hasSurface,
+      generatorId: layer?.generator?.id ?? this.document.generator?.id ?? null,
+      hasClosedCurves: curves.some((curve) => curve.closed),
+    };
+  }
+
+  lookPresetState(id) {
+    const preset = getLookPreset(id);
+    if (!preset) return { available: false, reason: 'Unknown preset' };
+    return lookPresetAvailability(preset, this.lookPresetContext());
+  }
+
+  applyLookPreset(id) {
+    const preset = getLookPreset(id);
+    if (!preset) return false;
+    const availability = this.lookPresetState(id);
+    if (!availability.available) {
+      this.notify?.(availability.reason, 'info');
+      return false;
+    }
+    const resolved = resolveLookPreset(preset);
+    const view = this.document.view;
+    view.modes = normalizeModes(resolved.modes, RenderPasses.ids());
+    view.overlays = resolved.overlays;
+    view.colorMetric = resolved.colorMetric;
+    view.guides = resolved.guides;
+    this.lastLookPreset = id;
+    this.rebuild();
+    this.notify?.(`Look · ${preset.name}`);
+    return true;
   }
 
   /* ———————— mutation / presets ———————— */

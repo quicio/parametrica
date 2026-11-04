@@ -11,7 +11,7 @@ test('LOOK exposes camera, canvas, style, render and overlays without Work', asy
   const camera = await openSection(page, 'Camera');
   await expect(camera.locator('.panel-hint')).toContainText('Global viewport');
   const canvas = await openSection(page, 'Canvas');
-  await expect(canvas.locator('.panel-hint')).toContainText('Global canvas');
+  await expect(canvas.locator('.panel-hint').first()).toContainText('Global canvas');
   const style = await openSection(page, 'Style');
   await expect(style.locator('.panel-hint')).toContainText('Active layer');
   const render = await openSection(page, 'Render');
