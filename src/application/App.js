@@ -7,7 +7,18 @@
  * swapped only by methods that also rebuild the affected UI sections.
  */
 
-import { createDocument, sanitizeDocument, createLayer, attachLayerAliases } from '../core/document.js';
+import { createDocument, sanitizeDocument, createLayer, createInstanceLayer, attachLayerAliases } from '../core/document.js';
+import {
+  MAX_INSTANCE_LAYERS,
+  MAX_LAYERS,
+  canAddInstanceLayer,
+  countInstanceLayers,
+  dependentInstances,
+  generatorForLayer,
+  instanceSourceCandidates,
+  isInstanceLayer,
+  sourceLayerFor,
+} from '../core/layers.js';
 import { Generators, Operators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
 import { evaluateDocument } from '../core/engine.js';
@@ -117,6 +128,30 @@ export class App {
     return Boolean(this.activeLayer?.locked);
   }
 
+  activeLayerIsInstance() {
+    return isInstanceLayer(this.activeLayer);
+  }
+
+  activeLayerSource() {
+    return sourceLayerFor(this.document, this.activeLayer);
+  }
+
+  activeLayerGeometryKind() {
+    const generator = generatorForLayer(this.document, this.activeLayer);
+    const definition = generator?.id && Generators.has(generator.id) ? Generators.get(generator.id) : null;
+    return definition?.capabilities?.geometryKind
+      ?? (supportsSpatial(definition) ? 'curve3d' : 'curve2d');
+  }
+
+  sourceLayerForIndex(index) {
+    return sourceLayerFor(this.document, this.document.layers?.[index]);
+  }
+
+  activeLayerDependents() {
+    const layer = this.activeLayer;
+    return layer ? dependentInstances(this.document, layer.id) : [];
+  }
+
   syncActiveStyle() {
     const layer = this.activeLayer;
     if (!layer) return;
@@ -151,7 +186,7 @@ export class App {
     this.controls?.labPanel?.scheduleAuto();
     // The advisor only re-runs after a stable, non-playing commit. Its own
     // debounce (700 ms) collapses slider drags and never fires per frame.
-    if (!this.document.animation.playing) {
+    if (!this.document.animation.playing && !this.activeLayerIsInstance()) {
       this.controls?.advisorPanel?.scheduleAuto?.();
     }
   }
@@ -433,6 +468,10 @@ export class App {
       this.notify('Layer content is locked');
       return;
     }
+    if (this.activeLayerIsInstance()) {
+      this.notify('Select the source layer to change its generator');
+      return;
+    }
     if (!Generators.has(id)) return;
     if (!supportsSpatial(Generators.get(id)) && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
@@ -456,6 +495,10 @@ export class App {
       return;
     }
     if (!Operators.has(id)) return;
+    if (this.activeLayerIsInstance() && !['translate', 'rotate', 'scale'].includes(id)) {
+      this.notify('Instance layers only allow Translate, Rotate and Scale');
+      return;
+    }
     this.document.operators.push({
       id,
       enabled: true,
@@ -509,6 +552,10 @@ export class App {
   }
 
   addLayer(generatorId = 'parametric') {
+    if (this.document.layers.length >= MAX_LAYERS) {
+      this.notify(`Layer limit reached (${MAX_LAYERS})`);
+      return;
+    }
     const layer = createLayer(generatorId, {
       name: `Layer ${this.document.layers.length + 1}`,
       seed: this.document.seed,
@@ -520,9 +567,70 @@ export class App {
     this.rebuild();
   }
 
+  addInstanceLayer(sourceLayerId = null) {
+    if (!canAddInstanceLayer(this.document)) {
+      if (countInstanceLayers(this.document) >= MAX_INSTANCE_LAYERS) {
+        this.notify(`Instance limit reached (${MAX_INSTANCE_LAYERS})`);
+      } else {
+        this.notify(`Layer limit reached (${MAX_LAYERS})`);
+      }
+      return null;
+    }
+    const candidates = instanceSourceCandidates(this.document).filter(({ layer }) => (
+      Generators.has(layer.generator?.id)
+      && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
+    ));
+    const source = candidates.find(({ layer }) => layer.id === sourceLayerId)?.layer
+      ?? candidates.find(({ layer }) => layer.id === this.activeLayer?.id)?.layer
+      ?? candidates[0]?.layer
+      ?? null;
+    if (!source) {
+      this.notify('Add a Surface generator layer before creating an instance');
+      return null;
+    }
+    const count = countInstanceLayers(this.document) + 1;
+    const layer = createInstanceLayer(source.id, {
+      name: `${source.name} / instance ${count}`,
+      modes: source.modes,
+      colorMetric: source.colorMetric,
+      style: structuredClone(source.style),
+    });
+    this.document.layers.push(layer);
+    this.document.activeLayer = this.document.layers.length - 1;
+    this.syncActiveStyle();
+    this.controls.rebuildAll();
+    this.rebuild();
+    this.notify(`Instance created from ${source.name}`);
+    return layer;
+  }
+
+  setInstanceSource(index, sourceLayerId) {
+    const layer = this.document.layers?.[index];
+    if (!isInstanceLayer(layer)) return false;
+    if (layer.locked) {
+      this.notify('Layer content is locked');
+      return false;
+    }
+    const source = this.document.layers.find((entry) => entry?.id === sourceLayerId && !isInstanceLayer(entry));
+    if (!source || !Generators.has(source.generator?.id)
+      || Generators.get(source.generator.id).capabilities?.geometryKind !== 'surface') {
+      this.notify('Instance source must be a Surface generator layer');
+      return false;
+    }
+    if (source.id === layer.id) return false;
+    layer.source = { layerId: source.id };
+    this.controls.rebuildAll();
+    this.rebuild();
+    return true;
+  }
+
   duplicateLayer(index) {
     const source = this.document.layers?.[index];
     if (!source) return;
+    if (this.document.layers.length >= MAX_LAYERS) {
+      this.notify(`Layer limit reached (${MAX_LAYERS})`);
+      return;
+    }
     const copy = structuredClone(source);
     copy.id = `layer-${Date.now().toString(36)}-${Math.floor(Math.random() * 999)}`;
     copy.name = `${source.name} copy`;
@@ -534,7 +642,15 @@ export class App {
   }
 
   removeLayer(index) {
+    const layer = this.document.layers?.[index];
     if (!Array.isArray(this.document.layers) || this.document.layers.length <= 1) return;
+    if (layer && !isInstanceLayer(layer)) {
+      const dependents = dependentInstances(this.document, layer.id);
+      if (dependents.length) {
+        this.notify(`Layer is used by ${dependents.length} instance${dependents.length === 1 ? '' : 's'}`);
+        return;
+      }
+    }
     this.document.layers.splice(index, 1);
     this.document.activeLayer = Math.max(0, Math.min(this.document.activeLayer, this.document.layers.length - 1));
     this.syncActiveStyle();
@@ -686,9 +802,11 @@ export class App {
       item?.kind === 'surface' || item?.kind === 'mesh' || item?.kind === 'solid'
     ));
     const curves = layer?.curves ?? [];
+    const docLayer = this.document.layers?.[layerIndex];
+    const generator = generatorForLayer(this.document, docLayer);
     return {
       hasSurface,
-      generatorId: layer?.generator?.id ?? this.document.generator?.id ?? null,
+      generatorId: generator?.id ?? null,
       hasClosedCurves: curves.some((curve) => curve.closed),
     };
   }
@@ -722,6 +840,10 @@ export class App {
   /* ———————— mutation / presets ———————— */
 
   mutate() {
+    if (this.activeLayerIsInstance()) {
+      this.notify('Select the source layer to mutate its parameters');
+      return;
+    }
     const next = this.mutator.mutate(this.document);
     this.adoptDocument(next);
   }
@@ -734,7 +856,8 @@ export class App {
     this.document.activeLayer = doc.activeLayer ?? 0;
     Object.assign(this.document.view, doc.view);
     const active = this.document.layers?.[this.document.activeLayer ?? 0];
-    const projectable = active?.generator && supportsSpatial(Generators.get(active.generator.id));
+    const generator = generatorForLayer(this.document, active);
+    const projectable = Boolean(generator && supportsSpatial(Generators.get(generator.id)));
     if (!projectable && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
     }

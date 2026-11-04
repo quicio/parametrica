@@ -366,7 +366,10 @@ export class P5Adapter extends Renderer {
     p.rect(-artboard.width / 2, -artboard.height / 2, artboard.width, artboard.height);
 
     const evaluation = app.evaluation;
-    const spatial = supportsSpatial(Generators.get(doc.generator.id));
+    const activeGenerator = app.activeLayerIsInstance?.()
+      ? app.activeLayerSource()?.generator
+      : app.activeLayer?.generator;
+    const spatial = Boolean(activeGenerator && supportsSpatial(Generators.get(activeGenerator.id)));
     const quad = doc.view.layout === 'quad' && spatial;
     if (quad !== this.quadActive) {
       this.quadActive = quad;
@@ -590,7 +593,9 @@ export class P5Adapter extends Renderer {
     if (!artboardPoint) return null;
     const units = doc.view.units;
     const unitDisplay = doc.view.coordinates?.unitDisplay ?? 'auto';
-    const spatial = supportsSpatial(Generators.get(doc.generator.id));
+    const spatial = ['surface', 'mesh', 'solid', 'curve3d'].includes(
+      this.app.activeLayerGeometryKind?.() ?? 'curve2d',
+    );
     const quad = doc.view.layout === 'quad' && spatial;
     if (quad) {
       const panels = quadPanelLayout(rect.artboard.width, rect.artboard.height);

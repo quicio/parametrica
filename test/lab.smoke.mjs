@@ -24,7 +24,7 @@ import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
 import { postProcess } from '../src/sampling/parametric.js';
-import { createDocument, sanitizeDocument, migrateV1Document, createLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, createInstanceLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
 import { createDefaultFillGradient, sanitizeFillGradient, resolveFillGradient } from '../src/core/fillGradient.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults } from '../src/core/schema.js';
@@ -73,6 +73,7 @@ import { zoomCamera } from '../src/view/cameraController.js';
 import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh, projectMeshToView, projectWorldMeshesToView, applyViewTransformToMeshes } from '../src/view/projection.js';
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
+import { MAX_INSTANCE_LAYERS, MAX_LAYERS, canAddInstanceLayer, countInstanceLayers, dependentInstances, generatorForLayer, isInstanceLayer } from '../src/core/layers.js';
 import {
   DEFAULT_COORDINATES,
   PROJECTION_AXES,
@@ -3239,6 +3240,126 @@ console.log('30g. look presets');
   assert(lookPresetMatchesView(getLookPreset('technical'), view), 'mode matching ignores duplicates');
   view.colorMetric = 'height';
   assert(!lookPresetMatchesView(getLookPreset('technical'), view), 'color metric mismatch rejects a preset match');
+}
+
+/* ——— 30h. instance layers ——— */
+console.log('30h. instance layers');
+{
+  const makeDoc = () => {
+    const doc = createDocument('parametric-surface', {
+      generator: { params: { samplesU: 8, samplesV: 6, closedU: true, closedV: true } },
+    });
+    const source = doc.layers[0];
+    const instance = createInstanceLayer(source.id, {
+      name: 'Torus instance',
+      operators: [{ id: 'translate', enabled: true, params: { dx: 1.5, dy: 0, dz: 0 } }],
+    });
+    doc.layers.push(instance);
+    doc.activeLayer = 1;
+    return { doc, source, instance };
+  };
+
+  const { doc, source, instance } = makeDoc();
+  assert(isInstanceLayer(instance) && !isInstanceLayer(source), 'layer kind detection distinguishes instance and generator');
+  assert(instance.type === 'instance' && instance.generator === null && instance.seed === null, 'instance stores type/source without generator or seed');
+  assert(instance.source.layerId === source.id, 'instance stores a persistent source layer id');
+  assert(generatorForLayer(doc, instance)?.id === source.generator.id, 'explicit resolver finds the source generator');
+  assert(dependentInstances(doc, source.id).length === 1, 'dependent instance lookup works');
+  assert(countInstanceLayers(doc) === 1, 'instance count works');
+  assert(doc.generator === null, 'document.generator is null for an active instance');
+
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  assert(evaluation.errors.length === 0, 'instance layer evaluates without errors');
+  assert(evaluation.layers.length === 2, 'source and instance both evaluate');
+  assert(evaluation.layers[1].type === 'instance' && evaluation.layers[1].source.layerId === source.id, 'evaluation exposes instance source metadata');
+  assert(evaluation.layers[1].geometry[0].id === `${instance.id}:surface:0`, 'instance surface id is deterministic');
+  assert(evaluation.layers[1].meshes[0].id === `${instance.id}:mesh:0`, 'instance mesh id is deterministic');
+  const mapping = evaluation.layers[1].surfaceMappings[0];
+  assert(mapping.surfaceId === evaluation.layers[1].geometry[0].id, 'instance mapping uses the instance surface id');
+  assert(mapping.meshId === evaluation.layers[1].meshes[0].id, 'instance mapping uses the instance mesh id');
+  assert(mapping.domain.u[0] === source.generator.params.u0, 'instance mapping preserves the source domain');
+  assert(evaluation.layers[1].meshes[0].meta.sourceLayerId === source.id, 'instance mesh records its source layer');
+
+  const again = evaluateDocument(doc, { time: 0 });
+  assert(again.layers[1].geometry[0].id === evaluation.layers[1].geometry[0].id, 'instance ids are stable across reevaluation');
+  assert(again.layers[1].geometry[0] === evaluation.layers[1].geometry[0], 'instance cache reuses world geometry');
+  assert(again.layers[1].meshes[0] === evaluation.layers[1].meshes[0], 'instance cache reuses meshes');
+
+  const sourceSurfaceBefore = JSON.stringify(evaluation.layers[0].geometry[0].grid.points);
+  const instanceSurfaceBefore = JSON.stringify(evaluation.layers[1].geometry[0].grid.points);
+  assert(sourceSurfaceBefore !== instanceSurfaceBefore, 'instance transform changes its world geometry');
+
+  doc.layers[0].generator.params.samplesU = 10;
+  const propagated = evaluateDocument(doc, { time: 0 });
+  assert(propagated.layers[1].geometry[0].grid.rows === 11, 'source parameter changes propagate to instance rows');
+
+  doc.layers[1].source.layerId = 'missing-source';
+  const missing = evaluateDocument(doc, { time: 0 });
+  assert(missing.errors.some((error) => error.stage === 'instance' && /not found/.test(error.message)), 'missing source reports an instance error');
+
+  const curveSourceDoc = createDocument('parametric', {});
+  curveSourceDoc.layers.push(createInstanceLayer(curveSourceDoc.layers[0].id, { name: 'curve instance' }));
+  curveSourceDoc.activeLayer = 1;
+  const curveSourceEval = evaluateDocument(curveSourceDoc, { time: 0 });
+  assert(curveSourceEval.errors.some((error) => /Surface geometry/.test(error.message)), 'curve sources are rejected for instances');
+
+  const nested = makeDoc();
+  const nestedInstance = createInstanceLayer(nested.instance.id, { name: 'nested' });
+  nested.doc.layers.push(nestedInstance);
+  nested.doc.activeLayer = 2;
+  const nestedEval = evaluateDocument(nested.doc, { time: 0 });
+  assert(nestedEval.errors.some((error) => /another instance/.test(error.message)), 'instance of instance is rejected');
+
+  const mirrorDoc = makeDoc();
+  mirrorDoc.instance.operators = [{ id: 'mirror', enabled: true, params: { axis: 'vertical', keepOriginal: false } }];
+  const mirrorEval = evaluateDocument(mirrorDoc.doc, { time: 0 });
+  assert(mirrorEval.errors.some((error) => /not allowed on an instance/.test(error.message)), 'mirror is rejected on instance layers');
+
+  const repeatDoc = makeDoc();
+  repeatDoc.instance.operators = [{ id: 'linear-array', enabled: true, params: { count: 2, spacing: 1 } }];
+  const repeatEval = evaluateDocument(repeatDoc.doc, { time: 0 });
+  assert(repeatEval.errors.some((error) => /not allowed on an instance/.test(error.message)), 'repeat is rejected on instance layers');
+
+  const hiddenSource = makeDoc();
+  hiddenSource.source.visible = false;
+  const hiddenEval = evaluateDocument(hiddenSource.doc, { time: 0 });
+  assert(hiddenEval.layers[0].visible === false && hiddenEval.layers[1].meshes.length === 1, 'hidden source still evaluates for a visible instance');
+  assert(hiddenEval.geometry.length === 1, 'hidden source does not contribute world geometry to the scene');
+
+  const hiddenInstance = makeDoc();
+  hiddenInstance.instance.visible = false;
+  const hiddenInstanceEval = evaluateDocument(hiddenInstance.doc, { time: 0 });
+  assert(hiddenInstanceEval.layers[1].visible === false && hiddenInstanceEval.layers[1].curves.length === 0, 'hidden instance is omitted from render output');
+
+  const sourceChanged = makeDoc();
+  const secondSource = createLayer('parametric-surface', { name: 'Second source', seed: 2 });
+  sourceChanged.doc.layers.push(secondSource);
+  sourceChanged.doc.layers[1].source.layerId = secondSource.id;
+  const changedEval = evaluateDocument(sourceChanged.doc, { time: 0 });
+  assert(changedEval.errors.length === 0, 'changing the instance source reevaluates cleanly');
+  assert(changedEval.layers[1].meshes[0].meta.sourceLayerId === secondSource.id, 'changed instance points at the new source');
+
+  const roundTrip = sanitizeDocument(JSON.parse(JSON.stringify(doc)));
+  assert(roundTrip.layers[1].type === 'instance' && roundTrip.layers[1].source.layerId === 'missing-source', 'instance source round-trips through sanitization');
+  assert(roundTrip.layers[0].type === 'generator', 'generator type round-trips');
+
+  const legacy = JSON.parse(JSON.stringify(createDocument('parametric')));
+  delete legacy.layers[0].type;
+  assert(sanitizeDocument(legacy).layers[0].type === 'generator', 'legacy layers migrate to generator type');
+
+  const capped = JSON.parse(JSON.stringify(createDocument('parametric')));
+  capped.layers = Array.from({ length: MAX_LAYERS + 5 }, (_, index) => ({
+    ...capped.layers[0],
+    id: `layer-cap-${index}`,
+  }));
+  assert(sanitizeDocument(capped).layers.length === MAX_LAYERS, 'layer cap sanitizes to 32 layers');
+  assert(MAX_INSTANCE_LAYERS === 24, 'instance limit is 24');
+  const limitDoc = createDocument('parametric-surface', {});
+  for (let i = 0; i < MAX_INSTANCE_LAYERS; i++) {
+    limitDoc.layers.push(createInstanceLayer(limitDoc.layers[0].id, { name: `i${i}` }));
+  }
+  assert(countInstanceLayers(limitDoc) === MAX_INSTANCE_LAYERS, 'instance count reaches the limit');
+  assert(!canAddInstanceLayer(limitDoc), 'instance creation is blocked at 24');
 }
 
 /* ——— 31. preset library ——— */

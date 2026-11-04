@@ -276,7 +276,7 @@ export class TimelinePanel {
     const layer = this.app.document.layers?.[track.layer ?? 0];
     if (!layer) return 0;
     const match = /^generator\.params\.(.+)$/.exec(track.path);
-    if (match) return Number(layer.generator.params[match[1]]) || 0;
+    if (match) return Number(layer.generator?.params?.[match[1]]) || 0;
     const op = /^operators\[(\d+)\]\.params\.(.+)$/.exec(track.path);
     if (op) return Number(layer.operators?.[Number(op[1])]?.params?.[op[2]]) || 0;
     return 0;

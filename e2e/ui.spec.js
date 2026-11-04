@@ -419,7 +419,7 @@ test('layers add, style, hide and reorder independently', async ({ page }) => {
   await expect(page.locator('.panel-h', { hasText: 'Layers' })).toBeVisible();
   expect(await page.locator('.layer-row').count()).toBe(1);
 
-  await page.locator('.layer-add').click();
+  await page.locator('.layer-add:not(.layer-add-instance)').click();
   await page.waitForTimeout(400);
   expect(await page.locator('.layer-row').count()).toBe(2);
   expect(await page.evaluate(() => window.__parametrica.document.layers.length)).toBe(2);

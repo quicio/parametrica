@@ -222,6 +222,7 @@ export class SurfaceInspector {
     const rows = [
       ['surface', shortId(result.surfaceId), result.surfaceId ?? ''],
       ['layer', result.layerName ?? '—'],
+      ...(result.instance ? [['source', result.sourceLayerName ?? result.sourceLayerId ?? '—']] : []),
       ['triangle', `${result.faceIndex}${result.triangle == null ? '' : ` · tri ${result.triangle}`}`],
       ['cell', result.cell ? `u ${result.cell.u} · v ${result.cell.v}` : '—'],
       ['uv', result.uv ? `u ${fmt(result.uv.u)} · v ${fmt(result.uv.v)}` : '—'],

@@ -20,8 +20,10 @@ import { validateGeometry } from '../geometry/validate.js';
 import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '../view/projection.js';
 import { resolveFrame, SPACE } from '../view/transform.js';
 import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.js';
+import { mapGeometryPoints } from '../geometry/transformGeometry.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { isSurface, isMesh } from '../geometry/contracts.js';
+import { isInstanceLayer } from './layers.js';
 
 const STAGE_CACHE = new WeakMap();
 const ANALYSIS_CACHE = new WeakMap();
@@ -185,6 +187,7 @@ const VIEW_CACHE = new WeakMap();
 const SURFACE_CACHE = new WeakMap();
 const MESH_CACHE = new WeakMap();
 const MESH_VIEW_CACHE = new WeakMap();
+const INSTANCE_CACHE = new WeakMap();
 const WORLD_CACHE_VERSION = 1;
 
 function evaluateSurfaceDocument(document, options, generatorDef) {
@@ -245,18 +248,42 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     if (!errors.length && !options.bypassCache) SURFACE_CACHE.set(cacheKey, { signature, surfaces });
   }
 
+  return evaluateSurfaceGeometry({
+    document,
+    surfaces,
+    fit: Number(params.fit) || 0,
+    ctx,
+    errors,
+    viewOps,
+    t0,
+  });
+}
+
+function evaluateSurfaceGeometry({
+  document,
+  surfaces,
+  fit = 0,
+  ctx,
+  errors,
+  viewOps = [],
+  stage = 'generator',
+  index = 0,
+  source = null,
+  meshIdFor = null,
+  t0 = now(),
+}) {
   let meshEntry = MESH_CACHE.get(surfaces);
   if (!meshEntry) {
-    const built = surfaces.map((item) => {
+    const built = surfaces.map((item, surfaceIndex) => {
       if (isMesh(item)) return { mesh: item, mapping: null };
       if (!isSurface(item)) {
-        errors.push({ stage: 'generator', index: 0, message: `surface pipeline cannot render ${item?.kind ?? 'unknown'} geometry` });
+        errors.push({ stage, index, message: `surface pipeline cannot render ${item?.kind ?? 'unknown'} geometry` });
         return null;
       }
       try {
-        return tessellateSurfaceWithMapping(item);
+        return tessellateSurfaceWithMapping(item, meshIdFor ? { id: meshIdFor(item, surfaceIndex) } : {});
       } catch (error) {
-        errors.push({ stage: 'generator', index: 0, message: error.message });
+        errors.push({ stage, index, message: error.message });
         return null;
       }
     }).filter(Boolean);
@@ -264,19 +291,20 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
       meshes: built.map((entry) => entry.mesh),
       surfaceMappings: built.map((entry) => entry.mapping).filter(Boolean),
     };
+    if (source) annotateInstanceGeometry(meshEntry, surfaces, source);
     if (!errors.length && built.length === surfaces.length) MESH_CACHE.set(surfaces, meshEntry);
   }
   const meshes = meshEntry.meshes;
   const surfaceMappings = meshEntry.surfaceMappings;
 
   const projection = projectionForGeometry(surfaces, document.view?.projection ?? '3d');
-  const viewSignature = JSON.stringify([WORLD_CACHE_VERSION, projection, document.view?.camera ?? null, Number(params.fit) || 0]);
+  const viewSignature = JSON.stringify([WORLD_CACHE_VERSION, projection, document.view?.camera ?? null, fit]);
   let meshViews = MESH_VIEW_CACHE.get(meshes);
   if (!meshViews || meshViews.signature !== viewSignature) {
     const projected = projectWorldMeshes(meshes, {
       camera: document.view?.camera,
       projection,
-      fit: Number(params.fit) || 0,
+      fit: fit,
     });
     meshViews = { signature: viewSignature, meshes: projected, curves: meshWireframeCurves(projected) };
     MESH_VIEW_CACHE.set(meshes, meshViews);
@@ -327,6 +355,24 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
     get() { if (!worldAnalysis) worldAnalysis = analyzeGeometry(surfaces); return worldAnalysis; },
   });
   return result;
+}
+
+function annotateInstanceGeometry(meshEntry, surfaces, source) {
+  meshEntry.meshes.forEach((mesh, index) => {
+    const surface = surfaces[index];
+    mesh.meta = {
+      ...(mesh.meta ?? {}),
+      instanceLayerId: source.instanceLayerId,
+      sourceLayerId: source.sourceLayerId,
+      ...(surface?.meta?.sourceSurfaceId ? { sourceSurfaceId: surface.meta.sourceSurfaceId } : {}),
+    };
+  });
+  for (const mapping of meshEntry.surfaceMappings) {
+    mapping.instanceLayerId = source.instanceLayerId;
+    mapping.sourceLayerId = source.sourceLayerId;
+    const surface = surfaces.find((item) => item?.id === mapping.surfaceId);
+    if (surface?.meta?.sourceSurfaceId) mapping.sourceSurfaceId = surface.meta.sourceSurfaceId;
+  }
 }
 
 function evaluateSpatialDocument(document, options, generatorDef) {
@@ -562,29 +608,35 @@ function evaluateLayers(document, options = {}) {
   const t0 = now();
   const time = options.time ?? document.animation?.time ?? 0;
   const errors = [];
-  const layerResults = [];
+  const layerResults = new Array(document.layers.length);
+  const evaluations = new Map();
+  const layerById = new Map();
+  for (const layer of document.layers) {
+    if (layer?.id && !layerById.has(layer.id)) layerById.set(layer.id, layer);
+  }
+
+  // A hidden source is evaluated only when a visible instance needs it.
+  const neededSourceIds = new Set();
+  for (const layer of document.layers) {
+    if (isInstanceLayer(layer) && layer.visible !== false && layer.source?.layerId) {
+      neededSourceIds.add(layer.source.layerId);
+    }
+  }
+
   const combined = [];
   let peakPoints = 0;
   let arcLength = 0;
   let curveCount = 0;
   let pointCount = 0;
 
+  // Phase 1: generator layers, in document order.
   for (let index = 0; index < document.layers.length; index++) {
     const layer = document.layers[index];
-    if (!layer || layer.visible === false) {
-      layerResults.push({
-        id: layer?.id ?? `layer-${index}`,
-        name: layer?.name ?? `Layer ${index + 1}`,
-        visible: false,
-        locked: Boolean(layer?.locked),
-        style: layer?.style ?? document.view?.style,
-        generator: layer?.generator,
-        operators: layer?.operators,
-        curves: [],
-        stats: null,
-        bbox: null,
-        errors: [],
-      });
+    if (!layer || isInstanceLayer(layer)) continue;
+    const visible = layer.visible !== false;
+    const neededAsSource = neededSourceIds.has(layer.id);
+    if (!visible && !neededAsSource) {
+      layerResults[index] = hiddenLayerResult(layer, index, document);
       continue;
     }
     const subdocument = {
@@ -597,50 +649,45 @@ function evaluateLayers(document, options = {}) {
       animation: document.animation,
     };
     const evaluation = evaluateDocument(subdocument, { ...options, time, layerIndex: index, cacheKey: layer });
-    const layerErrors = evaluation.errors.map((error) => ({
-      ...error,
-      layerId: layer.id,
-      layerIndex: index,
-    }));
-    errors.push(...layerErrors);
-    const curves = evaluation.curves.map((curve) => ({
-      ...curve,
-      meta: { ...curve.meta, layerId: layer.id, layerName: layer.name },
-    }));
-    combined.push(...curves);
-    const layerResult = {
-      id: layer.id,
-      name: layer.name,
-      visible: true,
-      locked: Boolean(layer.locked),
-      modes: Array.isArray(layer.modes) && layer.modes.length ? layer.modes : null,
-      colorMetric: layer.colorMetric ?? null,
-      style: layer.style,
-      generator: layer.generator,
-      operators: layer.operators,
-      curves,
-      space: evaluation.space ?? (evaluation.geometry ? SPACE.WORLD : SPACE.ARTBOARD),
-      geometry: evaluation.geometry ?? null,
-      meshes: evaluation.meshes ?? [],
-      surfaceMappings: evaluation.surfaceMappings ?? [],
-      renderMeshes: evaluation.renderMeshes ?? [],
-      appliedProjection: evaluation.appliedProjection ?? null,
-      viewProjection: evaluation.viewProjection ?? null,
-      worldBBox: evaluation.worldBBox ?? null,
-      stats: evaluation.stats,
-      bbox: evaluation.bbox,
-      errors: layerErrors,
-    };
-    let layerAnalysis = null;
-    Object.defineProperty(layerResult, 'analysis', {
-      enumerable: true,
-      configurable: true,
-      get() {
-        if (!layerAnalysis) layerAnalysis = analyzeAll(layerResult.curves);
-        return layerAnalysis;
-      },
+    evaluations.set(layer.id, evaluation);
+    const layerErrors = tagLayerErrors(evaluation.errors, layer, index);
+    if (layerErrors.length) errors.push(...layerErrors);
+    const layerResult = buildLayerResult(layer, index, evaluation, layerErrors, {
+      visible,
+      geometryVisible: visible,
     });
-    layerResults.push(layerResult);
+    layerResults[index] = layerResult;
+    if (visible) {
+      combined.push(...layerResult.curves);
+      peakPoints += evaluation.stats.peakPoints ?? evaluation.stats.pointCount;
+      arcLength += evaluation.stats.arcLength;
+      curveCount += evaluation.stats.curveCount;
+      pointCount += evaluation.stats.pointCount;
+    }
+  }
+
+  // Phase 2: instance layers, in document order.
+  for (let index = 0; index < document.layers.length; index++) {
+    const layer = document.layers[index];
+    if (!layer || !isInstanceLayer(layer)) continue;
+    if (layer.visible === false) {
+      layerResults[index] = hiddenLayerResult(layer, index, document);
+      continue;
+    }
+    const sourceLayer = layerById.get(layer.source?.layerId) ?? null;
+    const sourceEvaluation = sourceLayer && !isInstanceLayer(sourceLayer)
+      ? evaluations.get(sourceLayer.id) ?? null
+      : null;
+    const evaluation = evaluateInstanceLayer(document, { ...options, time, layerIndex: index }, layer, sourceLayer, sourceEvaluation);
+    const layerErrors = tagLayerErrors(evaluation.errors, layer, index);
+    if (layerErrors.length) errors.push(...layerErrors);
+    const layerResult = buildLayerResult(layer, index, evaluation, layerErrors, {
+      visible: true,
+      geometryVisible: true,
+      sourceLayer,
+    });
+    layerResults[index] = layerResult;
+    combined.push(...layerResult.curves);
     peakPoints += evaluation.stats.peakPoints ?? evaluation.stats.pointCount;
     arcLength += evaluation.stats.arcLength;
     curveCount += evaluation.stats.curveCount;
@@ -712,11 +759,252 @@ function evaluateLayers(document, options = {}) {
   return result;
 }
 
-/**
- * Planar generators emit raw polylines; the engine applies their legacy fit
- * once, outside the generator. `fit = 0` stays native and is centered by
- * `postProcess` where the generator historically did so.
- */
+function hiddenLayerResult(layer, index, document) {
+  return {
+    id: layer?.id ?? `layer-${index}`,
+    name: layer?.name ?? `Layer ${index + 1}`,
+    visible: false,
+    locked: Boolean(layer?.locked),
+    type: layer?.type ?? (isInstanceLayer(layer) ? 'instance' : 'generator'),
+    source: isInstanceLayer(layer) ? { ...layer.source } : null,
+    style: layer?.style ?? document.view?.style,
+    generator: layer?.generator ?? null,
+    renderGenerator: layer?.generator ?? null,
+    operators: layer?.operators ?? [],
+    curves: [],
+    stats: null,
+    bbox: null,
+    errors: [],
+  };
+}
+
+function tagLayerErrors(layerErrors, layer, index) {
+  return (layerErrors ?? []).map((error) => ({
+    ...error,
+    layerId: layer.id,
+    layerIndex: index,
+  }));
+}
+
+function buildLayerResult(layer, index, evaluation, layerErrors, {
+  visible = true,
+  geometryVisible = true,
+  sourceLayer = null,
+} = {}) {
+  const curves = visible
+    ? evaluation.curves.map((curve) => ({
+      ...curve,
+      meta: { ...curve.meta, layerId: layer.id, layerName: layer.name },
+    }))
+    : [];
+  const layerResult = {
+    id: layer.id,
+    name: layer.name,
+    visible,
+    locked: Boolean(layer.locked),
+    type: layer.type ?? (isInstanceLayer(layer) ? 'instance' : 'generator'),
+    source: isInstanceLayer(layer)
+      ? { ...layer.source, sourceLayerName: sourceLayer?.name ?? null }
+      : null,
+    modes: Array.isArray(layer.modes) && layer.modes.length ? layer.modes : null,
+    colorMetric: layer.colorMetric ?? null,
+    style: layer.style,
+    generator: layer.generator ?? null,
+    renderGenerator: sourceLayer?.generator ?? layer.generator ?? null,
+    operators: layer.operators,
+    curves,
+    space: evaluation.space ?? (evaluation.geometry ? SPACE.WORLD : SPACE.ARTBOARD),
+    geometry: geometryVisible ? evaluation.geometry ?? null : null,
+    meshes: geometryVisible ? evaluation.meshes ?? [] : [],
+    surfaceMappings: geometryVisible ? evaluation.surfaceMappings ?? [] : [],
+    renderMeshes: geometryVisible ? evaluation.renderMeshes ?? [] : [],
+    appliedProjection: geometryVisible ? evaluation.appliedProjection ?? null : null,
+    viewProjection: geometryVisible ? evaluation.viewProjection ?? null : null,
+    worldBBox: geometryVisible ? evaluation.worldBBox ?? null : null,
+    stats: visible ? evaluation.stats : null,
+    bbox: visible ? evaluation.bbox : null,
+    errors: layerErrors,
+  };
+  let layerAnalysis = null;
+  Object.defineProperty(layerResult, 'analysis', {
+    enumerable: true,
+    configurable: true,
+    get() {
+      if (!layerAnalysis) layerAnalysis = analyzeAll(layerResult.curves);
+      return layerAnalysis;
+    },
+  });
+  return layerResult;
+}
+
+const INSTANCE_ALLOWED_OPERATORS = new Set(['translate', 'rotate', 'scale']);
+
+function evaluateInstanceLayer(document, options, layer, sourceLayer, sourceEvaluation) {
+  const t0 = now();
+  const time = options.time ?? document.animation?.time ?? 0;
+  const quality = options.quality ?? {};
+  const errors = [];
+  const layerIndex = options.layerIndex ?? 0;
+
+  if (!sourceLayer) {
+    errors.push({ stage: 'instance', index: layerIndex, message: 'Instance source layer not found' });
+    return emptyWorldEvaluation(errors, t0);
+  }
+  if (isInstanceLayer(sourceLayer)) {
+    errors.push({ stage: 'instance', index: layerIndex, message: 'Instance source cannot be another instance' });
+    return emptyWorldEvaluation(errors, t0);
+  }
+  if (!sourceEvaluation) {
+    errors.push({ stage: 'instance', index: layerIndex, message: 'Instance source was not evaluated' });
+    return emptyWorldEvaluation(errors, t0);
+  }
+  if (sourceEvaluation.errors?.length) {
+    errors.push({ stage: 'instance', index: layerIndex, message: 'Source layer has errors' });
+    return emptyWorldEvaluation(errors, t0);
+  }
+
+  const sourceSurfaces = (sourceEvaluation.geometry ?? []).filter(isSurface);
+  if (!sourceSurfaces.length) {
+    errors.push({ stage: 'instance', index: layerIndex, message: 'Instance source must produce Surface geometry' });
+    return emptyWorldEvaluation(errors, t0);
+  }
+
+  const timeKey = time;
+  const signature = JSON.stringify([
+    WORLD_CACHE_VERSION,
+    'instance',
+    layer.id,
+    sourceLayer.id,
+    layerGeometrySignature(sourceLayer, document, options),
+    (layer.operators ?? []).map((stage) => [stage.id, stage.params, stage.mods, stage.enabled]),
+    timeKey,
+    quality,
+  ]);
+  const cached = options.bypassCache ? null : INSTANCE_CACHE.get(layer);
+  if (cached?.signature === signature) return cached.result;
+
+  const seed = sourceLayer.seed ?? document.seed ?? 1;
+  const ctx = {
+    time,
+    seed,
+    scope: createStdlib(seed),
+    quality,
+    document,
+    timeline: document.animation?.timeline ?? null,
+    layerIndex,
+  };
+
+  let surfaces = sourceSurfaces.map((surface, index) => cloneInstanceSurface(surface, layer, sourceLayer, index));
+  for (let opIndex = 0; opIndex < (layer.operators ?? []).length; opIndex++) {
+    const stage = layer.operators[opIndex];
+    if (stage.enabled === false) continue;
+    const def = Operators.get(stage.id);
+    if (!INSTANCE_ALLOWED_OPERATORS.has(def.id)) {
+      errors.push({
+        stage: 'instance',
+        index: layerIndex,
+        message: `${def.name} is not allowed on an instance layer`,
+      });
+      return emptyWorldEvaluation(errors, t0);
+    }
+    const rejected = surfaces.find((item) => !operatorAccepts(def, item));
+    if (rejected) {
+      errors.push({
+        stage: 'instance',
+        index: layerIndex,
+        message: `${def.name} does not accept ${rejected.kind} geometry`,
+      });
+      return emptyWorldEvaluation(errors, t0);
+    }
+    const opParams = resolveParams(def.params, stage.params, stage.mods, {
+      ...ctx, stagePath: `operators[${opIndex}].params`,
+    }, tagErrors(errors, 'instance', layerIndex));
+    surfaces = runGuarded(() => def.apply(surfaces, opParams, ctx), errors, 'instance', layerIndex) ?? surfaces;
+    surfaces = sanitizeGeometry(surfaces, errors, 'instance', layerIndex);
+  }
+
+  surfaces = surfaces.map((surface, index) => ({
+    ...surface,
+    id: `${layer.id}:surface:${index}`,
+    meta: {
+      ...(surface.meta ?? {}),
+      instanceLayerId: layer.id,
+      sourceLayerId: sourceLayer.id,
+      sourceSurfaceId: surface.meta?.sourceSurfaceId ?? null,
+    },
+  }));
+
+  const result = evaluateSurfaceGeometry({
+    document,
+    options,
+    surfaces,
+    fit: Number(sourceLayer.generator?.params?.fit) || 0,
+    ctx,
+    errors,
+    viewOps: [],
+    stage: 'instance',
+    index: layerIndex,
+    source: { instanceLayerId: layer.id, sourceLayerId: sourceLayer.id },
+    meshIdFor: (_surface, index) => `${layer.id}:mesh:${index}`,
+    t0,
+  });
+  if (!errors.length && !options.bypassCache) INSTANCE_CACHE.set(layer, { signature, result });
+  return result;
+}
+
+function cloneInstanceSurface(surface, layer, sourceLayer, index) {
+  const cloned = mapGeometryPoints(surface, (point) => ({ ...point }), {
+    id: `${layer.id}:surface:${index}`,
+  });
+  cloned.meta = {
+    ...(surface.meta ?? {}),
+    instanceLayerId: layer.id,
+    sourceLayerId: sourceLayer.id,
+    sourceSurfaceId: surface.id ?? null,
+  };
+  return cloned;
+}
+
+function emptyWorldEvaluation(errors, t0) {
+  const bbox = bboxAll([]);
+  return {
+    curves: [],
+    meshes: [],
+    surfaceMappings: [],
+    renderMeshes: [],
+    geometry: [],
+    space: SPACE.WORLD,
+    worldBBox: bboxGeometry([]),
+    viewProjection: '3d',
+    appliedProjection: '3d',
+    errors,
+    stats: {
+      evalMs: now() - t0,
+      analysisMs: 0,
+      stageTimes: [],
+      curveCount: 0,
+      pointCount: 0,
+      peakPoints: 0,
+      arcLength: 0,
+      worldPointCount: 0,
+    },
+    bbox,
+  };
+}
+
+function layerGeometrySignature(layer, document, options) {
+  return JSON.stringify([
+    layer.id,
+    layer.seed ?? document.seed ?? 1,
+    layer.generator?.id ?? null,
+    layer.generator?.params ?? null,
+    layer.generator?.mods ?? null,
+    (layer.operators ?? []).map((stage) => [stage.id, stage.params, stage.mods, stage.enabled]),
+    options.time ?? document.animation?.time ?? 0,
+    options.quality ?? {},
+  ]);
+}
+
 function applyPlaneFit(curves, params) {
   const fit = Number(params?.fit ?? params?.size);
   if (!Number.isFinite(fit) || fit <= 0) return curves;

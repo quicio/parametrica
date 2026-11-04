@@ -51,7 +51,7 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
       layer.visible,
       layer.modes,
       layer.colorMetric,
-      layer.generator?.params?.fit,
+      (layer.renderGenerator ?? layer.generator)?.params?.fit,
     ]),
   ]);
   const cached = SCENE_CACHE.get(evaluation);
@@ -206,14 +206,14 @@ function prepareSpatialGroup(group, { projection, view, camera = null }) {
   const curves = projectWorldCurvesToView(worldCurvesOf(group), {
     camera: camera ?? view?.camera,
     projection,
-    depthFade: group.generator?.params?.depthOcclusion ?? true,
-    depthStrength: group.generator?.params?.depthAttenuation ?? 0.55,
+    depthFade: (group.renderGenerator ?? group.generator)?.params?.depthOcclusion ?? true,
+    depthStrength: (group.renderGenerator ?? group.generator)?.params?.depthAttenuation ?? 0.55,
   });
   const meshes = projectWorldMeshesToView(worldMeshesOf(group), {
     camera: camera ?? view?.camera,
     projection,
-    depthFade: group.generator?.params?.depthOcclusion ?? true,
-    depthStrength: group.generator?.params?.depthAttenuation ?? 0.55,
+    depthFade: (group.renderGenerator ?? group.generator)?.params?.depthOcclusion ?? true,
+    depthStrength: (group.renderGenerator ?? group.generator)?.params?.depthAttenuation ?? 0.55,
   });
   return {
     curves,
@@ -304,11 +304,11 @@ function resolveSceneFit(view, doc, spatialGroups) {
   const active = doc?.layers?.[doc.activeLayer ?? 0] ?? doc?.layers?.[0];
   const activeGroup = spatialGroups.find((group) => group.id === active?.id);
   if (activeGroup) {
-    const activeFit = Number(activeGroup.generator?.params?.fit);
+    const activeFit = Number((activeGroup.renderGenerator ?? activeGroup.generator)?.params?.fit);
     if (Number.isFinite(activeFit)) return activeFit;
   }
   for (const group of spatialGroups) {
-    const fit = Number(group.generator?.params?.fit);
+    const fit = Number((group.renderGenerator ?? group.generator)?.params?.fit);
     if (Number.isFinite(fit)) return fit;
   }
   return 0;
@@ -347,6 +347,6 @@ function worldBoundsOfGroups(groups) {
 }
 
 function legacyFit(group, doc) {
-  const fit = Number(group.generator?.params?.fit ?? doc?.generator?.params?.fit);
+  const fit = Number((group.renderGenerator ?? group.generator)?.params?.fit ?? doc?.generator?.params?.fit);
   return Number.isFinite(fit) ? fit : 0;
 }

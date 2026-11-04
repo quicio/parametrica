@@ -72,8 +72,8 @@ export class PresetManager {
         builtIn: false,
         category: CATEGORY_USER.id,
         description: 'Saved from this workspace.',
-        tags: ['user', doc.generator?.id ?? ''],
-        generator: doc.generator?.id ?? 'unknown',
+        tags: ['user', doc.generator?.id ?? doc.layers?.find((layer) => layer?.generator?.id)?.generator.id ?? ''],
+        generator: doc.generator?.id ?? doc.layers?.find((layer) => layer?.generator?.id)?.generator.id ?? 'unknown',
       };
     });
     return [...builtIns, ...user];

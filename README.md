@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2078 checks)
+npm test             # node-only verification suite (2117 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (124 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (129 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -263,6 +263,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions
 - **Layers** with independent generators, operator stacks and styles
+- **Instance layers** that reference a generator layer, share its params and canonical Surface, apply per-instance transforms before tessellation, and keep source-aware SurfaceMapping, picking and inspection
 - **Perform** with Animation and Timeline: keyframes, easing, recording, loop, PNG ZIP, SVG frame ZIP and GIF export
 - **Offline advisor** with deterministic A/B narration, suggestions, preview and apply
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure

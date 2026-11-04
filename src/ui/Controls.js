@@ -29,6 +29,16 @@ import { PresetPanel } from './widgets/PresetPanel.js';
 import { ARTBOARD_PRESETS, PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { LOOK_PRESETS, lookPresetMatchesView } from '../render/lookPresets.js';
+import {
+  MAX_INSTANCE_LAYERS,
+  MAX_LAYERS,
+  canAddInstanceLayer,
+  countInstanceLayers,
+  instanceSourceCandidates,
+  isInstanceLayer,
+  sourceGeneratorFor,
+  sourceLayerFor,
+} from '../core/layers.js';
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
 import {
   PHYSICAL_UNIT_SYSTEMS,
@@ -241,10 +251,12 @@ export class Controls {
       return;
     }
     const visible = layer.visible !== false;
-    const generator = Generators.get(layer.generator.id);
+    const instance = isInstanceLayer(layer);
+    const source = instance ? sourceLayerFor(doc, layer) : null;
+    const generator = instance ? null : Generators.get(layer.generator.id);
     const operators = layer.operators ?? [];
     const disabled = operators.filter((op) => !op.enabled).length;
-    const mods = countMods(layer.generator) + operators.reduce((sum, op) => sum + countMods(op), 0);
+    const mods = (instance ? 0 : countMods(layer.generator)) + operators.reduce((sum, op) => sum + countMods(op), 0);
     const tracks = (doc.animation?.timeline?.tracks ?? [])
       .filter((track) => (track.layer ?? 0) === index).length;
     const projection = doc.view?.projection ?? '3d';
@@ -252,7 +264,9 @@ export class Controls {
       `Layer ${index + 1}/${layers.length}`,
       layer.name,
       visible ? 'visible' : 'hidden',
-      generator?.name ?? layer.generator.id,
+      instance
+        ? `instance ← ${source?.name ?? 'missing source'}`
+        : (generator?.name ?? layer.generator.id),
       `${operators.length} op${operators.length === 1 ? '' : 's'}${disabled ? ` · ${disabled} off` : ''}`,
     ];
     if (mods) parts.push(`${mods} mod${mods === 1 ? '' : 's'}`);
@@ -325,6 +339,7 @@ export class Controls {
     this.buildModeBar();
 
     this.buildLayersSection();
+    this.buildInstanceSection();
     this.buildGeneratorSection();
     this.buildParamsSection();
     this.buildEquationsSection();
@@ -386,7 +401,44 @@ export class Controls {
     add.title = 'Add a new layer';
     add.addEventListener('click', () => this.app.addLayer('parametric'));
     bar.appendChild(add);
+
+    const candidates = instanceSourceCandidates(this.app.document).filter(({ layer }) => (
+      Generators.has(layer.generator?.id)
+      && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
+    ));
+    const sourceSelect = document.createElement('select');
+    sourceSelect.className = 'artboard-input instance-source-picker';
+    sourceSelect.title = 'Generator layer used as instance source';
+    for (const { layer: candidate } of candidates) {
+      const option = document.createElement('option');
+      option.value = candidate.id;
+      option.textContent = candidate.name;
+      sourceSelect.appendChild(option);
+    }
+    const addInstance = document.createElement('button');
+    addInstance.className = 'layer-add layer-add-instance';
+    addInstance.textContent = '+ INSTANCE';
+    const instances = countInstanceLayers(this.app.document);
+    const canAdd = canAddInstanceLayer(this.app.document);
+    addInstance.disabled = !canAdd || !candidates.length;
+    addInstance.title = !candidates.length
+      ? 'Add a Surface generator layer first'
+      : instances >= MAX_INSTANCE_LAYERS
+        ? `Instance limit reached (${MAX_INSTANCE_LAYERS})`
+        : this.app.document.layers.length >= MAX_LAYERS
+          ? `Layer limit reached (${MAX_LAYERS})`
+          : 'Add an instance of the selected generator layer';
+    addInstance.addEventListener('click', () => {
+      this.app.addInstanceLayer(sourceSelect.value);
+    });
+    if (candidates.length) bar.append(sourceSelect);
+    bar.appendChild(addInstance);
     body.appendChild(bar);
+    if (instances > MAX_INSTANCE_LAYERS) {
+      body.appendChild(this.panelHint(
+        `Instance limit exceeded (${instances}/${MAX_INSTANCE_LAYERS}). Remove instances before adding more.`,
+      ));
+    }
 
     const list = document.createElement('div');
     list.className = 'layers-list';
@@ -425,13 +477,29 @@ export class Controls {
       name.textContent = layer.name;
       name.title = layer.name;
 
+      const isInstance = isInstanceLayer(layer);
+      const badge = isInstance ? document.createElement('span') : null;
+      if (badge) {
+        badge.className = 'layer-kind-badge';
+        badge.textContent = 'INSTANCE';
+        row.classList.add('instance');
+      }
+      const source = isInstance ? sourceLayerFor(this.app.document, layer) : null;
+      const sourceLabel = isInstance ? document.createElement('span') : null;
+      if (sourceLabel) {
+        sourceLabel.className = 'layer-source-label';
+        sourceLabel.textContent = source ? `↳ ${source.name}` : '↳ missing source';
+        sourceLabel.title = source ? `Source: ${source.name}` : 'Source layer is missing';
+      }
+
       const rename = layerButton('✎', 'Rename layer', () => this.renameLayerPrompt(index));
       const up = layerButton('↑', 'Move layer up', () => this.app.moveLayer(index, -1), index === 0);
       const down = layerButton('↓', 'Move layer down', () => this.app.moveLayer(index, 1), index === layers.length - 1);
       const duplicate = layerButton('⧉', 'Duplicate layer', () => this.app.duplicateLayer(index));
       const remove = layerButton('×', 'Remove layer', () => this.app.removeLayer(index), layers.length <= 1);
 
-      row.append(visibility, lock, name, rename, up, down, duplicate, remove);
+      if (badge) row.append(visibility, lock, badge, name, sourceLabel, rename, up, down, duplicate, remove);
+      else row.append(visibility, lock, name, rename, up, down, duplicate, remove);
       row.addEventListener('click', () => {
         if (index !== this.app.document.activeLayer) this.app.setActiveLayer(index);
       });
@@ -453,7 +521,90 @@ export class Controls {
     this.app.renameLayer(index, name);
   }
 
+  buildInstanceSection() {
+    const layer = this.app.activeLayer;
+    if (!isInstanceLayer(layer)) return;
+    const body = this.section('Instance', { id: 'instance', mode: 'form' });
+    const source = sourceLayerFor(this.app.document, layer);
+    const generator = sourceGeneratorFor(this.app.document, layer);
+    body.appendChild(this.panelHint(
+      'Active instance · source parameters are read-only · transforms apply before tessellation.',
+    ));
+    if (!source) {
+      body.appendChild(this.panelHint('Source layer is missing. Select another generator layer.'));
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'artboard-grid instance-grid';
+    const row = (label, control) => {
+      const el = document.createElement('label');
+      el.className = 'artboard-row';
+      const name = document.createElement('span');
+      name.className = 'artboard-label';
+      name.textContent = label;
+      el.append(name, control);
+      grid.appendChild(el);
+      return el;
+    };
+
+    const candidates = instanceSourceCandidates(this.app.document).filter(({ layer }) => (
+      Generators.has(layer.generator?.id)
+      && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
+    ));
+    const sourceSelect = document.createElement('select');
+    sourceSelect.className = 'artboard-input instance-source-select';
+    for (const { layer: candidate } of candidates) {
+      const option = document.createElement('option');
+      option.value = candidate.id;
+      option.textContent = candidate.name;
+      sourceSelect.appendChild(option);
+    }
+    if (source?.id) sourceSelect.value = source.id;
+    sourceSelect.disabled = Boolean(layer.locked) || !candidates.length;
+    sourceSelect.addEventListener('change', () => {
+      this.app.setInstanceSource(this.app.document.activeLayer, sourceSelect.value);
+    });
+    row('Source', sourceSelect);
+
+    const selectSource = document.createElement('button');
+    selectSource.type = 'button';
+    selectSource.className = 'lab-button instance-select-source';
+    selectSource.textContent = 'SELECT SOURCE LAYER';
+    selectSource.disabled = !source;
+    selectSource.addEventListener('click', () => {
+      const index = this.app.document.layers.findIndex((entry) => entry.id === source?.id);
+      if (index >= 0) this.app.setActiveLayer(index);
+    });
+    grid.appendChild(selectSource);
+
+    if (generator && Generators.has(generator.id)) {
+      const definition = Generators.get(generator.id);
+      const params = document.createElement('div');
+      params.className = 'instance-source-params';
+      for (const [key, schema] of Object.entries(definition.params)) {
+        if (schema.type === TYPE.SOURCE) continue;
+        const value = source?.generator?.params?.[key];
+        if (value === undefined || value === null || value === '') continue;
+        const paramRow = document.createElement('div');
+        paramRow.className = 'instance-param-row';
+        const label = document.createElement('span');
+        label.className = 'instance-param-label';
+        label.textContent = schema.label ?? key;
+        const display = document.createElement('span');
+        display.className = 'instance-param-value';
+        display.textContent = formatInstanceParam(value);
+        paramRow.append(label, display);
+        params.appendChild(paramRow);
+      }
+      if (params.childElementCount) grid.appendChild(params);
+    }
+
+    grid.appendChild(this.panelHint('Instance operators: Translate, Rotate, Scale only.'));
+    body.appendChild(grid);
+  }
+
   buildGeneratorSection() {
+    if (this.app.activeLayerIsInstance()) return;
     const gui = this.makeGui(this.section('Generator', { id: 'generator', mode: 'form' }));
     const options = {};
     for (const def of Generators.list()) options[def.name] = def.id;
@@ -465,6 +616,7 @@ export class Controls {
   }
 
   buildParamsSection() {
+    if (this.app.activeLayerIsInstance()) return;
     const body = this.section('Parameters', { id: 'parameters', mode: 'form' });
     const gen = Generators.get(this.app.document.generator.id);
     const stage = this.app.document.generator;
@@ -521,6 +673,7 @@ export class Controls {
   }
 
   buildEquationsSection() {
+    if (this.app.activeLayerIsInstance()) return;
     const gen = Generators.get(this.app.document.generator.id);
     const exprEntries = Object.entries(gen.params).filter(([, s]) =>
       [TYPE.EXPRESSION, TYPE.SOURCE].includes(s.type));
@@ -546,6 +699,7 @@ export class Controls {
   }
 
   buildHarmonicsSection() {
+    if (this.app.activeLayerIsInstance()) return;
     const gen = Generators.get(this.app.document.generator.id);
     const hasHarmonics = Object.keys(gen.params).some((k) => k === 'harmonicsX' || k === 'harmonicsY');
     if (!hasHarmonics) return;
@@ -575,7 +729,11 @@ export class Controls {
   }
 
   activeGeneratorDefinition() {
-    const generatorId = this.app.activeLayer?.generator?.id;
+    const layer = this.app.activeLayer;
+    const generator = isInstanceLayer(layer)
+      ? sourceGeneratorFor(this.app.document, layer)
+      : layer?.generator;
+    const generatorId = generator?.id;
     return generatorId && Generators.has(generatorId) ? Generators.get(generatorId) : null;
   }
 
@@ -650,8 +808,7 @@ export class Controls {
   buildCameraSection() {
     const body = this.section('Camera', { id: 'camera', mode: 'look' });
     const view = this.app.document.view;
-    const generatorId = this.app.activeLayer?.generator?.id;
-    const generator = generatorId && Generators.has(generatorId) ? Generators.get(generatorId) : null;
+    const generator = this.activeGeneratorDefinition();
     const canProject = Boolean(generator && supportsSpatial(generator));
     if (!canProject && view.projection !== '3d') view.projection = '3d';
     view.projection ??= '3d';
@@ -1227,6 +1384,10 @@ export class Controls {
     const physical = makeRow('Physical', 'fabricate-physical-size');
     const warnings = makeRow('Checks', 'fabricate-warnings');
 
+    const compositionNote = document.createElement('div');
+    compositionNote.className = 'fabricate-composition-note';
+    compositionNote.hidden = true;
+
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'lab-button fabricate-export';
@@ -1236,12 +1397,12 @@ export class Controls {
       this.refreshFabricate();
     });
 
-    panel.append(status, source, reason, rows, exportButton);
+    panel.append(status, source, reason, rows, compositionNote, exportButton);
     body.appendChild(panel);
 
     this.fabricateEls = {
       panel, status, source, reason, triangles, vertices, volume,
-      worldSize, physical, warnings, exportButton, unitSelect, scaleInput,
+      worldSize, physical, warnings, exportButton, unitSelect, scaleInput, compositionNote,
     };
     this.refreshFabricate();
   }
@@ -1305,6 +1466,12 @@ export class Controls {
       ? `${formatPhysicalLength(report.physical.width)} × ${formatPhysicalLength(report.physical.height)} × ${formatPhysicalLength(report.physical.depth ?? 0)}`
       : 'unitless';
     els.warnings.textContent = report.warnings.length ? report.warnings.join(' · ') : 'validated';
+
+    const instanceCount = (doc.layers ?? []).filter(isInstanceLayer).length;
+    els.compositionNote.hidden = instanceCount === 0;
+    els.compositionNote.textContent = instanceCount
+      ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · exporting one body from the active layer only`
+      : '';
 
     els.exportButton.disabled = !ready;
     els.exportButton.title = ready
@@ -2028,6 +2195,11 @@ export class Controls {
   }
 
   buildMutationSection() {
+    if (this.app.activeLayerIsInstance()) {
+      const body = this.section('Mutation', { id: 'mutation', mode: 'explore' });
+      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
+      return;
+    }
     const gui = this.makeGui(this.section('Mutation', { id: 'mutation', mode: 'explore' }));
     const btn = gui.add({ mutate: () => this.app.mutate() }, 'mutate').name('Mutate');
     btn.domElement.classList.add('gl-accent');
@@ -2054,17 +2226,31 @@ export class Controls {
 
   buildAdvisorSection() {
     const body = this.section('Advisor', { id: 'advisor', mode: 'explore' });
+    if (this.app.activeLayerIsInstance()) {
+      body.appendChild(this.panelHint('Select a generator layer to use the advisor.'));
+      return;
+    }
     this.advisorPanel = new AdvisorPanel(this.app);
     body.appendChild(this.advisorPanel.el);
   }
 
   buildExploreSection() {
+    if (this.app.activeLayerIsInstance()) {
+      const body = this.section('Explore', { id: 'explore', mode: 'explore' });
+      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
+      return;
+    }
     const body = this.section('Explore', { id: 'explore', mode: 'explore' });
     this.explorePanel = new ExplorePanel(this.app);
     body.appendChild(this.explorePanel.el);
   }
 
   buildEvolutionSection() {
+    if (this.app.activeLayerIsInstance()) {
+      const body = this.section('Evolution', { id: 'evolution', mode: 'explore' });
+      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
+      return;
+    }
     const body = this.section('Evolution', { id: 'evolution', mode: 'explore' });
     this.evolutionPanel = new EvolutionPanel(this.app);
     body.appendChild(this.evolutionPanel.el);
@@ -2235,6 +2421,15 @@ function formatNumber(value) {
   if (abs >= 100) return number.toFixed(1);
   if (abs >= 10) return number.toFixed(2);
   return number.toFixed(3);
+}
+
+function formatInstanceParam(value) {
+  if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? '' : 's'}`;
+  if (value && typeof value === 'object' && typeof value.expr === 'string') return `ƒ ${value.expr}`;
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  if (typeof value === 'number') return Number.isFinite(value) ? String(Number(value.toFixed(4))) : '—';
+  if (typeof value === 'string') return value.length > 32 ? `${value.slice(0, 31)}…` : value;
+  return String(value);
 }
 
 function resolveMode(value) {

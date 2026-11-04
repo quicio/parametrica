@@ -6,19 +6,25 @@
  */
 
 import { Generators, Operators } from '../core/registry.js';
+import { isInstanceLayer, sourceLayerFor } from '../core/layers.js';
 
 export function buildParametricSummary(document, layerIndex = document?.activeLayer ?? 0) {
   const layers = document?.layers ?? [];
   const layer = layers[layerIndex];
   if (!layer) return null;
-  const definition = Generators.has(layer.generator.id) ? Generators.get(layer.generator.id) : null;
+  const instance = isInstanceLayer(layer);
+  const sourceLayer = instance ? sourceLayerFor(document, layer) : null;
+  const generatorOwner = instance ? sourceLayer : layer;
+  const definition = generatorOwner?.generator && Generators.has(generatorOwner.generator.id)
+    ? Generators.get(generatorOwner.generator.id)
+    : null;
   const params = [];
   if (definition) {
     for (const [key, schema] of Object.entries(definition.params)) {
       params.push({
         key,
         label: schema.label ?? key,
-        value: formatParametricValue(layer.generator.params?.[key]),
+        value: formatParametricValue(generatorOwner.generator.params?.[key]),
         advanced: Boolean(schema.advanced),
       });
     }
@@ -32,8 +38,12 @@ export function buildParametricSummary(document, layerIndex = document?.activeLa
   return {
     layerIndex,
     layerName: layer.name ?? `Layer ${layerIndex + 1}`,
-    generatorName: definition?.name ?? layer.generator.id,
-    seed: layer.seed ?? document?.seed ?? 1,
+    instance,
+    sourceLayerName: sourceLayer?.name ?? null,
+    generatorName: instance
+      ? `Instance ← ${definition?.name ?? sourceLayer?.name ?? 'missing source'}`
+      : (definition?.name ?? layer.generator?.id ?? 'Generator'),
+    seed: generatorOwner?.seed ?? document?.seed ?? 1,
     params,
     operators,
   };

@@ -18,6 +18,7 @@ import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js'
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
+import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
 
 export const DOCUMENT_VERSION = 3;
 
@@ -240,6 +241,7 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
   const generator = Generators.get(generatorId);
   layerCounter++;
   return {
+    type: 'generator',
     id: typeof overrides.id === 'string' && overrides.id ? overrides.id : `layer-${layerCounter}`,
     name: typeof overrides.name === 'string' ? overrides.name : generator.name,
     visible: overrides.visible !== false,
@@ -259,6 +261,32 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
   };
 }
 
+/** Fresh instance layer referencing one generator layer. */
+export function createInstanceLayer(sourceLayerId, overrides = {}) {
+  layerCounter++;
+  const id = typeof overrides.id === 'string' && overrides.id
+    ? overrides.id
+    : `layer-${layerCounter}`;
+  return {
+    type: 'instance',
+    id,
+    name: typeof overrides.name === 'string' && overrides.name.trim()
+      ? overrides.name.trim().slice(0, 80)
+      : `Instance ${layerCounter}`,
+    visible: overrides.visible !== false,
+    locked: Boolean(overrides.locked),
+    seed: null,
+    modes: Array.isArray(overrides.modes) && overrides.modes.length
+      ? [...new Set(overrides.modes.filter((mode) => typeof mode === 'string'))]
+      : null,
+    colorMetric: COLOR_METRICS.includes(overrides.colorMetric) ? overrides.colorMetric : null,
+    source: { layerId: String(sourceLayerId ?? '') },
+    generator: null,
+    operators: sanitizeOperators(overrides.operators ?? []),
+    style: sanitizeStyle(overrides.style, overrides.strokeWeight ?? DEFAULT_STYLE.stroke.width),
+  };
+}
+
 /**
  * Expose the active layer's generator/operators on the document for the
  * existing single-layer editor and all current slices. Properties are
@@ -271,10 +299,16 @@ export function attachLayerAliases(document) {
     seed: {
       configurable: true,
       enumerable: true,
-      get() { return document.layers[document.activeLayer]?.seed ?? 1; },
+      get() {
+        const layer = document.layers[document.activeLayer];
+        if (isInstanceLayer(layer)) return sourceLayerFor(document, layer)?.seed ?? 1;
+        return layer?.seed ?? 1;
+      },
       set(value) {
         const next = clamp(Number(value), 0, 1e9, 1);
-        for (const layer of document.layers) layer.seed = next;
+        for (const layer of document.layers) {
+          if (!isInstanceLayer(layer)) layer.seed = next;
+        }
       },
     },
     generator: {
@@ -299,11 +333,59 @@ export function attachLayerAliases(document) {
   return document;
 }
 
+function normalizeLayerIds(layers) {
+  const seen = new Set();
+  const canonical = new Map();
+  for (let index = 0; index < layers.length; index++) {
+    const layer = layers[index];
+    let id = layer.id;
+    if (!id || seen.has(id)) {
+      let candidate = `layer-${index + 1}`;
+      let suffix = 2;
+      while (seen.has(candidate)) candidate = `layer-${index + 1}-${suffix++}`;
+      id = candidate;
+    } else {
+      canonical.set(layer.id, layer.id);
+    }
+    layer.id = id;
+    seen.add(id);
+  }
+  for (const layer of layers) {
+    if (!layer.source?.layerId) continue;
+    const resolved = canonical.get(layer.source.layerId);
+    if (resolved) layer.source.layerId = resolved;
+  }
+  return layers;
+}
+
 function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
   const source = raw && typeof raw === 'object' ? raw : {};
+  const instance = source.type === 'instance' || Boolean(source.source?.layerId);
+  if (instance) {
+    const sourceLayerId = typeof source.source?.layerId === 'string' ? source.source.layerId : '';
+    return {
+      type: 'instance',
+      id: typeof source.id === 'string' && source.id ? source.id : `layer-${index + 1}`,
+      name: typeof source.name === 'string' && source.name.trim()
+        ? source.name.trim().slice(0, 80)
+        : `Instance ${index + 1}`,
+      visible: source.visible !== false,
+      locked: Boolean(source.locked),
+      seed: null,
+      modes: Array.isArray(source.modes) && source.modes.length
+        ? [...new Set(source.modes.filter((mode) => typeof mode === 'string'))]
+        : null,
+      colorMetric: COLOR_METRICS.includes(source.colorMetric) ? source.colorMetric : null,
+      source: { layerId: sourceLayerId },
+      generator: null,
+      operators: sanitizeOperators(source.operators),
+      style: sanitizeStyle(source.style ?? fallbackStyle, fallbackStyle?.stroke?.width),
+    };
+  }
   const generatorId = Generators.has(source.generator?.id) ? source.generator.id : 'parametric';
   const generator = Generators.get(generatorId);
   return {
+    type: 'generator',
     id: typeof source.id === 'string' && source.id ? source.id : `layer-${index + 1}`,
     name: typeof source.name === 'string' && source.name.trim()
       ? source.name.trim().slice(0, 80)
@@ -420,8 +502,8 @@ export function sanitizeDocument(raw) {
   const fallbackStyle = sanitizeStyle(raw.view?.style, view.strokeWeight);
   const seed = clamp(Number(raw.seed), 0, 1e9, 1);
 
-  const rawLayers = Array.isArray(raw.layers) && raw.layers.length ? raw.layers.slice(0, 16) : null;
-  const layers = rawLayers
+  const rawLayers = Array.isArray(raw.layers) && raw.layers.length ? raw.layers.slice(0, MAX_LAYERS) : null;
+  let layers = rawLayers
     ? rawLayers.map((layer, index) => sanitizeLayer(layer, index, fallbackStyle, seed))
     : [sanitizeLayer({
       generator: raw.generator,
@@ -429,6 +511,7 @@ export function sanitizeDocument(raw) {
       seed,
       style: raw.view?.style,
     }, 0, fallbackStyle, seed)];
+  layers = normalizeLayerIds(layers);
 
   let activeLayer = Number.isInteger(raw.activeLayer) ? raw.activeLayer : 0;
   activeLayer = Math.max(0, Math.min(layers.length - 1, activeLayer));

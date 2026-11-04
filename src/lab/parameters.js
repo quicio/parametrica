@@ -10,8 +10,10 @@ import { TYPE } from '../core/schema.js';
 
 export function numericParameterRefs(document) {
   const refs = [];
-  const generator = Generators.get(document.generator.id);
-  for (const [key, schema] of Object.entries(generator.params)) {
+  const generator = document.generator?.id && Generators.has(document.generator.id)
+    ? Generators.get(document.generator.id)
+    : null;
+  for (const [key, schema] of Object.entries(generator?.params ?? {})) {
     if (schema.type === TYPE.NUMBER) refs.push({ stage: 'generator', key, schema });
   }
   (document.operators ?? []).forEach((op, index) => {
@@ -26,6 +28,7 @@ export function numericParameterRefs(document) {
 
 export function schemaForRef(document, ref) {
   if (ref.stage === 'generator') {
+    if (!document.generator?.id || !Generators.has(document.generator.id)) return null;
     return Generators.get(document.generator.id).params[ref.key] ?? null;
   }
   const op = document.operators?.[ref.index];
