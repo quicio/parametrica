@@ -177,6 +177,7 @@ extraction and conversion to a Fourier document.
 | `startup-continuity` | Last-session restore and default stroke width 1 |
 | `instance-layers` | Source-shared instance layers, mapping identity and single-body fabrication |
 | `vortex-stack-preset` | Built-in layered composition, Compositions category and stable composition previews |
+| `start-with` | First-run and new-document starting chooser |
 | `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -476,6 +477,7 @@ generation metadata in the notebook; unit group 24.
 | `startup-continuity` | archived | shipped |
 | `instance-layers` | archived | shipped |
 | `vortex-stack-preset` | archived | shipped |
+| `start-with` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
