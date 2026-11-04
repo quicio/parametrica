@@ -17,21 +17,6 @@ The app SHALL debounce document snapshots to localStorage after commits.
 - **WHEN** a snapshot is written while animation is playing
 - **THEN** the stored document has `animation.playing = false`
 
-### Requirement: Explicit recovery
-
-On startup the app SHALL NOT silently replace the current document. It SHALL
-offer Restore and Dismiss actions for a pending snapshot.
-
-#### Scenario: Restore
-
-- **WHEN** the user clicks Restore
-- **THEN** the snapshot document is adopted and the banner disappears
-
-#### Scenario: Dismiss
-
-- **WHEN** the user clicks Dismiss
-- **THEN** the snapshot is removed and the current document remains untouched
-
 ### Requirement: Safe failure
 
 Corrupt snapshots and storage quota failures SHALL NOT throw into the app.
@@ -40,3 +25,43 @@ Corrupt snapshots and storage quota failures SHALL NOT throw into the app.
 
 - **WHEN** localStorage rejects a write
 - **THEN** the app continues working and reports the storage failure
+
+### Requirement: Automatic restore
+
+On startup the app SHALL restore the last valid session document before first
+paint. The restored state SHALL include the generator, parameters, operators,
+layers, styles, view, units, coordinates and animation time.
+
+#### Scenario: Reload
+
+- **WHEN** the user reloads after a document was saved
+- **THEN** the restored document uses the last generator and parameters
+- **AND** operators, layers, styles and view settings are restored
+- **AND** animation does not start playing
+
+#### Scenario: First run
+
+- **WHEN** no valid snapshot exists
+- **THEN** the app starts with the default document
+
+#### Scenario: Restore notice
+
+- **WHEN** a session is restored
+- **THEN** a short non-blocking notice reports the restoration
+- **AND** no blocking Restore/Dismiss banner is shown
+
+#### Scenario: History baseline
+
+- **WHEN** the user presses undo immediately after startup
+- **THEN** it does not revert to an unrelated default document
+
+### Requirement: Safe fallback
+
+Corrupt snapshots and storage failures SHALL NOT prevent startup.
+
+#### Scenario: Corrupt snapshot
+
+- **WHEN** the stored session cannot be sanitized
+- **THEN** the app starts with the default document
+- **AND** the failure does not throw into the UI
+

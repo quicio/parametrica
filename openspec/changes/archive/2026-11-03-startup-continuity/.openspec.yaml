@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-03
+goal: Restore the last used document, generator and view automatically on startup
+  and make the default stroke width 1.
