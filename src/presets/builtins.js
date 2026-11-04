@@ -5,7 +5,7 @@
  * operator stack. They are families to explore, not logos to admire.
  */
 
-import { createDocument } from '../core/document.js';
+import { createDocument, createInstanceLayer } from '../core/document.js';
 
 const PI = Math.PI;
 
@@ -416,6 +416,62 @@ export const BUILT_IN_PRESETS = {
         },
       },
     }),
+
+  'Vortex Stack': () => {
+    const doc = createDocument('parametric-surface', {
+      name: 'Vortex Stack',
+      generator: {
+        params: {
+          exprX: '(1.2 + 0.25*cos(v))*cos(u)',
+          exprY: '(1.2 + 0.25*cos(v))*sin(u)',
+          exprZ: '0.65*u + 0.18*sin(v)',
+          u0: 0, u1: 4 * PI,
+          v0: 0, v1: 2 * PI,
+          samplesU: 80, samplesV: 12,
+          closedU: false, closedV: true,
+          fit: 420,
+        },
+      },
+      view: {
+        modes: ['stroke'],
+        projection: '3d',
+        layout: 'single',
+        guides: false,
+        camera: { yaw: -0.6, pitch: 0.34 },
+      },
+    });
+    const source = doc.layers[0];
+    source.name = 'Vortex Source';
+    source.visible = false;
+    const specs = [
+      { z: -1.8, rot: 0, scale: 1.00, opacity: 1.00 },
+      { z: -0.9, rot: 36, scale: 0.92, opacity: 0.85 },
+      { z: 0.0, rot: 72, scale: 0.84, opacity: 0.70 },
+      { z: 0.9, rot: 108, scale: 0.76, opacity: 0.55 },
+      { z: 1.8, rot: 144, scale: 0.68, opacity: 0.40 },
+    ];
+    for (let i = 0; i < specs.length; i++) {
+      const spec = specs[i];
+      const layer = createInstanceLayer(source.id, {
+        name: `Vortex / ${String(i + 1).padStart(2, '0')}`,
+        operators: [
+          { id: 'translate', enabled: true, params: { dx: 0, dy: 0, dz: spec.z }, mods: {} },
+          { id: 'rotate', enabled: true, params: { angle: spec.rot, angleExpr: '', cx: 0, cy: 0 }, mods: {} },
+          { id: 'scale', enabled: true, params: { sx: spec.scale, sy: spec.scale, sz: spec.scale, scaleExpr: '' }, mods: {} },
+        ],
+        style: {
+          stroke: { color: '#ffffff', width: 1, opacity: spec.opacity, cap: 'round', join: 'round' },
+          fill: { enabled: false, color: '#ffffff', opacity: 1 },
+          blend: 'normal',
+        },
+      });
+      doc.layers.push(layer);
+    }
+    doc.activeLayer = 1;
+    doc.view.style = doc.layers[1].style;
+    doc.view.strokeWeight = 1;
+    return doc;
+  },
 
   // ——— Helix Lab variations ———
 

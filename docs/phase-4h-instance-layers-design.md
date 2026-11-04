@@ -925,6 +925,9 @@ La demo debe mostrar:
 
 `mirror` no forma parte de la demo porque queda excluido del MVP.
 
+La demo se ha convertido en el preset built-in **Vortex Stack**, disponible en
+**Presets → Compositions**.
+
 ---
 
 ## 14. Decisiones finales, riesgos y pendientes

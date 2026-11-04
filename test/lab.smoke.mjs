@@ -642,7 +642,56 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
   assert(userPm.search('torus').some((entry) => entry.name === 'My Torus'), 'search includes user presets');
 }
 
+/* ——— 7b. Vortex Stack composition preset ——— */
+console.log('7b. Vortex Stack composition preset');
+{
+  const pm = new PresetManager(null);
+  const doc = pm.get('Vortex Stack');
+  assert(doc?.name === 'Vortex Stack', 'Vortex Stack preset exists');
+  assert(doc.layers.length === 6, 'Vortex Stack has one source and five instances');
+  assert(doc.layers[0].visible === false, 'Vortex Stack source is hidden');
+  assert(doc.activeLayer === 1, 'Vortex Stack opens on the first instance');
+  const instances = doc.layers.filter((layer) => layer.type === 'instance');
+  assert(instances.length === 5, 'Vortex Stack has five instance layers');
+  assert(instances.every((layer) => layer.source.layerId === doc.layers[0].id), 'every instance references the source');
+  assert(instances.every((layer) => layer.operators.map((op) => op.id).join(',') === 'translate,rotate,scale'), 'every instance has translate/rotate/scale');
+  assert(doc.view.modes.length === 1 && doc.view.modes[0] === 'stroke', 'Vortex Stack starts in stroke view');
+  assert(Math.abs(doc.view.camera.yaw + 0.6) < 1e-9 && Math.abs(doc.view.camera.pitch - 0.34) < 1e-9, 'Vortex Stack camera is documented');
+  assert(doc.view.guides === false, 'Vortex Stack disables guides');
+
+  const evaluation = evaluateDocument(doc, { time: 0 });
+  assert(evaluation.errors.length === 0, 'Vortex Stack evaluates without errors');
+  assert(evaluation.layers.length === 6, 'Vortex Stack evaluates all layers');
+  assert(evaluation.layers[0].visible === false, 'Vortex Stack source stays hidden');
+  assert(evaluation.layers.slice(1).every((layer) => layer.meshes.length === 1), 'Vortex Stack instances tessellate');
+  assert(evaluation.layers.slice(1).every((layer) => layer.surfaceMappings[0].meshId === layer.meshes[0].id), 'Vortex Stack mappings are instance-local');
+
+  const again = pm.get('Vortex Stack');
+  const structure = (value) => value.layers.map((layer) => ({
+    type: layer.type,
+    name: layer.name,
+    source: layer.source?.layerId ?? null,
+    operators: layer.operators.map((op) => op.id),
+    style: layer.style,
+  }));
+  const firstStructure = structure(doc);
+  const secondStructure = structure(again);
+  secondStructure.forEach((layer, index) => {
+    if (layer.source) layer.source = firstStructure[index].source;
+  });
+  assert(JSON.stringify(firstStructure) === JSON.stringify(secondStructure), 'Vortex Stack structure is deterministic apart from ids');
+  assert(previewKey(doc) === previewKey(again), 'Vortex Stack preview hash normalizes ids and source refs');
+  assert(PREVIEW_VERSION === 3, 'preview version bumped for composition hashing');
+
+  const entry = pm.entries().find((item) => item.name === 'Vortex Stack');
+  assert(entry?.category === 'compositions' && entry.generator === 'parametric-surface', 'Vortex Stack catalog metadata resolves its source generator');
+  assert(pm.search('vortex').some((item) => item.name === 'Vortex Stack'), 'Vortex Stack is searchable by name');
+  assert(pm.search('composition').some((item) => item.name === 'Vortex Stack'), 'Vortex Stack is searchable by tag');
+  assert(pm.categories().some((category) => category.id === 'compositions' && category.count === 1), 'Compositions category lists Vortex Stack');
+}
+
 /* ——— 8. Mutation ——— */
+
 console.log('8. mutation engine (chained, across families)');
 {
   let seed = 12345;

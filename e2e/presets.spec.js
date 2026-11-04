@@ -7,10 +7,10 @@ test('preset library groups, searches and applies a surface', async ({ page }) =
 
   const presets = await openSection(page, 'Presets');
   await expect(presets.locator('.preset-chip', { hasText: 'Surfaces' })).toBeVisible();
-  await expect(presets.locator('.preset-status')).toContainText('40 of 40 presets');
+  await expect(presets.locator('.preset-status')).toContainText('41 of 41 presets');
 
   await presets.locator('.preset-chip', { hasText: 'Surfaces' }).click();
-  await expect(presets.locator('.preset-status')).toContainText('9 of 40 presets');
+  await expect(presets.locator('.preset-status')).toContainText('9 of 41 presets');
   await expect(presets.locator('.preset-item')).toHaveCount(9);
   await expect(presets.locator('.preset-item', { hasText: 'Catenoid' }))
     .toContainText(/minimal surface of revolution/i);
@@ -75,7 +75,7 @@ test('favorites persist and starring does not apply the preset', async ({ page }
 
   await presets.locator('.preset-chip', { hasText: 'Favorites' }).click();
   await expect(presets.locator('.preset-item')).toHaveCount(1);
-  await expect(presets.locator('.preset-status')).toContainText('1 of 40 presets · Favorites');
+  await expect(presets.locator('.preset-status')).toContainText('1 of 41 presets · Favorites');
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
@@ -149,3 +149,42 @@ test('deleting a user preset cleans usage metadata and restores filter focus', a
   await expect(presets.locator('[data-preset-row="Disposable User"]')).toHaveCount(0);
   await expect(presets.locator('.preset-chip', { hasText: 'Favorites' })).toBeFocused();
 });
+
+test('Vortex Stack opens as a layered composition preset', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
+
+  const presets = await openSection(page, 'Presets');
+  await expect(presets.locator('.preset-chip', { hasText: 'Compositions' })).toBeVisible();
+  await presets.locator('.preset-chip', { hasText: 'Compositions' }).click();
+  await expect(presets.locator('.preset-item', { hasText: 'Vortex Stack' })).toBeVisible();
+  await expect.poll(async () => presets.locator('.preset-item', { hasText: 'Vortex Stack' }).locator('.preset-thumb img').count()).toBeGreaterThan(0);
+
+  const search = presets.locator('.preset-search');
+  await search.fill('vortex');
+  await expect(presets.locator('.preset-item')).toHaveCount(1);
+  await search.fill('');
+
+  await presets.locator('.preset-apply', { hasText: 'Vortex Stack' }).click();
+  await page.waitForTimeout(700);
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      layers: app.document.layers.length,
+      activeType: app.document.layers[app.document.activeLayer]?.type,
+      sourceVisible: app.document.layers[0]?.visible,
+      instances: app.document.layers.filter((layer) => layer.type === 'instance').length,
+      modes: app.document.view.modes,
+      errors: app.evaluation.errors.length,
+      instanceMeshes: app.evaluation.layers[1]?.meshes?.length,
+    };
+  });
+  expect(state.layers).toBe(6);
+  expect(state.activeType).toBe('instance');
+  expect(state.sourceVisible).toBe(false);
+  expect(state.instances).toBe(5);
+  expect(state.modes).toEqual(['stroke']);
+  expect(state.errors).toBe(0);
+  expect(state.instanceMeshes).toBe(1);
+});
+

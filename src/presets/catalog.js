@@ -12,6 +12,7 @@ export const PRESET_CATEGORIES = [
   { id: 'attractors', label: 'Attractors', hint: 'Strange attractors' },
   { id: 'space', label: '3D Curves', hint: 'Projected spatial curves' },
   { id: 'surfaces', label: 'Surfaces', hint: 'U/V parametric surfaces' },
+  { id: 'compositions', label: 'Compositions', hint: 'Layered and instanced forms' },
   { id: 'helix', label: 'Helix Lab', hint: 'Helix variations' },
   { id: 'legacy', label: 'Legacy', hint: 'Classical and migrated figures' },
 ];
@@ -188,6 +189,13 @@ export const PRESET_META = {
     category: 'surfaces',
     description: 'Logarithmic spiral tube with a growing radius.',
     tags: ['surface', 'shell', 'spiral'],
+  },
+
+  /* ——— Compositions ——— */
+  'Vortex Stack': {
+    category: 'compositions',
+    description: 'A helical Surface instanced into a five-layer vortex.',
+    tags: ['composition', 'instance', 'surface', 'vortex', 'helix'],
   },
 
   /* ——— Helix Lab ——— */

@@ -10,7 +10,7 @@ import { evaluateDocument } from '../core/engine.js';
 import { curvesDataURL } from '../render/thumbnail.js';
 import { canonicalStringify, sha256Hex } from '../lab/hash.js';
 
-export const PREVIEW_VERSION = 2;
+export const PREVIEW_VERSION = 3;
 export const PREVIEW_SIZE = 96;
 export const PREVIEW_MAX_CHARS = 24_000;
 
@@ -29,11 +29,19 @@ function previewDocument(document) {
   if (!document || typeof document !== 'object' || !Array.isArray(document.layers)) {
     return document;
   }
+  const indexById = new Map(document.layers.map((layer, index) => [layer?.id, index]));
   return {
     ...document,
     layers: document.layers.map((layer) => {
       if (!layer || typeof layer !== 'object') return layer;
       const { id: _id, ...rest } = layer;
+      if (rest.source && typeof rest.source === 'object') {
+        const sourceIndex = indexById.get(rest.source.layerId);
+        rest.source = {
+          ...rest.source,
+          layerId: sourceIndex === undefined ? 'missing' : `layer-${sourceIndex}`,
+        };
+      }
       return rest;
     }),
   };

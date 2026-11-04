@@ -197,7 +197,11 @@ export class PresetManager {
   #generatorFor(name) {
     if (!this.#generatorCache.has(name)) {
       try {
-        this.#generatorCache.set(name, BUILT_IN_PRESETS[name]().generator.id);
+        const doc = BUILT_IN_PRESETS[name]();
+        const generatorId = doc.generator?.id
+          ?? doc.layers?.find((layer) => layer?.generator?.id)?.generator.id
+          ?? 'unknown';
+        this.#generatorCache.set(name, generatorId);
       } catch {
         this.#generatorCache.set(name, 'unknown');
       }
