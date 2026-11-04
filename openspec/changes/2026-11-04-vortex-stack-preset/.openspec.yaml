@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Ship a built-in Vortex Stack composition preset and make preset catalog
+  metadata and preview hashing stable for layered instance documents.
