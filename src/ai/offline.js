@@ -9,6 +9,7 @@
 import { clampNumber, TYPE } from '../core/schema.js';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
 import { Generators, Operators } from '../core/registry.js';
+import { isInstanceLayer } from '../core/layers.js';
 
 export const ADVISOR_VERSION = 1;
 
@@ -21,6 +22,7 @@ export function resolvePath(document, path) {
   if (!match) return null;
   const layer = document.layers?.[document.activeLayer ?? 0] ?? document;
   if (match[1]) {
+    if (!layer?.generator?.id || isInstanceLayer(layer)) return null;
     const key = match[1];
     const schema = schemaFor(layer.generator.id, key, false);
     if (!schema) return null;
@@ -36,8 +38,9 @@ export function resolvePath(document, path) {
 }
 
 function schemaFor(id, key, operator) {
-  const def = operator ? Operators.get(id) : Generators.get(id);
-  return def?.params?.[key] ?? null;
+  const registry = operator ? Operators : Generators;
+  if (!registry.has(id)) return null;
+  return registry.get(id)?.params?.[key] ?? null;
 }
 
 /**
@@ -236,7 +239,10 @@ function buildSuggestions(document, current) {
 function numericRefs(document) {
   const refs = [];
   const layer = document.layers?.[document.activeLayer ?? 0] ?? document;
-  for (const [key, schema] of Object.entries(Generators.get(layer.generator.id).params ?? {})) {
+  const generator = layer?.generator?.id && Generators.has(layer.generator.id)
+    ? Generators.get(layer.generator.id)
+    : null;
+  for (const [key, schema] of Object.entries(generator?.params ?? {})) {
     if (schema.type !== TYPE.NUMBER) continue;
     refs.push({ path: `generator.params.${key}`, key, schema, stage: layer.generator });
   }

@@ -111,7 +111,7 @@ export class StartWithOverlay {
       meta.textContent = choice.meta;
       copy.append(name, description, meta);
       card.append(thumb, copy);
-      card.addEventListener('click', () => this.choose(choice.id));
+      card.addEventListener('click', () => { void this.choose(choice.id); });
       grid.appendChild(card);
       cards.set(choice.id, { card, img, placeholder });
     }
@@ -173,8 +173,25 @@ export class StartWithOverlay {
     }
   }
 
-  choose(id) {
-    if (this.busy) return;
+  async choose(id) {
+    if (this.busy || this.confirming) return;
+    if (!this.firstRun) {
+      this.confirming = true;
+      let confirmed;
+      try {
+        confirmed = await this.app.dialogs.confirm({
+          title: 'Replace current document?',
+          message: 'The current figure will be replaced. Cancel keeps it open.',
+          confirmText: 'Replace',
+          cancelText: 'Keep current',
+        });
+      } catch {
+        confirmed = false;
+      } finally {
+        this.confirming = false;
+      }
+      if (!confirmed) return;
+    }
     this.busy = true;
     try {
       this.app.setStartWithChoice?.(id);
@@ -190,7 +207,7 @@ export class StartWithOverlay {
 
   cancel() {
     if (this.firstRun) {
-      this.choose('classic');
+      void this.choose('classic');
       return;
     }
     this.close();

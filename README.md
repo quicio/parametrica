@@ -77,7 +77,7 @@ leaving your machine.
 
 ```
 generators/  (24 registered)  one file each, self-registered
-operators/   (36 registered)  geometry/ + topology/, each Curve[] → Curve[]
+operators/   (37 registered)  geometry/ + topology/, each Curve[] → Curve[]
 math/               safe Pratt-parser expression engine + seeded simplex noise
 sampling/           uniform + adaptive + arc-length resampling + bbox helpers
 analysis/           differential geometry: tangents, normals, curvature, inflections
@@ -199,7 +199,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` — 1924 checks across 38 groups (expression
+Runs `test/lab.smoke.mjs` — 2151 checks across the full Node suite (expression
 engine, noise determinism, splines, all 24 registered generators,
 operators, document round-trip + dual-format read, built-in presets,
 chained mutation across families, SVG export, animation, sampling,
@@ -207,7 +207,7 @@ performance budget, reliability regressions, offline and optional LLM
 advisors, image contour tracing, evolution, helix projections, session recovery,
 panel modes, parametric surfaces, preset library). The whole core is
 DOM-free and runs in pure Node. `npm run test:e2e` runs the Playwright
-suite (115 tests) against a Vite server started by Playwright itself.
+suite (134 tests) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -235,7 +235,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
   harmonic-oscillator, noise-field, catmull-rom, bezier, cubic-spline,
   bilateral-spline, lorenz, clifford, dejong, aizawa, concentric-ellipses,
   parametric-3d, generalized helix, parametric-surface)
-- **36 operators** across geometry (transform, symmetry, kaleidoscope,
+- **37 operators** across geometry (transform, symmetry, kaleidoscope,
   resample, offset, deform, project, stroke, boolean) and topology
   (radial/linear arrays, repeat, voronoi, skeleton, medial-axis,
   ribbons, centerline)

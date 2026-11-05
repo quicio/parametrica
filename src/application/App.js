@@ -7,7 +7,7 @@
  * swapped only by methods that also rebuild the affected UI sections.
  */
 
-import { createDocument, sanitizeDocument, createLayer, createInstanceLayer, attachLayerAliases } from '../core/document.js';
+import { createDocument, sanitizeDocument, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId } from '../core/document.js';
 import {
   MAX_INSTANCE_LAYERS,
   MAX_LAYERS,
@@ -617,6 +617,7 @@ export class App {
       return;
     }
     const layer = createLayer(generatorId, {
+      id: nextLayerId(this.document),
       name: `Layer ${this.document.layers.length + 1}`,
       seed: this.document.seed,
     });
@@ -650,6 +651,7 @@ export class App {
     }
     const count = countInstanceLayers(this.document) + 1;
     const layer = createInstanceLayer(source.id, {
+      id: nextLayerId(this.document),
       name: `${source.name} / instance ${count}`,
       modes: source.modes,
       colorMetric: source.colorMetric,
@@ -692,7 +694,7 @@ export class App {
       return;
     }
     const copy = structuredClone(source);
-    copy.id = `layer-${Date.now().toString(36)}-${Math.floor(Math.random() * 999)}`;
+    copy.id = nextLayerId(this.document);
     copy.name = `${source.name} copy`;
     this.document.layers.splice(index + 1, 0, copy);
     this.document.activeLayer = index + 1;

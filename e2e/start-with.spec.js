@@ -79,6 +79,14 @@ test('New document reopens the chooser and Cancel preserves the current figure',
 
   await layers.locator('.layer-new-document').click();
   await page.locator('.start-with-card[data-choice="surface"]').click();
+  await expect(page.locator('.parametrica-dialog')).toBeVisible();
+  await page.locator('.parametrica-dialog-cancel').click();
+  await expect(page.locator('.start-with-overlay')).toBeVisible();
+  expect(await page.evaluate(() => window.__parametrica.document.generator.id)).toBe('parametric');
+
+  await page.locator('.start-with-card[data-choice="surface"]').click();
+  await expect(page.locator('.parametrica-dialog')).toBeVisible();
+  await page.locator('.parametrica-dialog-confirm').click();
   await page.waitForTimeout(500);
   const state = await page.evaluate(() => ({
     generator: window.__parametrica.document.generator.id,

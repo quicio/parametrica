@@ -198,10 +198,11 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `helix` | Generalized circular helix with radial/pitch modulation and torsion | r, p, turns, a, k, φ, θ, b, m, ψ, strands | t ∈ [θ0, θ0+2π·turns] |
 || `parametric-3d` | Projected x/y/z expression curve | exprX/Y/Z, t0, t1, samples | user |
 
-> **Implementation status (2026-10-24):** 24 generators registered and
-> covered by the test suite (`lab.smoke.mjs` group 4), including the
-> attractor family, concentric ellipses, the projected 3D generator and
-> the generalized helix family.
+> **Current status (2026-11-04):** 24 generators, 37 operators and 14 render
+> passes. Phase 4A–4J shipped: Instance Layers, Physical Units, STL/Fabricate,
+> Viewport Coordinates, Look Presets, Startup Continuity, Vortex Stack and
+> Start With. Gates: 2151 unit checks, 134 e2e tests and 81 OpenSpec specs.
+> The historical milestone table below remains as the v0.1 record.
 
 ---
 

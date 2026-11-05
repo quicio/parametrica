@@ -24,7 +24,7 @@ import { createNoise2D } from '../src/math/noise.js';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
 import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
 import { postProcess } from '../src/sampling/parametric.js';
-import { createDocument, sanitizeDocument, migrateV1Document, createLayer, createInstanceLayer, attachLayerAliases, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
 import { createDefaultFillGradient, sanitizeFillGradient, resolveFillGradient } from '../src/core/fillGradient.js';
 import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
 import { schemaDefaults } from '../src/core/schema.js';
@@ -49,7 +49,7 @@ import { tessellateSurface, tessellateSurfaceWithMapping, surfaceArea } from '..
 import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
 import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
 import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
-import { adviseOffline, validateSuggestion, applySuggestionToDocument } from '../src/ai/offline.js';
+import { adviseOffline, resolvePath, validateSuggestion, applySuggestionToDocument } from '../src/ai/offline.js';
 import { createProvider, runAdvisor, parseAdvisorResponse, shouldAutoAnalyze, PROVIDERS } from '../src/ai/provider.js';
 import { AdvisorCache, cacheKey } from '../src/ai/cache.js';
 import { buildAdvisorPrompt } from '../src/ai/prompt.js';
@@ -3316,6 +3316,8 @@ console.log('30h. instance layers');
   assert(dependentInstances(doc, source.id).length === 1, 'dependent instance lookup works');
   assert(countInstanceLayers(doc) === 1, 'instance count works');
   assert(doc.generator === null, 'document.generator is null for an active instance');
+  assert(resolvePath(doc, 'generator.params.samplesU') === null, 'advisor path resolution is safe for an instance');
+  assert(validateSuggestion(doc, { path: 'generator.params.samplesU', to: 12 }).ok === false, 'advisor suggestion validation is safe for an instance');
 
   const evaluation = evaluateDocument(doc, { time: 0 });
   assert(evaluation.errors.length === 0, 'instance layer evaluates without errors');
@@ -3333,6 +3335,11 @@ console.log('30h. instance layers');
   assert(again.layers[1].geometry[0].id === evaluation.layers[1].geometry[0].id, 'instance ids are stable across reevaluation');
   assert(again.layers[1].geometry[0] === evaluation.layers[1].geometry[0], 'instance cache reuses world geometry');
   assert(again.layers[1].meshes[0] === evaluation.layers[1].meshes[0], 'instance cache reuses meshes');
+
+  const coldA = evaluateDocument(doc, { time: 0, bypassCache: true });
+  const coldB = evaluateDocument(doc, { time: 0, bypassCache: true });
+  assert(coldA.layers[0].geometry[0].id === coldB.layers[0].geometry[0].id, 'surface ids are deterministic across bypass-cache evaluations');
+  assert(coldA.layers[0].geometry[0].id === `${source.generator.id}:0:surface:0`, 'surface id uses generator/layer/index');
 
   const sourceSurfaceBefore = JSON.stringify(evaluation.layers[0].geometry[0].grid.points);
   const instanceSurfaceBefore = JSON.stringify(evaluation.layers[1].geometry[0].grid.points);
@@ -3403,6 +3410,16 @@ console.log('30h. instance layers');
   }));
   assert(sanitizeDocument(capped).layers.length === MAX_LAYERS, 'layer cap sanitizes to 32 layers');
   assert(MAX_INSTANCE_LAYERS === 24, 'instance limit is 24');
+
+  const restored = createDocument('parametric');
+  restored.layers[0].id = 'layer-100';
+  const normalized = sanitizeDocument(JSON.parse(JSON.stringify(restored)));
+  const newId = nextLayerId(normalized);
+  assert(newId !== 'layer-100', 'next layer id avoids restored ids');
+  const newLayer = createLayer('rose', { id: newId });
+  assert(!normalized.layers.some((layer) => layer.id === newLayer.id), 'new layer id is unique in the document');
+  normalized.layers.push(newLayer);
+  assert(new Set(normalized.layers.map((layer) => layer.id)).size === normalized.layers.length, 'restored document keeps unique layer ids');
   const limitDoc = createDocument('parametric-surface', {});
   for (let i = 0; i < MAX_INSTANCE_LAYERS; i++) {
     limitDoc.layers.push(createInstanceLayer(limitDoc.layers[0].id, { name: `i${i}` }));

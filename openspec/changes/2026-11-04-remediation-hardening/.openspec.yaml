@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Harden persistent layer identity, deterministic surface IDs, New Document
+  replacement safety, e2e fixture generation, advisor safety and current docs.

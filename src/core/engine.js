@@ -245,6 +245,10 @@ function evaluateSurfaceDocument(document, options, generatorDef) {
       surfaces = runGuarded(() => def.apply(surfaces, opParams, ctx), errors, 'operator', index) ?? surfaces;
       surfaces = sanitizeGeometry(surfaces, errors, 'operator', index);
     }
+    surfaces = surfaces.map((surface, index) => ({
+      ...surface,
+      id: `${generatorDef.id}:${options.layerIndex ?? 0}:surface:${index}`,
+    }));
     if (!errors.length && !options.bypassCache) SURFACE_CACHE.set(cacheKey, { signature, surfaces });
   }
 

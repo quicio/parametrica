@@ -102,7 +102,7 @@ Generators.register({
     }
 
     return [createSurface({
-      id: `parametric-surface-${Date.now().toString(36)}`,
+      id: 'parametric-surface',
       domain: {
         u: [params.u0, params.u1],
         v: [params.v0, params.v1],

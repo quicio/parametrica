@@ -236,6 +236,26 @@ function color(value, dflt) {
 
 let layerCounter = 0;
 
+/** Next readable layer id that does not collide with the current document. */
+export function nextLayerId(document) {
+  const used = new Set((document?.layers ?? []).map((layer) => layer?.id).filter(Boolean));
+  let id;
+  do {
+    layerCounter++;
+    id = `layer-${layerCounter}`;
+  } while (used.has(id));
+  return id;
+}
+
+function reserveLayerCounter(layers) {
+  let max = 0;
+  for (const layer of layers ?? []) {
+    const match = /^layer-(\d+)$/.exec(layer?.id ?? '');
+    if (match) max = Math.max(max, Number(match[1]));
+  }
+  layerCounter = Math.max(layerCounter, max);
+}
+
 /** Create one independent layer with a fresh generator/operator stack. */
 export function createLayer(generatorId = 'parametric', overrides = {}) {
   const generator = Generators.get(generatorId);
@@ -355,6 +375,7 @@ function normalizeLayerIds(layers) {
     const resolved = canonical.get(layer.source.layerId);
     if (resolved) layer.source.layerId = resolved;
   }
+  reserveLayerCounter(layers);
   return layers;
 }
 

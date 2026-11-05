@@ -11,7 +11,9 @@
     "test": "node test/lab.smoke.mjs",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "check": "npm run lint && npm test && npm run build"
+    "check": "npm run lint && npm test && npm run build",
+    "generate:e2e-session": "node scripts/generate-e2e-session.mjs",
+    "pretest:e2e": "npm run generate:e2e-session"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
