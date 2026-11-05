@@ -120,28 +120,6 @@ STL export SHALL be a geometry consumer with an explicit validation gate.
 - **THEN** the surrounding export metadata declares the physical unit/scale
 - **AND** STL itself is not misrepresented as carrying a unit field
 
-### Requirement: Single-body instance export
-
-Fabricate SHALL keep exporting a single body from the active layer.
-
-#### Scenario: Active instance
-
-- **WHEN** the active layer is an instance
-- **THEN** Fabricate may export its first validated closed body
-- **AND** it does not export other visible instances
-
-#### Scenario: Warning
-
-- **WHEN** a composition has multiple instances
-- **THEN** Fabricate states that the composition is not multi-body
-- **AND** export is not disabled merely because other instances are visible
-
-#### Scenario: No multi-body promise
-
-- **WHEN** the user expects the full composition
-- **THEN** the UI and documentation state that multi-body and 3MF are not
-  available in this phase
-
 ### Requirement: Prepared fabrication source
 
 Fabrication SHALL evaluate prepared geometry through the same validation gate
@@ -187,4 +165,28 @@ Fabrication validation SHALL reject meshes with detected self-intersections.
 
 - **WHEN** the check runs successfully
 - **THEN** the previous "not implemented" warning is not emitted
+
+### Requirement: Explicit body scope
+
+Fabrication SHALL export one body by default and several only when explicitly
+requested.
+
+#### Scenario: Default single body
+
+- **WHEN** the user does not select a multi-body scope
+- **THEN** Fabricate exports the first validated closed body from the active
+  layer
+- **AND** other visible instances are not included
+
+#### Scenario: Multi-body scope
+
+- **WHEN** the user selects active-layer or composition scope
+- **THEN** only independently validated closed bodies are merged
+- **AND** the merged mesh must pass topology and self-intersection validation
+
+#### Scenario: Not a union
+
+- **WHEN** bodies overlap
+- **THEN** export is rejected instead of silently unioning them
+- **AND** the UI does not claim a watertight single body
 

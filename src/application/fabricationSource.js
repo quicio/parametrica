@@ -7,16 +7,28 @@
  */
 
 import { isMesh, isSolid } from '../geometry/contracts.js';
-import { prepareMesh } from '../geometry/solidPrep.js';
+import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
-  const layer = evaluation?.layers?.[layerIndex] ?? evaluation ?? null;
+  const prepare = normalizePreparation(preparation);
+  const scope = prepare.scope;
+  const layers = Array.isArray(evaluation?.layers) ? evaluation.layers : null;
+  const activeIndex = Math.max(0, Math.min((layers?.length ?? 1) - 1, layerIndex));
+  const activeLayer = layers ? layers[activeIndex] ?? null : evaluation ?? null;
+  const selection = [];
+  if (scope === 'composition' && layers) {
+    layers.forEach((layer, index) => {
+      if (layer?.visible !== false) selection.push({ layer, index });
+    });
+  } else {
+    selection.push({ layer: activeLayer, index: activeIndex });
+  }
+
   const candidates = [];
   const seen = new Set();
-  const prepare = normalizePreparation(preparation);
-  const add = (item) => {
+  const add = (item, layer, index) => {
     if (!item || seen.has(item)) return;
     if (!isMesh(item) && !isSolid(item)) return;
     seen.add(item);
@@ -36,6 +48,9 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
         exportable: validation.ok && closed,
         prepared: true,
         preparation: { ...prepared.stats, prepared: true },
+        layerId: layer?.id ?? null,
+        layerName: layer?.name ?? null,
+        layerIndex: index,
       });
       return;
     }
@@ -50,26 +65,79 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
       exportable: validation.ok && closed,
       prepared: false,
       preparation: null,
+      layerId: layer?.id ?? null,
+      layerName: layer?.name ?? null,
+      layerIndex: index,
     });
   };
-  for (const item of layer?.geometry ?? []) add(item);
-  for (const mesh of layer?.meshes ?? []) add(mesh);
+  for (const { layer, index } of selection) {
+    for (const item of layer?.geometry ?? []) add(item, layer, index);
+    for (const mesh of layer?.meshes ?? []) add(mesh, layer, index);
+  }
 
-  const source = candidates.find((candidate) => candidate.exportable) ?? null;
+  const exportable = candidates.filter((candidate) => candidate.exportable);
+  let source = scope === 'single' || exportable.length <= 1 ? exportable[0] ?? null : null;
+  let mergedError = null;
+  let bodies = source ? 1 : 0;
+
+  if (scope !== 'single' && exportable.length > 1) {
+    const meshes = exportable.map((candidate) => (
+      isSolid(candidate.geometry) ? candidate.geometry.boundary : candidate.geometry
+    ));
+    const merged = mergeMeshes(meshes, { id: 'multi-body' });
+    if (!merged.mesh) {
+      mergedError = merged.warnings[0] ?? 'multi-body merge failed';
+      source = null;
+    } else {
+      const validation = validateForFabrication(merged.mesh);
+      const closed = Boolean(validation.meta?.closed);
+      if (validation.ok && closed) {
+        const prepared = exportable.some((candidate) => candidate.prepared);
+        source = {
+          geometry: merged.mesh,
+          kind: 'mesh',
+          id: 'multi-body',
+          validation,
+          closed: true,
+          exportable: true,
+          prepared,
+          preparation: aggregatePreparation(exportable),
+          bodies: exportable.length,
+          bodyIds: exportable.map((candidate) => candidate.id),
+          multiBody: true,
+        };
+        bodies = exportable.length;
+      } else {
+        source = null;
+        mergedError = validation.errors?.[0] ?? 'merged bodies failed validation';
+      }
+    }
+  } else if (source) {
+    bodies = 1;
+  }
+
   const candidateErrors = candidates[0]?.validation?.errors ?? [];
   const firstError = candidateErrors.find((error) => error.includes('self-intersect')) ?? candidateErrors[0] ?? null;
   return {
-    layerId: layer?.id ?? null,
-    layerName: layer?.name ?? null,
+    layerId: activeLayer?.id ?? null,
+    layerName: scope === 'composition' ? 'Composition' : activeLayer?.name ?? null,
     source,
     candidates,
     total: candidates.length,
-    closed: candidates.filter((candidate) => candidate.exportable).length,
+    closed: exportable.length,
+    bodies,
+    scope,
+    multiBody: Boolean(source?.multiBody),
+    mergedError,
+    preparation: source?.preparation ?? null,
+    prepared: Boolean(source?.prepared),
     reason: source
       ? null
-      : candidates.length
-        ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
-        : 'The active layer has no Mesh/Solid geometry',
+      : mergedError
+        ? `Multi-body export failed: ${mergedError}`
+        : candidates.length
+          ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
+          : 'The active layer has no Mesh/Solid geometry',
   };
 }
 
@@ -86,7 +154,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       bbox: null,
       physical: null,
       warnings: [],
-      errors: resolved.candidates?.[0]?.validation?.errors ?? [],
+      errors: resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? []),
       preparation: null,
       prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
@@ -142,11 +210,32 @@ function bboxOf(mesh) {
 }
 
 function normalizePreparation(raw) {
-  if (!raw || typeof raw !== 'object') return { weld: false, cap: false };
+  if (!raw || typeof raw !== 'object') return { weld: false, cap: false, scope: 'single' };
   return {
     weld: raw.weld === true,
     cap: raw.cap === true,
     tolerance: raw.tolerance,
     maxHoleEdges: raw.maxHoleEdges,
+    scope: ['single', 'active-layer', 'composition'].includes(raw.scope) ? raw.scope : 'single',
   };
+}
+
+function aggregatePreparation(candidates) {
+  const entries = candidates.map((candidate) => candidate.preparation).filter(Boolean);
+  if (!entries.length) return null;
+  const stats = {
+    inputVertices: 0,
+    outputVertices: 0,
+    mergedVertices: 0,
+    removedFaces: 0,
+    cappedLoops: 0,
+    addedTriangles: 0,
+    prepared: true,
+  };
+  for (const entry of entries) {
+    for (const key of ['inputVertices', 'outputVertices', 'mergedVertices', 'removedFaces', 'cappedLoops', 'addedTriangles']) {
+      stats[key] += Number(entry[key]) || 0;
+    }
+  }
+  return stats;
 }

@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2235 checks)
+npm test             # node-only verification suite (2253 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (140 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (141 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -200,7 +200,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2235
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2253
 checks across the full Node suite (expression engine, noise determinism,
 splines, all 24 registered generators, operators, document round-trip +
 dual-format read, built-in presets, chained mutation across families, SVG
@@ -209,7 +209,7 @@ offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (140 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (141 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting
@@ -289,7 +289,7 @@ Deferred to v0.x:
 - Per-pass color and stroke-width settings
 - Even-odd hole filling / contour nesting
 - Quad SVG/plotter reconstruction (canvas-only today)
-- Solid foundations: CSG/booleans, advanced repair, multi-body packing and 3MF remain future work; weld/cap preparation, self-intersection diagnostics and single-body STL are available
+- Solid foundations: CSG/booleans, advanced repair and 3MF remain future work; weld/cap preparation, self-intersection diagnostics, single- and multi-body STL are available
 
 ---
 

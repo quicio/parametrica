@@ -69,6 +69,32 @@ export function buildFabricateSection(controls) {
     rows.appendChild(scaleRow);
 
     const fabrication = controls.app.document.view.fabrication;
+    const scopeRow = document.createElement('div');
+    scopeRow.className = 'fabricate-row';
+    const scopeLabel = document.createElement('span');
+    scopeLabel.className = 'fabricate-label';
+    scopeLabel.textContent = 'Bodies';
+    const scopeSelect = document.createElement('select');
+    scopeSelect.className = 'artboard-input fabricate-scope';
+    for (const [value, label] of [
+      ['single', 'Single body'],
+      ['active-layer', 'Active layer'],
+      ['composition', 'Composition'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      scopeSelect.appendChild(option);
+    }
+    scopeSelect.value = fabrication.scope ?? 'single';
+    scopeSelect.title = 'Single exports the first valid body; multi-body scopes merge separate closed shells.';
+    scopeSelect.addEventListener('change', () => {
+      fabrication.scope = scopeSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    scopeRow.append(scopeLabel, scopeSelect);
+    rows.appendChild(scopeRow);
     const prepRow = document.createElement('div');
     prepRow.className = 'fabricate-row fabricate-prepare-row';
     const prepLabel = document.createElement('span');
@@ -126,6 +152,7 @@ export function buildFabricateSection(controls) {
     };
     const triangles = makeRow('Triangles', 'fabricate-triangles');
     const vertices = makeRow('Vertices', 'fabricate-vertices');
+    const bodies = makeRow('Body count', 'fabricate-bodies');
     const volume = makeRow('Volume', 'fabricate-volume');
     const worldSize = makeRow('World bbox', 'fabricate-world-size');
     const physical = makeRow('Physical', 'fabricate-physical-size');
@@ -149,9 +176,9 @@ export function buildFabricateSection(controls) {
     body.appendChild(panel);
 
     controls.fabricateEls = {
-      panel, status, source, reason, triangles, vertices, volume,
+      panel, status, source, reason, triangles, vertices, bodies, volume,
       worldSize, physical, warnings, preparation, exportButton, unitSelect, scaleInput,
-      compositionNote, weld: weld.input, cap: cap.input, prepHint,
+      scopeSelect, compositionNote, weld: weld.input, cap: cap.input, prepHint,
     };
     controls.refreshFabricate();
 }

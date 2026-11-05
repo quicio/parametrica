@@ -529,6 +529,7 @@ export class Controls {
     const preparation = doc.view?.fabrication ?? {};
     if (els.weld) els.weld.checked = preparation.weld === true;
     if (els.cap) els.cap.checked = preparation.cap === true;
+    if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
     const ready = Boolean(report.exportable);
     const state = ready
       ? 'ready'
@@ -536,7 +537,9 @@ export class Controls {
         ? (report.unitsReady ? 'invalid' : 'units')
         : 'empty';
     els.status.textContent = ready
-      ? (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body')
+      ? (report.multiBody
+        ? `READY · ${report.bodies} bodies`
+        : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
       : state === 'units'
         ? 'UNITS REQUIRED'
         : state === 'invalid'
@@ -546,16 +549,19 @@ export class Controls {
     els.panel.dataset.exportable = String(ready);
 
     els.source.textContent = report.source
-      ? `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
+      ? report.multiBody
+        ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
+        : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     els.reason.textContent = report.reason ?? (ready
-      ? `Binary STL · millimetres · single body${report.prepared ? ' · prepared' : ''}`
+      ? `Binary STL · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.prepared ? ' · prepared' : ''}`
       : report.candidates.length && (preparation.weld || preparation.cap)
         ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
         : 'Enable Weld or Cap to prepare an open mesh, or select a validated closed body.');
 
     els.triangles.textContent = report.source ? String(report.triangles) : '—';
     els.vertices.textContent = report.source ? String(report.vertices) : '—';
+    if (els.bodies) els.bodies.textContent = String(report.bodies ?? 0);
 
     const worldScale = millimetresPerUnit(doc.view?.units, 'world');
     if (report.volume !== null && report.volume !== undefined) {
@@ -588,10 +594,13 @@ export class Controls {
     }
 
     const instanceCount = (doc.layers ?? []).filter(isInstanceLayer).length;
-    els.compositionNote.hidden = instanceCount === 0;
-    els.compositionNote.textContent = instanceCount
-      ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · exporting one body from the active layer only`
-      : '';
+    const compositionScope = report.scope === 'composition';
+    els.compositionNote.hidden = instanceCount === 0 && !compositionScope;
+    els.compositionNote.textContent = compositionScope
+      ? `Composition · ${report.bodies ?? 0} validated bod${report.bodies === 1 ? 'y' : 'ies'} · separate shells, not a union`
+      : instanceCount
+        ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · ${report.multiBody ? `${report.bodies} bodies` : 'one body'} · scope: ${report.scope ?? 'single'}`
+        : '';
 
     els.exportButton.disabled = !ready;
     els.exportButton.title = ready

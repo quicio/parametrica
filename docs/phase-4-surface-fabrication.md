@@ -58,6 +58,8 @@ surface operators, physical units, STL export and the Fabricate mode.
   see `docs/solid-preparation.md`. Render geometry is not edited.
 - Phase 5B adds real self-intersection diagnostics; see
   `docs/self-intersection.md`. Intersecting meshes are rejected, not repaired.
+- Phase 5C adds explicit active-layer and composition multi-body scopes; see
+  `docs/multi-body.md`. Shells are separate, not a boolean union.
 
 ## 4D — Fabricate mode
 
