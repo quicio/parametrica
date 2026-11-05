@@ -172,20 +172,8 @@ extraction and conversion to a Fourier document.
 
 | Capability | Purpose |
 |---|---|
-| `pass-appearance` | Per-pass color and stroke-width settings |
 | `image-evenodd` | Even-odd hole filling and contour nesting |
 | `quad-svg-export` | Quad layout reconstruction in SVG/plotter |
-| `surface-workbench` | Surface/Mesh world operators, multiple surfaces and mapping lifecycle |
-| `physical-units` | Explicit world/artboard units and scale |
-| `fabrication-export` | Validated binary STL for closed Mesh/Solid |
-| `make-mvp` | Read-only Fabricate mode for validated watertight geometry |
-| `viewport-coordinates` | Coordinates section, per-panel axes, ticks, values and cursor readout |
-| `look-presets` | Named visual presets and explicit render-pass applicability |
-| `startup-continuity` | Last-session restore and default stroke width 1 |
-| `instance-layers` | Source-shared instance layers, mapping identity and single-body fabrication |
-| `vortex-stack-preset` | Built-in layered composition, Compositions category and stable composition previews |
-| `start-with` | First-run and new-document starting chooser |
-| `default-stroke-05` | Default stroke width 0.5 for new documents |
 | `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
@@ -488,13 +476,13 @@ generation metadata in the notebook; unit group 24.
 | `start-with` | archived | shipped |
 | `default-stroke-05` | archived | shipped |
 | `remediation-hardening` | archived | shipped |
-| `composition-preview` | active | specified, not implemented |
-| `ui-maintainability` | active | specified, not implemented |
-| `instance-performance` | active | specified, not implemented |
-| `spec-purpose-pass` | active | specified, not implemented |
-| `custom-look-presets` | active | specified, not implemented |
-| `pass-appearance` | active | specified, not implemented |
-| `coordinate-readout-polish` | active | specified, not implemented |
+| `composition-preview` | archived | shipped |
+| `ui-maintainability` | archived | shipped |
+| `instance-performance` | archived | shipped |
+| `spec-purpose-pass` | archived | shipped |
+| `custom-look-presets` | archived | shipped |
+| `pass-appearance` | archived | shipped |
+| `coordinate-readout-polish` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -564,19 +552,19 @@ document-scoped, Surface IDs are deterministic, manual New Document asks before
 replacement, the e2e session fixture is generated, the advisor is instance-safe
 and current docs match the gates.
 
-### 4L — Post-audit polish specs (specified, not implemented)
+### 4L — Post-audit polish (shipped)
 
-Seven bounded changes are specified for the remaining non-fabrication backlog:
+Seven bounded changes were implemented, validated and archived:
 
-| Change | Scope |
-|---|---|
-| `composition-preview` | 224 px Start With previews and size-aware cache |
-| `ui-maintainability` | Split Controls/P5 overlays/Node suite without behavior change |
-| `instance-performance` | 24-instance browser benchmark and budgets |
-| `spec-purpose-pass` | Replace 24 TBD spec purposes and add a placeholder gate |
-| `custom-look-presets` | User-authored view-level Looks |
-| `pass-appearance` | Per-pass color and stroke width |
-| `coordinate-readout-polish` | Pinned readout and 3D surface-hit coordinates |
+| Change | Status | Scope |
+|---|---|---|
+| `composition-preview` | shipped | 224 px Start With previews and size-aware cache |
+| `ui-maintainability` | shipped | Split Controls/P5 overlays/Node suite without behavior change |
+| `instance-performance` | shipped | 24-instance browser benchmark and budgets |
+| `spec-purpose-pass` | shipped | Replace 24 TBD spec purposes and add a placeholder gate |
+| `custom-look-presets` | shipped | User-authored view-level Looks |
+| `pass-appearance` | shipped | Per-pass color and stroke width |
+| `coordinate-readout-polish` | shipped | Pinned readout and 3D surface-hit coordinates |
 
 Phase 5 remains a separate future program and is intentionally not specified in
 this batch.
@@ -593,7 +581,6 @@ It should only be specified after 4A–4D and real user demand for solid modelin
 
 Smaller independent slices remain candidates for parallel work:
 
-- `pass-appearance` (per-pass color/stroke width);
 - `image-evenodd` (hole fill/nesting);
 - `quad-svg-export` (Quad reconstruction in SVG/plotter);
 - browser benchmark of dense surface picking/seams and playback;
