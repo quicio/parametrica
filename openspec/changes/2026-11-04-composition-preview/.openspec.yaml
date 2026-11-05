@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Give Start With and preset surfaces a sharp, appropriately sized preview for
+  compositions without changing evaluation or document state.

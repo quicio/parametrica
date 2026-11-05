@@ -481,6 +481,13 @@ generation metadata in the notebook; unit group 24.
 | `start-with` | archived | shipped |
 | `default-stroke-05` | archived | shipped |
 | `remediation-hardening` | archived | shipped |
+| `composition-preview` | active | specified, not implemented |
+| `ui-maintainability` | active | specified, not implemented |
+| `instance-performance` | active | specified, not implemented |
+| `spec-purpose-pass` | active | specified, not implemented |
+| `custom-look-presets` | active | specified, not implemented |
+| `pass-appearance` | active | specified, not implemented |
+| `coordinate-readout-polish` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -549,6 +556,23 @@ still restore automatically. New documents use stroke width 0.5.
 document-scoped, Surface IDs are deterministic, manual New Document asks before
 replacement, the e2e session fixture is generated, the advisor is instance-safe
 and current docs match the gates.
+
+### 4L — Post-audit polish specs (specified, not implemented)
+
+Seven bounded changes are specified for the remaining non-fabrication backlog:
+
+| Change | Scope |
+|---|---|
+| `composition-preview` | 224 px Start With previews and size-aware cache |
+| `ui-maintainability` | Split Controls/P5 overlays/Node suite without behavior change |
+| `instance-performance` | 24-instance browser benchmark and budgets |
+| `spec-purpose-pass` | Replace 24 TBD spec purposes and add a placeholder gate |
+| `custom-look-presets` | User-authored view-level Looks |
+| `pass-appearance` | Per-pass color and stroke width |
+| `coordinate-readout-polish` | Pinned readout and 3D surface-hit coordinates |
+
+Phase 5 remains a separate future program and is intentionally not specified in
+this batch.
 
 ### Phase 5 — Solid foundations (not specified)
 

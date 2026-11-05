@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Add per-render-pass color and stroke width without changing pass math,
+  geometry or export formats.

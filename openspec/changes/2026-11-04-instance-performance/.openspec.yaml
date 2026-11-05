@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Measure and document browser performance for the 24-instance limit before
+  deciding whether instanced rendering is needed.
