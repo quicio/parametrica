@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Add explicit, non-destructive solid preparation (weld and caps) for fabrication without changing render geometry or export formats.

@@ -3940,3 +3940,37 @@ textarea:focus-visible {
   flex: 1 1 auto;
   min-width: 0;
 }
+
+/* ——— Fabricate preparation ——— */
+
+.fabricate-prep-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fabricate-prep-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.fabricate-prep-toggle .artboard-check {
+  margin: 0;
+}
+
+.fabricate-prep-hint {
+  padding: 4px 0 6px;
+  font-size: 8px;
+}
+
+.fabricate-preparation {
+  color: var(--ink-faint);
+}

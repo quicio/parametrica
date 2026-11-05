@@ -174,7 +174,7 @@ extraction and conversion to a Fourier document.
 |---|---|
 | `image-evenodd` | Even-odd hole filling and contour nesting |
 | `quad-svg-export` | Quad layout reconstruction in SVG/plotter |
-| `solid-foundations` | Caps, merge, CSG, repair and multi-body (future) |
+| `solid-foundations` | Remaining Phase 5: self-intersection, CSG, repair and multi-body |
 | `instrument-ui-kit` | Optional: extract the domain-agnostic panel shell for sibling apps |
 | `synth-sibling` | Optional: Web Audio synthesizer built on the shared UI kit |
 
@@ -483,6 +483,7 @@ generation metadata in the notebook; unit group 24.
 | `custom-look-presets` | archived | shipped |
 | `pass-appearance` | archived | shipped |
 | `coordinate-readout-polish` | archived | shipped |
+| `solid-preparation` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -569,11 +570,18 @@ Seven bounded changes were implemented, validated and archived:
 Phase 5 remains a separate future program and is intentionally not specified in
 this batch.
 
-### Phase 5 — Solid foundations (not specified)
+### Phase 5 — Solid foundations (in progress)
 
-`solid-foundations` is intentionally **not** an active OpenSpec change yet. It
-covers caps/merge, boolean/CSG, self-intersection checks, repair and multi-body.
-It should only be specified after 4A–4D and real user demand for solid modeling.
+Phase 5 is split into bounded slices. **5A is shipped**; the rest remain future
+work and require their own OpenSpec changes.
+
+| Slice | Scope | Status |
+|---|---|---|
+| 5A `solid-preparation` | Explicit weld, boundary loops, caps, merge and derived fabrication source | shipped (2026-11-05) |
+| 5B `self-intersection` | Triangle intersection diagnostics and validation reporting | candidate |
+| 5C `multi-body` | Merge/pack multiple closed bodies and export them intentionally | candidate |
+| 5D `solid-booleans` | Union/difference/intersection (CSG) on validated solids | candidate |
+| 5E `advanced-repair` | Orientation fixes, non-planar hole strategies, repair reports | candidate |
 
 ---
 

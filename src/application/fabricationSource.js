@@ -7,17 +7,38 @@
  */
 
 import { isMesh, isSolid } from '../geometry/contracts.js';
+import { prepareMesh } from '../geometry/solidPrep.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
-export function resolveFabricationSource({ evaluation = null, layerIndex = 0 } = {}) {
+export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
   const layer = evaluation?.layers?.[layerIndex] ?? evaluation ?? null;
   const candidates = [];
   const seen = new Set();
+  const prepare = normalizePreparation(preparation);
   const add = (item) => {
     if (!item || seen.has(item)) return;
     if (!isMesh(item) && !isSolid(item)) return;
     seen.add(item);
+    if (isMesh(item) && (prepare.weld || prepare.cap)) {
+      const prepared = prepareMesh(item, prepare);
+      const validation = validateForFabrication(prepared.mesh);
+      const closed = Boolean(validation.meta?.closed);
+      candidates.push({
+        geometry: prepared.mesh,
+        kind: prepared.mesh.kind,
+        id: prepared.mesh.id ?? item.id ?? null,
+        validation: {
+          ...validation,
+          warnings: [...new Set([...(validation.warnings ?? []), ...(prepared.warnings ?? [])])],
+        },
+        closed,
+        exportable: validation.ok && closed,
+        prepared: true,
+        preparation: { ...prepared.stats, prepared: true },
+      });
+      return;
+    }
     const validation = validateForFabrication(item);
     const closed = Boolean(validation.meta?.closed);
     candidates.push({
@@ -27,6 +48,8 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0 } =
       validation,
       closed,
       exportable: validation.ok && closed,
+      prepared: false,
+      preparation: null,
     });
   };
   for (const item of layer?.geometry ?? []) add(item);
@@ -48,8 +71,8 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0 } =
   };
 }
 
-export function buildFabricationReport({ evaluation = null, layerIndex = 0, units = null } = {}) {
-  const resolved = resolveFabricationSource({ evaluation, layerIndex });
+export function buildFabricationReport({ evaluation = null, layerIndex = 0, units = null, preparation = null } = {}) {
+  const resolved = resolveFabricationSource({ evaluation, layerIndex, preparation });
   const source = resolved.source;
   if (!source) {
     return {
@@ -61,6 +84,8 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       bbox: null,
       physical: null,
       warnings: [],
+      preparation: null,
+      prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
       exportable: false,
     };
@@ -79,9 +104,13 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     bbox,
     physical,
     warnings: source.validation.warnings ?? [],
+    preparation: source.preparation ?? null,
+    prepared: Boolean(source.prepared),
     unitsReady,
     exportable: source.exportable && unitsReady,
-    reason: !unitsReady ? 'Set an explicit world scale (mm per world unit) before exporting' : null,
+    reason: !unitsReady
+      ? 'Set an explicit world scale (mm per world unit) before exporting'
+      : null,
   };
 }
 
@@ -105,5 +134,15 @@ function bboxOf(mesh) {
     width: maxX - minX,
     height: maxY - minY,
     depth: maxZ - minZ,
+  };
+}
+
+function normalizePreparation(raw) {
+  if (!raw || typeof raw !== 'object') return { weld: false, cap: false };
+  return {
+    weld: raw.weld === true,
+    cap: raw.cap === true,
+    tolerance: raw.tolerance,
+    maxHoleEdges: raw.maxHoleEdges,
   };
 }

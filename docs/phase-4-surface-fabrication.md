@@ -54,6 +54,8 @@ surface operators, physical units, STL export and the Fabricate mode.
   count, geometry id and volume metadata alongside the bytes.
 - Self-intersection validation is not implemented and is reported as a
   warning. There is no repair, CSG, multi-body packing or 3MF yet.
+- Phase 5A adds opt-in weld/cap preparation for the derived fabrication source;
+  see `docs/solid-preparation.md`. Render geometry is not edited.
 
 ## 4D — Fabricate mode
 

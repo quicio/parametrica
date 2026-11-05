@@ -517,6 +517,7 @@ export class Controls {
       evaluation: this.app.evaluation,
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
+      preparation: doc.view?.fabrication ?? null,
     });
     const units = doc.view?.units ?? {};
     els.unitSelect.value = PHYSICAL_UNIT_SYSTEMS.includes(units.world) ? units.world : 'unitless';
@@ -525,6 +526,9 @@ export class Controls {
       ? String(units.mmPerWorldUnit)
       : '';
     els.scaleInput.placeholder = units.world === 'unitless' ? 'set mm/unit' : 'mm per world unit';
+    const preparation = doc.view?.fabrication ?? {};
+    if (els.weld) els.weld.checked = preparation.weld === true;
+    if (els.cap) els.cap.checked = preparation.cap === true;
     const ready = Boolean(report.exportable);
     const state = ready
       ? 'ready'
@@ -532,7 +536,7 @@ export class Controls {
         ? (report.unitsReady ? 'invalid' : 'units')
         : 'empty';
     els.status.textContent = ready
-      ? 'READY · validated closed body'
+      ? (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body')
       : state === 'units'
         ? 'UNITS REQUIRED'
         : state === 'invalid'
@@ -545,8 +549,10 @@ export class Controls {
       ? `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     els.reason.textContent = report.reason ?? (ready
-      ? 'Binary STL · millimetres · single body'
-      : 'Fabrication is read-only; no repair or caps are available.');
+      ? `Binary STL · millimetres · single body${report.prepared ? ' · prepared' : ''}`
+      : report.candidates.length && (preparation.weld || preparation.cap)
+        ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
+        : 'Enable Weld or Cap to prepare an open mesh, or select a validated closed body.');
 
     els.triangles.textContent = report.source ? String(report.triangles) : '—';
     els.vertices.textContent = report.source ? String(report.vertices) : '—';
@@ -568,6 +574,17 @@ export class Controls {
       ? `${formatPhysicalLength(report.physical.width)} × ${formatPhysicalLength(report.physical.height)} × ${formatPhysicalLength(report.physical.depth ?? 0)}`
       : 'unitless';
     els.warnings.textContent = report.warnings.length ? report.warnings.join(' · ') : 'validated';
+    if (els.preparation) {
+      const prep = report.preparation;
+      const changed = [];
+      if (prep?.mergedVertices) changed.push(`${prep.mergedVertices} welded`);
+      if (prep?.removedFaces) changed.push(`${prep.removedFaces} faces removed`);
+      if (prep?.cappedLoops) changed.push(`${prep.cappedLoops} loops capped`);
+      if (prep?.addedTriangles) changed.push(`+${prep.addedTriangles} triangles`);
+      els.preparation.textContent = report.prepared
+        ? (changed.length ? changed.join(' · ') : 'prepared')
+        : 'off';
+    }
 
     const instanceCount = (doc.layers ?? []).filter(isInstanceLayer).length;
     els.compositionNote.hidden = instanceCount === 0;

@@ -246,6 +246,7 @@ export class Exporter {
       evaluation: this.app.evaluation,
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
+      preparation: doc.view?.fabrication ?? null,
     });
     if (!report.exportable || !report.source) {
       throw new Error(report.reason ?? 'No validated closed Mesh/Solid to export');

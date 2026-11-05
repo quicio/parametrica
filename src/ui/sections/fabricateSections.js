@@ -68,6 +68,49 @@ export function buildFabricateSection(controls) {
     scaleRow.append(scaleLabel, scaleWrap);
     rows.appendChild(scaleRow);
 
+    const fabrication = controls.app.document.view.fabrication;
+    const prepRow = document.createElement('div');
+    prepRow.className = 'fabricate-row fabricate-prepare-row';
+    const prepLabel = document.createElement('span');
+    prepLabel.className = 'fabricate-label';
+    prepLabel.textContent = 'Prepare';
+    const prepWrap = document.createElement('span');
+    prepWrap.className = 'fabricate-prep-controls';
+    const makePrepToggle = (className, label, checked) => {
+      const wrap = document.createElement('label');
+      wrap.className = 'fabricate-prep-toggle';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.className = `artboard-check ${className}`;
+      input.checked = checked;
+      const text = document.createElement('span');
+      text.textContent = label;
+      wrap.append(input, text);
+      return { wrap, input };
+    };
+    const weld = makePrepToggle('fabricate-weld', 'Weld', Boolean(fabrication.weld));
+    const cap = makePrepToggle('fabricate-cap', 'Cap', Boolean(fabrication.cap));
+    const syncPreparation = () => {
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    };
+    weld.input.addEventListener('change', () => {
+      fabrication.weld = weld.input.checked;
+      syncPreparation();
+    });
+    cap.input.addEventListener('change', () => {
+      fabrication.cap = cap.input.checked;
+      syncPreparation();
+    });
+    prepWrap.append(weld.wrap, cap.wrap);
+    prepRow.append(prepLabel, prepWrap);
+    rows.appendChild(prepRow);
+
+    const prepHint = controls.panelHint(
+      'Derived for fabrication only. Render geometry and SurfaceMapping are unchanged.',
+    );
+    prepHint.classList.add('fabricate-prep-hint');
+
     const makeRow = (label, className) => {
       const row = document.createElement('div');
       row.className = 'fabricate-row';
@@ -87,6 +130,7 @@ export function buildFabricateSection(controls) {
     const worldSize = makeRow('World bbox', 'fabricate-world-size');
     const physical = makeRow('Physical', 'fabricate-physical-size');
     const warnings = makeRow('Checks', 'fabricate-warnings');
+    const preparation = makeRow('Preparation', 'fabricate-preparation');
 
     const compositionNote = document.createElement('div');
     compositionNote.className = 'fabricate-composition-note';
@@ -101,12 +145,13 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
 
-    panel.append(status, source, reason, rows, compositionNote, exportButton);
+    panel.append(status, source, reason, rows, prepHint, compositionNote, exportButton);
     body.appendChild(panel);
 
     controls.fabricateEls = {
       panel, status, source, reason, triangles, vertices, volume,
-      worldSize, physical, warnings, exportButton, unitSelect, scaleInput, compositionNote,
+      worldSize, physical, warnings, preparation, exportButton, unitSelect, scaleInput,
+      compositionNote, weld: weld.input, cap: cap.input, prepHint,
     };
     controls.refreshFabricate();
 }

@@ -59,6 +59,28 @@ export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
 export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
 export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvature', 'arc']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
+export const DEFAULT_FABRICATION = Object.freeze({
+  weld: false,
+  cap: false,
+  tolerance: 1e-6,
+  maxHoleEdges: 256,
+});
+
+export function sanitizeFabricationSettings(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const tolerance = Number(source.tolerance);
+  const maxHoleEdges = Number(source.maxHoleEdges);
+  return {
+    weld: source.weld === true,
+    cap: source.cap === true,
+    tolerance: Number.isFinite(tolerance) && tolerance > 0
+      ? Math.min(Math.max(tolerance, 1e-9), 1)
+      : DEFAULT_FABRICATION.tolerance,
+    maxHoleEdges: Number.isFinite(maxHoleEdges)
+      ? Math.min(Math.max(Math.floor(maxHoleEdges), 3), 4096)
+      : DEFAULT_FABRICATION.maxHoleEdges,
+  };
+}
 
 export function createDefaultArtboard() {
   return { ...DEFAULT_ARTBOARD };
@@ -112,6 +134,7 @@ export function createDefaultView() {
     units: createDefaultUnits(),
     coordinates: createCoordinates(),
     passStyle: {},
+    fabrication: sanitizeFabricationSettings(DEFAULT_FABRICATION),
   };
 }
 
@@ -135,6 +158,7 @@ export const DEFAULT_VIEW = Object.freeze({
   units: DEFAULT_UNITS,
   coordinates: DEFAULT_COORDINATES,
   passStyle: Object.freeze({}),
+  fabrication: Object.freeze({ ...DEFAULT_FABRICATION }),
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({
@@ -175,6 +199,7 @@ function mergeView(base, raw) {
     units: sanitizeUnits(source.units ?? base.units),
     coordinates: sanitizeCoordinates(source.coordinates ?? base.coordinates),
     passStyle: sanitizePassStyle(source.passStyle ?? base.passStyle),
+    fabrication: sanitizeFabricationSettings(source.fabrication ?? base.fabrication),
     passOpacity: {
       ...base.passOpacity,
       ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),
