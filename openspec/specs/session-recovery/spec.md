@@ -29,8 +29,9 @@ Corrupt snapshots and storage quota failures SHALL NOT throw into the app.
 ### Requirement: Automatic restore
 
 On startup the app SHALL restore the last valid session document before first
-paint. The restored state SHALL include the generator, parameters, operators,
-layers, styles, view, units, coordinates and animation time.
+paint when one exists. The restored state SHALL include the generator,
+parameters, operators, layers, styles, view, units, coordinates and animation
+time.
 
 #### Scenario: Reload
 
@@ -42,7 +43,8 @@ layers, styles, view, units, coordinates and animation time.
 #### Scenario: First run
 
 - **WHEN** no valid snapshot exists
-- **THEN** the app starts with the default document
+- **THEN** the app shows the Start With chooser
+- **AND** the chosen document becomes the saved session
 
 #### Scenario: Restore notice
 
@@ -54,6 +56,13 @@ layers, styles, view, units, coordinates and animation time.
 
 - **WHEN** the user presses undo immediately after startup
 - **THEN** it does not revert to an unrelated default document
+
+#### Scenario: Invalid snapshot
+
+- **WHEN** the stored session cannot be sanitized
+- **THEN** it is treated as no session
+- **AND** the Start With chooser is shown
+- **AND** the failure does not throw into the UI
 
 ### Requirement: Safe fallback
 

@@ -478,8 +478,8 @@ generation metadata in the notebook; unit group 24.
 | `startup-continuity` | archived | shipped |
 | `instance-layers` | archived | shipped |
 | `vortex-stack-preset` | archived | shipped |
-| `start-with` | active | implemented, pending archive |
-| `default-stroke-05` | active | implemented, pending archive |
+| `start-with` | archived | shipped |
+| `default-stroke-05` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -535,6 +535,12 @@ instances / 32 layers. Mirror and multi-body export remain out. See
 `2026-11-04-vortex-stack-preset` shipped. The preset library includes **Vortex
 Stack** under **Compositions**, with stable composition previews and
 source-generator badges. See `docs/phase-4h-instance-layers-design.md`.
+
+### 4J — Start With and thin default stroke (shipped)
+
+`2026-11-04-start-with` and `2026-11-04-default-stroke-05` shipped. Fresh
+sessions choose Composition, Parametric or Parametric Surface; valid sessions
+still restore automatically. New documents use stroke width 0.5.
 
 ### Phase 5 — Solid foundations (not specified)
 

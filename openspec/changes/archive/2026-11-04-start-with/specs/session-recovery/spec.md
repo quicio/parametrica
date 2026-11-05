@@ -14,11 +14,22 @@ time.
 - **AND** operators, layers, styles and view settings are restored
 - **AND** animation does not start playing
 
-#### Scenario: No session
+#### Scenario: First run
 
 - **WHEN** no valid snapshot exists
 - **THEN** the app shows the Start With chooser
 - **AND** the chosen document becomes the saved session
+
+#### Scenario: Restore notice
+
+- **WHEN** a session is restored
+- **THEN** a short non-blocking notice reports the restoration
+- **AND** no blocking Restore/Dismiss banner is shown
+
+#### Scenario: History baseline
+
+- **WHEN** the user presses undo immediately after startup
+- **THEN** it does not revert to an unrelated default document
 
 #### Scenario: Invalid snapshot
 
