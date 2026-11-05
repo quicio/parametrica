@@ -56,6 +56,8 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
   for (const mesh of layer?.meshes ?? []) add(mesh);
 
   const source = candidates.find((candidate) => candidate.exportable) ?? null;
+  const candidateErrors = candidates[0]?.validation?.errors ?? [];
+  const firstError = candidateErrors.find((error) => error.includes('self-intersect')) ?? candidateErrors[0] ?? null;
   return {
     layerId: layer?.id ?? null,
     layerName: layer?.name ?? null,
@@ -66,7 +68,7 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     reason: source
       ? null
       : candidates.length
-        ? 'No validated closed Mesh/Solid in the active layer'
+        ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
         : 'The active layer has no Mesh/Solid geometry',
   };
 }
@@ -84,6 +86,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       bbox: null,
       physical: null,
       warnings: [],
+      errors: resolved.candidates?.[0]?.validation?.errors ?? [],
       preparation: null,
       prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
@@ -104,6 +107,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     bbox,
     physical,
     warnings: source.validation.warnings ?? [],
+    errors: source.validation.errors ?? [],
     preparation: source.preparation ?? null,
     prepared: Boolean(source.prepared),
     unitsReady,

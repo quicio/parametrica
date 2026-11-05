@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Detect self-intersecting triangle pairs deterministically and report them through fabrication validation without repairing geometry.

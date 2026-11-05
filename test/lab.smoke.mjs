@@ -3122,7 +3122,8 @@ console.log('30e. fabrication source and report');
   assert(report.vertices === evaluation.meshes[0].vertices.length, 'report counts vertices');
   assert(Number.isFinite(report.volume) && report.volume > 0, 'report includes a positive volume');
   assert(report.bbox.width > 0 && report.physical.width === report.bbox.width * 2, 'report includes world and physical bounds');
-  assert(report.warnings.includes('self-intersection validation not implemented'), 'report surfaces the self-intersection limitation');
+  assert(report.source.validation.meta.selfIntersections.checked === true, 'report confirms the self-intersection check ran');
+  assert(report.source.validation.meta.selfIntersections.count === 0, 'clean fabrication source has no self-intersections');
 
   const unitless = buildFabricationReport({ evaluation, layerIndex: 0, units: createDefaultUnits() });
   assert(unitless.unitsReady === false && unitless.exportable === false, 'unitless documents cannot export');

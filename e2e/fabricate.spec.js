@@ -43,7 +43,7 @@ test('Fabricate is read-only, unit-gated and exports a validated closed body', a
   await expect(fabricate.locator('.fabricate-vertices')).not.toHaveText('—');
   await expect(fabricate.locator('.fabricate-volume')).toContainText('mm³');
   await expect(fabricate.locator('.fabricate-physical-size')).toContainText('mm');
-  await expect(fabricate.locator('.fabricate-warnings')).toContainText('self-intersection');
+  await expect(fabricate.locator('.fabricate-warnings')).toHaveText('validated');
   await expect(exportButton).toBeEnabled();
 
   await expect(page.locator('.panel-section[data-mode="form"]').first()).toBeHidden();

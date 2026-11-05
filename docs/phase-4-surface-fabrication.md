@@ -56,6 +56,8 @@ surface operators, physical units, STL export and the Fabricate mode.
   warning. There is no repair, CSG, multi-body packing or 3MF yet.
 - Phase 5A adds opt-in weld/cap preparation for the derived fabrication source;
   see `docs/solid-preparation.md`. Render geometry is not edited.
+- Phase 5B adds real self-intersection diagnostics; see
+  `docs/self-intersection.md`. Intersecting meshes are rejected, not repaired.
 
 ## 4D — Fabricate mode
 

@@ -10,6 +10,7 @@ import {
   isMesh,
   isSolid,
 } from './contracts.js';
+import { detectSelfIntersections } from './selfIntersection.js';
 
 const EPS = 1e-9;
 
@@ -193,16 +194,20 @@ export function validateMesh(value) {
   if (volume !== null && (!Number.isFinite(volume) || Math.abs(volume) < EPS)) {
     errors.push('mesh volume is zero or non-finite');
   }
-  // Self-intersection validation is optional and intentionally reported as a
-  // limitation until a robust triangle-intersection validator exists.
-  warnings.push('self-intersection validation not implemented');
+  // Self-intersections make a watertight mesh unsafe for fabrication even
+  // when every boundary edge is paired. The detector only reports; it never
+  // edits vertices or faces.
+  const selfIntersections = detectSelfIntersections(value);
+  if (selfIntersections.count > 0) {
+    errors.push(`${selfIntersections.count} self-intersecting triangle pairs`);
+  }
 
   return result(errors, warnings, {
     closed: boundaryEdges.length === 0,
     manifold: nonManifoldEdges.length === 0,
     oriented: inconsistentEdges.length === 0,
     degenerateFaces,
-    selfIntersections: null,
+    selfIntersections,
     volume: volume === null ? null : Number(volume.toFixed(9)),
   });
 }

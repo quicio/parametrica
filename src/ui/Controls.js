@@ -573,7 +573,8 @@ export class Controls {
     els.physical.textContent = report.physical
       ? `${formatPhysicalLength(report.physical.width)} × ${formatPhysicalLength(report.physical.height)} × ${formatPhysicalLength(report.physical.depth ?? 0)}`
       : 'unitless';
-    els.warnings.textContent = report.warnings.length ? report.warnings.join(' · ') : 'validated';
+    const checks = [...(report.errors ?? []), ...(report.warnings ?? [])];
+    els.warnings.textContent = checks.length ? checks.join(' · ') : 'validated';
     if (els.preparation) {
       const prep = report.preparation;
       const changed = [];
