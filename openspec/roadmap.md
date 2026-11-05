@@ -486,6 +486,7 @@ generation metadata in the notebook; unit group 24.
 | `solid-preparation` | archived | shipped |
 | `self-intersection` | archived | shipped |
 | `multi-body` | archived | shipped |
+| `solid-booleans` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -582,7 +583,7 @@ work and require their own OpenSpec changes.
 | 5A `solid-preparation` | Explicit weld, boundary loops, caps, merge and derived fabrication source | shipped (2026-11-05) |
 | 5B `self-intersection` | Triangle intersection diagnostics and validation reporting | shipped (2026-11-05) |
 | 5C `multi-body` | Explicit active-layer/composition scope and multi-shell STL export | shipped (2026-11-05) |
-| 5D `solid-booleans` | Union/difference/intersection (CSG) on validated solids | candidate |
+| 5D `solid-booleans` | Union/difference/intersection (CSG) on validated solids | specified, not implemented (2026-11-05) |
 | 5E `advanced-repair` | Orientation fixes, non-planar hole strategies, repair reports | candidate |
 
 ---
