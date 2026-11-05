@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-04
+goal: Reduce the default stroke width to 0.5 for new documents while preserving
+  stored widths.

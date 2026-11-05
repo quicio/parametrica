@@ -1,21 +1,21 @@
 ## 1. Overlay
 
-- [ ] 1.1 Add the Start With modal with three featured cards and Cancel.
-- [ ] 1.2 Add preview placeholders and keyboard/focus behavior.
-- [ ] 1.3 Add first-run trigger when no valid session exists.
+- [x] 1.1 Add the Start With modal with three featured cards and Cancel.
+- [x] 1.2 Add equal-size mode cards, preview placeholders and keyboard/focus behavior.
+- [x] 1.3 Add first-run trigger when no valid session exists.
 
 ## 2. Actions
 
-- [ ] 2.1 Add New document to the Layers bar.
-- [ ] 2.2 Apply Vortex Stack, Classic Parametric and Torus choices.
-- [ ] 2.3 Save the session after selection; keep current doc on Cancel.
+- [x] 2.1 Add New document to the Layers bar.
+- [x] 2.2 Apply Vortex Stack, Classic Parametric and Torus choices.
+- [x] 2.3 Save the session after selection; keep current doc on Cancel.
   - Verify: unit choice tests, e2e first run, New document, cancel, preview
     fallback and accessibility.
 
 ## 3. Acceptance
 
-- [ ] 3.1 Document the startup chooser and replacement behavior.
-- [ ] 3.2 Run `npm run check`, `npm run test:e2e`, strict OpenSpec validation
+- [x] 3.1 Document the startup chooser and replacement behavior.
+- [x] 3.2 Run `npm run check`, `npm run test:e2e`, strict OpenSpec validation
       and archive.
 
 ## Acceptance criteria

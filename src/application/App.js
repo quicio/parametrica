@@ -32,6 +32,7 @@ import { computeSensitivity } from '../lab/sensitivity.js';
 import { applySuggestionToDocument } from '../ai/offline.js';
 import { P5Adapter } from '../render/p5/P5Adapter.js';
 import { Controls } from '../ui/Controls.js';
+import { StartWithOverlay } from '../ui/StartWithOverlay.js';
 import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
@@ -66,6 +67,8 @@ export class App {
     this.autoRestoredSession = Boolean(lastSession?.document);
     if (lastSession?.document) this.document = lastSession.document;
     this.sessionErrorShown = false;
+    this.startWithOverlay = null;
+    this.startWithPreviews = new Map();
 
     // UI-only reference state: never serialised with the document.
     this.imageUnderlay = null;
@@ -113,7 +116,11 @@ export class App {
     this.onBeforeUnload = () => this.flushSession();
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('beforeunload', this.onBeforeUnload);
-    if (this.autoRestoredSession) this.notify('Restored last session');
+    if (this.autoRestoredSession) {
+      this.notify('Restored last session');
+    } else {
+      this.showStartWith({ firstRun: true });
+    }
   }
 
   get evaluation() {
@@ -339,6 +346,59 @@ export class App {
     this.adoptCandidate(candidate);
     this.notify(`Applied suggestion on ${suggestion.path}`);
     return candidate;
+  }
+
+  /* ———————— start with / new document ———————— */
+
+  showStartWith({ firstRun = false } = {}) {
+    if (this.startWithOverlay?.el) {
+      this.startWithOverlay.focusFirst();
+      return this.startWithOverlay;
+    }
+    const overlay = new StartWithOverlay(this, {
+      firstRun,
+      onClose: () => { this.startWithOverlay = null; },
+    });
+    this.startWithOverlay = overlay;
+    overlay.open();
+    return overlay;
+  }
+
+  newDocument() {
+    return this.showStartWith({ firstRun: false });
+  }
+
+  startWithPreview(choiceId) {
+    if (this.startWithPreviews.has(choiceId)) return this.startWithPreviews.get(choiceId);
+    let dataUrl = null;
+    try {
+      if (choiceId === 'composition') {
+        dataUrl = this.presets.ensurePreview('Vortex Stack');
+      } else if (choiceId === 'surface') {
+        dataUrl = renderPresetPreview(createDocument('parametric-surface'));
+      } else if (choiceId === 'classic') {
+        dataUrl = renderPresetPreview(createDocument('parametric'));
+      }
+    } catch {
+      dataUrl = null;
+    }
+    if (dataUrl) this.startWithPreviews.set(choiceId, dataUrl);
+    return dataUrl;
+  }
+
+  setStartWithChoice(choiceId) {
+    let doc;
+    if (choiceId === 'composition') {
+      doc = this.presets.get('Vortex Stack');
+    } else if (choiceId === 'surface') {
+      doc = createDocument('parametric-surface');
+    } else if (choiceId === 'classic') {
+      doc = createDocument('parametric');
+    }
+    if (!doc) throw new Error('Starting figure is unavailable');
+    this.adoptDocument(doc);
+    this.flushSession();
+    return true;
   }
 
   /* ———————— session continuity ———————— */

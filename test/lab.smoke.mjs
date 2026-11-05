@@ -1467,7 +1467,7 @@ console.log('17. artboard and style');
   assert(defaults.view.artboard.width === 900 && defaults.view.artboard.height === 900, 'default artboard is 900×900');
   assert(defaults.view.artboard.background === '#000000' && defaults.view.artboard.margin === 0, 'default artboard background/margin');
   assert(defaults.view.style.stroke.color === '#ffffff', 'default stroke is white');
-  assert(defaults.view.style.stroke.width === 1, 'default stroke width');
+  assert(defaults.view.style.stroke.width === 0.5, 'default stroke width');
   assert(defaults.view.style.fill.enabled === false, 'default fill is off');
 
   const isolated = createDocument('polar');

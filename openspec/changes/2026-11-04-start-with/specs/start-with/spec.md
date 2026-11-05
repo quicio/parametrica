@@ -13,8 +13,9 @@ The app SHALL show a Start With chooser when no valid session exists.
 
 - **WHEN** the app starts without a valid session
 - **THEN** the Start With overlay is shown
-- **AND** Vortex Stack, Classic Parametric and Torus are offered
-- **AND** Vortex Stack is visually featured
+- **AND** Composition, Parametric and Parametric Surface are offered
+- **AND** Composition is visually featured
+- **AND** all three cards have equal width and preview height
 
 #### Scenario: Valid session
 
@@ -32,23 +33,23 @@ The app SHALL show a Start With chooser when no valid session exists.
 
 Each card SHALL identify the starting figure.
 
-#### Scenario: Vortex Stack
+#### Scenario: Composition
 
-- **WHEN** the user chooses Vortex Stack
-- **THEN** the built-in composition is applied
+- **WHEN** the user chooses Composition
+- **THEN** the Vortex Stack built-in composition is applied
 - **AND** the overlay closes
 - **AND** the session is saved
 
-#### Scenario: Classic Parametric
+#### Scenario: Parametric
 
-- **WHEN** the user chooses Classic Parametric
+- **WHEN** the user chooses Parametric
 - **THEN** the default parametric document is created
 - **AND** the session is saved
 
-#### Scenario: Torus
+#### Scenario: Parametric Surface
 
-- **WHEN** the user chooses Torus
-- **THEN** the built-in Torus preset is applied
+- **WHEN** the user chooses Parametric Surface
+- **THEN** the default parametric-surface document is created
 - **AND** the session is saved
 
 #### Scenario: Preview fallback

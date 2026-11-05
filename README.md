@@ -26,7 +26,7 @@ npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
 npm test             # node-only verification suite (2144 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (130 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (134 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -126,9 +126,9 @@ A form is a JSON document:
     id: 'layer-1', name: 'Lissajous 3:5', visible: true, locked: false, seed: 1,
     generator: { id: 'lissajous', params: { a: 3, b: 5, delta: 1.5708, size: 340 }, mods: {} },
     operators: [],
-    style: { stroke: { color: '#ffffff', width: 1, opacity: 1, cap: 'round', join: 'round' }, fill: { enabled: false, color: '#ffffff', opacity: 1 }, blend: 'normal' },
+    style: { stroke: { color: '#ffffff', width: 0.5, opacity: 1, cap: 'round', join: 'round' }, fill: { enabled: false, color: '#ffffff', opacity: 1 }, blend: 'normal' },
   }],
-  view: { modes: ['stroke'], overlays: {}, strokeWeight: 1, guides: true, artboard: { width: 900, height: 900, background: '#000000', margin: 0 } },
+  view: { modes: ['stroke'], overlays: {}, strokeWeight: 0.5, guides: true, artboard: { width: 900, height: 900, background: '#000000', margin: 0 } },
   animation: { playing: false, speed: 1, time: 0 },
 }
 ```
@@ -265,6 +265,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Layers** with independent generators, operator stacks and styles
 - **Instance layers** that reference a generator layer, share its params and canonical Surface, apply per-instance transforms before tessellation, and keep source-aware SurfaceMapping, picking and inspection
 - **Compositions** with a built-in **Vortex Stack** preset: one hidden helical source and five transformed instances, available from Presets → Compositions
+- **Start With** on first run and **+ NEW DOCUMENT** in Layers: Composition, Parametric or Parametric Surface, with session-aware startup and keyboard-accessible modal
 - **Perform** with Animation and Timeline: keyframes, easing, recording, loop, PNG ZIP, SVG frame ZIP and GIF export
 - **Offline advisor** with deterministic A/B narration, suggestions, preview and apply
 - **Optional LLM advisor** with fake/Ollama/OpenAI-compatible providers, grounded prompts, validation, cache and privacy disclosure

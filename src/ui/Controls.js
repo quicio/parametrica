@@ -395,8 +395,13 @@ export class Controls {
     const layers = this.app.document.layers ?? [];
     const bar = document.createElement('div');
     bar.className = 'layers-bar';
+    const newDocument = document.createElement('button');
+    newDocument.className = 'layer-add layer-new-document';
+    newDocument.textContent = '+ NEW DOCUMENT';
+    newDocument.addEventListener('click', () => this.app.newDocument());
+    bar.appendChild(newDocument);
     const add = document.createElement('button');
-    add.className = 'layer-add';
+    add.className = 'layer-add layer-add-generator';
     add.textContent = '+ ADD LAYER';
     add.title = 'Add a new layer';
     add.addEventListener('click', () => this.app.addLayer('parametric'));

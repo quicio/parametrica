@@ -38,5 +38,5 @@ test('autosave restores the last session automatically after reload', async ({ p
   await expect(page.locator('#notice')).toContainText('Restored last session');
   expect(await page.evaluate(() => window.__parametrica.document.generator.id)).toBe('lissajous');
   expect(await page.evaluate(() => window.__parametrica.document.generator.params.a)).toBe(7);
-  expect(await page.evaluate(() => window.__parametrica.document.view.style.stroke.width)).toBe(1);
+  expect(await page.evaluate(() => window.__parametrica.document.view.style.stroke.width)).toBe(0.5);
 });

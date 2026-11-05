@@ -22,19 +22,24 @@ session prevents it from appearing automatically again.
 ### D2: Starting cards
 
 ```text
-Vortex Stack      featured composition
-Classic Parametric  current default figure
-Torus             closed surface
+Composition        featured · instance layers · Vortex Stack example
+Parametric         2D equations
+Parametric Surface 3D U/V equations
 ```
 
-Cards show name, one-line description and a preview/placeholder. Previews are
-derived from existing preset previews and never block selection.
+Cards represent **modes/families**, not individual shapes. `Torus` is an example
+inside Parametric Surface, not a starting mode.
+
+All three cards are equal-width squares with the same preview height. The
+featured card is distinguished by border and kicker, not by size. Cards show
+name, one-line description, scope and a preview/placeholder. Previews are
+derived from existing preview rendering and never block selection.
 
 ### D3: Choice semantics
 
-- `Vortex Stack` applies the built-in composition preset.
-- `Classic Parametric` creates the default `parametric` document.
-- `Torus` applies the built-in Torus preset.
+- `Composition` applies the Vortex Stack built-in composition.
+- `Parametric` creates the default `parametric` document.
+- `Parametric Surface` creates the default `parametric-surface` document.
 - `Cancel` on a manual New document keeps the current document.
 - `Escape`/Cancel on first run selects Classic Parametric, because there is no
   current document to preserve.

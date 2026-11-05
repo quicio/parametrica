@@ -10,14 +10,15 @@ choice and a way to start a new document from the same chooser.
 ## What Changes
 
 - Add a **Start With** overlay when no valid session exists.
-- Offer featured starting points:
-  - Vortex Stack
-  - Classic Parametric
-  - Torus
+- Offer mode-level starting points:
+  - Composition (Vortex Stack example)
+  - Parametric (2D)
+  - Parametric Surface (3D)
 - Apply the chosen document, save the session and close the overlay.
 - Add a **New document** action that reopens the same overlay.
 - Keep automatic session restore when a valid session exists.
-- Make the overlay keyboard-accessible and non-blocking on preview failure.
+- Make all cards the same size and the overlay keyboard-accessible.
+- Keep previews non-blocking on failure.
 
 ## Capabilities
 

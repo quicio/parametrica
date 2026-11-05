@@ -63,7 +63,7 @@ export class Exporter {
       background: '#000000',
     };
     const fallbackStyle = view.style ?? {
-      stroke: { color: '#ffffff', width: view.strokeWeight ?? 1, opacity: 1, cap: 'round', join: 'round' },
+      stroke: { color: '#ffffff', width: view.strokeWeight ?? 0.5, opacity: 1, cap: 'round', join: 'round' },
       fill: { enabled: false, color: '#ffffff', opacity: 1 },
       blend: 'normal',
     };
@@ -189,7 +189,7 @@ export class Exporter {
     const width = artboard.width;
     const height = artboard.height;
     const fallbackStyle = view.style ?? {
-      stroke: { color: '#ffffff', width: view.strokeWeight ?? 1, opacity: 1, cap: 'round', join: 'round' },
+      stroke: { color: '#ffffff', width: view.strokeWeight ?? 0.5, opacity: 1, cap: 'round', join: 'round' },
     };
     const source = Array.isArray(layers) && layers.length
       ? layers.filter((layer) => layer.visible !== false)
