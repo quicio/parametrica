@@ -480,6 +480,7 @@ generation metadata in the notebook; unit group 24.
 | `vortex-stack-preset` | archived | shipped |
 | `start-with` | archived | shipped |
 | `default-stroke-05` | archived | shipped |
+| `remediation-hardening` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.
@@ -541,6 +542,13 @@ source-generator badges. See `docs/phase-4h-instance-layers-design.md`.
 `2026-11-04-start-with` and `2026-11-04-default-stroke-05` shipped. Fresh
 sessions choose Composition, Parametric or Parametric Surface; valid sessions
 still restore automatically. New documents use stroke width 0.5.
+
+### 4K — Remediation hardening (shipped)
+
+`2026-11-04-remediation-hardening` shipped. Layer/instance IDs are
+document-scoped, Surface IDs are deterministic, manual New Document asks before
+replacement, the e2e session fixture is generated, the advisor is instance-safe
+and current docs match the gates.
 
 ### Phase 5 — Solid foundations (not specified)
 
