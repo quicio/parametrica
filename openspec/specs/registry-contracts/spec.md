@@ -1,7 +1,7 @@
 # registry-contracts Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Validate generator, operator and render-pass definitions at registration so broken stages fail early.
 ## Requirements
 ### Requirement: Validated stage definitions
 
@@ -49,4 +49,3 @@ and assert its contract.
 - **THEN** every registered definition has the required functions, valid
   schema and recognised capabilities
 - **AND** invalid fixtures are rejected in the same group
-

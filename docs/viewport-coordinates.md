@@ -74,3 +74,39 @@ Unknown values sanitize safely and old documents remain valid.
   unit formatting and sanitization.
 - E2E covers the Coordinates controls, single/Quad readout and export
   isolation.
+
+## 3D surface-hit readout
+
+In a single 3D view the readout is not derived from the screen plane. The
+pointer is intersected with the nearest world-space surface mesh using the same
+picker as the Surface Inspector. A valid hit reports all three world
+coordinates:
+
+```text
+x 1.20 · y -0.40 · z 2.10
+```
+
+Empty 3D space has no depth. When no surface is hit, the readout stays absent
+and never invents a Z value. Quad 3D panels keep the same rule; the orthographic
+panels continue to report two in-plane values plus `—` for the dropped axis.
+
+## Pinning
+
+**Coordinates → Pin** stores the last valid readout and **Release** clears it.
+The pinned value is drawn in the overlay and survives camera orbit while the
+source geometry is unchanged. It is revalidated after evaluation or projection
+changes:
+
+- a projection or Quad/single layout change clears the pin;
+- a 3D pin is cleared when its source layer or mesh disappears or is rebuilt;
+- orthographic pins are cursor-plane coordinates, so they remain valid until
+  the projection changes.
+
+Pins are UI-only. They are skipped in capture mode and never enter SVG, plotter,
+PNG or GIF output.
+
+## Limitations
+
+- Pinning in 3D requires a surface hit; there is no free-space depth.
+- No snapping, measurement tools or persistent measurement history.
+- Values are display-only and never change geometry or fabrication data.

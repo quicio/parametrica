@@ -1,7 +1,7 @@
 # geometry-compatibility Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Preserve document, layer, preset and notebook compatibility when geometry kinds are added.
 ## Requirements
 ### Requirement: Document v3 compatibility
 
@@ -60,4 +60,3 @@ migration.
 - **WHEN** the legacy renderer is replaced
 - **THEN** only the adapter layer is removed or replaced
 - **AND** generators and world operators do not depend on it
-

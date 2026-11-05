@@ -8,12 +8,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/lab.smoke.mjs",
+    "test": "node test/lab.smoke.mjs && node test/domains/run.mjs",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "check": "npm run lint && npm test && npm run build",
+    "check": "npm run lint && npm test && npm run build && npm run check:specs",
     "generate:e2e-session": "node scripts/generate-e2e-session.mjs",
-    "pretest:e2e": "npm run generate:e2e-session"
+    "pretest:e2e": "npm run generate:e2e-session",
+    "check:specs": "node scripts/check-spec-purposes.mjs",
+    "bench:instances": "node scripts/bench-instances.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

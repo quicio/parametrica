@@ -1,7 +1,7 @@
 # surface-tessellation Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-parametric-surfaces. Update Purpose after archive.
+Convert canonical Surface grids into deterministic indexed meshes and the explicit SurfaceMapping sidecar used by picking, inspection and exports.
 ## Requirements
 ### Requirement: Deterministic surface tessellation
 
@@ -107,4 +107,3 @@ a false straight closure.
 - **WHEN** paired loops exceed the curve point budget
 - **THEN** the existing budget enforcement still applies
 - **AND** the mesh wireframe pass remains available as the exact edge view
-

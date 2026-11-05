@@ -23,6 +23,8 @@ test('fresh app offers Composition, Parametric and Parametric Surface', async ({
   const widths = await page.locator('.start-with-card').evaluateAll((cards) => cards.map((card) => Math.round(card.getBoundingClientRect().width)));
   expect(new Set(widths).size).toBe(1);
   await expect.poll(async () => page.locator('.start-with-card[data-choice="composition"] .start-with-thumb img:not([hidden])').count()).toBeGreaterThan(0);
+  const previewWidth = await page.locator('.start-with-card[data-choice="composition"] .start-with-thumb img').evaluate((image) => image.naturalWidth);
+  expect(previewWidth).toBeGreaterThanOrEqual(200);
 });
 
 test('choosing Composition loads the Vortex Stack example and saves the session', async ({ page }) => {

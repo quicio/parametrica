@@ -74,29 +74,11 @@ import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, pro
 import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
 import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
 import { MAX_INSTANCE_LAYERS, MAX_LAYERS, canAddInstanceLayer, countInstanceLayers, dependentInstances, generatorForLayer, isInstanceLayer } from '../src/core/layers.js';
-import {
-  DEFAULT_COORDINATES,
-  PROJECTION_AXES,
-  buildCoordinateTicks,
-  buildViewportDescriptor,
-  coordinateUnitInfo,
-  createCoordinates,
-  formatCoordinate,
-  formatCoordinateReadout,
-  isOrthographicProjection,
-  localPointInPanel,
-  niceStep,
-  panelAtPoint,
-  quadPanelLayout,
-  sanitizeCoordinates,
-  worldFromArtboardPoint,
-} from '../src/view/viewportCoordinates.js';
 import { createDefaultUnits, sanitizeUnits, validateUnits, worldToMillimetres, artboardToMillimetres, bboxToMillimetres } from '../src/core/units.js';
 import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
 import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.js';
 import { pickSurface, validatePickResult } from '../src/interaction/surfacePicker.js';
 import { buildInspectionOverlay } from '../src/interaction/inspectionOverlay.js';
-import { buildSeamOverlay } from '../src/interaction/seamOverlay.js';
 import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
 import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
 import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
@@ -681,7 +663,8 @@ console.log('7b. Vortex Stack composition preset');
   });
   assert(JSON.stringify(firstStructure) === JSON.stringify(secondStructure), 'Vortex Stack structure is deterministic apart from ids');
   assert(previewKey(doc) === previewKey(again), 'Vortex Stack preview hash normalizes ids and source refs');
-  assert(PREVIEW_VERSION === 3, 'preview version bumped for composition hashing');
+  assert(PREVIEW_VERSION === 4, 'preview version bumped for size-aware hashing');
+  assert(previewKey(doc, { size: 224 }) !== previewKey(doc), 'preview key includes requested size');
 
   const entry = pm.entries().find((item) => item.name === 'Vortex Stack');
   assert(entry?.category === 'compositions' && entry.generator === 'parametric-surface', 'Vortex Stack catalog metadata resolves its source generator');
@@ -3178,81 +3161,6 @@ console.log('30e. fabrication source and report');
   assert(JSON.stringify(evaluation.meshes[0]) === before, 'fabrication report never mutates world geometry');
 }
 
-/* ——— 30f. viewport coordinates ——— */
-console.log('30f. viewport coordinates');
-{
-  assert(DEFAULT_COORDINATES.enabled === false && DEFAULT_COORDINATES.grid === true, 'coordinates default off with grid ready');
-  assert(DEFAULT_COORDINATES.cursor === false && DEFAULT_COORDINATES.step === null, 'cursor and manual step default off');
-  const sanitized = sanitizeCoordinates({ enabled: 1, grid: false, cursor: 1, step: -3, unitDisplay: 'furlong' });
-  assert(sanitized.enabled === true && sanitized.grid === false && sanitized.cursor === true, 'coordinate booleans sanitize');
-  assert(sanitized.step === null && sanitized.unitDisplay === 'auto', 'invalid step/unit display fall back safely');
-  assert(sanitizeCoordinates({}).grid === true, 'missing grid defaults on');
-
-  assert(PROJECTION_AXES.xy.horizontal.id === 'x' && PROJECTION_AXES.xy.vertical.id === 'y' && PROJECTION_AXES.xy.depth.id === 'z', 'XY axes map x/y/z');
-  assert(PROJECTION_AXES.xz.horizontal.id === 'x' && PROJECTION_AXES.xz.vertical.id === 'z' && PROJECTION_AXES.xz.depth.id === 'y', 'XZ axes map x/z/y');
-  assert(PROJECTION_AXES.yz.horizontal.id === 'y' && PROJECTION_AXES.yz.vertical.id === 'z' && PROJECTION_AXES.yz.depth.id === 'x', 'YZ axes map y/z/x');
-  assert(PROJECTION_AXES.yz.horizontal.sign === -1 && PROJECTION_AXES.yz.vertical.sign === -1, 'YZ records negative screen signs');
-  assert(isOrthographicProjection('xz') && !isOrthographicProjection('3d'), '3D is not an orthographic coordinate plane');
-
-  const worldScale = { world: 'mm', mmPerWorldUnit: 2.5, artboard: 'unitless', mmPerArtboardUnit: null };
-  const physicalInfo = coordinateUnitInfo(worldScale, 'auto');
-  assert(physicalInfo.factor === 2.5 && physicalInfo.suffix === 'mm', 'auto display uses millimetres when scaled');
-  assert(coordinateUnitInfo(worldScale, 'world').factor === 1, 'world display keeps canonical values');
-  assert(coordinateUnitInfo(createDefaultUnits(), 'physical').suffix === '', 'unitless display never claims millimetres');
-  assert(formatCoordinate(4, physicalInfo) === '10.0', 'coordinate formatting applies the display factor');
-  assert(formatCoordinateReadout({ x: 1, y: null, z: -2 }, { factor: 1, suffix: '' }) === 'x 1.00 · y — · z -2.00', 'cursor readout marks the dropped axis as unknown');
-
-  const transform = createViewTransform({
-    projection: 'xz',
-    frame: { mode: 'world', anchor: 'world-origin', scale: 2 },
-  });
-  const descriptor = buildViewportDescriptor({
-    projection: 'xz',
-    transform,
-    units: createDefaultUnits(),
-    panelSize: { w: 900, h: 900 },
-  });
-  assert(descriptor.orthographic === true && descriptor.scale === 2, 'descriptor exposes orthographic scale');
-  assert(descriptor.origin.x === 0 && descriptor.origin.y === 0, 'descriptor exposes the artboard origin');
-  assert(descriptor.ranges.horizontal[0] < 0 && descriptor.ranges.horizontal[1] > 0, 'descriptor exposes horizontal world range');
-  const inverse = worldFromArtboardPoint({ descriptor, point: { x: 100, y: -100 } });
-  assert(Math.abs(inverse.x - 50) < 1e-9 && Math.abs(inverse.z - 50) < 1e-9 && inverse.y === null, 'XZ inverse maps in-plane axes and leaves Y unknown');
-
-  const ticks = buildCoordinateTicks({ descriptor, step: 10, pixelsPerArtboardUnit: 1 });
-  assert(ticks.horizontal.ticks.some((tick) => tick.value === 0 && Math.abs(tick.position) < 1e-9), 'horizontal ticks include the origin');
-  assert(ticks.horizontal.ticks.some((tick) => tick.value === 10 && Math.abs(tick.position - 20) < 1e-9), 'horizontal ticks honor positive X');
-  assert(ticks.vertical.ticks.some((tick) => tick.value === 10 && Math.abs(tick.position + 20) < 1e-9), 'vertical ticks honor negative Z sign');
-  const autoTicks = buildCoordinateTicks({ descriptor, step: null, pixelsPerArtboardUnit: 2 });
-  assert(autoTicks.horizontal.step > 0 && Number.isFinite(autoTicks.horizontal.step), 'auto tick step is finite and positive');
-  assert(niceStep(90, 6) >= 10 && niceStep(90, 6) <= 20, 'nice step chooses a 1/2/5 interval');
-
-  const panels = quadPanelLayout(900, 900);
-  assert(panels.length === 4 && panels.map((panel) => panel.projection).join(',') === '3d,xy,xz,yz', 'quad layout keeps 3D/XY/XZ/YZ order');
-  const topLeft = panelAtPoint(panels, { x: -300, y: -300 });
-  assert(topLeft?.projection === '3d', 'quad hit testing finds the 3D panel');
-  const bottomRight = panelAtPoint(panels, { x: 300, y: 300 });
-  assert(bottomRight?.projection === 'yz', 'quad hit testing finds the YZ panel');
-  assert(panelAtPoint(panels, { x: 2000, y: 2000 }) === null, 'quad hit testing rejects points outside panels');
-  const local = localPointInPanel({ x: 300, y: 300 }, bottomRight);
-  assert(Math.abs(local.x - (300 - bottomRight.cx)) < 1e-9, 'local panel coordinates subtract the panel center');
-
-  const doc = createDocument('parametric-surface', {});
-  assert(JSON.stringify(doc.view.coordinates) === JSON.stringify(DEFAULT_COORDINATES), 'new documents carry default coordinate metadata');
-  const legacyRaw = JSON.parse(JSON.stringify(doc));
-  delete legacyRaw.view.coordinates;
-  assert(JSON.stringify(sanitizeDocument(legacyRaw).view.coordinates) === JSON.stringify(DEFAULT_COORDINATES), 'legacy documents sanitize to coordinates off');
-  doc.view.coordinates = sanitizeCoordinates({
-    enabled: true, grid: false, cursor: true, step: 12.5, unitDisplay: 'physical',
-  });
-  const roundTrip = sanitizeDocument(JSON.parse(JSON.stringify(doc)));
-  assert(roundTrip.view.coordinates.step === 12.5 && roundTrip.view.coordinates.unitDisplay === 'physical', 'coordinate settings round-trip');
-  const beforeGeometry = JSON.stringify(evaluateDocument(doc, { time: 0 }).geometry[0].grid.points);
-  doc.view.coordinates.enabled = false;
-  const afterGeometry = JSON.stringify(evaluateDocument(doc, { time: 0 }).geometry[0].grid.points);
-  assert(afterGeometry === beforeGeometry, 'coordinate settings never change geometry');
-  assert(createCoordinates({ extra: true }).enabled === false, 'createCoordinates keeps unknown fields out of the contract');
-}
-
 /* ——— 30g. look presets ——— */
 console.log('30g. look presets');
 {
@@ -4704,154 +4612,6 @@ console.log('37. surface picking');
   };
   assert(!validatePickResult(flatPick, hiddenEval), 'hidden layers invalidate a stored pick');
   assert(!validatePickResult({ ...flatPick, world: { ...flatPick.world, x: flatPick.world.x + 1 } }, flatEvaluation), 'tampered world points are rejected');
-}
-
-/* ——— 38. Surface seams ——— */
-console.log('38. surface seams');
-{
-  const makeSurface = ({
-    rows = 3,
-    cols = 3,
-    u = [0, 1],
-    v = [0, 1],
-    closedU = false,
-    closedV = false,
-    seamU = 'normal',
-    seamV = 'normal',
-    id = 'seam-surface',
-  } = {}) => createSurface({
-    id,
-    domain: { u, v, closedU, closedV, seamU, seamV },
-    grid: {
-      rows,
-      cols,
-      points: Array.from({ length: rows }, (_, ui) => (
-        Array.from({ length: cols }, (_, vi) => ({ x: ui, y: vi, z: ui + vi }))
-      )),
-    },
-    meta: {},
-  });
-  const transform = createViewTransform({
-    projection: 'xy',
-    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
-  });
-  const scene = {
-    transform,
-    layers: [{ id: 'seam-layer', transform }],
-    meta: {},
-  };
-  const evaluationFor = (surface) => {
-    const { mesh, mapping } = tessellateSurfaceWithMapping(surface);
-    return {
-      layers: [{
-        id: 'seam-layer',
-        name: surface.id,
-        visible: true,
-        meshes: [mesh],
-        surfaceMappings: [mapping],
-      }],
-    };
-  };
-  const kindsFor = (surface, sceneValue = scene) => {
-    const overlay = buildSeamOverlay({
-      evaluation: evaluationFor(surface),
-      scene: sceneValue,
-    });
-    return { overlay, kinds: new Set(overlay.edges.map((edge) => edge.kind)) };
-  };
-
-  const open = kindsFor(makeSurface());
-  assert(open.overlay.status === 'borders', 'open domain reports borders only');
-  for (const kind of ['border-u0', 'border-u1', 'border-v0', 'border-v1']) {
-    assert(open.kinds.has(kind), `open domain shows ${kind}`);
-  }
-  assert(![...open.kinds].some((kind) => kind.startsWith('seam-')), 'open domain has no seam');
-
-  const closedU = kindsFor(makeSurface({ closedU: true }));
-  assert(closedU.kinds.has('seam-u'), 'closed U shows a U seam');
-  assert(!closedU.kinds.has('border-u0') && !closedU.kinds.has('border-u1'), 'closed U does not duplicate U borders');
-  assert(closedU.kinds.has('border-v0') && closedU.kinds.has('border-v1'), 'closed U keeps open V borders');
-
-  const closedV = kindsFor(makeSurface({ closedV: true }));
-  assert(closedV.kinds.has('seam-v'), 'closed V shows a V seam');
-  assert(!closedV.kinds.has('border-v0') && !closedV.kinds.has('border-v1'), 'closed V does not duplicate V borders');
-
-  const closedBoth = kindsFor(makeSurface({ closedU: true, closedV: true }));
-  assert(closedBoth.kinds.has('seam-u') && closedBoth.kinds.has('seam-v'), 'closed both shows both seams');
-  assert(![...closedBoth.kinds].some((kind) => kind.startsWith('border-')), 'closed both has no open borders');
-
-  const reverseU = kindsFor(makeSurface({ closedU: true, seamU: 'reverse' }));
-  assert(reverseU.kinds.has('seam-u-twist') && !reverseU.kinds.has('seam-u'), 'reverse U is marked as a twist seam');
-  const reverseV = kindsFor(makeSurface({ closedV: true, seamV: 'reverse' }));
-  assert(reverseV.kinds.has('seam-v-twist') && !reverseV.kinds.has('seam-v'), 'reverse V is marked as a twist seam');
-  const bothTwist = kindsFor(makeSurface({ closedU: true, closedV: true, seamU: 'reverse', seamV: 'reverse' }));
-  assert(bothTwist.kinds.has('seam-u-twist') && bothTwist.kinds.has('seam-v-twist'), 'both reverse axes expose both twist seams');
-
-  const inverted = kindsFor(makeSurface({ u: [2.5, -1.5], v: [10, -2] }));
-  assert(inverted.overlay.status === 'borders', 'inverted open domains keep valid logical borders');
-  assert(inverted.kinds.has('border-u0') && inverted.kinds.has('border-u1'), 'inverted U preserves both logical borders');
-  assert(inverted.kinds.has('border-v0') && inverted.kinds.has('border-v1'), 'inverted V preserves both logical borders');
-
-  const noMapping = buildSeamOverlay({
-    evaluation: {
-      layers: [{
-        id: 'seam-layer',
-        visible: true,
-        meshes: [tessellateSurface(makeSurface())],
-        surfaceMappings: [],
-      }],
-    },
-    scene,
-  });
-  assert(noMapping.status === 'unavailable' && noMapping.edges.length === 0, 'missing mapping disables seam visualization');
-
-  const valid = evaluationFor(makeSurface({ closedU: true, seamU: 'reverse' }));
-  const validMapping = valid.layers[0].surfaceMappings[0];
-  const malformedMapping = {
-    ...validMapping,
-    faces: validMapping.faces.map((face, index) => (
-      index === 0 ? { ...face, uv: [{ u: NaN, v: 0 }, face.uv[1], face.uv[2]] } : face
-    )),
-  };
-  const malformed = buildSeamOverlay({
-    evaluation: {
-      layers: [{ ...valid.layers[0], surfaceMappings: [malformedMapping] }],
-    },
-    scene,
-  });
-  assert(malformed.status === 'partial', 'malformed mapping is marked partial when other faces remain trustworthy');
-  assert(malformed.edges.every((edge) => edge.points.every((point) => Number.isFinite(point.x))), 'malformed mapping never emits invalid edges');
-
-  const zeroSpan = buildSeamOverlay({
-    evaluation: evaluationFor(makeSurface({ u: [0, 0] })),
-    scene,
-  });
-  assert(zeroSpan.status === 'unavailable' && zeroSpan.edges.length === 0, 'zero-span domains cannot declare seams');
-
-  const perspective = createViewTransform({
-    projection: '3d',
-    camera: { yaw: -Math.PI / 6, pitch: Math.PI / 9, fov: 320 },
-    frame: { mode: 'world', anchor: 'world-origin', scale: 1 },
-  });
-  const perspectiveScene = { transform: perspective, layers: [{ id: 'seam-layer', transform: perspective }], meta: {} };
-  const projectedSeams = kindsFor(makeSurface({ closedU: true }), perspectiveScene);
-  assert(projectedSeams.overlay.status === 'declared' && projectedSeams.kinds.has('seam-u'), 'seams project in perspective');
-  assert(
-    projectedSeams.overlay.edges.every((edge) => edge.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))),
-    'projected seam endpoints stay finite',
-  );
-  const orthoSeams = kindsFor(makeSurface({ closedU: true }));
-  assert(
-    JSON.stringify(orthoSeams.overlay.edges[0].points) !== JSON.stringify(projectedSeams.overlay.edges[0].points),
-    'camera/projection changes replace seam artboard coordinates',
-  );
-
-  const before = JSON.stringify(valid);
-  buildSeamOverlay({ evaluation: valid, scene });
-  assert(JSON.stringify(valid) === before, 'seam overlay does not mutate evaluation or SurfaceMapping');
-
-  const empty = buildSeamOverlay({});
-  assert(empty.status === 'unavailable' && empty.edges.length === 0, 'missing evaluation yields no seam data');
 }
 
 /* ——— Snapshots ——— */

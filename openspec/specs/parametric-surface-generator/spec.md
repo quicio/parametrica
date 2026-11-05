@@ -1,7 +1,7 @@
 # parametric-surface-generator Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-parametric-surfaces. Update Purpose after archive.
+Generate world-space U/V surfaces from x(u,v), y(u,v) and z(u,v) expressions.
 ## Requirements
 ### Requirement: Parametric surface generator
 
@@ -80,4 +80,3 @@ The generator SHALL expose independent seam modes for closed U and V axes.
 - **WHEN** an existing document does not contain seam modes
 - **THEN** both seams resolve to `normal`
 - **AND** no document migration is required
-

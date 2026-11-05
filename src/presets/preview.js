@@ -10,8 +10,9 @@ import { evaluateDocument } from '../core/engine.js';
 import { curvesDataURL } from '../render/thumbnail.js';
 import { canonicalStringify, sha256Hex } from '../lab/hash.js';
 
-export const PREVIEW_VERSION = 3;
+export const PREVIEW_VERSION = 4;
 export const PREVIEW_SIZE = 96;
+export const START_WITH_PREVIEW_SIZE = 224;
 export const PREVIEW_MAX_CHARS = 24_000;
 
 const PREVIEW_PROFILE = {
@@ -48,21 +49,22 @@ function previewDocument(document) {
 }
 
 /** Stable cache key for a preset document at the current preview profile. */
-export function previewKey(document) {
-  return sha256Hex(`${PREVIEW_VERSION}:${canonicalStringify(previewDocument(document))}`);
+export function previewKey(document, { size = PREVIEW_SIZE } = {}) {
+  return sha256Hex(`${PREVIEW_VERSION}:${size}:${canonicalStringify(previewDocument(document))}`);
 }
 
 /**
  * Browser-only renderer. Returns a PNG data URL or null when the preset has no
  * drawable curves or evaluation fails.
  */
-export function renderPresetPreview(document) {
+export function renderPresetPreview(document, { size = PREVIEW_SIZE } = {}) {
   if (!document || typeof document !== 'object') return null;
   try {
     const evaluation = evaluateDocument(document, { time: 0, bypassCache: true });
     if (evaluation.errors?.length || !evaluation.curves?.length) return null;
     return curvesDataURL(evaluation.curves, {
       ...PREVIEW_PROFILE,
+      size,
       bounds: evaluation.bbox ?? null,
     });
   } catch {

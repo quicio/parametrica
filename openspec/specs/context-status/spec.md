@@ -1,7 +1,7 @@
 # context-status Specification
 
 ## Purpose
-TBD - created by archiving change lab-ui-clarity. Update Purpose after archive.
+Show the active layer, generator, visibility, operator count and projection in the panel status.
 ## Requirements
 ### Requirement: Active context
 
@@ -32,4 +32,3 @@ timeline tracks for the active layer.
 
 - **WHEN** the active layer has timeline tracks
 - **THEN** the status reports the track count
-

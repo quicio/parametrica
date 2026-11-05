@@ -1,7 +1,7 @@
 # operator-spaces Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Require operators to declare accepted and produced geometry and whether they operate in world or view space.
 ## Requirements
 ### Requirement: Operators declare geometry and space
 
@@ -122,4 +122,3 @@ render coordinates.
 - **WHEN** a Surface is transformed by a world operator
 - **THEN** its canonical world vertices change
 - **AND** camera yaw/pitch/fov do not affect the result
-

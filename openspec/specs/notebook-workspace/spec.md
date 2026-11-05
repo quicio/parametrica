@@ -1,7 +1,7 @@
 # notebook-workspace Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Keep notebook project and series selection in domain state rather than UI widgets.
 ## Requirements
 ### Requirement: Domain-owned notebook target
 
@@ -36,4 +36,3 @@ continue to pass explicit lineage.
 - **WHEN** Evolution keeps a child generation
 - **THEN** the explicit `parentId` and `parents` are preserved
 - **AND** the item displays `parent:` metadata
-

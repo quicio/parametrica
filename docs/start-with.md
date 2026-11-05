@@ -39,3 +39,11 @@ the current figure.
 - Enter/Space selects.
 - Escape cancels on a manual New document, or starts Parametric on first
   run.
+
+## Preview sizes
+
+Start With composition cards render at **224 px** so the Vortex Stack examples
+remain legible. Preset browser previews stay at **96 px**. `previewKey()` includes
+the requested size, and preview caches are size-aware so the two surfaces cannot
+reuse each other's bitmap. A failed preview leaves the card selectable and
+falls back to its placeholder.

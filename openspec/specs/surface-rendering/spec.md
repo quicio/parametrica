@@ -1,7 +1,7 @@
 # surface-rendering Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-parametric-surfaces. Update Purpose after archive.
+Render projected Surface and Mesh triangles through RenderScene while documenting painter-order limitations.
 ## Requirements
 ### Requirement: RenderScene triangle items
 
@@ -52,4 +52,3 @@ normals.
 - **WHEN** a surface pass draws
 - **THEN** it receives already-projected triangle items
 - **AND** it does not read the document or generator params
-

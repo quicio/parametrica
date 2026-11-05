@@ -1,7 +1,7 @@
 # surface-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-parametric-surfaces. Update Purpose after archive.
+Accept Surface and Mesh geometry through the pipeline without regressing existing curve behavior.
 ## Requirements
 ### Requirement: Surface pipeline stage
 
@@ -89,4 +89,3 @@ Surface documents SHALL execute declared world operators before tessellation.
 - **WHEN** an operator changes grid topology or sample counts
 - **THEN** SurfaceMapping and downstream mesh caches are invalidated
 - **AND** the new mapping is derived from the resulting Surface
-

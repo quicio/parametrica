@@ -54,3 +54,38 @@ Examples of reasons:
 
 The goal is to never present an active-looking control that cannot affect the
 current layer.
+
+## User Looks
+
+**Looks → My Looks** saves the current view-level appearance under a local
+name. Stored fields are limited to:
+
+- `modes`
+- `overlays`
+- `colorMetric`
+- `guides`
+- `passOpacity`
+
+Geometry, generator parameters, layer style, units, camera, artboard and
+fabrication state are never stored. Built-in Look names are reserved. Applying
+a user Look writes only those view fields, so geometry and exports remain
+otherwise untouched. Storage is versioned (`parametrica.looks.v1`); corrupt
+storage is ignored rather than breaking the Look panel. Overwrite and delete
+require confirmation.
+
+## Per-pass appearance
+
+`view.passStyle` optionally overrides the color and width of individual passes:
+
+```js
+{
+  stroke: { color: '#ff0000', width: 3 },
+  points: { color: '#00ff00' },
+  'surface-fill': { color: '#ffffff' }
+}
+```
+
+Only supported keys are sanitized and applied. Unsupported keys are ignored.
+Defaults inherit the layer style, so documents without `passStyle` render and
+export unchanged. The overrides apply to Canvas and SVG export but not to STL,
+and they do not change pass geometry.

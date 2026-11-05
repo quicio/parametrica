@@ -1,7 +1,7 @@
 # bundle-performance Specification
 
 ## Purpose
-TBD - created by archiving change tech-debt-hardening. Update Purpose after archive.
+Keep the application shell responsive by loading p5 and other heavy dependencies after first paint.
 ## Requirements
 ### Requirement: Lazy renderer
 

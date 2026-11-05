@@ -1,20 +1,20 @@
 ## 1. Model and storage
 
-- [ ] 1.1 Add versioned user-look storage and sanitization.
-- [ ] 1.2 Add save/apply/overwrite/delete operations.
-- [ ] 1.3 Reserve built-in names and handle corrupt storage.
+- [x] 1.1 Add versioned user-look storage and sanitization.
+- [x] 1.2 Add save/apply/overwrite/delete operations.
+- [x] 1.3 Reserve built-in names and handle corrupt storage.
 
 ## 2. UI
 
-- [ ] 2.1 Add name/save controls and user-look list.
-- [ ] 2.2 Show confirmations for overwrite/delete.
-- [ ] 2.3 Keep built-ins immutable and N/A behavior intact.
+- [x] 2.1 Add name/save controls and user-look list.
+- [x] 2.2 Show confirmations for overwrite/delete.
+- [x] 2.3 Keep built-ins immutable and N/A behavior intact.
   - Verify: unit storage/operations and e2e save/apply/delete.
 
 ## 3. Acceptance
 
-- [ ] 3.1 Document user-look scope and limitations.
-- [ ] 3.2 Run `npm run check`, `npm run test:e2e`, strict OpenSpec validation
+- [x] 3.1 Document user-look scope and limitations.
+- [x] 3.2 Run `npm run check`, `npm run test:e2e`, strict OpenSpec validation
       and archive.
 
 ## Acceptance criteria

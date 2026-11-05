@@ -1,7 +1,7 @@
 # fabrication-contracts Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Validate mesh and solid geometry before fabrication consumers may render or export it.
 ## Requirements
 ### Requirement: Mesh validation
 
@@ -141,4 +141,3 @@ Fabricate SHALL keep exporting a single body from the active layer.
 - **WHEN** the user expects the full composition
 - **THEN** the UI and documentation state that multi-body and 3MF are not
   available in this phase
-

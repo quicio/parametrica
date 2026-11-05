@@ -1,7 +1,7 @@
 # parameter-registry Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Describe parameter types and their editing and sanitization rules in one registry.
 ## Requirements
 ### Requirement: Registered parameter types
 
@@ -72,4 +72,3 @@ Parameter schemas SHALL declare whether a control is essential or advanced.
 - **THEN** it appears inside the persisted Advanced group
 - **AND** all-advanced generators still show the toggle with controls visible
   by default
-

@@ -1,7 +1,7 @@
 # world-view-separation Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Require spatial generators to emit world coordinates without knowing the camera or render target.
 ## Requirements
 ### Requirement: Generators produce world geometry
 
@@ -64,4 +64,3 @@ render-space geometry.
 - **WHEN** the fit size or artboard changes
 - **THEN** the rendered framing changes
 - **AND** world geometry and world metrics remain unchanged
-

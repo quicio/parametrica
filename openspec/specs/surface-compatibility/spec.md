@@ -1,7 +1,7 @@
 # surface-compatibility Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-parametric-surfaces. Update Purpose after archive.
+Keep existing curve documents and presets valid when surfaces are added.
 ## Requirements
 ### Requirement: Curve compatibility
 
@@ -50,4 +50,3 @@ Surface geometry SHALL be derived and SHALL NOT be persisted.
 - **WHEN** a surface creation is saved as a checkpoint
 - **THEN** the document is stored
 - **AND** the thumbnail is generated from the rendered surface
-

@@ -1,7 +1,7 @@
 # stage-capabilities Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Declare generator capabilities so core and shared UI can adapt without generator-id checks.
 ## Requirements
 ### Requirement: Declarative stage capabilities
 
@@ -37,4 +37,3 @@ such as `helix` or `parametric-3d`.
 - **WHEN** a new generator declares `spatial: true`
 - **THEN** projection and camera behavior work without editing `App`,
   `Controls`, `P5Renderer` or `Exporter`
-

@@ -1,7 +1,7 @@
 # render-scene-separation Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Define RenderScene as the renderer input prepared independently from the document and App.
 ## Requirements
 ### Requirement: RenderScene boundary
 
@@ -71,4 +71,3 @@ Render passes SHALL consume RenderScene data.
 - **WHEN** a pass depends on a generator-specific feature
 - **THEN** that dependency is declared through pass metadata or capabilities
 - **AND** not through hardcoded generator id checks
-

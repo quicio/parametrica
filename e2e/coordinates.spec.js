@@ -149,3 +149,110 @@ test('Coordinates section shows orthographic ticks, cursor values and stays out 
   expect(referenceState).toEqual({ enabled: true, ground: true });
   expect(await page.evaluate(() => window.__parametrica.evaluation.worldBBox)).toEqual(configured.bbox);
 });
+
+test('3D coordinate readout uses surface hits only and pins/releases explicitly', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.applyPreset('Torus');
+    app.document.view.projection = '3d';
+    app.document.view.layout = 'single';
+    app.document.view.coordinates.cursor = true;
+    app.rebuild();
+  });
+  await page.waitForTimeout(500);
+
+  const hit = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const rect = app.renderer.artboardRect();
+    const points = [];
+    for (let gy = 1; gy < 10; gy++) {
+      for (let gx = 1; gx < 10; gx++) {
+        points.push({
+          x: rect.x + (rect.w * gx) / 10,
+          y: rect.y + (rect.h * gy) / 10,
+        });
+      }
+    }
+    for (const point of points) {
+      const readout = app.renderer.coordinateReadoutAtCanvas(point.x, point.y);
+      if (readout?.world) {
+        return {
+          point,
+          world: readout.world,
+          text: readout.text,
+          projection: readout.projection,
+          sourceLayerId: readout.sourceLayerId,
+          layerId: readout.layerId,
+        };
+      }
+    }
+    return null;
+  });
+  expect(hit).not.toBeNull();
+  expect(hit.projection).toBe('3d');
+  expect(Number.isFinite(hit.world.x)).toBe(true);
+  expect(Number.isFinite(hit.world.y)).toBe(true);
+  expect(Number.isFinite(hit.world.z)).toBe(true);
+  expect(hit.text).toContain('z');
+  expect(hit.layerId).toBeTruthy();
+
+  const empty = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const rect = app.renderer.artboardRect();
+    return app.renderer.coordinateReadoutAtCanvas(rect.x + 2, rect.y + 2);
+  });
+  expect(empty).toBeNull();
+
+  const coordinates = await openSection(page, 'Coordinates');
+  const pin = coordinates.locator('.coordinates-pin');
+  const release = coordinates.locator('.coordinates-release');
+  const status = coordinates.locator('.coordinates-pin-status');
+  await expect(pin).toBeEnabled();
+  await expect(release).toBeDisabled();
+
+  await page.mouse.move(hit.point.x, hit.point.y);
+  await page.waitForTimeout(250);
+  await pin.click();
+  await page.waitForTimeout(350);
+  await expect(release).toBeEnabled();
+  await expect(status).toContainText('Pinned');
+  const pinned = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const readout = app.renderer.coordinatePinReadout();
+    return {
+      world: readout?.world ?? null,
+      text: readout?.text ?? '',
+      hasPin: app.renderer.hasCoordinatePin(),
+    };
+  });
+  expect(pinned.hasPin).toBe(true);
+  expect(pinned.world).toEqual(hit.world);
+
+  const pinnedPng = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  const svg = await page.evaluate(() => window.__parametrica.exporter.buildSVGFromCurrent().svg);
+  expect(svg).not.toContain('data-coordinate');
+  expect(svg).not.toContain(hit.text);
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.projection = 'xz';
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const invalidated = await page.evaluate(() => ({
+    hasPin: window.__parametrica.renderer.hasCoordinatePin(),
+    readout: window.__parametrica.renderer.coordinatePinReadout(),
+  }));
+  expect(invalidated.hasPin).toBe(false);
+  expect(invalidated.readout).toBeNull();
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.projection = '3d';
+    app.rebuild();
+  });
+  await page.waitForTimeout(300);
+  const withoutPin = await page.evaluate(() => window.__parametrica.renderer.artboardDataURL());
+  expect(pinnedPng).toBe(withoutPin);
+});

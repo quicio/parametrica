@@ -1,7 +1,7 @@
 # geometry-contracts Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Define the discriminated geometry data kinds and constructors shared by generators, operators, rendering and export.
 ## Requirements
 ### Requirement: Discriminated geometry contracts
 
@@ -71,4 +71,3 @@ The contracts SHALL define explicit conversions between geometry kinds.
 - **THEN** conversion requires an effective topological validation
 - **AND** a mesh flag alone is insufficient
 - **AND** only a validated mesh can become a Solid with that mesh as boundary
-

@@ -10,45 +10,25 @@
 import GUI from 'lil-gui';
 import { Generators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
-import { TYPE } from '../core/schema.js';
-import { OVERLAYS } from '../viz/overlays.js';
-import { ExpressionField } from './widgets/ExpressionField.js';
-import { HarmonicsEditor } from './widgets/HarmonicsEditor.js';
-import { OperatorStack } from './widgets/OperatorStack.js';
-import { bindStageParams, bindStageMods } from './params/StageEditor.js';
-import { applyHardBounds } from './params/ParamRegistry.js';
-import { normalizeModes, toggleMode } from './widgets/modeToggles.js';
-import { LabPanel } from './widgets/LabPanel.js';
-import { NotebookPanel } from './widgets/NotebookPanel.js';
-import { TimelinePanel } from './widgets/TimelinePanel.js';
-import { AdvisorPanel } from './widgets/AdvisorPanel.js';
-import { ImagePanel } from './widgets/ImagePanel.js';
-import { EvolutionPanel } from './widgets/EvolutionPanel.js';
-import { ExplorePanel } from './widgets/ExplorePanel.js';
-import { PresetPanel } from './widgets/PresetPanel.js';
-import { ARTBOARD_PRESETS, PaletteStore } from '../render/palettes.js';
+import { normalizeModes } from './widgets/modeToggles.js';
+import { PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
-import { LOOK_PRESETS, lookPresetMatchesView } from '../render/lookPresets.js';
+import { lookPresetMatchesView } from '../render/lookPresets.js';
 import {
-  MAX_INSTANCE_LAYERS,
-  MAX_LAYERS,
-  canAddInstanceLayer,
-  countInstanceLayers,
-  instanceSourceCandidates,
   isInstanceLayer,
   sourceGeneratorFor,
   sourceLayerFor,
 } from '../core/layers.js';
-import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../core/fillGradient.js';
 import {
   PHYSICAL_UNIT_SYSTEMS,
-  artboardToMillimetres,
-  bboxToMillimetres,
   formatPhysicalLength,
   millimetresPerUnit,
-  validateUnits,
 } from '../core/units.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
+import { buildLayersSection, buildInstanceSection, buildGeneratorSection, buildParamsSection, buildEquationsSection, buildHarmonicsSection, buildOperatorsSection } from './sections/formSections.js';
+import { buildLooksSection, buildCameraSection, buildCanvasSection, buildCoordinatesSection, buildUnitsSection } from './sections/lookSections.js';
+import { buildFabricateSection } from './sections/fabricateSections.js';
+import { buildStyleSection, buildRenderSection, buildOverlaysSection, buildImageSection, buildAnimationSection, buildTimelineSection, buildMutationSection, buildAnalysisSection, buildNotebookSection, buildAdvisorSection, buildExploreSection, buildEvolutionSection, buildPresetsSection, buildExportSection } from './sections/keepSections.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
 const DEFAULT_OPEN = new Set(['generator', 'parameters']);
@@ -390,128 +370,7 @@ export class Controls {
 
   /* ———————— sections ———————— */
 
-  buildLayersSection() {
-    const body = this.section('Layers', { id: 'layers', mode: 'form' });
-    const layers = this.app.document.layers ?? [];
-    const bar = document.createElement('div');
-    bar.className = 'layers-bar';
-    const newDocument = document.createElement('button');
-    newDocument.className = 'layer-add layer-new-document';
-    newDocument.textContent = '+ NEW DOCUMENT';
-    newDocument.addEventListener('click', () => this.app.newDocument());
-    bar.appendChild(newDocument);
-    const add = document.createElement('button');
-    add.className = 'layer-add layer-add-generator';
-    add.textContent = '+ ADD LAYER';
-    add.title = 'Add a new layer';
-    add.addEventListener('click', () => this.app.addLayer('parametric'));
-    bar.appendChild(add);
-
-    const candidates = instanceSourceCandidates(this.app.document).filter(({ layer }) => (
-      Generators.has(layer.generator?.id)
-      && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
-    ));
-    const sourceSelect = document.createElement('select');
-    sourceSelect.className = 'artboard-input instance-source-picker';
-    sourceSelect.title = 'Generator layer used as instance source';
-    for (const { layer: candidate } of candidates) {
-      const option = document.createElement('option');
-      option.value = candidate.id;
-      option.textContent = candidate.name;
-      sourceSelect.appendChild(option);
-    }
-    const addInstance = document.createElement('button');
-    addInstance.className = 'layer-add layer-add-instance';
-    addInstance.textContent = '+ INSTANCE';
-    const instances = countInstanceLayers(this.app.document);
-    const canAdd = canAddInstanceLayer(this.app.document);
-    addInstance.disabled = !canAdd || !candidates.length;
-    addInstance.title = !candidates.length
-      ? 'Add a Surface generator layer first'
-      : instances >= MAX_INSTANCE_LAYERS
-        ? `Instance limit reached (${MAX_INSTANCE_LAYERS})`
-        : this.app.document.layers.length >= MAX_LAYERS
-          ? `Layer limit reached (${MAX_LAYERS})`
-          : 'Add an instance of the selected generator layer';
-    addInstance.addEventListener('click', () => {
-      this.app.addInstanceLayer(sourceSelect.value);
-    });
-    if (candidates.length) bar.append(sourceSelect);
-    bar.appendChild(addInstance);
-    body.appendChild(bar);
-    if (instances > MAX_INSTANCE_LAYERS) {
-      body.appendChild(this.panelHint(
-        `Instance limit exceeded (${instances}/${MAX_INSTANCE_LAYERS}). Remove instances before adding more.`,
-      ));
-    }
-
-    const list = document.createElement('div');
-    list.className = 'layers-list';
-    layers.forEach((layer, index) => {
-      const row = document.createElement('div');
-      row.className = 'layer-row';
-      row.classList.toggle('active', index === this.app.document.activeLayer);
-      row.classList.toggle('hidden', layer.visible === false);
-      row.classList.toggle('locked', Boolean(layer.locked));
-
-      const visibility = document.createElement('button');
-      visibility.className = 'layer-icon';
-      visibility.textContent = layer.visible === false ? '○' : '●';
-      visibility.title = layer.visible === false ? 'Show layer' : 'Hide layer';
-      visibility.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const next = layer.visible === false;
-        this.app.setLayerVisible(index, next);
-        visibility.textContent = next ? '●' : '○';
-        row.classList.toggle('hidden', !next);
-      });
-
-      const lock = document.createElement('button');
-      lock.className = 'layer-icon';
-      lock.textContent = layer.locked ? 'L' : '·';
-      lock.title = layer.locked ? 'Unlock layer content' : 'Lock layer content';
-      lock.setAttribute('aria-label', lock.title);
-      lock.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const next = !layer.locked;
-        this.app.setLayerLocked(index, next);
-      });
-
-      const name = document.createElement('span');
-      name.className = 'layer-name';
-      name.textContent = layer.name;
-      name.title = layer.name;
-
-      const isInstance = isInstanceLayer(layer);
-      const badge = isInstance ? document.createElement('span') : null;
-      if (badge) {
-        badge.className = 'layer-kind-badge';
-        badge.textContent = 'INSTANCE';
-        row.classList.add('instance');
-      }
-      const source = isInstance ? sourceLayerFor(this.app.document, layer) : null;
-      const sourceLabel = isInstance ? document.createElement('span') : null;
-      if (sourceLabel) {
-        sourceLabel.className = 'layer-source-label';
-        sourceLabel.textContent = source ? `↳ ${source.name}` : '↳ missing source';
-        sourceLabel.title = source ? `Source: ${source.name}` : 'Source layer is missing';
-      }
-
-      const rename = layerButton('✎', 'Rename layer', () => this.renameLayerPrompt(index));
-      const up = layerButton('↑', 'Move layer up', () => this.app.moveLayer(index, -1), index === 0);
-      const down = layerButton('↓', 'Move layer down', () => this.app.moveLayer(index, 1), index === layers.length - 1);
-      const duplicate = layerButton('⧉', 'Duplicate layer', () => this.app.duplicateLayer(index));
-      const remove = layerButton('×', 'Remove layer', () => this.app.removeLayer(index), layers.length <= 1);
-
-      if (badge) row.append(visibility, lock, badge, name, sourceLabel, rename, up, down, duplicate, remove);
-      else row.append(visibility, lock, name, rename, up, down, duplicate, remove);
-      row.addEventListener('click', () => {
-        if (index !== this.app.document.activeLayer) this.app.setActiveLayer(index);
-      });
-      list.appendChild(row);
-    });
-    body.appendChild(list);
-  }
+  buildLayersSection() { buildLayersSection(this); }
 
   async renameLayerPrompt(index) {
     const layer = this.app.document.layers?.[index];
@@ -526,205 +385,17 @@ export class Controls {
     this.app.renameLayer(index, name);
   }
 
-  buildInstanceSection() {
-    const layer = this.app.activeLayer;
-    if (!isInstanceLayer(layer)) return;
-    const body = this.section('Instance', { id: 'instance', mode: 'form' });
-    const source = sourceLayerFor(this.app.document, layer);
-    const generator = sourceGeneratorFor(this.app.document, layer);
-    body.appendChild(this.panelHint(
-      'Active instance · source parameters are read-only · transforms apply before tessellation.',
-    ));
-    if (!source) {
-      body.appendChild(this.panelHint('Source layer is missing. Select another generator layer.'));
-    }
+  buildInstanceSection() { buildInstanceSection(this); }
 
-    const grid = document.createElement('div');
-    grid.className = 'artboard-grid instance-grid';
-    const row = (label, control) => {
-      const el = document.createElement('label');
-      el.className = 'artboard-row';
-      const name = document.createElement('span');
-      name.className = 'artboard-label';
-      name.textContent = label;
-      el.append(name, control);
-      grid.appendChild(el);
-      return el;
-    };
+  buildGeneratorSection() { buildGeneratorSection(this); }
 
-    const candidates = instanceSourceCandidates(this.app.document).filter(({ layer }) => (
-      Generators.has(layer.generator?.id)
-      && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
-    ));
-    const sourceSelect = document.createElement('select');
-    sourceSelect.className = 'artboard-input instance-source-select';
-    for (const { layer: candidate } of candidates) {
-      const option = document.createElement('option');
-      option.value = candidate.id;
-      option.textContent = candidate.name;
-      sourceSelect.appendChild(option);
-    }
-    if (source?.id) sourceSelect.value = source.id;
-    sourceSelect.disabled = Boolean(layer.locked) || !candidates.length;
-    sourceSelect.addEventListener('change', () => {
-      this.app.setInstanceSource(this.app.document.activeLayer, sourceSelect.value);
-    });
-    row('Source', sourceSelect);
+  buildParamsSection() { buildParamsSection(this); }
 
-    const selectSource = document.createElement('button');
-    selectSource.type = 'button';
-    selectSource.className = 'lab-button instance-select-source';
-    selectSource.textContent = 'SELECT SOURCE LAYER';
-    selectSource.disabled = !source;
-    selectSource.addEventListener('click', () => {
-      const index = this.app.document.layers.findIndex((entry) => entry.id === source?.id);
-      if (index >= 0) this.app.setActiveLayer(index);
-    });
-    grid.appendChild(selectSource);
+  buildEquationsSection() { buildEquationsSection(this); }
 
-    if (generator && Generators.has(generator.id)) {
-      const definition = Generators.get(generator.id);
-      const params = document.createElement('div');
-      params.className = 'instance-source-params';
-      for (const [key, schema] of Object.entries(definition.params)) {
-        if (schema.type === TYPE.SOURCE) continue;
-        const value = source?.generator?.params?.[key];
-        if (value === undefined || value === null || value === '') continue;
-        const paramRow = document.createElement('div');
-        paramRow.className = 'instance-param-row';
-        const label = document.createElement('span');
-        label.className = 'instance-param-label';
-        label.textContent = schema.label ?? key;
-        const display = document.createElement('span');
-        display.className = 'instance-param-value';
-        display.textContent = formatInstanceParam(value);
-        paramRow.append(label, display);
-        params.appendChild(paramRow);
-      }
-      if (params.childElementCount) grid.appendChild(params);
-    }
+  buildHarmonicsSection() { buildHarmonicsSection(this); }
 
-    grid.appendChild(this.panelHint('Instance operators: Translate, Rotate, Scale only.'));
-    body.appendChild(grid);
-  }
-
-  buildGeneratorSection() {
-    if (this.app.activeLayerIsInstance()) return;
-    const gui = this.makeGui(this.section('Generator', { id: 'generator', mode: 'form' }));
-    const options = {};
-    for (const def of Generators.list()) options[def.name] = def.id;
-    const proxy = { id: this.app.document.generator.id };
-    const control = gui.add(proxy, 'id', options)
-      .name('Mathematical Model')
-      .onChange((id) => this.app.setGenerator(id));
-    if (this.app.activeLayerLocked) control.disable();
-  }
-
-  buildParamsSection() {
-    if (this.app.activeLayerIsInstance()) return;
-    const body = this.section('Parameters', { id: 'parameters', mode: 'form' });
-    const gen = Generators.get(this.app.document.generator.id);
-    const stage = this.app.document.generator;
-    const plain = Object.entries(gen.params).filter(([, schema]) =>
-      [TYPE.NUMBER, TYPE.BOOLEAN, TYPE.SELECT].includes(schema.type));
-    if (!plain.length) return;
-    const numericSchema = Object.fromEntries(
-      Object.entries(gen.params).filter(([, schema]) => schema.type === TYPE.NUMBER),
-    );
-
-    const essential = [];
-    const advanced = [];
-    for (const entry of plain) {
-      if (isAdvancedParam(entry[1])) advanced.push(entry);
-      else essential.push(entry);
-    }
-
-    if (essential.length) {
-      const essentialGui = this.makeGui(body);
-      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
-    }
-
-    if (advanced.length) {
-      const toggle = document.createElement('button');
-      toggle.type = 'button';
-      toggle.className = 'advanced-toggle';
-      const wrap = document.createElement('div');
-      wrap.className = 'advanced-params';
-      const advancedGui = this.makeGui(wrap);
-      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
-      body.append(toggle, wrap);
-      this.advancedToggle = toggle;
-
-      const apply = (open, persist = true) => {
-        wrap.hidden = !open;
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = `${open ? '▾' : '▸'} Advanced parameters (${advanced.length})`;
-        if (persist) {
-          this.uiState.advancedParams = open;
-          this.saveUiState();
-        }
-      };
-      toggle.addEventListener('click', () => {
-        apply(wrap.hidden);
-      });
-      // When every control is advanced, open the group so the panel is
-      // not an empty section with a single toggle. Do not persist this
-      // automatic default into other generators.
-      apply(essential.length === 0 ? true : Boolean(this.uiState.advancedParams), essential.length !== 0);
-    }
-
-    const modsGui = this.makeGui(body);
-    bindStageMods(modsGui, numericSchema, stage, () => this.app.rebuild(), { disabled: this.app.activeLayerLocked });
-  }
-
-  buildEquationsSection() {
-    if (this.app.activeLayerIsInstance()) return;
-    const gen = Generators.get(this.app.document.generator.id);
-    const exprEntries = Object.entries(gen.params).filter(([, s]) =>
-      [TYPE.EXPRESSION, TYPE.SOURCE].includes(s.type));
-    if (!exprEntries.length) return;
-
-    const body = this.section('Equations', { id: 'equations', mode: 'form' });
-    const stage = this.app.document.generator;
-    for (const [key, s] of exprEntries) {
-      const field = new ExpressionField({
-        label: s.label ?? key,
-        multiline: s.type === TYPE.SOURCE,
-        doc: s.doc ?? '',
-        get: () => stage.params[key],
-        set: (v) => {
-          stage.params[key] = v;
-          this.app.rebuild();
-        },
-      });
-      body.appendChild(field.el);
-      if (this.app.activeLayerLocked) field.setDisabled(true);
-      this.expressionFields.set(key, field);
-    }
-  }
-
-  buildHarmonicsSection() {
-    if (this.app.activeLayerIsInstance()) return;
-    const gen = Generators.get(this.app.document.generator.id);
-    const hasHarmonics = Object.keys(gen.params).some((k) => k === 'harmonicsX' || k === 'harmonicsY');
-    if (!hasHarmonics) return;
-    const body = this.section('Harmonics', { id: 'harmonics', mode: 'form' });
-    this.harmonicsEditor = new HarmonicsEditor({
-      getRows: (axis) => this.app.document.generator.params[axis] ?? [],
-      onChange: (axis, rows) => {
-        this.app.document.generator.params[axis] = rows;
-        this.app.rebuild();
-      },
-    });
-    body.appendChild(this.harmonicsEditor.el);
-    if (this.app.activeLayerLocked) this.harmonicsEditor.setDisabled(true);
-  }
-
-  buildOperatorsSection() {
-    const body = this.section('Operators', { id: 'operators', mode: 'form' });
-    this.operatorStack = new OperatorStack(this.app);
-    body.appendChild(this.operatorStack.el);
-  }
+  buildOperatorsSection() { buildOperatorsSection(this); }
 
   panelHint(text) {
     const el = document.createElement('div');
@@ -760,42 +431,50 @@ export class Controls {
     return supportsSpatial(this.activeGeneratorDefinition());
   }
 
-  buildLooksSection() {
-    const body = this.section('Looks', { id: 'looks', mode: 'look' });
-    body.appendChild(this.panelHint(
-      'View recipes · passes, overlays, color metric and guides only. Geometry and style are untouched.',
-    ));
-    const grid = document.createElement('div');
-    grid.className = 'look-preset-grid';
-    this.lookPresetButtons = new Map();
-    for (const preset of LOOK_PRESETS) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'look-preset';
-      button.dataset.preset = preset.id;
-      const name = document.createElement('span');
-      name.className = 'look-preset-name';
-      name.textContent = preset.name;
-      const description = document.createElement('span');
-      description.className = 'look-preset-desc';
-      description.textContent = preset.description;
-      button.append(name, description);
-      button.addEventListener('click', () => {
-        if (this.app.applyLookPreset(preset.id)) this.refreshLookPresets();
-      });
-      grid.appendChild(button);
-      this.lookPresetButtons.set(preset.id, { button, preset });
+  buildLooksSection() { buildLooksSection(this); }
+
+  refreshUserLooks() {
+    if (!this.userLookList) return;
+    const looks = this.app.lookStore?.list?.() ?? [];
+    this.userLookList.replaceChildren();
+    if (!looks.length) {
+      const empty = this.panelHint('No saved looks yet. Save the current appearance above.');
+      empty.classList.add('user-look-empty');
+      this.userLookList.appendChild(empty);
+      return;
     }
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'lab-button look-preset-reset';
-    reset.textContent = 'RESET LOOK';
-    reset.title = 'Apply the Line preset and clear diagnostic overlays';
-    reset.addEventListener('click', () => {
-      if (this.app.applyLookPreset('line')) this.refreshLookPresets();
-    });
-    body.append(grid, reset);
-    this.refreshLookPresets();
+    for (const look of looks) {
+      const row = document.createElement('div');
+      row.className = 'user-look-item';
+      const name = document.createElement('span');
+      name.className = 'user-look-item-name';
+      name.textContent = look.name;
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.className = 'lab-button user-look-apply';
+      apply.textContent = 'APPLY';
+      apply.addEventListener('click', () => {
+        if (this.app.applyUserLook(look.id)) {
+          this.refreshLookPresets();
+          this.refreshUserLooks();
+        }
+      });
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'lab-button user-look-delete';
+      remove.textContent = 'DELETE';
+      remove.addEventListener('click', async () => {
+        const ok = await this.app.dialogs.confirm({
+          title: 'Delete look?',
+          message: `Remove “${look.name}” from this workspace?`,
+          confirmText: 'Delete',
+          cancelText: 'Keep',
+        });
+        if (ok) this.app.deleteUserLook(look.id);
+      });
+      row.append(name, apply, remove);
+      this.userLookList.appendChild(row);
+    }
   }
 
   refreshLookPresets() {
@@ -810,607 +489,25 @@ export class Controls {
     }
   }
 
-  buildCameraSection() {
-    const body = this.section('Camera', { id: 'camera', mode: 'look' });
-    const view = this.app.document.view;
-    const generator = this.activeGeneratorDefinition();
-    const canProject = Boolean(generator && supportsSpatial(generator));
-    if (!canProject && view.projection !== '3d') view.projection = '3d';
-    view.projection ??= '3d';
-    view.layout ??= 'single';
-    if (!canProject) view.layout = 'single';
+  buildCameraSection() { buildCameraSection(this); }
 
-    body.appendChild(this.panelHint(
-      canProject
-        ? 'Global viewport · projection applies to all layers.'
-        : 'Global viewport · orthographic views require a spatial active layer; projection applies globally.',
-    ));
+  buildCanvasSection() { buildCanvasSection(this); }
 
-    const gui = this.makeGui(body);
-    const resetCamera = document.createElement('button');
-    resetCamera.className = 'lab-button camera-reset';
-    resetCamera.textContent = 'Reset camera';
-    resetCamera.addEventListener('click', () => this.app.resetCamera());
-    const syncReset = () => {
-      const available = canProject && view.projection === '3d';
-      resetCamera.disabled = !available;
-      resetCamera.title = available
-        ? 'Reset yaw, pitch and FOV to defaults'
-        : 'Camera reset is available in the 3D camera view';
-    };
+  buildCoordinatesSection() { buildCoordinatesSection(this); }
 
-    const projection = gui
-      .add(view, 'projection', {
-        '3D camera': '3d',
-        'XY · Planta': 'xy',
-        'XZ · Alzado': 'xz',
-        'YZ · Perfil': 'yz',
-      })
-      .name('Projection')
-      .onChange(() => {
-        this.app.rebuild();
-        syncReset();
-      });
-    projection.domElement.classList.add('view-projection-row');
-    projection.$widget?.querySelector?.('select')?.classList.add('view-projection');
-    if (!canProject) {
-      projection.disable();
-      projection.domElement.title = 'Orthographic views require a spatial active layer';
-    }
-    const layout = gui.add(view, 'layout', {
-      Single: 'single',
-      Quad: 'quad',
-    }).name('Layout').onChange(() => this.app.rebuild());
-    layout.domElement.title = 'Quad view arranges 3D + XY/XZ/YZ. SVG and plotter exports use the active projection.';
-    if (!canProject) layout.disable();
-    gui.add(view, 'guides').name('CAD Guides').onChange(() => this.app.rebuild());
-    body.appendChild(resetCamera);
-    syncReset();
-  }
-
-  buildCanvasSection() {
-    const body = this.section('Canvas', { id: 'canvas', mode: 'look' });
-    const view = this.app.document.view;
-    const ab = view.artboard;
-    const surfaceAvailable = this.activeLayerHasSurface();
-    body.appendChild(this.panelHint('Global canvas · applied to the whole document.'));
-    const grid = document.createElement('div');
-    grid.className = 'artboard-grid';
-
-    const row = (label, control) => {
-      const el = document.createElement('label');
-      el.className = 'artboard-row';
-      const name = document.createElement('span');
-      name.className = 'artboard-label';
-      name.textContent = label;
-      el.append(name, control);
-      grid.appendChild(el);
-      return el;
-    };
-    const number = (value, min, max, step, apply) => {
-      const input = document.createElement('input');
-      input.className = 'artboard-input';
-      input.type = 'number';
-      input.min = String(min);
-      input.max = String(max);
-      input.step = String(step);
-      input.value = String(value);
-      input.addEventListener('change', () => {
-        const n = Math.min(max, Math.max(min, Number(input.value) || min));
-        input.value = String(n);
-        apply(n);
-        rebuild();
-      });
-      return input;
-    };
-    const color = (value, apply) => {
-      const input = document.createElement('input');
-      input.className = 'artboard-color';
-      input.type = 'color';
-      input.value = value;
-      input.addEventListener('input', () => { apply(input.value); rebuild(); });
-      return input;
-    };
-    const rebuild = () => this.app.rebuild();
-
-    const presetSelect = document.createElement('select');
-    presetSelect.className = 'artboard-input';
-    for (const preset of ARTBOARD_PRESETS) {
-      const option = document.createElement('option');
-      option.value = preset.id;
-      option.textContent = preset.name;
-      presetSelect.appendChild(option);
-    }
-    const customOption = document.createElement('option');
-    customOption.value = 'custom';
-    customOption.textContent = 'Custom';
-    presetSelect.appendChild(customOption);
-    const initialPreset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
-    presetSelect.value = initialPreset?.id ?? 'custom';
-    presetSelect.addEventListener('change', () => {
-      const preset = ARTBOARD_PRESETS.find((p) => p.id === presetSelect.value);
-      if (!preset) return;
-      ab.width = preset.width;
-      ab.height = preset.height;
-      sync();
-      rebuild();
-    });
-    row('Preset', presetSelect);
-
-    const widthInput = number(ab.width, 240, 4096, 1, (v) => { ab.width = v; presetSelect.value = 'custom'; });
-    const heightInput = number(ab.height, 240, 4096, 1, (v) => { ab.height = v; presetSelect.value = 'custom'; });
-    row('Width', widthInput);
-    row('Height', heightInput);
-    row('Background', color(ab.background, (v) => { ab.background = v; }));
-
-    const margin = document.createElement('input');
-    margin.className = 'artboard-range';
-    margin.type = 'range';
-    margin.min = '0';
-    margin.max = '120';
-    margin.step = '1';
-    margin.value = String(ab.margin);
-    const marginValue = document.createElement('span');
-    marginValue.className = 'artboard-value';
-    marginValue.textContent = `${ab.margin}px`;
-    margin.addEventListener('input', () => {
-      ab.margin = Number(margin.value);
-      marginValue.textContent = `${ab.margin}px`;
-      rebuild();
-    });
-    const marginWrap = document.createElement('span');
-    marginWrap.className = 'artboard-range-wrap';
-    marginWrap.append(margin, marginValue);
-    row('Margin', marginWrap);
-
-    this.parametricsToggle = document.createElement('input');
-    this.parametricsToggle.className = 'artboard-check parametrics-toggle-checkbox';
-    this.parametricsToggle.type = 'checkbox';
-    this.parametricsToggle.checked = this.app.isParametricsVisible();
-    this.parametricsToggle.title = 'Show active-layer parametric properties at the canvas edge';
-    this.parametricsToggle.addEventListener('change', () => {
-      this.app.setParametricsVisible(this.parametricsToggle.checked);
-    });
-    row('Parametrics', this.parametricsToggle);
-
-    this.uvDomainToggle = document.createElement('input');
-    this.uvDomainToggle.className = 'artboard-check uv-domain-toggle-checkbox';
-    this.uvDomainToggle.type = 'checkbox';
-    this.uvDomainToggle.checked = this.app.isUVDomainVisible();
-    this.uvDomainToggle.title = 'Show the active surface UV domain inset. UI-only; never included in exports.';
-    this.uvDomainToggle.addEventListener('change', () => {
-      this.app.setUVDomainVisible(this.uvDomainToggle.checked);
-    });
-    row('UV Domain', this.uvDomainToggle);
-
-    this.surfaceInspectorToggle = document.createElement('input');
-    this.surfaceInspectorToggle.className = 'artboard-check surface-inspector-toggle-checkbox';
-    this.surfaceInspectorToggle.type = 'checkbox';
-    this.surfaceInspectorToggle.checked = this.app.isSurfaceInspectorEnabled();
-    this.surfaceInspectorToggle.title = 'Inspect the surface under the cursor in single Canvas.';
-    this.surfaceInspectorToggle.addEventListener('change', () => {
-      this.app.setSurfaceInspectorEnabled(this.surfaceInspectorToggle.checked);
-    });
-    row('Inspect', this.surfaceInspectorToggle);
-
-    this.seamsToggle = document.createElement('input');
-    this.seamsToggle.className = 'artboard-check seams-toggle-checkbox';
-    this.seamsToggle.type = 'checkbox';
-    this.seamsToggle.checked = this.app.isSeamsVisible();
-    this.seamsToggle.title = 'Show declared UV domain borders, seams and reverse/twist seams.';
-    this.seamsToggle.addEventListener('change', () => {
-      this.app.setSeamsVisible(this.seamsToggle.checked);
-    });
-    row('Seams', this.seamsToggle);
-
-    if (!surfaceAvailable) {
-      for (const control of [this.uvDomainToggle, this.surfaceInspectorToggle, this.seamsToggle]) {
-        control.disabled = true;
-        control.title = `${control.title} Requires surface or mesh geometry.`;
-      }
-    }
-
-    const sync = () => {
-      widthInput.value = String(ab.width);
-      heightInput.value = String(ab.height);
-      margin.value = String(ab.margin);
-      marginValue.textContent = `${ab.margin}px`;
-      const preset = ARTBOARD_PRESETS.find((p) => p.width === ab.width && p.height === ab.height);
-      presetSelect.value = preset?.id ?? 'custom';
-    };
-    sync();
-    body.appendChild(grid);
-    if (!surfaceAvailable) {
-      const note = this.panelHint('UV Domain, Inspect and Seams require surface or mesh geometry.');
-      note.classList.add('control-reason');
-      body.appendChild(note);
+  refreshCoordinatePin() {
+    if (!this.coordinatePinStatus) return;
+    const pin = this.app.renderer?.coordinatePinReadout?.() ?? null;
+    this.coordinatePinStatus.textContent = pin ? `Pinned · ${pin.text}` : 'No pinned coordinate';
+    if (this.coordinatePinRelease) this.coordinatePinRelease.disabled = !pin;
+    if (this.coordinatePinButton) {
+      this.coordinatePinButton.disabled = !this.activeLayerIsSpatial();
     }
   }
 
-  buildCoordinatesSection() {
-    const body = this.section('Coordinates', { id: 'coordinates', mode: 'look' });
-    const view = this.app.document.view;
-    const reference = view.reference;
-    const coordinates = view.coordinates;
-    const spatialAvailable = this.activeLayerIsSpatial();
-    body.appendChild(this.panelHint(
-      'Global viewport · UI-only. Origin, axes, ticks and cursor readout never enter exports.',
-    ));
+  buildUnitsSection() { buildUnitsSection(this); }
 
-    const grid = document.createElement('div');
-    grid.className = 'artboard-grid coordinates-grid';
-    const row = (label, control) => {
-      const el = document.createElement('label');
-      el.className = 'artboard-row';
-      const name = document.createElement('span');
-      name.className = 'artboard-label';
-      name.textContent = label;
-      el.append(name, control);
-      grid.appendChild(el);
-      return el;
-    };
-    const checkbox = (className, checked, title) => {
-      const input = document.createElement('input');
-      input.className = `artboard-check ${className}`;
-      input.type = 'checkbox';
-      input.checked = checked;
-      input.title = title;
-      return input;
-    };
-    const rebuild = () => this.app.rebuild();
-
-    const referenceToggle = checkbox(
-      'reference-toggle-checkbox',
-      Boolean(reference.enabled),
-      'Show world origin and XYZ axes. UI-only; never included in exports.',
-    );
-    const groundToggle = checkbox(
-      'reference-ground-checkbox',
-      Boolean(reference.ground),
-      'Show a low-density ground plane at z = 0.',
-    );
-    groundToggle.disabled = !reference.enabled;
-    referenceToggle.addEventListener('change', () => {
-      reference.enabled = referenceToggle.checked;
-      groundToggle.disabled = !reference.enabled;
-      rebuild();
-    });
-    groundToggle.addEventListener('change', () => {
-      reference.ground = groundToggle.checked;
-      rebuild();
-    });
-    row('Reference', referenceToggle);
-    row('Ground', groundToggle);
-
-    const coordinatesToggle = checkbox(
-      'coordinates-toggle-checkbox',
-      Boolean(coordinates.enabled),
-      'Show world-axis ticks and values in orthographic panels.',
-    );
-    const gridToggle = checkbox(
-      'coordinates-grid-checkbox',
-      Boolean(coordinates.grid),
-      'Draw a light grid at coordinate ticks.',
-    );
-    gridToggle.disabled = !coordinates.enabled;
-    coordinatesToggle.addEventListener('change', () => {
-      coordinates.enabled = coordinatesToggle.checked;
-      gridToggle.disabled = !coordinates.enabled;
-      stepInput.disabled = !coordinates.enabled;
-      rebuild();
-    });
-    gridToggle.addEventListener('change', () => {
-      coordinates.grid = gridToggle.checked;
-      rebuild();
-    });
-    row('Values', coordinatesToggle);
-    row('Grid', gridToggle);
-
-    const cursorToggle = checkbox(
-      'coordinates-cursor-checkbox',
-      Boolean(coordinates.cursor),
-      'Show the two in-plane world coordinates under the cursor.',
-    );
-    cursorToggle.addEventListener('change', () => {
-      coordinates.cursor = cursorToggle.checked;
-      rebuild();
-    });
-    row('Cursor XYZ', cursorToggle);
-
-    const stepInput = document.createElement('input');
-    stepInput.className = 'artboard-input coordinates-step';
-    stepInput.type = 'number';
-    stepInput.min = '0.000001';
-    stepInput.step = '0.1';
-    stepInput.placeholder = 'auto';
-    stepInput.value = coordinates.step === null ? '' : String(coordinates.step);
-    stepInput.disabled = !coordinates.enabled;
-    stepInput.title = 'World units between ticks. Empty means automatic 1/2/5 spacing.';
-    stepInput.addEventListener('change', () => {
-      const value = Number(stepInput.value);
-      coordinates.step = Number.isFinite(value) && value > 0 ? value : null;
-      if (!coordinates.step) stepInput.value = '';
-      rebuild();
-    });
-    row('Tick step', stepInput);
-
-    const unitsSelect = document.createElement('select');
-    unitsSelect.className = 'artboard-input coordinates-units-select';
-    for (const [value, label] of [
-      ['auto', 'Auto · mm when scaled'],
-      ['world', 'World units'],
-      ['physical', 'Physical · mm'],
-    ]) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      unitsSelect.appendChild(option);
-    }
-    unitsSelect.value = coordinates.unitDisplay;
-    unitsSelect.addEventListener('change', () => {
-      coordinates.unitDisplay = unitsSelect.value;
-      rebuild();
-    });
-    row('Values in', unitsSelect);
-
-    if (!spatialAvailable) {
-      for (const control of [
-        referenceToggle, groundToggle, coordinatesToggle, gridToggle,
-        cursorToggle, stepInput, unitsSelect,
-      ]) {
-        control.disabled = true;
-      }
-      for (const control of [referenceToggle, coordinatesToggle, cursorToggle]) {
-        control.title = `${control.title} Requires a spatial (3D) layer.`;
-      }
-      const note = this.panelHint('Coordinates require a spatial layer with a world transform.');
-      note.classList.add('control-reason');
-      body.appendChild(note);
-    }
-
-    body.appendChild(grid);
-  }
-
-  buildUnitsSection() {
-    const body = this.section('Scale', { id: 'units', mode: 'look' });
-    const view = this.app.document.view;
-    const units = view.units;
-    body.appendChild(this.panelHint(
-      'Optional physical scale. Geometry is never rescaled; millimetres are applied only by export consumers.',
-    ));
-
-    const grid = document.createElement('div');
-    grid.className = 'artboard-grid units-grid';
-
-    const row = (label, control) => {
-      const el = document.createElement('label');
-      el.className = 'artboard-row';
-      const name = document.createElement('span');
-      name.className = 'artboard-label';
-      name.textContent = label;
-      el.append(name, control);
-      grid.appendChild(el);
-      return el;
-    };
-
-    const worldSize = document.createElement('div');
-    worldSize.className = 'units-readout units-world-size';
-    const pageSize = document.createElement('div');
-    pageSize.className = 'units-readout units-page-size';
-    const warning = document.createElement('div');
-    warning.className = 'units-warning';
-
-    const refresh = () => {
-      const bbox = this.app.evaluation?.worldBBox ?? this.app.evaluation?.bbox ?? null;
-      const physical = bboxToMillimetres(bbox, units);
-      if (physical) {
-        const dimensions = [
-          formatPhysicalLength(physical.width),
-          formatPhysicalLength(physical.height),
-          physical.depth !== null ? formatPhysicalLength(physical.depth) : null,
-        ].filter(Boolean);
-        worldSize.textContent = `World bbox · ${dimensions.join(' × ')}`;
-      } else {
-        worldSize.textContent = 'World bbox · unitless';
-      }
-
-      const artboard = view.artboard;
-      const pageWidth = artboardToMillimetres(artboard.width, units);
-      const pageHeight = artboardToMillimetres(artboard.height, units);
-      if (pageWidth !== null && pageHeight !== null) {
-        pageSize.textContent = `Page · ${formatPhysicalLength(pageWidth)} × ${formatPhysicalLength(pageHeight)}`;
-      } else {
-        pageSize.textContent = `Page · unitless · ${artboard.width} × ${artboard.height}`;
-      }
-
-      const validation = validateUnits(units);
-      warning.textContent = validation.ok
-        ? `World scale ×${millimetresPerUnit(units, 'world') ?? '—'} · page scale ×${millimetresPerUnit(units, 'artboard') ?? '—'}`
-        : validation.errors.join(' · ');
-      warning.dataset.valid = validation.ok ? 'true' : 'false';
-    };
-
-    const select = (value, className, onChange) => {
-      const el = document.createElement('select');
-      el.className = `artboard-input ${className}`;
-      for (const system of PHYSICAL_UNIT_SYSTEMS) {
-        const option = document.createElement('option');
-        option.value = system;
-        option.textContent = system === 'unitless' ? 'unitless' : system;
-        el.appendChild(option);
-      }
-      el.value = value;
-      el.addEventListener('change', () => {
-        onChange(el.value);
-        this.app.rebuild();
-        refresh();
-      });
-      return el;
-    };
-
-    const factorInput = (value, className, disabled, onChange) => {
-      const el = document.createElement('input');
-      el.className = `artboard-input ${className}`;
-      el.type = 'number';
-      el.min = '0.000001';
-      el.step = '0.01';
-      el.placeholder = disabled ? '—' : 'mm per unit';
-      el.disabled = disabled;
-      el.value = value === null ? '' : String(value);
-      el.addEventListener('change', () => {
-        const number = Number(el.value);
-        onChange(Number.isFinite(number) && number > 0 ? number : null);
-        this.app.rebuild();
-        refresh();
-      });
-      return el;
-    };
-
-    let worldFactor = null;
-    const worldSelect = select(units.world, 'units-world-select', (value) => {
-      units.world = value;
-      if (value === 'unitless') units.mmPerWorldUnit = null;
-      if (worldFactor) {
-        worldFactor.disabled = value === 'unitless';
-        worldFactor.placeholder = value === 'unitless' ? '—' : 'mm per unit';
-      }
-    });
-    row('World units', worldSelect);
-    worldFactor = factorInput(
-      units.mmPerWorldUnit,
-      'units-world-factor',
-      units.world === 'unitless',
-      (value) => { units.mmPerWorldUnit = value; },
-    );
-    row('World mm/unit', worldFactor);
-
-    let artboardFactor = null;
-    const artboardSelect = select(units.artboard, 'units-artboard-select', (value) => {
-      units.artboard = value;
-      if (value === 'unitless') units.mmPerArtboardUnit = null;
-      if (artboardFactor) {
-        artboardFactor.disabled = value === 'unitless';
-        artboardFactor.placeholder = value === 'unitless' ? '—' : 'mm per unit';
-      }
-    });
-    row('Page units', artboardSelect);
-    artboardFactor = factorInput(
-      units.mmPerArtboardUnit,
-      'units-artboard-factor',
-      units.artboard === 'unitless',
-      (value) => { units.mmPerArtboardUnit = value; },
-    );
-    row('Page mm/unit', artboardFactor);
-
-    grid.append(worldSize, pageSize, warning);
-    refresh();
-    body.appendChild(grid);
-  }
-
-  buildFabricateSection() {
-    const body = this.section('Fabricate', { id: 'fabricate', mode: 'fabricate' });
-    body.appendChild(this.panelHint(
-      'Read-only fabrication gate. Parametrica never repairs, caps or edits geometry in this mode.',
-    ));
-
-    const panel = document.createElement('div');
-    panel.className = 'fabricate-panel';
-
-    const status = document.createElement('div');
-    status.className = 'fabricate-status';
-    status.setAttribute('role', 'status');
-    const source = document.createElement('div');
-    source.className = 'fabricate-source';
-    const reason = document.createElement('div');
-    reason.className = 'fabricate-reason';
-
-    const rows = document.createElement('div');
-    rows.className = 'fabricate-rows';
-
-    const scaleRow = document.createElement('div');
-    scaleRow.className = 'fabricate-row';
-    const scaleLabel = document.createElement('span');
-    scaleLabel.className = 'fabricate-label';
-    scaleLabel.textContent = 'World scale';
-    const scaleWrap = document.createElement('span');
-    scaleWrap.className = 'fabricate-scale-controls';
-    const unitSelect = document.createElement('select');
-    unitSelect.className = 'artboard-input fabricate-world-units';
-    for (const system of PHYSICAL_UNIT_SYSTEMS) {
-      const option = document.createElement('option');
-      option.value = system;
-      option.textContent = system === 'unitless' ? 'unitless' : system;
-      unitSelect.appendChild(option);
-    }
-    const scaleInput = document.createElement('input');
-    scaleInput.className = 'artboard-input fabricate-world-scale';
-    scaleInput.type = 'number';
-    scaleInput.min = '0.000001';
-    scaleInput.step = '0.01';
-    scaleInput.placeholder = 'mm per world unit';
-    unitSelect.addEventListener('change', () => {
-      const units = this.app.document.view.units;
-      units.world = unitSelect.value;
-      if (units.world === 'unitless') units.mmPerWorldUnit = null;
-      this.app.rebuild();
-      this.refreshFabricate();
-    });
-    scaleInput.addEventListener('change', () => {
-      const units = this.app.document.view.units;
-      const factor = Number(scaleInput.value);
-      units.mmPerWorldUnit = Number.isFinite(factor) && factor > 0 ? factor : null;
-      units.world = units.mmPerWorldUnit === null
-        ? 'unitless'
-        : (units.world === 'unitless' ? 'mm' : units.world);
-      this.app.rebuild();
-      this.refreshFabricate();
-    });
-    scaleWrap.append(unitSelect, scaleInput);
-    scaleRow.append(scaleLabel, scaleWrap);
-    rows.appendChild(scaleRow);
-
-    const makeRow = (label, className) => {
-      const row = document.createElement('div');
-      row.className = 'fabricate-row';
-      const name = document.createElement('span');
-      name.className = 'fabricate-label';
-      name.textContent = label;
-      const value = document.createElement('span');
-      value.className = `fabricate-value ${className}`;
-      value.textContent = '—';
-      row.append(name, value);
-      rows.appendChild(row);
-      return value;
-    };
-    const triangles = makeRow('Triangles', 'fabricate-triangles');
-    const vertices = makeRow('Vertices', 'fabricate-vertices');
-    const volume = makeRow('Volume', 'fabricate-volume');
-    const worldSize = makeRow('World bbox', 'fabricate-world-size');
-    const physical = makeRow('Physical', 'fabricate-physical-size');
-    const warnings = makeRow('Checks', 'fabricate-warnings');
-
-    const compositionNote = document.createElement('div');
-    compositionNote.className = 'fabricate-composition-note';
-    compositionNote.hidden = true;
-
-    const exportButton = document.createElement('button');
-    exportButton.type = 'button';
-    exportButton.className = 'lab-button fabricate-export';
-    exportButton.textContent = 'EXPORT STL';
-    exportButton.addEventListener('click', () => {
-      this.app.exporter.exportSTL();
-      this.refreshFabricate();
-    });
-
-    panel.append(status, source, reason, rows, compositionNote, exportButton);
-    body.appendChild(panel);
-
-    this.fabricateEls = {
-      panel, status, source, reason, triangles, vertices, volume,
-      worldSize, physical, warnings, exportButton, unitSelect, scaleInput, compositionNote,
-    };
-    this.refreshFabricate();
-  }
+  buildFabricateSection() { buildFabricateSection(this); }
 
   refreshFabricate() {
     const els = this.fabricateEls;
@@ -1484,530 +581,11 @@ export class Controls {
       : (report.reason ?? 'Select a validated closed Mesh/Solid');
   }
 
-  buildStyleSection() {
-    const body = this.section('Style', { id: 'style', mode: 'look' });
-    const view = this.app.document.view;
-    const st = view.style;
-    const layer = this.app.activeLayer;
-    const locked = Boolean(this.app.activeLayerLocked);
-    const layerName = layer?.name ?? 'current layer';
-    body.appendChild(this.panelHint(`Active layer · ${layerName}`));
-    const lockable = (control) => {
-      if (locked) control.disabled = true;
-      return control;
-    };
-    const grid = document.createElement('div');
-    grid.className = 'artboard-grid';
+  buildStyleSection() { buildStyleSection(this); }
 
-    const row = (label, control) => {
-      const el = document.createElement('label');
-      el.className = 'artboard-row';
-      const name = document.createElement('span');
-      name.className = 'artboard-label';
-      name.textContent = label;
-      el.append(name, control);
-      grid.appendChild(el);
-      return el;
-    };
-    const number = (value, min, max, step, apply) => {
-      const input = document.createElement('input');
-      input.className = 'artboard-input';
-      input.type = 'number';
-      input.min = String(min);
-      input.max = String(max);
-      input.step = String(step);
-      input.value = String(value);
-      input.addEventListener('change', () => {
-        const n = Math.min(max, Math.max(min, Number(input.value) || min));
-        input.value = String(n);
-        apply(n);
-        rebuild();
-      });
-      return input;
-    };
-    const color = (value, apply) => {
-      const input = document.createElement('input');
-      input.className = 'artboard-color';
-      input.type = 'color';
-      input.value = value;
-      input.addEventListener('input', () => { apply(input.value); rebuild(); });
-      return input;
-    };
-    const select = (options, value, apply) => {
-      const input = document.createElement('select');
-      input.className = 'artboard-input';
-      for (const option of options) {
-        const opt = document.createElement('option');
-        opt.value = option.value;
-        opt.textContent = option.label;
-        input.appendChild(opt);
-      }
-      input.value = value;
-      input.addEventListener('change', () => { apply(input.value); rebuild(); });
-      return input;
-    };
-    const rebuild = () => {
-      view.strokeWeight = st.stroke.width;
-      this.app.rebuild();
-    };
+  buildRenderSection() { buildRenderSection(this); }
 
-    row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; })));
-    const strokeWidth = lockable(number(st.stroke.width, 0.1, 40, 0.1, (v) => { st.stroke.width = v; }));
-    row('Stroke width', strokeWidth);
-    const strokeOpacity = document.createElement('input');
-    strokeOpacity.className = 'artboard-range';
-    strokeOpacity.type = 'range';
-    strokeOpacity.min = '0';
-    strokeOpacity.max = '1';
-    strokeOpacity.step = '0.01';
-    strokeOpacity.value = String(st.stroke.opacity);
-    if (locked) strokeOpacity.disabled = true;
-    strokeOpacity.addEventListener('input', () => { st.stroke.opacity = Number(strokeOpacity.value); rebuild(); });
-    row('Stroke opacity', strokeOpacity);
-    row('Cap', lockable(select(
-      [{ value: 'round', label: 'Round' }, { value: 'butt', label: 'Butt' }, { value: 'square', label: 'Square' }],
-      st.stroke.cap, (v) => { st.stroke.cap = v; },
-    )));
-    row('Join', lockable(select(
-      [{ value: 'round', label: 'Round' }, { value: 'miter', label: 'Miter' }, { value: 'bevel', label: 'Bevel' }],
-      st.stroke.join, (v) => { st.stroke.join = v; },
-    )));
-
-    const fillToggle = document.createElement('input');
-    fillToggle.className = 'artboard-check';
-    fillToggle.type = 'checkbox';
-    fillToggle.checked = Boolean(st.fill.enabled);
-    fillToggle.disabled = locked;
-    fillToggle.addEventListener('change', () => {
-      st.fill.enabled = fillToggle.checked;
-      syncGradientRows();
-      rebuild();
-    });
-    row('Fill', fillToggle);
-
-    const gradient = st.fill.gradient ?? (st.fill.gradient = createDefaultFillGradient());
-    const fillType = select(
-      [
-        { value: 'solid', label: 'Solid' },
-        { value: 'linear', label: 'Linear' },
-        { value: 'radial', label: 'Radial' },
-      ],
-      gradient.enabled ? gradient.type : 'solid',
-      (value) => {
-        if (value === 'solid') {
-          gradient.enabled = false;
-        } else {
-          gradient.enabled = true;
-          gradient.type = value;
-          st.fill.enabled = true;
-          fillToggle.checked = true;
-        }
-        syncGradientRows();
-      },
-    );
-    row('Fill type', lockable(fillType));
-
-    const fillColorRow = row('Fill color', lockable(color(st.fill.color, (v) => { st.fill.color = v; })));
-    const fillOpacity = document.createElement('input');
-    fillOpacity.className = 'artboard-range';
-    fillOpacity.type = 'range';
-    fillOpacity.min = '0';
-    fillOpacity.max = '1';
-    fillOpacity.step = '0.01';
-    fillOpacity.value = String(st.fill.opacity);
-    if (locked) fillOpacity.disabled = true;
-    fillOpacity.addEventListener('input', () => { st.fill.opacity = Number(fillOpacity.value); rebuild(); });
-    const fillOpacityRow = row('Fill opacity', fillOpacity);
-
-    const angleRow = row('Gradient angle', lockable(number(gradient.angle, 0, 360, 1, (v) => {
-      gradient.angle = v;
-    })));
-    const centerXRow = row('Center X', lockable(number(gradient.centerX, 0, 1, 0.01, (v) => {
-      gradient.centerX = v;
-    })));
-    const centerYRow = row('Center Y', lockable(number(gradient.centerY, 0, 1, 0.01, (v) => {
-      gradient.centerY = v;
-    })));
-    const radiusRow = row('Radius', lockable(number(gradient.radius, 0.05, 3, 0.05, (v) => {
-      gradient.radius = v;
-    })));
-
-    const stopList = document.createElement('div');
-    stopList.className = 'ramp-stops fill-gradient-stops';
-    const addStop = document.createElement('button');
-    addStop.className = 'lab-button ramp-add fill-gradient-add';
-    addStop.textContent = '+ Color';
-    addStop.disabled = locked;
-    addStop.addEventListener('click', () => {
-      if (gradient.colors.length >= FILL_GRADIENT_COLORS) return;
-      gradient.colors.push(gradient.colors[gradient.colors.length - 1] ?? '#ffffff');
-      gradient.enabled = true;
-      renderStops();
-      rebuild();
-    });
-    const stopBox = document.createElement('div');
-    stopBox.className = 'fill-gradient-stops-box';
-    stopBox.append(stopList, addStop);
-    const colorsRow = row('Gradient colors', stopBox);
-
-    const renderStops = () => {
-      stopList.replaceChildren();
-      gradient.colors.forEach((stopColor, index) => {
-        const item = document.createElement('span');
-        item.className = 'ramp-stop';
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.className = 'ramp-color fill-gradient-color';
-        input.value = stopColor;
-        input.disabled = locked;
-        input.setAttribute('aria-label', `Fill gradient color ${index + 1}`);
-        input.addEventListener('input', () => {
-          gradient.colors[index] = input.value;
-          rebuild();
-        });
-        item.appendChild(input);
-        if (gradient.colors.length > 2 && !locked) {
-          const remove = document.createElement('button');
-          remove.type = 'button';
-          remove.className = 'ramp-remove';
-          remove.textContent = '×';
-          remove.title = 'Remove gradient color';
-          remove.addEventListener('click', () => {
-            gradient.colors.splice(index, 1);
-            renderStops();
-            rebuild();
-          });
-          item.appendChild(remove);
-        }
-        stopList.appendChild(item);
-      });
-      addStop.disabled = locked || gradient.colors.length >= FILL_GRADIENT_COLORS;
-    };
-
-    function syncGradientRows() {
-      const showGradient = Boolean(st.fill.enabled && gradient.enabled);
-      const radial = gradient.type === 'radial';
-      angleRow.hidden = !showGradient || radial;
-      centerXRow.hidden = !showGradient || !radial;
-      centerYRow.hidden = !showGradient || !radial;
-      radiusRow.hidden = !showGradient || !radial;
-      colorsRow.hidden = !showGradient;
-      fillColorRow.hidden = showGradient;
-      fillOpacityRow.hidden = false;
-      fillType.value = gradient.enabled ? gradient.type : 'solid';
-    }
-
-    renderStops();
-    syncGradientRows();
-
-    row('Blend', lockable(select(
-      [{ value: 'normal', label: 'Normal' }, { value: 'multiply', label: 'Multiply' }, { value: 'screen', label: 'Screen' }, { value: 'difference', label: 'Difference' }],
-      st.blend, (v) => { st.blend = v; },
-    )));
-
-    const paletteSelect = document.createElement('select');
-    paletteSelect.className = 'artboard-input';
-    paletteSelect.disabled = locked;
-    paletteSelect.title = 'Palette applies the canvas background and active-layer stroke/fill.';
-    const paletteName = document.createElement('input');
-    paletteName.className = 'artboard-input palette-name';
-    paletteName.type = 'text';
-    paletteName.maxLength = 40;
-    paletteName.placeholder = 'Palette name';
-    paletteName.disabled = locked;
-    const paletteSave = document.createElement('button');
-    paletteSave.className = 'lab-button palette-save';
-    paletteSave.textContent = 'Save';
-    paletteSave.disabled = locked;
-    const paletteDelete = document.createElement('button');
-    paletteDelete.className = 'lab-button palette-delete';
-    paletteDelete.textContent = 'Delete';
-    paletteDelete.disabled = true;
-    const paletteActions = document.createElement('div');
-    paletteActions.className = 'palette-actions';
-    paletteActions.append(paletteName, paletteSave, paletteDelete);
-    const paletteWrap = document.createElement('span');
-    paletteWrap.className = 'artboard-palette';
-    paletteWrap.append(paletteSelect, paletteActions);
-
-    const renderPaletteOptions = (selectedId = paletteSelect.value) => {
-      paletteSelect.replaceChildren();
-      for (const palette of this.paletteStore.entries()) {
-        const opt = document.createElement('option');
-        opt.value = palette.id;
-        opt.textContent = palette.builtIn ? palette.name : `${palette.name} · custom`;
-        paletteSelect.appendChild(opt);
-      }
-      if (selectedId && this.paletteStore.get(selectedId)) paletteSelect.value = selectedId;
-      paletteDelete.disabled = locked || !this.paletteStore.isCustom(paletteSelect.value);
-    };
-    paletteSelect.addEventListener('change', () => {
-      const palette = this.paletteStore.get(paletteSelect.value);
-      if (!palette) return;
-      this.app.document.view.artboard.background = palette.background;
-      st.stroke.color = palette.stroke;
-      st.fill.color = palette.fill;
-      paletteDelete.disabled = locked || !this.paletteStore.isCustom(palette.id);
-      rebuild();
-    });
-    paletteSave.addEventListener('click', () => {
-      try {
-        const saved = this.paletteStore.save(paletteName.value, {
-          background: this.app.document.view.artboard.background,
-          stroke: st.stroke.color,
-          fill: st.fill.color,
-        });
-        paletteName.value = '';
-        renderPaletteOptions(saved.id);
-        this.app.notify?.(`Palette “${saved.name}” saved`);
-      } catch (error) {
-        this.app.notify?.(`Palette save failed: ${error.message}`, 'error');
-      }
-    });
-    paletteDelete.addEventListener('click', () => {
-      if (!this.paletteStore.isCustom(paletteSelect.value)) return;
-      const palette = this.paletteStore.get(paletteSelect.value);
-      this.paletteStore.delete(paletteSelect.value);
-      renderPaletteOptions(this.paletteStore.entries()[0]?.id);
-      this.app.notify?.(`Palette “${palette?.name ?? 'custom'}” deleted`);
-    });
-    renderPaletteOptions();
-    row('Palette', paletteWrap);
-
-    if (layer) {
-      const override = document.createElement('select');
-      override.className = 'artboard-input layer-mode-override';
-      for (const option of [
-        { value: 'global', label: 'Global' },
-        { value: 'custom', label: 'Custom' },
-      ]) {
-        const opt = document.createElement('option');
-        opt.value = option.value;
-        opt.textContent = option.label;
-        override.appendChild(opt);
-      }
-      override.value = Array.isArray(layer.modes) && layer.modes.length ? 'custom' : 'global';
-      override.disabled = locked;
-
-      const modeList = document.createElement('div');
-      modeList.className = 'layer-mode-list';
-      const modeWrap = document.createElement('div');
-      modeWrap.className = 'layer-mode-wrap';
-      modeWrap.append(override, modeList);
-
-      const renderModes = () => {
-        modeList.replaceChildren();
-        modeList.hidden = !Array.isArray(layer.modes);
-        if (modeList.hidden) return;
-        for (const def of RenderPasses.list()) {
-          const rowEl = document.createElement('label');
-          rowEl.className = 'mode-toggle layer-mode-toggle';
-          const input = document.createElement('input');
-          input.type = 'checkbox';
-          input.checked = layer.modes.includes(def.id);
-          input.disabled = locked;
-          input.addEventListener('change', () => {
-            layer.modes = toggleMode(layer.modes, def.id, input.checked, RenderPasses.ids());
-            this.app.rebuild();
-          });
-          const text = document.createElement('span');
-          text.textContent = def.name;
-          rowEl.append(input, text);
-          modeList.appendChild(rowEl);
-        }
-      };
-
-      override.addEventListener('change', () => {
-        if (override.value === 'global') {
-          layer.modes = null;
-        } else {
-          layer.modes = [...view.modes];
-        }
-        renderModes();
-        this.app.rebuild();
-      });
-
-      row('Render passes', modeWrap);
-      renderModes();
-
-      const colorMetric = select(
-        [
-          { value: 'global', label: 'Global' },
-          { value: 'auto', label: 'Auto' },
-          { value: 'height', label: 'Height' },
-          { value: 'radius', label: 'Radius' },
-          { value: 'curvature', label: 'Curvature' },
-          { value: 'arc', label: 'Arc length' },
-        ],
-        layer.colorMetric ?? 'global',
-        (value) => {
-          layer.colorMetric = value === 'global' ? null : value;
-        },
-      );
-      colorMetric.disabled = locked;
-      row('Color metric', colorMetric);
-    }
-
-    if (locked) {
-      grid.appendChild(this.panelHint('Layer content is locked. Unlock the layer to edit style.'));
-    }
-    body.appendChild(grid);
-  }
-
-  buildRenderSection() {
-    const body = this.section('Render', { id: 'render', mode: 'look' });
-    const view = this.app.document.view;
-    body.appendChild(this.panelHint(
-      'Global render passes · checkbox enables a pass · opacity only adjusts its strength.',
-    ));
-    const order = RenderPasses.ids();
-    view.modes = normalizeModes(view.modes, order);
-    const passApplies = new Map(RenderPasses.list().map((def) => [def.id, this.renderPassApplies(def)]));
-    const modeInputs = [];
-    const groups = new Map();
-    for (const def of RenderPasses.list()) {
-      const group = def.group ?? 'diagnostic';
-      if (!groups.has(group)) groups.set(group, []);
-      groups.get(group).push(def);
-    }
-    const groupOrder = ['base', 'surface', 'color', 'diagnostic'];
-    const ordered = [
-      ...groupOrder.filter((group) => groups.has(group)).map((group) => [group, groups.get(group)]),
-      ...[...groups.entries()].filter(([group]) => !groupOrder.includes(group)),
-    ];
-    const groupLabels = {
-      base: 'Base',
-      surface: 'Surfaces',
-      color: 'Color',
-      diagnostic: 'Diagnostics',
-    };
-    for (const [group, defs] of ordered) {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'render-group';
-      const heading = document.createElement('div');
-      heading.className = 'render-group-h';
-      heading.textContent = groupLabels[group] ?? group;
-      const modesBody = document.createElement('div');
-      modesBody.className = 'mode-toggles render-mode-toggles';
-      for (const def of defs) {
-        const applies = passApplies.get(def.id) !== false;
-        const checked = view.modes.includes(def.id);
-        const reason = applies ? '' : this.renderPassReason(def);
-        const row = document.createElement('div');
-        row.className = 'mode-toggle render-mode-row';
-        row.dataset.pass = def.id;
-        row.classList.toggle('inapplicable', !applies);
-        row.classList.toggle('off', !checked);
-        row.title = applies ? (def.description ?? def.name) : reason;
-        if (def.description) row.setAttribute('aria-description', def.description);
-        if (!applies) row.setAttribute('aria-disabled', 'true');
-
-        const main = document.createElement('label');
-        main.className = 'mode-toggle-main';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = checked;
-        input.disabled = !applies;
-        input.addEventListener('change', () => {
-          const next = toggleMode(this.app.document.view.modes, def.id, input.checked, order);
-          this.app.document.view.modes = next;
-          for (const entry of modeInputs) {
-            entry.input.checked = next.includes(entry.id);
-            entry.syncState();
-          }
-          this.app.rebuild();
-        });
-        const labels = document.createElement('span');
-        labels.className = 'mode-toggle-labels';
-        const name = document.createElement('span');
-        name.className = 'mode-toggle-name';
-        name.textContent = def.name;
-        const reasonEl = document.createElement('span');
-        reasonEl.className = 'mode-toggle-reason';
-        reasonEl.textContent = reason;
-        labels.append(name, reasonEl);
-        main.append(input, labels);
-
-        const mix = document.createElement('span');
-        mix.className = 'mode-toggle-mix';
-        const mixLabel = document.createElement('span');
-        mixLabel.className = 'mode-toggle-mix-label';
-        mixLabel.textContent = 'Opacity';
-        const opacity = document.createElement('input');
-        opacity.type = 'range';
-        opacity.className = 'pass-opacity';
-        opacity.min = '0';
-        opacity.max = '1';
-        opacity.step = '0.05';
-        opacity.value = String(view.passOpacity?.[def.id] ?? 1);
-        opacity.title = `${def.name} opacity`;
-        const percent = document.createElement('span');
-        percent.className = 'mode-toggle-mix-value';
-        percent.textContent = `${Math.round((Number(opacity.value) || 0) * 100)}%`;
-        opacity.addEventListener('click', (event) => event.stopPropagation());
-        opacity.addEventListener('input', () => {
-          view.passOpacity = {
-            ...(view.passOpacity ?? {}),
-            [def.id]: Number(opacity.value),
-          };
-          percent.textContent = `${Math.round(Number(opacity.value) * 100)}%`;
-          this.app.rebuild();
-        });
-        mix.append(mixLabel, opacity, percent);
-
-        const badge = document.createElement('span');
-        badge.className = 'mode-toggle-badge';
-        badge.textContent = 'N/A';
-        badge.hidden = applies;
-
-        row.append(main, mix, badge);
-        modesBody.appendChild(row);
-        const entry = {
-          id: def.id,
-          input,
-          row,
-          def,
-          opacity,
-          percent,
-          badge,
-          reasonEl,
-          syncState() {
-            const enabled = applies && input.checked;
-            opacity.disabled = !enabled;
-            row.classList.toggle('off', !input.checked);
-            row.classList.toggle('inapplicable', !applies);
-            badge.hidden = applies;
-            reasonEl.textContent = applies ? '' : reason;
-          },
-        };
-        entry.syncState();
-        modeInputs.push(entry);
-      }
-      groupEl.append(heading, modesBody);
-      body.appendChild(groupEl);
-    }
-    this.modeToggles = modeInputs;
-    const metricGui = this.makeGui(body);
-    metricGui.add(view, 'colorMetric', {
-      Auto: 'auto',
-      Height: 'height',
-      Radius: 'radius',
-      Curvature: 'curvature',
-      'Arc length': 'arc',
-    }).name('Gradient metric').onChange(() => this.app.rebuild());
-    this.buildRampEditor(body);
-  }
-
-  buildOverlaysSection() {
-    const body = this.section('Overlays', { id: 'overlays', mode: 'look' });
-    body.appendChild(this.panelHint('Global diagnostics · drawn above the active passes.'));
-    const gui = this.makeGui(body);
-    for (const o of OVERLAYS) {
-      gui.add(this.app.document.view.overlays, o.id)
-        .name(o.name)
-        .onChange(() => this.app.rebuild());
-    }
-  }
+  buildOverlaysSection() { buildOverlaysSection(this); }
 
   buildRampEditor(body) {
     const view = this.app.document.view;
@@ -2112,6 +690,20 @@ export class Controls {
       entry.badge.hidden = applies;
       entry.reasonEl.textContent = reason;
       entry.opacity.disabled = !applies || !checked;
+      if (entry.colorInput) {
+        entry.colorInput.disabled = !applies || !checked;
+        const override = view.passStyle?.[entry.id];
+        const base = view.style?.stroke ?? {};
+        const value = override?.color ?? base.color ?? '#ffffff';
+        if (document.activeElement !== entry.colorInput && entry.colorInput.value !== value) entry.colorInput.value = value;
+      }
+      if (entry.widthInput) {
+        entry.widthInput.disabled = !applies || !checked;
+        const override = view.passStyle?.[entry.id];
+        const base = view.style?.stroke ?? {};
+        const value = String(override?.width ?? base.width ?? 1);
+        if (document.activeElement !== entry.widthInput && entry.widthInput.value !== value) entry.widthInput.value = value;
+      }
       const title = applies ? (entry.def.description ?? entry.def.name) : reason;
       entry.row.title = title;
       entry.row.setAttribute('aria-disabled', String(!applies));
@@ -2155,27 +747,9 @@ export class Controls {
     }));
   }
 
-  buildImageSection() {
-    const body = this.section('Image', { id: 'image', mode: 'ingest' });
-    this.imagePanel = new ImagePanel(this.app);
-    body.appendChild(this.imagePanel.el);
-  }
+  buildImageSection() { buildImageSection(this); }
 
-  buildAnimationSection() {
-    const gui = this.makeGui(this.section('Animation', { id: 'animation', mode: 'perform' }));
-    const a = this.app.document.animation;
-    gui.add(a, 'playing').name('Play').onChange(() => this.app.rebuild());
-    gui.add(a, 'speed', 0.05, 4, 0.05).name('Speed').onChange(() => {});
-    const time = gui.add(a, 'time', 0, 12.5664, 0.01)
-      .name('Time')
-      .onChange((t) => this.app.setTime(t))
-      .listen();
-    applyHardBounds(time, { snap: false, hardMin: 0, hardMax: 1000000 });
-    this.timeController = time;
-    this.timeBaseMax = 12.5664;
-    this.syncTimeRange(a.time);
-    gui.add({ reset: () => this.app.resetTime() }, 'reset').name('Reset Time');
-  }
+  buildAnimationSection() { buildAnimationSection(this); }
 
   /**
    * Keep the time playhead moving past 4π without turning the slider into
@@ -2193,129 +767,21 @@ export class Controls {
     this.timeController.updateDisplay();
   }
 
-  buildTimelineSection() {
-    const body = this.section('Timeline', { id: 'timeline', mode: 'perform' });
-    this.timelinePanel = new TimelinePanel(this.app);
-    body.appendChild(this.timelinePanel.el);
-  }
+  buildTimelineSection() { buildTimelineSection(this); }
 
-  buildMutationSection() {
-    if (this.app.activeLayerIsInstance()) {
-      const body = this.section('Mutation', { id: 'mutation', mode: 'explore' });
-      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
-      return;
-    }
-    const gui = this.makeGui(this.section('Mutation', { id: 'mutation', mode: 'explore' }));
-    const btn = gui.add({ mutate: () => this.app.mutate() }, 'mutate').name('Mutate');
-    btn.domElement.classList.add('gl-accent');
-    gui.add({ undo: () => this.app.undo() }, 'undo').name('Undo (⌘Z)');
-    gui.add({ redo: () => this.app.redo() }, 'redo').name('Redo (⇧⌘Z)');
-    gui.add(this.app.document, 'seed', 0, 999999, 1)
-      .name('Seed')
-      .onChange((v) => this.app.setSeed(v))
-      .listen();
-    gui.add({ reroll: () => this.app.rerollSeed() }, 'reroll').name('Reroll Seed');
-  }
+  buildMutationSection() { buildMutationSection(this); }
 
-  buildAnalysisSection() {
-    const body = this.section('Analysis', { id: 'analysis', mode: 'explore' });
-    this.labPanel = new LabPanel(this.app);
-    body.appendChild(this.labPanel.el);
-  }
+  buildAnalysisSection() { buildAnalysisSection(this); }
 
-  buildNotebookSection() {
-    const body = this.section('Notebook', { id: 'notebook', mode: 'keep' });
-    this.notebookPanel = new NotebookPanel(this.app);
-    body.appendChild(this.notebookPanel.el);
-  }
+  buildNotebookSection() { buildNotebookSection(this); }
 
-  buildAdvisorSection() {
-    const body = this.section('Advisor', { id: 'advisor', mode: 'explore' });
-    if (this.app.activeLayerIsInstance()) {
-      body.appendChild(this.panelHint('Select a generator layer to use the advisor.'));
-      return;
-    }
-    this.advisorPanel = new AdvisorPanel(this.app);
-    body.appendChild(this.advisorPanel.el);
-  }
+  buildAdvisorSection() { buildAdvisorSection(this); }
 
-  buildExploreSection() {
-    if (this.app.activeLayerIsInstance()) {
-      const body = this.section('Explore', { id: 'explore', mode: 'explore' });
-      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
-      return;
-    }
-    const body = this.section('Explore', { id: 'explore', mode: 'explore' });
-    this.explorePanel = new ExplorePanel(this.app);
-    body.appendChild(this.explorePanel.el);
-  }
+  buildExploreSection() { buildExploreSection(this); }
 
-  buildEvolutionSection() {
-    if (this.app.activeLayerIsInstance()) {
-      const body = this.section('Evolution', { id: 'evolution', mode: 'explore' });
-      body.appendChild(this.panelHint('Select a generator layer to use this tool. Instance layers are read-only.'));
-      return;
-    }
-    const body = this.section('Evolution', { id: 'evolution', mode: 'explore' });
-    this.evolutionPanel = new EvolutionPanel(this.app);
-    body.appendChild(this.evolutionPanel.el);
-  }
+  buildEvolutionSection() { buildEvolutionSection(this); }
 
-  buildPresetsSection() {
-    // Reuse the section on GUI-only rebuilds; otherwise every save would
-    // append an empty "Presets" section.
-    const body = this.presetSectionBody ?? this.section('Presets', { id: 'presets', mode: 'keep' });
-    this.presetSectionBody = body;
-    this.presetPanel?.destroy?.();
-    body.replaceChildren();
-
-    this.presetPanel = new PresetPanel(this.app, this.presetFilter);
-    body.append(this.presetPanel.el);
-    if (this.sectionEls.get('presets')?.header.getAttribute('aria-expanded') === 'true') {
-      requestAnimationFrame(() => this.presetPanel?.resume?.());
-    }
-
-    const actions = document.createElement('div');
-    actions.className = 'preset-actions-label';
-    actions.textContent = 'Save current figure';
-    body.append(actions);
-
-    this.presetsGui = this.makeGui(body);
-
-    const names = this.app.presets.names();
-    if (names.includes(this.app.document.name)) {
-      this.presetState.selected = this.app.document.name;
-    } else if (!this.presetState.selected && names.length) {
-      this.presetState.selected = names[0];
-    }
-
-    this.presetsGui.add(this.presetState, 'name').name('Name');
-    this.presetsGui.add({
-      save: () => {
-        try {
-          const name = this.app.presets.save(this.presetState.name, this.app.document);
-          this.presetState.name = name;
-          this.presetState.selected = name;
-          this.rebuildPresetsSection();
-          this.sync();
-        } catch (err) {
-          this.app.notify?.(`Preset save failed: ${err.message}`, 'error');
-        }
-      },
-    }, 'save').name('Save Preset');
-    this.presetsGui.add({
-      remove: () => {
-        if (this.app.presets.delete(this.presetState.selected)) {
-          this.presetState.selected = '';
-          this.rebuildPresetsSection();
-          this.presetPanel?.focusFilter?.();
-        } else if (this.app.presets.isBuiltIn(this.presetState.selected)) {
-          this.app.notify?.('Built-in presets cannot be deleted', 'error');
-        }
-      },
-    }, 'remove').name('Delete Preset');
-    this.presetsGui.add({ importJSON: () => this.app.openImportDialog() }, 'importJSON').name('Import JSON…');
-  }
+  buildPresetsSection() { buildPresetsSection(this); }
 
   rebuildPresetsSection() {
     if (this.presetsGui) {
@@ -2327,21 +793,7 @@ export class Controls {
     this.buildPresetsSection();
   }
 
-  buildExportSection() {
-    const gui = this.makeGui(this.section('Export', { id: 'export', mode: 'keep' }));
-    const ex = this.app.exporter;
-    gui.add({ svg: () => ex.exportSVG() }, 'svg').name('Export SVG');
-    gui.add({ plotter: () => ex.exportPlotterSVG() }, 'plotter').name('Export Plotter SVG');
-    gui.add({ png: () => ex.exportPNG() }, 'png').name('Export PNG');
-    gui.add({ json: () => ex.exportJSON() }, 'json').name('Export JSON');
-    gui.add({
-      copy: async () => {
-        const ok = await ex.copyJSON();
-        if (!ok) this.app.notify?.('Clipboard unavailable — use Export JSON', 'error');
-        else this.app.notify?.('Document copied to clipboard');
-      },
-    }, 'copy').name('Copy JSON');
-  }
+  buildExportSection() { buildExportSection(this); }
 
   /* ———————— external triggers ———————— */
 
@@ -2392,23 +844,8 @@ export class Controls {
 }
 
 
-function layerButton(label, title, onClick, disabled = false) {
-  const button = document.createElement('button');
-  button.className = 'layer-icon';
-  button.textContent = label;
-  button.title = title;
-  button.disabled = disabled;
-  button.addEventListener('click', (event) => {
-    event.stopPropagation();
-    onClick();
-  });
-  return button;
-}
 
 
-function isAdvancedParam(schema) {
-  return schema?.advanced === true;
-}
 
 function countMods(stage) {
   if (!stage?.mods) return 0;
@@ -2428,14 +865,6 @@ function formatNumber(value) {
   return number.toFixed(3);
 }
 
-function formatInstanceParam(value) {
-  if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? '' : 's'}`;
-  if (value && typeof value === 'object' && typeof value.expr === 'string') return `ƒ ${value.expr}`;
-  if (typeof value === 'boolean') return value ? 'yes' : 'no';
-  if (typeof value === 'number') return Number.isFinite(value) ? String(Number(value.toFixed(4))) : '—';
-  if (typeof value === 'string') return value.length > 32 ? `${value.slice(0, 31)}…` : value;
-  return String(value);
-}
 
 function resolveMode(value) {
   if (MODES.some((mode) => mode.id === value)) return value;

@@ -36,7 +36,7 @@ import { StartWithOverlay } from '../ui/StartWithOverlay.js';
 import { Exporter } from '../export/Exporter.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
-import { renderPresetPreview } from '../presets/preview.js';
+import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
 import { MIN_CAMERA_FOV } from '../view/cameraController.js';
 import { DialogService } from '../ui/dialogs.js';
@@ -47,7 +47,8 @@ import { SeamLegend } from '../ui/SeamLegend.js';
 import { buildRenderScene } from './renderSceneBuilder.js';
 import { artboardPointFromCanvas } from '../interaction/ray.js';
 import { pickSurface } from '../interaction/surfacePicker.js';
-import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
+import { LOOK_PRESETS, getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
+import { LookPresetStore, applyUserLookToView } from '../render/lookPresetStore.js';
 import { normalizeModes } from '../ui/widgets/modeToggles.js';
 
 export class App {
@@ -57,6 +58,9 @@ export class App {
       renderPreview: renderPresetPreview,
     });
     this.mutator = new MutationEngine();
+    this.lookStore = new LookPresetStore(globalThis.localStorage ?? null, {
+      reservedNames: LOOK_PRESETS.map((preset) => preset.name),
+    });
     this.dialogs = new DialogService();
     this.document = createDocument('parametric');
 
@@ -182,7 +186,9 @@ export class App {
 
   evaluate() {
     this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
+    this.renderer?.invalidateCoordinatePin?.();
     this.controls?.refreshRenderModes?.();
+    this.controls?.refreshCoordinatePin?.();
     this.controls?.refreshFabricate?.();
     this.controls?.refreshLookPresets?.();
     this.controls?.showErrors(this._evaluation.errors);
@@ -373,11 +379,11 @@ export class App {
     let dataUrl = null;
     try {
       if (choiceId === 'composition') {
-        dataUrl = this.presets.ensurePreview('Vortex Stack');
+        dataUrl = this.presets.ensureLargePreview('Vortex Stack', START_WITH_PREVIEW_SIZE);
       } else if (choiceId === 'surface') {
-        dataUrl = renderPresetPreview(createDocument('parametric-surface'));
+        dataUrl = renderPresetPreview(createDocument('parametric-surface'), { size: START_WITH_PREVIEW_SIZE });
       } else if (choiceId === 'classic') {
-        dataUrl = renderPresetPreview(createDocument('parametric'));
+        dataUrl = renderPresetPreview(createDocument('parametric'), { size: START_WITH_PREVIEW_SIZE });
       }
     } catch {
       dataUrl = null;
@@ -877,6 +883,34 @@ export class App {
     const preset = getLookPreset(id);
     if (!preset) return { available: false, reason: 'Unknown preset' };
     return lookPresetAvailability(preset, this.lookPresetContext());
+  }
+
+  saveUserLook(name) {
+    const result = this.lookStore.save(name, this.document.view);
+    if (result.ok) {
+      this.controls?.refreshUserLooks?.();
+      this.notify(`Saved look · ${result.look.name}`);
+    } else {
+      this.notify(result.error, 'error');
+    }
+    return result;
+  }
+
+  applyUserLook(id) {
+    const look = this.lookStore.get(id);
+    if (!look) return false;
+    applyUserLookToView(this.document.view, look);
+    this.lastLookPreset = null;
+    this.rebuild();
+    this.controls?.refreshUserLooks?.();
+    this.notify(`Look · ${look.name}`);
+    return true;
+  }
+
+  deleteUserLook(id) {
+    const removed = this.lookStore.remove(id);
+    if (removed) this.controls?.refreshUserLooks?.();
+    return removed;
   }
 
   applyLookPreset(id) {

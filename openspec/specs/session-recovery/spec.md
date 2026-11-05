@@ -1,7 +1,7 @@
 # session-recovery Specification
 
 ## Purpose
-TBD - created by archiving change tech-debt-hardening. Update Purpose after archive.
+Persist local document snapshots, restore valid sessions automatically, and choose a starting document on first run without silently losing work.
 ## Requirements
 ### Requirement: Automatic snapshots
 
@@ -73,4 +73,3 @@ Corrupt snapshots and storage failures SHALL NOT prevent startup.
 - **WHEN** the stored session cannot be sanitized
 - **THEN** the app starts with the default document
 - **AND** the failure does not throw into the UI
-

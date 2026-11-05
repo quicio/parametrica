@@ -37,6 +37,7 @@ export class PresetManager {
   #favorites = new Set();
   #recent = [];
   #previews = new Map();
+  #largePreviews = new Map();
   lastMetaError = null;
 
   constructor(storage = globalThis.localStorage ?? null, options = {}) {
@@ -189,6 +190,31 @@ export class PresetManager {
     }
     this.#previews.set(name, { hash, dataUrl });
     if (!this.isBuiltIn(name)) this.#persistMeta();
+    return dataUrl;
+  }
+
+  /**
+   * Generate a session-only preview at a larger size. Never persisted.
+   * Used by Start With for composition cards.
+   */
+  ensureLargePreview(name, size) {
+    const doc = this.get(name);
+    if (!doc || typeof this.renderPreview !== 'function') return null;
+    const key = `${name}\u0000${size}`;
+    const hash = previewKey(doc, { size });
+    const cached = this.#largePreviews.get(key);
+    if (cached?.hash === hash) return cached.dataUrl;
+    let dataUrl;
+    try {
+      dataUrl = this.renderPreview(doc, { size });
+    } catch {
+      dataUrl = null;
+    }
+    if (!dataUrl || !dataUrl.startsWith('data:image/png;base64,') || dataUrl.length > 200_000) {
+      this.#largePreviews.delete(key);
+      return null;
+    }
+    this.#largePreviews.set(key, { hash, dataUrl });
     return dataUrl;
   }
 

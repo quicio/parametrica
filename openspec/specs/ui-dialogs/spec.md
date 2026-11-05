@@ -1,7 +1,7 @@
 # ui-dialogs Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Provide injectable prompt and confirmation dialogs so UI flows are testable and do not depend on browser globals.
 ## Requirements
 ### Requirement: Injectable dialogs
 
@@ -30,4 +30,3 @@ directly.
 - **WHEN** the user deletes a non-Inbox project
 - **THEN** the confirmation comes from the dialog service
 - **AND** cancelling leaves projects, series and checkpoints unchanged
-

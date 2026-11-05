@@ -18,6 +18,7 @@ import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js'
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
+import { sanitizePassStyle } from '../render/passStyle.js';
 import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
 
 export const DOCUMENT_VERSION = 3;
@@ -110,6 +111,7 @@ export function createDefaultView() {
     reference: createReference(),
     units: createDefaultUnits(),
     coordinates: createCoordinates(),
+    passStyle: {},
   };
 }
 
@@ -132,6 +134,7 @@ export const DEFAULT_VIEW = Object.freeze({
   reference: Object.freeze({ ...DEFAULT_REFERENCE }),
   units: DEFAULT_UNITS,
   coordinates: DEFAULT_COORDINATES,
+  passStyle: Object.freeze({}),
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
     fill: Object.freeze({
@@ -171,6 +174,7 @@ function mergeView(base, raw) {
     reference: sanitizeReference(source.reference),
     units: sanitizeUnits(source.units ?? base.units),
     coordinates: sanitizeCoordinates(source.coordinates ?? base.coordinates),
+    passStyle: sanitizePassStyle(source.passStyle ?? base.passStyle),
     passOpacity: {
       ...base.passOpacity,
       ...(source.passOpacity && typeof source.passOpacity === 'object' ? source.passOpacity : {}),

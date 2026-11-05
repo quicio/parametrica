@@ -16,6 +16,7 @@ import { SvgContext } from './svgContext.js';
 import { artboardToMillimetres, millimetresPerUnit } from '../core/units.js';
 import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
+import { resolvePassStyle } from '../render/passStyle.js';
 
 /**
  * Active features the SVG builder does not represent as vector primitives.
@@ -111,7 +112,11 @@ export class Exporter {
         }
         const ctx = new SvgContext(width, height, `svg-${index}-${mode}`);
         try {
-          RenderPasses.get(mode).draw(ctx, layerData);
+          const passView = {
+            ...layerData.view,
+            style: resolvePassStyle(mode, view, style),
+          };
+          RenderPasses.get(mode).draw(ctx, { ...layerData, view: passView });
         } catch {
           omitted?.(RenderPasses.get(mode).name);
           continue;

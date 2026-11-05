@@ -1,7 +1,7 @@
 # notebook-persistence Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Keep notebook domain logic independent from its storage repository.
 ## Requirements
 ### Requirement: Notebook repository boundary
 
@@ -51,4 +51,3 @@ Export and import SHALL include projects, series and checkpoints.
 
 - **WHEN** an imported checkpoint references a missing project or series
 - **THEN** the checkpoint moves to Inbox and loses the invalid series
-

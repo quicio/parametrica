@@ -1,7 +1,7 @@
 # progressive-parameters Specification
 
 ## Purpose
-TBD - created by archiving change lab-ui-clarity. Update Purpose after archive.
+Show shape-defining parameters first and keep advanced controls available without overwhelming the panel.
 ## Requirements
 ### Requirement: Essential parameters
 
@@ -42,4 +42,3 @@ default.
 - **THEN** the Advanced toggle is shown
 - **AND** its controls are visible by default
 - **AND** only one Modulate (time) folder exists for the generator
-

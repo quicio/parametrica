@@ -150,6 +150,13 @@ extraction and conversion to a Fourier document.
 | Surface inspection integration review + reference extent fix | shipped (2026-11-03) |
 | Helix quad view: 3D + XY/XZ/YZ canvases | shipped (2026-11-02) |
 | Gradient color metrics: auto/height/radius/curvature/arc | shipped (2026-11-02) |
+| Composition preview: 224 px Start With previews and size-aware cache | shipped (2026-11-04) |
+| UI maintainability: inspector sections, p5 overlays and domain test modules | shipped (2026-11-04) |
+| Instance performance: 24-instance benchmark and smoke guardrail | shipped (2026-11-04) |
+| Spec purpose pass: all archived purposes specified and gated | shipped (2026-11-04) |
+| Custom user Looks: local view-level presets | shipped (2026-11-04) |
+| Per-pass appearance: optional color/width overrides | shipped (2026-11-04) |
+| Coordinate readout polish: 3D surface hits and pinned readout | shipped (2026-11-04) |
 
 ### Foundation contracts (this phase)
 

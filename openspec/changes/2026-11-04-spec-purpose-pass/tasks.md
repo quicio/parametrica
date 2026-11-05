@@ -1,13 +1,13 @@
 ## 1. Purposes
 
-- [ ] 1.1 Replace all 24 TBD Purpose blocks.
-- [ ] 1.2 Add a placeholder check to the quality gate.
-- [ ] 1.3 Run strict OpenSpec validation and the check.
+- [x] 1.1 Replace all 24 TBD Purpose blocks.
+- [x] 1.2 Add a placeholder check to the quality gate.
+- [x] 1.3 Run strict OpenSpec validation and the check.
 
 ## 2. Acceptance
 
-- [ ] 2.1 Update the audit/docs reference if needed.
-- [ ] 2.2 Archive the change.
+- [x] 2.1 Update the audit/docs reference if needed.
+- [x] 2.2 Archive the change.
 
 ## Acceptance criteria
 

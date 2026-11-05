@@ -166,3 +166,39 @@ test('no-op Canvas and Coordinates controls are disabled with reasons', async ({
   await expect(surfaceCoordinates.locator('.reference-toggle-checkbox')).toBeEnabled();
   await expect(surfaceCoordinates.locator('.coordinates-toggle-checkbox')).toBeEnabled();
 });
+
+test('user Looks save, apply and delete without touching geometry', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Torus'));
+  await page.waitForTimeout(400);
+  const looks = await openSection(page, 'Looks');
+  const technical = looks.locator('.look-preset[data-preset="technical"]');
+  const name = looks.locator('.user-look-name');
+  await technical.click();
+  await page.waitForTimeout(250);
+  const bbox = await page.evaluate(() => window.__parametrica.evaluation.worldBBox);
+
+  await name.fill('My Technical');
+  await looks.locator('.user-look-save').click();
+  await page.waitForTimeout(250);
+  const item = looks.locator('.user-look-item', { hasText: 'My Technical' });
+  await expect(item).toBeVisible();
+
+  await looks.locator('.look-preset[data-preset="line"]').click();
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => window.__parametrica.document.view.modes)).toEqual(['stroke']);
+
+  await item.locator('.user-look-apply').click();
+  await page.waitForTimeout(250);
+  const applied = await page.evaluate(() => ({
+    modes: window.__parametrica.document.view.modes,
+    bbox: window.__parametrica.evaluation.worldBBox,
+  }));
+  expect(applied.modes).toEqual(expect.arrayContaining(['stroke', 'points', 'tangents', 'normals']));
+  expect(applied.bbox).toEqual(bbox);
+
+  await item.locator('.user-look-delete').click();
+  await page.locator('.parametrica-dialog-confirm').click();
+  await page.waitForTimeout(250);
+  await expect(looks.locator('.user-look-item', { hasText: 'My Technical' })).toHaveCount(0);
+});

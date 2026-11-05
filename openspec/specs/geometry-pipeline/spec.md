@@ -1,7 +1,7 @@
 # geometry-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-world-view-geometry. Update Purpose after archive.
+Separate world geometry, view projection and render stages so each can be tested and cached independently.
 ## Requirements
 ### Requirement: Ordered geometry pipeline
 
@@ -166,4 +166,3 @@ Caching SHALL preserve correctness, partial reuse and document/layer isolation.
 - **THEN** it uses an in-process data structure owned by the application or
   pipeline
 - **AND** no external cache library is introduced without a measured need
-

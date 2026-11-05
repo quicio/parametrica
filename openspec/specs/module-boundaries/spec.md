@@ -1,7 +1,7 @@
 # module-boundaries Specification
 
 ## Purpose
-TBD - created by archiving change 2026-11-01-extensibility-refactor. Update Purpose after archive.
+Split shared helpers by responsibility so registries, geometry and generators remain independently testable.
 ## Requirements
 ### Requirement: Responsibility-based helper modules
 
@@ -48,4 +48,3 @@ The Node suite SHALL load registries and core modules without a DOM.
 - **WHEN** the smoke test imports generators, operators and render passes
 - **THEN** no module accesses `window`, `document` or `localStorage` at import
   time
-

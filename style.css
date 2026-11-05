@@ -3810,3 +3810,133 @@ textarea:focus-visible {
     height: 120px;
   }
 }
+
+/* ——— User Looks ——— */
+
+.user-looks {
+  padding: 8px 12px 10px;
+  border-top: 1px solid #101010;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-look-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+}
+
+.user-look-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.user-look-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px;
+  align-items: center;
+  border: 1px solid var(--hairline);
+  padding: 4px;
+}
+
+.user-look-item-name {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-look-item .lab-button {
+  font-size: 7px;
+  padding: 3px 5px;
+}
+
+.user-look-empty {
+  padding: 4px 0;
+}
+
+/* ——— Per-pass appearance ——— */
+
+.mode-toggle-appearance {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 4px 25px;
+}
+
+.mode-toggle-appearance-label {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.mode-toggle-appearance .pass-color {
+  width: 22px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  background: #0d0d0d;
+  cursor: pointer;
+}
+
+.mode-toggle-appearance .pass-width {
+  width: 44px;
+  background: #0d0d0d;
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 2px 3px;
+}
+
+.pass-style-reset {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--hairline);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.pass-style-reset:hover {
+  color: var(--swiss-red);
+  border-color: var(--swiss-red);
+}
+
+/* ——— Coordinates pin ——— */
+
+.coordinates-pin-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 2px;
+  flex-wrap: wrap;
+}
+
+.coordinates-pin-row .lab-button {
+  font-size: 7px;
+  padding: 3px 6px;
+}
+
+.coordinates-pin-status {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}

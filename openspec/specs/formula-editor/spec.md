@@ -1,7 +1,7 @@
 # formula-editor Specification
 
 ## Purpose
-TBD - created by archiving change tech-debt-hardening. Update Purpose after archive.
+Provide CodeMirror-based expression editing while preserving the ExpressionField contract.
 ## Requirements
 ### Requirement: CodeMirror editor
 
