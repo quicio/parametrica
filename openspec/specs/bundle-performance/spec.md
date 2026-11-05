@@ -28,3 +28,13 @@ and eager chunks SHALL stay below the 500 kB warning threshold.
 - **WHEN** `npm run build` runs
 - **THEN** the app shell and eager vendors are below 500 kB each
 - **AND** the lazy p5 chunk is documented as the only large chunk
+
+### Requirement: Instance performance gate
+
+Instance workloads SHALL have a documented performance gate.
+
+#### Scenario: Regression
+
+- **WHEN** the 24-instance benchmark regresses more than 25% on the same machine
+- **THEN** the regression is investigated before raising the limit
+

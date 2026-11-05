@@ -48,3 +48,15 @@ The Node suite SHALL load registries and core modules without a DOM.
 - **WHEN** the smoke test imports generators, operators and render passes
 - **THEN** no module accesses `window`, `document` or `localStorage` at import
   time
+
+### Requirement: UI import boundaries
+
+Inspector section modules SHALL depend on shared UI helpers, registries and App
+APIs, not on each other.
+
+#### Scenario: Section import
+
+- **WHEN** one section module is loaded
+- **THEN** it does not import another section implementation
+- **AND** shared rules live in a common helper
+

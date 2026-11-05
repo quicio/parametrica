@@ -114,3 +114,13 @@ document.
 - **WHEN** the overlay is the first-run chooser
 - **THEN** choosing a card does not ask for confirmation
 
+### Requirement: Sharp composition preview
+
+The Composition card SHALL use a preview large enough for its card.
+
+#### Scenario: Start With
+
+- **WHEN** the Composition card is rendered
+- **THEN** its preview is generated at 224 px
+- **AND** its dimensions match the other starting cards
+

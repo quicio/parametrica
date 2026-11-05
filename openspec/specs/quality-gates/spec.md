@@ -111,3 +111,24 @@ generators, presets, render passes and test groups.
 
 - **WHEN** a generator, preset or pass is added
 - **THEN** the documented counts and lists are updated in the same change
+
+### Requirement: Spec purpose gate
+
+Documentation quality SHALL be checked alongside code gates.
+
+#### Scenario: Gate run
+
+- **WHEN** quality gates run
+- **THEN** spec purpose placeholders are detected
+- **AND** the existing unit/e2e/build gates remain unchanged
+
+### Requirement: Refactor parity
+
+Maintainability refactors SHALL preserve the existing gates.
+
+#### Scenario: Gate parity
+
+- **WHEN** the split is complete
+- **THEN** all unit checks, e2e tests and OpenSpec validation pass
+- **AND** no visual or document snapshot changes are required
+
