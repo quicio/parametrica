@@ -315,6 +315,7 @@ function normalizePreparation(raw) {
     csgStrategy: ['auto', 'manifold', 'bsp', 'remesh'].includes(raw.csgStrategy) ? raw.csgStrategy : 'auto',
     selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
     remeshResolution: raw.remeshResolution,
+    quality: raw.quality,
   };
 }
 

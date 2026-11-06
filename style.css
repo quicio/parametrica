@@ -3974,3 +3974,52 @@ textarea:focus-visible {
 .fabricate-preparation {
   color: var(--ink-faint);
 }
+
+/* ——— Fabricate workflow ——— */
+
+.fabricate-plan,
+.fabricate-suggestion,
+.fabricate-next-action {
+  font-family: var(--mono);
+  font-size: 8px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  padding: 4px 0;
+}
+
+.fabricate-plan {
+  color: var(--ink);
+  border-top: 1px solid #101010;
+  border-bottom: 1px solid #101010;
+  margin: 4px 0;
+}
+
+.fabricate-next-action {
+  color: var(--swiss-red);
+}
+
+.fabricate-group {
+  border-top: 1px solid #101010;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+.fabricate-group-title {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 2px 0 4px;
+}
+
+.fabricate-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fabricate-quality-row .fabricate-quality {
+  min-width: 90px;
+}

@@ -23,8 +23,33 @@ export function buildFabricateSection(controls) {
     const reason = document.createElement('div');
     reason.className = 'fabricate-reason';
 
+    const plan = document.createElement('div');
+    plan.className = 'fabricate-plan';
+    const suggestion = document.createElement('div');
+    suggestion.className = 'fabricate-suggestion';
+    const nextAction = document.createElement('div');
+    nextAction.className = 'fabricate-next-action';
+
     const rows = document.createElement('div');
     rows.className = 'fabricate-rows';
+
+    const makeGroup = (title, className) => {
+      const wrap = document.createElement('div');
+      wrap.className = `fabricate-group ${className}`;
+      const head = document.createElement('div');
+      head.className = 'fabricate-group-title';
+      head.textContent = title;
+      const groupBody = document.createElement('div');
+      groupBody.className = 'fabricate-group-body';
+      wrap.append(head, groupBody);
+      rows.appendChild(wrap);
+      return groupBody;
+    };
+    const sourceGroup = makeGroup('Source', 'fabricate-group-source');
+    const repairGroup = makeGroup('Repair', 'fabricate-group-repair');
+    const combineGroup = makeGroup('Combine', 'fabricate-group-combine');
+    const outputGroup = makeGroup('Output', 'fabricate-group-output');
+    const checksGroup = makeGroup('Checks', 'fabricate-group-checks');
 
     const scaleRow = document.createElement('div');
     scaleRow.className = 'fabricate-row';
@@ -66,7 +91,7 @@ export function buildFabricateSection(controls) {
     });
     scaleWrap.append(unitSelect, scaleInput);
     scaleRow.append(scaleLabel, scaleWrap);
-    rows.appendChild(scaleRow);
+    outputGroup.appendChild(scaleRow);
 
     const fabrication = controls.app.document.view.fabrication;
     const scopeRow = document.createElement('div');
@@ -89,7 +114,7 @@ export function buildFabricateSection(controls) {
     scopeSelect.value = fabrication.scope ?? 'single';
     scopeSelect.title = 'Single exports the first valid body; multi-body scopes merge separate closed shells.';
     scopeRow.append(scopeLabel, scopeSelect);
-    rows.appendChild(scopeRow);
+    sourceGroup.appendChild(scopeRow);
 
     const booleanRow = document.createElement('div');
     booleanRow.className = 'fabricate-row';
@@ -144,7 +169,7 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
     booleanRow.append(booleanLabel, booleanSelect, csgSelect);
-    rows.appendChild(booleanRow);
+    combineGroup.appendChild(booleanRow);
 
     const formatRow = document.createElement('div');
     formatRow.className = 'fabricate-row';
@@ -167,7 +192,38 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
     formatRow.append(formatLabel, formatSelect);
-    rows.appendChild(formatRow);
+    outputGroup.appendChild(formatRow);
+    const qualityRow = document.createElement('div');
+    qualityRow.className = 'fabricate-row fabricate-quality-row';
+    const qualityLabel = document.createElement('span');
+    qualityLabel.className = 'fabricate-label';
+    qualityLabel.textContent = 'Quality';
+    const qualitySelect = document.createElement('select');
+    qualitySelect.className = 'artboard-input fabricate-quality';
+    for (const [value, label] of [
+      ['custom', 'Custom'],
+      ['draft', 'Draft · 32'],
+      ['standard', 'Standard · 64'],
+      ['high', 'High · 128'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      qualitySelect.appendChild(option);
+    }
+    qualitySelect.value = fabrication.quality ?? 'custom';
+    qualitySelect.title = 'Draft/Standard/High set the repair resolution. Manual edits mark Custom.';
+    qualitySelect.addEventListener('change', () => {
+      fabrication.quality = qualitySelect.value;
+      if (qualitySelect.value !== 'custom') {
+        fabrication.remeshResolution = { draft: 32, standard: 64, high: 128 }[qualitySelect.value];
+      }
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    qualityRow.append(qualityLabel, qualitySelect);
+    repairGroup.appendChild(qualityRow);
+
     const prepRow = document.createElement('div');
     prepRow.className = 'fabricate-row fabricate-prepare-row';
     const prepLabel = document.createElement('span');
@@ -203,7 +259,7 @@ export function buildFabricateSection(controls) {
     });
     prepWrap.append(weld.wrap, cap.wrap);
     prepRow.append(prepLabel, prepWrap);
-    rows.appendChild(prepRow);
+    repairGroup.appendChild(prepRow);
 
     const prepHint = controls.panelHint(
       'Derived for fabrication only. Render geometry and SurfaceMapping are unchanged.',
@@ -319,13 +375,14 @@ export function buildFabricateSection(controls) {
       const value = Number(remeshInput.value);
       if (!Number.isFinite(value)) return;
       fabrication.remeshResolution = Math.max(16, Math.min(192, Math.floor(value)));
+      fabrication.quality = 'custom';
       remeshInput.value = String(fabrication.remeshResolution);
       controls.app.rebuild();
       controls.refreshFabricate();
     });
     repairWrap.append(repairToggle, strategySelect, topologySelect, nonOrientableSelect, selfSelect, remeshInput);
     repairRow.append(repairLabel, repairWrap);
-    rows.appendChild(repairRow);
+    repairGroup.appendChild(repairRow);
 
     const makeRow = (label, className) => {
       const row = document.createElement('div');
@@ -337,7 +394,7 @@ export function buildFabricateSection(controls) {
       value.className = `fabricate-value ${className}`;
       value.textContent = '—';
       row.append(name, value);
-      rows.appendChild(row);
+      checksGroup.appendChild(row);
       return value;
     };
     const triangles = makeRow('Triangles', 'fabricate-triangles');
@@ -376,16 +433,18 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
 
-    panel.append(status, source, reason, rows, prepHint, progress, compositionNote, cancelButton, exportButton);
+    panel.append(status, source, reason, plan, suggestion, nextAction, rows, prepHint, progress, compositionNote, cancelButton, exportButton);
     body.appendChild(panel);
 
     controls.fabricateEls = {
-      panel, status, source, reason, triangles, vertices, bodies, boolean, objects, volume,
+      panel, status, source, reason, plan, suggestion, nextAction,
+      triangles, vertices, bodies, boolean, objects, volume,
       worldSize, physical, warnings, preparation, repairStatus, progress, cancelButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
       topology: topologySelect, nonOrientable: nonOrientableSelect,
       selfIntersections: selfSelect, remeshResolution: remeshInput,
+      quality: qualitySelect,
       prepHint,
     };
     controls.refreshFabricate();

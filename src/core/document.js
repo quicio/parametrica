@@ -81,6 +81,7 @@ export const DEFAULT_FABRICATION = Object.freeze({
   csgStrategy: 'auto',
   selfIntersections: 'none',
   remeshResolution: 64,
+  quality: 'custom',
 });
 
 export function sanitizeFabricationSettings(raw) {
@@ -110,6 +111,7 @@ export function sanitizeFabricationSettings(raw) {
     remeshResolution: Number.isFinite(Number(source.remeshResolution))
       ? Math.min(Math.max(Math.floor(Number(source.remeshResolution)), 16), 192)
       : DEFAULT_FABRICATION.remeshResolution,
+    quality: ['custom', 'draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'custom',
   };
 }
 

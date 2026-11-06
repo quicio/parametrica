@@ -594,8 +594,11 @@ export class Controls {
     }
     if (els.remeshResolution) {
       els.remeshResolution.value = String(preparation.remeshResolution ?? 64);
-      els.remeshResolution.disabled = preparation.repair !== true
-        || (preparation.selfIntersections ?? 'none') === 'none';
+      els.remeshResolution.disabled = preparation.repair !== true;
+    }
+    if (els.quality) {
+      els.quality.value = preparation.quality ?? 'custom';
+      els.quality.disabled = preparation.repair !== true;
     }
   }
 
@@ -749,6 +752,66 @@ export class Controls {
     els.exportButton.title = ready
       ? `Write ${format === '3MF' ? 'one 3MF package with separate objects' : 'one binary STL'} in millimetres`
       : (report.reason ?? 'Select a validated closed Mesh/Solid');
+    this.updateFabricateNarrative(report);
+  }
+
+  updateFabricateNarrative(report, errorMessage = null) {
+    const els = this.fabricateEls;
+    if (!els) return;
+    const doc = this.app.document;
+    const preparation = doc.view?.fabrication ?? {};
+    const units = doc.view?.units ?? {};
+    const scope = report?.scope ?? preparation.scope ?? 'single';
+    const scopeLabel = scope === 'composition' ? 'composition' : (scope === 'active-layer' ? 'active layer' : 'single body');
+    const format = (preparation.format ?? 'stl') === '3mf' ? '3MF' : 'STL';
+    const parts = ['Plan', scopeLabel];
+    if (preparation.repair) {
+      const self = preparation.selfIntersections && preparation.selfIntersections !== 'none'
+        ? ` ${preparation.selfIntersections}`
+        : '';
+      parts.push(`repair${self} @${preparation.remeshResolution ?? 64}`);
+    }
+    if (preparation.boolean && preparation.boolean !== 'none') {
+      parts.push(`${preparation.boolean}${preparation.csgStrategy ? ` (${preparation.csgStrategy})` : ''}`);
+    }
+    parts.push(format);
+    parts.push(units.world && units.world !== 'unitless' ? units.world : 'unitless');
+    if (els.plan) els.plan.textContent = parts.join(' · ');
+
+    const bbox = report?.bbox ?? this.app.evaluation?.worldBBox ?? null;
+    const diagonal = bbox
+      ? Math.hypot(bbox.width, bbox.height, bbox.depth ?? 0)
+      : null;
+    if (els.suggestion) {
+      if (diagonal) {
+        const suggested = diagonal < 10 ? 32 : (diagonal < 30 ? 64 : 128);
+        els.suggestion.textContent = `Suggested resolution: ${suggested} · bbox ${diagonal.toFixed(1)}`;
+      } else {
+        els.suggestion.textContent = 'Suggested resolution: —';
+      }
+    }
+    if (els.nextAction) {
+      els.nextAction.textContent = this.nextFabricationAction(report, preparation, errorMessage);
+    }
+  }
+
+  nextFabricationAction(report, preparation, errorMessage = null) {
+    if (errorMessage) return `Next: ${errorMessage}`;
+    if (!report) return 'Next: running heavy fabrication job…';
+    if (!report.unitsReady) return 'Next: set an explicit world scale in Output.';
+    if (!report.source) {
+      if (!report.candidates?.length) return 'Next: select a spatial layer with a closed body.';
+      if (!preparation.repair && !preparation.cap) return 'Next: enable Repair or Cap to close the mesh.';
+      if ((preparation.selfIntersections ?? 'none') === 'none'
+        && (report.errors ?? []).some((error) => error.includes('self-intersect'))) {
+        return 'Next: choose Auto or Manifold SDF for self-intersections.';
+      }
+      if (preparation.boolean && preparation.boolean !== 'none' && (report.closed ?? 0) < 2) {
+        return 'Next: select at least two validated bodies for the boolean.';
+      }
+      return `Next: ${report.reason ?? 'inspect the checks.'}`;
+    }
+    return 'Ready to export.';
   }
 
   renderFabricateWorking(phase, value) {
@@ -764,6 +827,7 @@ export class Controls {
       els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
     }
     els.reason.textContent = 'Heavy fabrication job running off the main thread.';
+    this.updateFabricateNarrative(null);
   }
 
   onFabricationProgress({ phase, value }) {
@@ -797,6 +861,7 @@ export class Controls {
     if (els.cancelButton) els.cancelButton.hidden = true;
     if (els.progress) els.progress.hidden = true;
     els.reason.textContent = message;
+    this.updateFabricateNarrative(null, message);
   }
 
   cancelFabrication() {
@@ -812,6 +877,7 @@ export class Controls {
     if (els.cancelButton) els.cancelButton.hidden = true;
     if (els.progress) els.progress.hidden = true;
     els.reason.textContent = 'Fabrication job cancelled.';
+    this.updateFabricateNarrative(null, 'job cancelled; adjust settings and run again.');
   }
 
   buildStyleSection() { buildStyleSection(this); }

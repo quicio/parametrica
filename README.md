@@ -26,7 +26,7 @@ npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
 npm test             # node-only verification suite (2501 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (148 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (150 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -209,7 +209,7 @@ offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (148 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (150 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting

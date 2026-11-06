@@ -453,6 +453,11 @@ repair self-intersecting meshes, with remesh as fallback.
 `fabrication-worker` moves heavy repair/CSG/SDF jobs to a cancellable Web Worker
 with progress, result caching and a synchronous fallback.
 
+### Phase 11 — Fabricate workflow (shipped)
+
+`fabricate-workflow` groups Fabricate into Source/Repair/Combine/Output/Checks,
+adds a plan summary, quality presets, suggested resolution and a next action.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -525,6 +530,7 @@ with progress, result caching and a synchronous fallback.
 | `manifold-engine` | archived | shipped |
 | `sdf-intersection-repair` | archived | shipped |
 | `fabrication-worker` | archived | shipped |
+| `fabricate-workflow` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |
