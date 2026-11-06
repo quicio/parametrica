@@ -51,6 +51,17 @@ export function run(assert) {
   assert(detectSelfIntersections(repaired.mesh).count === 0, 'repaired body has no self-intersections');
   assert(JSON.stringify(mesh) === before, 'self-intersection repair does not mutate its input');
 
+  const sdf = repairSelfIntersections(mesh, { strategy: 'sdf', remeshResolution: 32 });
+  assert(sdf.mesh && sdf.validation.ok, 'Manifold SDF resolves self-intersections');
+  assert(sdf.report.selfIntersectionStrategy === 'sdf', 'SDF repair reports the SDF strategy');
+  assert(sdf.report.selfIntersectionPairs > 0, 'SDF repair reports detected pairs');
+  assert(Number.isFinite(sdf.report.edgeLength), 'SDF repair reports its edge length');
+  assert(Math.abs(sdf.validation.meta.volume - 12) < 0.2, 'SDF volume approximates the merged solid');
+  assert(detectSelfIntersections(sdf.mesh).count === 0, 'SDF output has no detected self-intersections');
+
+  const auto = repairSelfIntersections(mesh, { strategy: 'auto', remeshResolution: 32 });
+  assert(auto.report.selfIntersectionStrategy === 'sdf' && auto.validation.ok, 'auto prefers Manifold SDF when ready');
+
   const again = repairSelfIntersections(mesh, { strategy: 'remesh', remeshResolution: 32 });
   assert(JSON.stringify(again.mesh) === JSON.stringify(repaired.mesh), 'remesh self-intersection repair is deterministic');
 
@@ -78,9 +89,23 @@ export function run(assert) {
       capStrategy: 'auto',
     },
   });
-  assert(on.exportable === true, 'self-intersection remesh enables fabrication');
-  assert(on.repair.selfIntersectionStrategy === 'remesh', 'fabrication report includes the strategy');
+  assert(on.exportable === true, 'self-intersection repair enables fabrication');
+  assert(on.repair.selfIntersectionStrategy === 'sdf', 'fabrication report includes the SDF strategy');
   assert(on.repair.selfIntersectionPairs > 0, 'fabrication report includes the pair count');
+
+  const sdfReport = buildFabricationReport({
+    evaluation,
+    layerIndex: 0,
+    units: UNITS,
+    preparation: {
+      repair: true,
+      selfIntersections: 'sdf',
+      remeshResolution: 32,
+      capStrategy: 'auto',
+    },
+  });
+  assert(sdfReport.exportable === true, 'SDF self-intersection repair enables fabrication');
+  assert(sdfReport.repair.selfIntersectionStrategy === 'sdf', 'fabrication report includes the SDF strategy');
 
   const invalid = repairSelfIntersections(mesh, { strategy: 'remesh', remeshResolution: 16 });
   assert(invalid.validation.ok === true, 'low remesh resolution still validates');

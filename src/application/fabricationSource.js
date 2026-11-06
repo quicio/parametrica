@@ -313,7 +313,7 @@ function normalizePreparation(raw) {
     nonOrientable: ['cut', 'reject'].includes(raw.nonOrientable) ? raw.nonOrientable : 'cut',
     maxTopologyEdges: raw.maxTopologyEdges,
     csgStrategy: ['auto', 'manifold', 'bsp', 'remesh'].includes(raw.csgStrategy) ? raw.csgStrategy : 'auto',
-    selfIntersections: ['none', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
+    selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
     remeshResolution: raw.remeshResolution,
   };
 }

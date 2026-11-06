@@ -261,7 +261,7 @@ function faceNormal(vertices, face) {
   return length > 1e-12 ? { x: normal.x / length, y: normal.y / length, z: normal.z / length } : null;
 }
 
-function closestPointOnMesh(entry, point) {
+export function closestPointOnMesh(entry, point) {
   let best = null;
   const stack = [entry.root];
   while (stack.length) {
@@ -351,6 +351,7 @@ export function buildTriangleBvh(mesh) {
       if (!a || !b || !c) continue;
       triangles.push({
         a, b, c,
+        normal: normalize(cross(subtract(b, a), subtract(c, a))),
         bbox: {
           min: { x: Math.min(a.x, b.x, c.x), y: Math.min(a.y, b.y, c.y), z: Math.min(a.z, b.z, c.z) },
           max: { x: Math.max(a.x, b.x, c.x), y: Math.max(a.y, b.y, c.y), z: Math.max(a.z, b.z, c.z) },
@@ -380,8 +381,55 @@ function buildNode(triangles, indices) {
 }
 
 export function insideMesh(entry, point) {
+  return insideMeshWithDirection(entry, point, normalize({ x: 1, y: 0.371390676, z: 0.529 }));
+}
+
+export function insideMeshMulti(entry, point) {
+  const directions = [
+    normalize({ x: 1, y: 0.371390676, z: 0.529 }),
+    normalize({ x: -0.271, y: 1, z: 0.613 }),
+    normalize({ x: 0.417, y: -0.529, z: 1 }),
+  ];
+  let inside = 0;
+  for (const direction of directions) {
+    if (insideMeshWithDirection(entry, point, direction)) inside++;
+  }
+  return inside >= 2;
+}
+
+export function windingNumber(entry, point, direction) {
   const origin = { x: point.x + 1e-7, y: point.y + 1e-7, z: point.z + 1e-7 };
-  const direction = normalize({ x: 1, y: 0.371390676, z: 0.529 });
+  let winding = 0;
+  const stack = [entry.root];
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current || !rayBox(origin, direction, current.bbox)) continue;
+    if (current.indices) {
+      for (const index of current.indices) {
+        const triangle = entry.triangles[index];
+        if (!rayTriangle(origin, direction, triangle)) continue;
+        winding += dot(triangle.normal, direction) >= 0 ? 1 : -1;
+      }
+    } else {
+      stack.push(current.left, current.right);
+    }
+  }
+  return winding;
+}
+
+export function windingNumberMulti(entry, point) {
+  const directions = [
+    normalize({ x: 1, y: 0.371390676, z: 0.529 }),
+    normalize({ x: -0.271, y: 1, z: 0.613 }),
+    normalize({ x: 0.417, y: -0.529, z: 1 }),
+  ];
+  const values = directions.map((direction) => windingNumber(entry, point, direction));
+  values.sort((a, b) => a - b);
+  return values[1];
+}
+
+export function insideMeshWithDirection(entry, point, direction) {
+  const origin = { x: point.x + 1e-7, y: point.y + 1e-7, z: point.z + 1e-7 };
   let hits = 0;
   const stack = [entry.root];
   while (stack.length) {

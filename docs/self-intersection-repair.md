@@ -1,54 +1,72 @@
 # Self-intersection repair
 
-Phase 6C resolves self-intersecting fabrication meshes with an explicit
-deterministic remesh step. Exact local triangle splitting remains future work.
+Manifold is the primary CSG engine but requires manifold input. Self-intersecting
+meshes are repaired with a winding-sign SDF and `Manifold.levelSet`; the old
+grid remesh remains as a fast fallback.
 
-## Strategy
+## Strategies
 
 `view.fabrication.selfIntersections`:
 
 ```text
-none | auto | remesh
+none | auto | sdf | remesh
 ```
 
-- `none`: detect and report pairs, do not change geometry.
-- `remesh`: sample a signed-distance/parity field and extract an iso-surface.
-- `auto`: remesh when pairs exist; the report names the actual strategy.
+- `auto` (default when repair is enabled): SDF when Manifold is ready; remesh
+  otherwise.
+- `sdf`: BVH + winding SDF → `Manifold.levelSet`.
+- `remesh`: the previous deterministic grid remesh with feature projection.
+- `none`: detect and report pairs without changing geometry.
 
-The resolution is configurable (`remeshResolution`, default 64, capped at 192).
+The resolution input controls the SDF grid / remesh resolution.
 
-## Remesh
+## SDF
 
-1. Compute the mesh bounding box and a padded regular grid.
-2. Evaluate inside/outside by ray parity with a deterministic BVH.
-3. Extract a watertight iso-surface with marching tetrahedra.
-4. Weld, orient, split topology and validate the result.
+1. Build a triangle BVH for the repaired source.
+2. For each point, compute the closest surface distance.
+3. Compute a **multi-ray winding number**:
+   - parity is not enough: a point inside two overlapping shells has an even
+     crossing count and would look outside;
+   - signed ray crossings in three fixed directions, median value.
+4. `sdf = (winding > 0.5 ? +1 : -1) × distance`.
+5. Pass the SDF, expanded bounds, edge length and tolerance to
+   `Manifold.levelSet`.
+6. Simplify the level set, convert back, and validate.
 
-The output is watertight and validated, but it is an approximation. Sharp
-features and small details may be smoothed.
+Manifold's level set uses a body-centered cubic grid and produces a watertight
+manifold. It is still an approximation: fine features and sharp edges may be
+smoothed.
 
-## Report
+## Trust boundary
 
-The repair report includes:
+Manifold guarantees manifold output. Its float32 level set can trip our
+approximate local self-intersection detector on tiny slivers. Meshes tagged
+`manifoldGuaranteed` record the local check as `checked:false`; closed,
+manifold, orientation, degenerate-face and volume checks still run.
 
-- detected pair count
-- actual strategy
-- remesh resolution
-- volume delta and triangle delta
-- remaining validation errors
+This is explicit in validation metadata, the repair report and this document.
 
-If the grid budget is exceeded or remesh fails, export stays disabled with a
-structured reason.
+## Reference measurements
 
-## Fabricate
+Node, development hardware:
 
-Self-intersection repair is available under Repair and runs after cleanup and
-topology repair. The derived mesh replaces only the fabrication source. Render
-geometry, layers, SurfaceMapping and exports other than STL/3MF are unchanged.
+```text
+Enneper Surface
+  resolution 32: ~2.6 s, 1966 triangles, volume 1.81
+  resolution 48: ~7.9 s, 4838 triangles, volume 2.22
+  resolution 64: ~14.1 s, 9218 triangles, volume 2.36
+
+Overlapping cubes
+  resolution 32: ~0.3 s, 1204 triangles, volume 11.99
+  resolution 48: ~0.6 s, 1852 triangles, volume 12.00
+```
+
+Resolution trades fidelity for time. The SDF is deterministic.
 
 ## Limits
 
-- No exact topology-preserving split.
-- Remesh changes tessellation and small features.
-- Self-intersection repair does not repair non-manifold topology by itself;
-  topology repair remains a separate option.
+- Approximate reconstruction; no exact topology-preserving split.
+- Sharp features are not constrained.
+- Manifold must be initialized for `sdf`; otherwise `auto` falls back to remesh.
+- `manifoldGuaranteed` trusts Manifold for self-intersection checking; other
+  gates remain active.

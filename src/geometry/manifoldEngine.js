@@ -117,6 +117,68 @@ export function manifoldBoolean(operation, operands, { tolerance = 1e-4 } = {}) 
   }
 }
 
+export function manifoldLevelSet(sdf, {
+  bounds,
+  edgeLength,
+  tolerance = -1,
+  level = 0,
+  repairTolerance = 1e-4,
+} = {}) {
+  const stats = {
+    engine: 'manifold',
+    strategy: 'manifold-levelset',
+    edgeLength,
+    tolerance,
+    outputTriangles: 0,
+  };
+  if (!wasm) {
+    return failure('not-ready', 'Manifold is still loading', stats);
+  }
+  if (!bounds || !Number.isFinite(edgeLength) || edgeLength <= 0) {
+    return failure('invalid-options', 'manifoldLevelSet requires bounds and a positive edgeLength', stats);
+  }
+  let manifold = null;
+  try {
+    const box = {
+      min: Array.isArray(bounds.min) ? bounds.min : [bounds.min.x, bounds.min.y, bounds.min.z],
+      max: Array.isArray(bounds.max) ? bounds.max : [bounds.max.x, bounds.max.y, bounds.max.z],
+    };
+    manifold = wasm.Manifold.levelSet(sdf, box, edgeLength, level, tolerance);
+    if (manifold.numTri() > 0) {
+      const simplified = manifold.simplify(Math.max(repairTolerance, edgeLength * 1e-4));
+      manifold.delete();
+      manifold = simplified;
+    }
+    const status = manifold.status();
+    if (status !== 'NoError') return failure('manifold-error', `Manifold levelSet returned ${status}`, stats);
+    if (manifold.numTri() === 0) return { ok: true, empty: true, geometry: null, validation: null, stats };
+    const geometry = fromManifold(manifold, 'sdf-manifold');
+    let validation = validateMesh(geometry);
+    let output = geometry;
+    if (!validation.ok) {
+      const repaired = repairMesh(geometry, {
+        tolerance: repairTolerance,
+        capStrategy: 'auto',
+        orient: false,
+        topology: 'split',
+      });
+      output = repaired.mesh ?? geometry;
+      validation = repaired.validation ?? validateMesh(output);
+      stats.repaired = repaired.report?.changed ?? false;
+    }
+    stats.outputTriangles = output.faces.length;
+    if (!validation.ok) {
+      return failure('invalid-result', validation.errors[0] ?? 'levelSet output failed validation', stats, validation);
+    }
+    output.meta = { ...output.meta, source: 'manifold-levelset' };
+    return { ok: true, empty: false, geometry: output, validation, stats };
+  } catch (error) {
+    return failure('manifold-error', error?.message ?? String(error), stats);
+  } finally {
+    if (manifold) manifold.delete();
+  }
+}
+
 function toManifoldMesh(mesh, tolerance) {
   const vertProperties = new Float32Array(mesh.vertices.length * 3);
   for (let i = 0; i < mesh.vertices.length; i++) {
@@ -186,7 +248,7 @@ function fromManifold(manifold, id) {
     const c = compactIndex(output.triVerts[i + 2]);
     if (a !== b && b !== c && c !== a) faces.push([a, b, c]);
   }
-  return createMesh({ id, vertices: compact, faces, meta: { source: 'manifold' } });
+  return createMesh({ id, vertices: compact, faces, meta: { source: 'manifold', manifoldGuaranteed: true } });
 }
 
 function boundaryMesh(geometry) {

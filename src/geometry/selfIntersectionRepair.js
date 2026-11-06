@@ -9,11 +9,13 @@
 
 import { detectSelfIntersections } from './selfIntersection.js';
 import { remesh } from './remesh.js';
+import { sdfRepair } from './sdfRepair.js';
+import { isManifoldReady } from './manifoldEngine.js';
 import { repairMesh } from './repair.js';
 import { validateMesh } from './validate.js';
 
 export const DEFAULT_SELF_INTERSECTION_STRATEGY = 'auto';
-export const SELF_INTERSECTION_STRATEGIES = Object.freeze(['none', 'remesh', 'auto']);
+export const SELF_INTERSECTION_STRATEGIES = Object.freeze(['none', 'sdf', 'remesh', 'auto']);
 
 export function repairSelfIntersections(mesh, {
   tolerance = 1e-4,
@@ -51,6 +53,29 @@ export function repairSelfIntersections(mesh, {
     return { mesh: base.mesh, validation: base.validation, report };
   }
 
+  const preferSdf = requested === 'sdf' || (requested === 'auto' && isManifoldReady());
+  if (preferSdf) {
+    const sdfResult = sdfRepair(base.mesh, {
+      resolution: remeshResolution,
+      repairTolerance: tolerance,
+    });
+    if (sdfResult.ok) {
+      report.selfIntersectionStrategy = 'sdf';
+      report.remeshResolution = remeshResolution;
+      report.edgeLength = sdfResult.stats?.edgeLength ?? null;
+      report.projected = false;
+      report.featureEdges = 0;
+      return finishResult(base, sdfResult, report);
+    }
+    if (requested === 'sdf') {
+      return {
+        mesh: null,
+        validation: sdfResult.validation ?? { ok: false, errors: [sdfResult.error?.message ?? 'SDF repair failed'], warnings: [], meta: null },
+        report: { ...report, errors: [sdfResult.error?.message ?? 'SDF repair failed'] },
+      };
+    }
+  }
+
   const result = remesh([base.mesh], {
     operation: 'union',
     resolution: remeshResolution,
@@ -67,6 +92,10 @@ export function repairSelfIntersections(mesh, {
       report: { ...report, errors: [result.error?.message ?? 'remesh failed'] },
     };
   }
+  return finishResult(base, result, report);
+}
+
+function finishResult(base, result, report) {
   const validation = result.validation ?? validateMesh(result.mesh);
   const beforeVolume = base.validation?.meta?.volume;
   const afterVolume = validation?.meta?.volume;

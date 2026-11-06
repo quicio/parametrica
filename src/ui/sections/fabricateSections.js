@@ -292,7 +292,8 @@ export function buildFabricateSection(controls) {
     for (const [value, label] of [
       ['none', 'No self-intersection repair'],
       ['auto', 'Auto self-intersections'],
-      ['remesh', 'Remesh self-intersections'],
+      ['sdf', 'Manifold SDF'],
+      ['remesh', 'Fast remesh'],
     ]) {
       const option = document.createElement('option');
       option.value = value;
@@ -300,7 +301,7 @@ export function buildFabricateSection(controls) {
       selfSelect.appendChild(option);
     }
     selfSelect.value = fabrication.selfIntersections ?? 'none';
-    selfSelect.title = 'Resolve self-intersections by deterministic remeshing.';
+    selfSelect.title = 'Auto prefers Manifold SDF; Fast remesh is the approximate fallback.';
     const remeshInput = document.createElement('input');
     remeshInput.type = 'number';
     remeshInput.className = 'artboard-input fabricate-remesh-resolution';
@@ -308,7 +309,7 @@ export function buildFabricateSection(controls) {
     remeshInput.max = '192';
     remeshInput.step = '16';
     remeshInput.value = String(fabrication.remeshResolution ?? 64);
-    remeshInput.title = 'Remesh grid resolution.';
+    remeshInput.title = 'SDF grid / remesh resolution.';
     selfSelect.addEventListener('change', () => {
       fabrication.selfIntersections = selfSelect.value;
       controls.app.rebuild();

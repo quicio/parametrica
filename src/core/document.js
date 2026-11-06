@@ -106,7 +106,7 @@ export function sanitizeFabricationSettings(raw) {
     topology: FABRICATION_TOPOLOGY.includes(source.topology) ? source.topology : DEFAULT_FABRICATION.topology,
     nonOrientable: FABRICATION_NON_ORIENTABLE.includes(source.nonOrientable) ? source.nonOrientable : DEFAULT_FABRICATION.nonOrientable,
     csgStrategy: FABRICATION_CSG_STRATEGIES.includes(source.csgStrategy) ? source.csgStrategy : DEFAULT_FABRICATION.csgStrategy,
-    selfIntersections: ['none', 'remesh', 'auto'].includes(source.selfIntersections) ? source.selfIntersections : DEFAULT_FABRICATION.selfIntersections,
+    selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(source.selfIntersections) ? source.selfIntersections : DEFAULT_FABRICATION.selfIntersections,
     remeshResolution: Number.isFinite(Number(source.remeshResolution))
       ? Math.min(Math.max(Math.floor(Number(source.remeshResolution)), 16), 192)
       : DEFAULT_FABRICATION.remeshResolution,

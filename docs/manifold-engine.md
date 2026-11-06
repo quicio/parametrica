@@ -29,6 +29,15 @@ manifoldBoolean(operation, operands, { tolerance })
   to preserve cavities), and validated by `validateMesh`.
 - Manifold objects are `.delete()`d in `finally`.
 
+## Level set
+
+`manifoldLevelSet(sdf, { bounds, edgeLength, tolerance })` wraps
+`Manifold.levelSet` and is used by self-intersection repair. The SDF uses
+positive-inside winding sign; output is simplified, converted and validated.
+Manifold output is tagged `manifoldGuaranteed`, so the local approximate
+self-intersection detector records `checked:false` while all other mesh gates
+remain active.
+
 ## Strategy
 
 `view.fabrication.csgStrategy`:

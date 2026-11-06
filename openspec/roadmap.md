@@ -443,6 +443,11 @@ feature-edge detection and projection for better fallback fidelity.
 `manifold-engine` integrates Manifold WASM as the primary robust CSG engine,
 with lazy initialization, validation and BSP/remesh fallbacks.
 
+### Phase 9 — SDF self-intersection repair (shipped)
+
+`sdf-intersection-repair` uses a winding-sign SDF and Manifold.levelSet to
+repair self-intersecting meshes, with remesh as fallback.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -513,6 +518,7 @@ with lazy initialization, validation and BSP/remesh fallbacks.
 | `robust-geometry-kernel` | archived | shipped |
 | `adaptive-remesh` | archived | shipped |
 | `manifold-engine` | archived | shipped |
+| `sdf-intersection-repair` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

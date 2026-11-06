@@ -7,7 +7,7 @@ async function boot(page) {
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
 }
 
-test('Fabricate resolves self-intersections by explicit remeshing', async ({ page }) => {
+test('Fabricate resolves self-intersections by explicit SDF repair', async ({ page }) => {
   test.setTimeout(90000);
   await boot(page);
   await page.evaluate(() => {
@@ -50,10 +50,10 @@ test('Fabricate resolves self-intersections by explicit remeshing', async ({ pag
   });
   await expect(resolution).toHaveValue('32');
   await self.selectOption('auto');
-  await page.waitForTimeout(6000);
+  await page.waitForTimeout(9000);
   await expect(status).toContainText('READY · repaired closed body');
   await expect(repairStatus).toContainText('self-intersecting pairs');
-  await expect(repairStatus).toContainText('self-intersections remesh @32');
+  await expect(repairStatus).toContainText('self-intersections sdf @32');
   await expect(exportButton).toBeEnabled();
   expect(await page.evaluate(() => ({
     strategy: window.__parametrica.document.view.fabrication.selfIntersections,

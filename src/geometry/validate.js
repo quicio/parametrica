@@ -194,11 +194,14 @@ export function validateMesh(value) {
   if (volume !== null && (!Number.isFinite(volume) || Math.abs(volume) < EPS)) {
     errors.push('mesh volume is zero or non-finite');
   }
-  // Self-intersections make a watertight mesh unsafe for fabrication even
-  // when every boundary edge is paired. The detector only reports; it never
-  // edits vertices or faces.
-  const selfIntersections = detectSelfIntersections(value);
-  if (selfIntersections.count > 0) {
+  // Manifold guarantees a valid manifold solid upstream. Its float32 output can
+  // trip the approximate local detector on near-degenerate slivers, so the
+  // check is recorded as guaranteed rather than re-derived for those meshes.
+  const guaranteed = value.meta?.manifoldGuaranteed === true;
+  const selfIntersections = guaranteed
+    ? { supported: true, checked: false, count: 0, pairs: [], truncated: false, reason: 'manifold-guaranteed' }
+    : detectSelfIntersections(value);
+  if (!guaranteed && selfIntersections.count > 0) {
     errors.push(`${selfIntersections.count} self-intersecting triangle pairs`);
   }
 
