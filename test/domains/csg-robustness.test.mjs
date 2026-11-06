@@ -55,6 +55,8 @@ export function run(assert) {
   const remesh = booleanSolids('union', [a, b], { strategy: 'remesh', remeshResolution: 32 });
   assert(remesh.ok && remesh.stats.strategy === 'remesh' && remesh.stats.fallback === null, 'explicit remesh reports no fallback');
   assert(remesh.validation.ok, 'explicit remesh validates');
+  assert(remesh.stats.projected === true, 'remesh reports feature projection');
+  assert(remesh.stats.featureEdges === 0, 'smooth tori have no sharp feature edges');
 
   const cube = (offset) => {
     const h = 1;

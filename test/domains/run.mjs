@@ -19,6 +19,7 @@ import { run as topologyRepair } from './topology-repair.test.mjs';
 import { run as selfIntersectionRepair } from './self-intersection-repair.test.mjs';
 import { run as csgRobustness } from './csg-robustness.test.mjs';
 import { run as robustPredicates } from './robust-predicates.test.mjs';
+import { run as adaptiveRemesh } from './adaptive-remesh.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -45,6 +46,7 @@ topologyRepair(assert);
 selfIntersectionRepair(assert);
 csgRobustness(assert);
 robustPredicates(assert);
+adaptiveRemesh(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

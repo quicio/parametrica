@@ -81,3 +81,13 @@ Self-intersection repair SHALL be derived only.
 - **WHEN** the same mesh, strategy and budgets are used
 - **THEN** geometry and STL bytes are identical
 
+### Requirement: Feature-preserving self-intersection remesh
+
+Self-intersection remesh SHALL use feature-aware projection.
+
+#### Scenario: Remesh
+
+- **WHEN** self-intersections are resolved by remesh
+- **THEN** generated vertices are projected to the source surface
+- **AND** features are snapped where detected
+

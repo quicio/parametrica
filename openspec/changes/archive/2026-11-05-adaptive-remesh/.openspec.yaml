@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Improve deterministic remesh fidelity with feature-edge detection and projection of generated vertices back onto the source surface.

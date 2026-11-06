@@ -115,3 +115,13 @@ Robust CSG SHALL remain an explicit fabrication recipe.
 - **THEN** export remains disabled
 - **AND** the reason identifies the failure
 
+### Requirement: Feature-preserving CSG fallback
+
+CSG remesh fallback SHALL use feature-aware projection.
+
+#### Scenario: Fallback
+
+- **WHEN** BSP fails and remesh is used
+- **THEN** projection is enabled by default
+- **AND** projection/feature stats are reported
+

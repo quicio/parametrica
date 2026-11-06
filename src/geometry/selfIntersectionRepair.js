@@ -58,6 +58,8 @@ export function repairSelfIntersections(mesh, {
   });
   report.selfIntersectionStrategy = 'remesh';
   report.remeshResolution = remeshResolution;
+  report.projected = Boolean(result.stats?.projected);
+  report.featureEdges = result.stats?.featureEdges ?? 0;
   if (!result.ok) {
     return {
       mesh: null,

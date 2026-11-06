@@ -435,8 +435,8 @@ All four are implemented, validated and shipped.
 ### Phase 7 — Robust geometry kernel (shipped)
 
 `robust-geometry-kernel` adds exact orientation fallbacks, adaptive tolerance,
-snap rounding and triangle-intersection primitives. It is the foundation for
-exact self-intersection splitting and surface CSG.
+snap rounding and triangle-intersection primitives. `adaptive-remesh` adds
+feature-edge detection and projection for better fallback fidelity.
 
 ## 5.1 Specification status
 
@@ -506,6 +506,7 @@ exact self-intersection splitting and surface CSG.
 | `solid-booleans` | archived | shipped |
 | `advanced-repair` | archived | shipped |
 | `robust-geometry-kernel` | archived | shipped |
+| `adaptive-remesh` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

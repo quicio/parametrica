@@ -179,6 +179,8 @@ function booleanRemesh(operation, meshes, { remeshResolution, tolerance, stats, 
   stats.strategy = 'remesh';
   stats.fallback = fallback;
   stats.remeshResolution = remeshResolution;
+  stats.projected = Boolean(result.stats?.projected);
+  stats.featureEdges = result.stats?.featureEdges ?? 0;
   if (!result.ok) {
     return failure(result.error?.code ?? 'remesh-failed', result.error?.message ?? 'remesh failed', stats);
   }

@@ -22,6 +22,9 @@ export function remesh(inputs, {
   resolution = DEFAULT_REMESH_RESOLUTION,
   maxPoints = DEFAULT_REMESH_MAX_POINTS,
   tolerance = 1e-4,
+  project = true,
+  featureAngle = 40,
+  featureSnap = 2,
 } = {}) {
   const meshes = (Array.isArray(inputs) ? inputs : [inputs]).map(boundaryMesh).filter(Boolean);
   if (!meshes.length) return { ok: false, empty: true, mesh: null, error: { code: 'invalid-operand', message: 'remesh requires Mesh/Solid input' } };
@@ -137,8 +140,19 @@ export function remesh(inputs, {
   if (!faces.length) {
     return { ok: true, empty: true, mesh: null, stats: { resolution: n, grid: [nx, ny, nz] } };
   }
-  const raw = createMesh({ id: 'remesh', vertices, faces, meta: { source: 'remesh', operation, resolution: n } });
-  const repaired = repairMesh(raw, { tolerance, capStrategy: 'auto', orient: true, topology: n > 0 ? 'split' : 'none' });
+  let raw = createMesh({ id: 'remesh', vertices, faces, meta: { source: 'remesh', operation, resolution: n } });
+  let repaired = repairMesh(raw, { tolerance, capStrategy: 'auto', orient: true, topology: 'split' });
+  let projectionFallback = false;
+  if (project) {
+    const projected = projectToSurface(raw, { bvhs, meshes, cell, featureAngle, featureSnap });
+    const projectedRepaired = repairMesh(projected, { tolerance, capStrategy: 'auto', orient: true, topology: 'split' });
+    if (projectedRepaired.mesh && projectedRepaired.validation?.ok) {
+      raw = projected;
+      repaired = projectedRepaired;
+    } else {
+      projectionFallback = true;
+    }
+  }
   const validation = repaired.validation ?? validateMesh(raw);
   return {
     ok: Boolean(repaired.mesh),
@@ -150,6 +164,9 @@ export function remesh(inputs, {
       grid: [nx, ny, nz],
       triangles: (repaired.mesh ?? raw).faces.length,
       volume: validation?.meta?.volume ?? null,
+      projected: Boolean(raw.meta?.projected) && !projectionFallback,
+      featureEdges: projectionFallback ? 0 : (raw.meta?.featureEdges ?? 0),
+      projectionFallback,
     },
     report: repaired.report,
   };
@@ -173,9 +190,157 @@ function valueAt(tetra, values, cornerIndex) {
   return values[position];
 }
 
+function projectToSurface(mesh, { bvhs, meshes, cell, featureAngle, featureSnap }) {
+  const features = collectFeatureEdges(meshes, featureAngle);
+  const vertices = mesh.vertices.map((vertex) => {
+    let bestPoint = null;
+    let bestDistance = Infinity;
+    for (const bvh of bvhs) {
+      const closest = closestPointOnMesh(bvh, vertex);
+      if (closest && closest.distance < bestDistance) {
+        bestDistance = closest.distance;
+        bestPoint = closest.point;
+      }
+    }
+    for (const edge of features) {
+      const point = closestPointOnSegment(vertex, edge.a, edge.b);
+      const edgeDistance = distance(vertex, point);
+      if (edgeDistance < bestDistance && edgeDistance <= bestDistance + cell * featureSnap) {
+        bestDistance = edgeDistance;
+        bestPoint = point;
+      }
+    }
+    return bestPoint && bestDistance <= cell * featureSnap * 2 ? { ...bestPoint } : { ...vertex };
+  });
+  return createMesh({
+    id: mesh.id,
+    vertices,
+    faces: mesh.faces.map((face) => [...face]),
+    normals: null,
+    faceNormals: null,
+    uvs: null,
+    meta: { ...mesh.meta, projected: true, featureEdges: features.length },
+  });
+}
+
+function collectFeatureEdges(meshes, featureAngle) {
+  const threshold = Math.cos((Math.max(1, Math.min(179, featureAngle)) * Math.PI) / 180);
+  const edges = [];
+  for (const mesh of meshes) {
+    const map = new Map();
+    for (const face of mesh.faces) {
+      for (let i = 0; i < face.length; i++) {
+        const a = face[i];
+        const b = face[(i + 1) % face.length];
+        const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+        const entry = map.get(key) ?? { a: Math.min(a, b), b: Math.max(a, b), faces: [] };
+        entry.faces.push(face);
+        map.set(key, entry);
+      }
+    }
+    for (const entry of map.values()) {
+      if (entry.faces.length !== 2) continue;
+      const n1 = faceNormal(mesh.vertices, entry.faces[0]);
+      const n2 = faceNormal(mesh.vertices, entry.faces[1]);
+      if (!n1 || !n2) continue;
+      if (n1.x * n2.x + n1.y * n2.y + n1.z * n2.z < threshold) {
+        edges.push({ a: mesh.vertices[entry.a], b: mesh.vertices[entry.b] });
+      }
+    }
+  }
+  return edges;
+}
+
+function faceNormal(vertices, face) {
+  const a = vertices[face[0]];
+  const b = vertices[face[1]];
+  const c = vertices[face[2]];
+  if (!a || !b || !c) return null;
+  const normal = cross(subtract(b, a), subtract(c, a));
+  const length = Math.hypot(normal.x, normal.y, normal.z);
+  return length > 1e-12 ? { x: normal.x / length, y: normal.y / length, z: normal.z / length } : null;
+}
+
+function closestPointOnMesh(entry, point) {
+  let best = null;
+  const stack = [entry.root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+    const boxDistance = distanceToBox(point, node.bbox);
+    if (best && boxDistance > best.distance) continue;
+    if (node.indices) {
+      for (const index of node.indices) {
+        const triangle = entry.triangles[index];
+        const candidate = closestPointOnTriangle(point, triangle.a, triangle.b, triangle.c);
+        const candidateDistance = distance(point, candidate);
+        if (!best || candidateDistance < best.distance) best = { point: candidate, distance: candidateDistance };
+      }
+    } else {
+      stack.push(node.left, node.right);
+    }
+  }
+  return best;
+}
+
+function closestPointOnTriangle(point, a, b, c) {
+  const ab = subtract(b, a);
+  const ac = subtract(c, a);
+  const ap = subtract(point, a);
+  const d1 = dot(ab, ap);
+  const d2 = dot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) return { ...a };
+  const bp = subtract(point, b);
+  const d3 = dot(ab, bp);
+  const d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return { ...b };
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const v = d1 / (d1 - d3);
+    return { x: a.x + ab.x * v, y: a.y + ab.y * v, z: a.z + ab.z * v };
+  }
+  const cp = subtract(point, c);
+  const d5 = dot(ab, cp);
+  const d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return { ...c };
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const w = d2 / (d2 - d6);
+    return { x: a.x + ac.x * w, y: a.y + ac.y * w, z: a.z + ac.z * w };
+  }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+    return { x: b.x + (c.x - b.x) * w, y: b.y + (c.y - b.y) * w, z: b.z + (c.z - b.z) * w };
+  }
+  const denom = 1 / (va + vb + vc);
+  const v = vb * denom;
+  const w = vc * denom;
+  return { x: a.x + ab.x * v + ac.x * w, y: a.y + ab.y * v + ac.y * w, z: a.z + ab.z * v + ac.z * w };
+}
+
+function closestPointOnSegment(point, a, b) {
+  const ab = subtract(b, a);
+  const lengthSquared = dot(ab, ab);
+  if (lengthSquared <= 1e-18) return { ...a };
+  const t = Math.max(0, Math.min(1, dot(subtract(point, a), ab) / lengthSquared));
+  return { x: a.x + ab.x * t, y: a.y + ab.y * t, z: a.z + ab.z * t };
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+function distanceToBox(point, bbox) {
+  const dx = Math.max(bbox.min.x - point.x, 0, point.x - bbox.max.x);
+  const dy = Math.max(bbox.min.y - point.y, 0, point.y - bbox.max.y);
+  const dz = Math.max(bbox.min.z - point.z, 0, point.z - bbox.max.z);
+  return Math.hypot(dx, dy, dz);
+}
+
 /* ———————— BVH / inside ———————— */
 
-function buildTriangleBvh(mesh) {
+export function buildTriangleBvh(mesh) {
   const triangles = [];
   for (const face of mesh.faces) {
     if (!Array.isArray(face) || face.length < 3) continue;
@@ -214,7 +379,7 @@ function buildNode(triangles, indices) {
   return { bbox, left: buildNode(triangles, sorted.slice(0, middle)), right: buildNode(triangles, sorted.slice(middle)) };
 }
 
-function insideMesh(entry, point) {
+export function insideMesh(entry, point) {
   const origin = { x: point.x + 1e-7, y: point.y + 1e-7, z: point.z + 1e-7 };
   const direction = normalize({ x: 1, y: 0.371390676, z: 0.529 });
   let hits = 0;
@@ -326,4 +491,8 @@ function dot(a, b) {
 function normalize(vector) {
   const length = Math.hypot(vector.x, vector.y, vector.z) || 1;
   return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+}
+
+function subtract(a, b) {
+  return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
 }

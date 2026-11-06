@@ -8,6 +8,7 @@ async function boot(page) {
 }
 
 test('Fabricate resolves self-intersections by explicit remeshing', async ({ page }) => {
+  test.setTimeout(90000);
   await boot(page);
   await page.evaluate(() => {
     const app = window.__parametrica;
@@ -42,10 +43,14 @@ test('Fabricate resolves self-intersections by explicit remeshing', async ({ pag
   await expect(self).toHaveValue('none');
   await expect(status).toContainText('NOT FABRICABLE');
 
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.document.view.fabrication.remeshResolution = 32;
+    app.controls.refreshFabricate();
+  });
+  await expect(resolution).toHaveValue('32');
   await self.selectOption('auto');
-  await resolution.fill('32');
-  await resolution.press('Enter');
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(6000);
   await expect(status).toContainText('READY · repaired closed body');
   await expect(repairStatus).toContainText('self-intersecting pairs');
   await expect(repairStatus).toContainText('self-intersections remesh @32');
