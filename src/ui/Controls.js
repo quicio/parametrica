@@ -25,6 +25,7 @@ import {
   millimetresPerUnit,
 } from '../core/units.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
+import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.js';
 import { buildLayersSection, buildInstanceSection, buildGeneratorSection, buildParamsSection, buildEquationsSection, buildHarmonicsSection, buildOperatorsSection } from './sections/formSections.js';
 import { buildLooksSection, buildCameraSection, buildCanvasSection, buildCoordinatesSection, buildUnitsSection } from './sections/lookSections.js';
 import { buildFabricateSection } from './sections/fabricateSections.js';
@@ -57,6 +58,13 @@ export class Controls {
   constructor(app, container) {
     this.app = app;
     this.container = container;
+    this.fabricationReport = null;
+    this.fabricationInput = null;
+    this.fabricationJobs = new FabricationJobs({
+      onProgress: (progress) => this.onFabricationProgress(progress),
+      onResult: (report) => this.onFabricationResult(report),
+      onError: (message) => this.onFabricationError(message),
+    });
     this.expressionFields = new Map(); // key → ExpressionField
     this.harmonicsEditor = null;
     this.operatorStack = null;
@@ -512,21 +520,53 @@ export class Controls {
   refreshFabricate() {
     const els = this.fabricateEls;
     if (!els) return;
+    if (this.mode !== 'fabricate') {
+      this.fabricationJobs?.cancel();
+      this.fabricationReport = null;
+      return;
+    }
     const doc = this.app.document;
-    const report = buildFabricationReport({
+    const input = {
       evaluation: this.app.evaluation,
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
       preparation: doc.view?.fabrication ?? null,
-    });
-    const units = doc.view?.units ?? {};
+    };
+    this.syncFabricateControls(input);
+    const prepKey = JSON.stringify(input.preparation ?? {});
+    const same = this.fabricationInput?.evaluation === input.evaluation
+      && this.fabricationInput?.prepKey === prepKey
+      && this.fabricationInput?.layerIndex === input.layerIndex;
+    if (isHeavyFabrication(input.preparation)) {
+      if (same && this.fabricationReport) {
+        this.renderFabricate(this.fabricationReport);
+        return;
+      }
+      if (same && this.fabricationJobs.running) return;
+      this.fabricationReport = null;
+      this.fabricationInput = { ...input, prepKey };
+      this.renderFabricateWorking('preparing', 0);
+      this.fabricationJobs.schedule(input);
+      return;
+    }
+    this.fabricationJobs.cancel();
+    const report = buildFabricationReport(input);
+    this.fabricationReport = report;
+    this.fabricationInput = { ...input, prepKey };
+    this.renderFabricate(report);
+  }
+
+  syncFabricateControls(input) {
+    const els = this.fabricateEls;
+    if (!els) return;
+    const units = input.units ?? {};
+    const preparation = input.preparation ?? {};
     els.unitSelect.value = PHYSICAL_UNIT_SYSTEMS.includes(units.world) ? units.world : 'unitless';
     els.scaleInput.disabled = units.world === 'unitless';
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
       : '';
     els.scaleInput.placeholder = units.world === 'unitless' ? 'set mm/unit' : 'mm per world unit';
-    const preparation = doc.view?.fabrication ?? {};
     if (els.weld) {
       els.weld.checked = preparation.weld === true;
       els.weld.disabled = preparation.repair === true;
@@ -557,6 +597,13 @@ export class Controls {
       els.remeshResolution.disabled = preparation.repair !== true
         || (preparation.selfIntersections ?? 'none') === 'none';
     }
+  }
+
+  renderFabricate(report) {
+    const els = this.fabricateEls;
+    if (!els) return;
+    const doc = this.app.document;
+    const preparation = doc.view?.fabrication ?? {};
     if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
     if (els.formatSelect) els.formatSelect.value = preparation.format === '3mf' ? '3mf' : 'stl';
     if (els.booleanSelect) {
@@ -702,6 +749,69 @@ export class Controls {
     els.exportButton.title = ready
       ? `Write ${format === '3MF' ? 'one 3MF package with separate objects' : 'one binary STL'} in millimetres`
       : (report.reason ?? 'Select a validated closed Mesh/Solid');
+  }
+
+  renderFabricateWorking(phase, value) {
+    const els = this.fabricateEls;
+    if (!els) return;
+    els.status.textContent = `WORKING · ${phase}`;
+    els.status.dataset.state = 'working';
+    els.panel.dataset.exportable = 'false';
+    els.exportButton.disabled = true;
+    if (els.cancelButton) els.cancelButton.hidden = false;
+    if (els.progress) {
+      els.progress.hidden = false;
+      els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
+    }
+    els.reason.textContent = 'Heavy fabrication job running off the main thread.';
+  }
+
+  onFabricationProgress({ phase, value }) {
+    if (this.mode !== 'fabricate') return;
+    const els = this.fabricateEls;
+    if (!els) return;
+    els.status.textContent = `WORKING · ${phase}`;
+    if (els.progress) {
+      els.progress.hidden = false;
+      els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
+    }
+  }
+
+  onFabricationResult(report) {
+    if (this.mode !== 'fabricate') return;
+    this.fabricationReport = report;
+    const els = this.fabricateEls;
+    if (els?.cancelButton) els.cancelButton.hidden = true;
+    if (els?.progress) els.progress.hidden = true;
+    this.renderFabricate(report);
+  }
+
+  onFabricationError(message) {
+    const els = this.fabricateEls;
+    this.fabricationReport = null;
+    if (!els) return;
+    els.status.textContent = 'NOT FABRICABLE';
+    els.status.dataset.state = 'invalid';
+    els.panel.dataset.exportable = 'false';
+    els.exportButton.disabled = true;
+    if (els.cancelButton) els.cancelButton.hidden = true;
+    if (els.progress) els.progress.hidden = true;
+    els.reason.textContent = message;
+  }
+
+  cancelFabrication() {
+    this.fabricationJobs?.cancel();
+    this.fabricationReport = null;
+    this.fabricationInput = null;
+    const els = this.fabricateEls;
+    if (!els) return;
+    els.status.textContent = 'CANCELLED';
+    els.status.dataset.state = 'cancelled';
+    els.panel.dataset.exportable = 'false';
+    els.exportButton.disabled = true;
+    if (els.cancelButton) els.cancelButton.hidden = true;
+    if (els.progress) els.progress.hidden = true;
+    els.reason.textContent = 'Fabrication job cancelled.';
   }
 
   buildStyleSection() { buildStyleSection(this); }

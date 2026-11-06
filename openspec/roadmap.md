@@ -448,6 +448,11 @@ with lazy initialization, validation and BSP/remesh fallbacks.
 `sdf-intersection-repair` uses a winding-sign SDF and Manifold.levelSet to
 repair self-intersecting meshes, with remesh as fallback.
 
+### Phase 10 — Fabrication worker (shipped)
+
+`fabrication-worker` moves heavy repair/CSG/SDF jobs to a cancellable Web Worker
+with progress, result caching and a synchronous fallback.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -519,6 +524,7 @@ repair self-intersecting meshes, with remesh as fallback.
 | `adaptive-remesh` | archived | shipped |
 | `manifold-engine` | archived | shipped |
 | `sdf-intersection-repair` | archived | shipped |
+| `fabrication-worker` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

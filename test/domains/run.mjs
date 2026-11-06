@@ -21,6 +21,7 @@ import { run as csgRobustness } from './csg-robustness.test.mjs';
 import { run as robustPredicates } from './robust-predicates.test.mjs';
 import { run as adaptiveRemesh } from './adaptive-remesh.test.mjs';
 import { run as manifoldEngine } from './manifold-engine.test.mjs';
+import { run as fabricationWorker } from './fabrication-worker.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -33,22 +34,23 @@ function assert(cond, msg) {
   }
 }
 
-coordinates(assert);
-appearance(assert);
-surfaceSeams(assert);
-maintainability(assert);
-solidPreparation(assert);
-selfIntersection(assert);
-multiBody(assert);
-solidBooleans(assert);
-advancedRepair(assert);
-threeMf(assert);
-topologyRepair(assert);
-selfIntersectionRepair(assert);
-csgRobustness(assert);
-robustPredicates(assert);
-adaptiveRemesh(assert);
-manifoldEngine(assert);
+await coordinates(assert);
+await appearance(assert);
+await surfaceSeams(assert);
+await maintainability(assert);
+await solidPreparation(assert);
+await selfIntersection(assert);
+await multiBody(assert);
+await solidBooleans(assert);
+await advancedRepair(assert);
+await threeMf(assert);
+await topologyRepair(assert);
+await selfIntersectionRepair(assert);
+await csgRobustness(assert);
+await robustPredicates(assert);
+await adaptiveRemesh(assert);
+await await manifoldEngine(assert);
+await fabricationWorker(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

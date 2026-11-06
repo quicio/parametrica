@@ -18,7 +18,9 @@ export function initManifold() {
     modulePromise = import('manifold-3d')
       .then(async (module) => {
         let options;
-        if (typeof window !== 'undefined') {
+        const browserRuntime = typeof window !== 'undefined'
+          || (typeof self !== 'undefined' && typeof self.postMessage === 'function');
+        if (browserRuntime) {
           const wasm = await import('manifold-3d/manifold.wasm?url');
           options = { locateFile: () => wasm.default };
         }

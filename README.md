@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2487 checks)
+npm test             # node-only verification suite (2501 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (147 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (148 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -200,7 +200,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2487
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2501
 checks across the full Node suite (expression engine, noise determinism,
 splines, all 24 registered generators, operators, document round-trip +
 dual-format read, built-in presets, chained mutation across families, SVG
@@ -209,7 +209,7 @@ offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (147 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (148 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting

@@ -9,7 +9,7 @@ async function boot(page) {
 }
 
 test('CSG auto uses Manifold for overlapping non-convex tori', async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await boot(page);
   await page.evaluate(async () => {
     const app = window.__parametrica;
@@ -53,8 +53,7 @@ test('CSG auto uses Manifold for overlapping non-convex tori', async ({ page }) 
   await scope.selectOption('composition');
   await page.waitForTimeout(500);
   await boolean.selectOption('union');
-  await page.waitForTimeout(5000);
-  await expect(status).toContainText('READY · union result');
+  await expect(status).toContainText('READY · union result', { timeout: 60_000 });
   await expect(booleanStatus).toContainText('manifold');
   await expect(reason).toContainText('union of 2 bodies');
   await expect(exportButton).toBeEnabled();
@@ -70,20 +69,17 @@ test('CSG auto uses Manifold for overlapping non-convex tori', async ({ page }) 
   expect(built.volume).toBeGreaterThan(0);
 
   await csg.selectOption('bsp');
-  await page.waitForTimeout(3500);
-  await expect(status).toContainText('NOT FABRICABLE');
+  await expect(status).toContainText('NOT FABRICABLE', { timeout: 60_000 });
   await expect(reason).toContainText('Boolean union failed');
   await expect(exportButton).toBeDisabled();
 
   await csg.selectOption('manifold');
-  await page.waitForTimeout(5000);
-  await expect(status).toContainText('READY · union result');
+  await expect(status).toContainText('READY · union result', { timeout: 60_000 });
   await expect(booleanStatus).toContainText('manifold');
   await expect(exportButton).toBeEnabled();
 
   await csg.selectOption('remesh');
-  await page.waitForTimeout(5000);
-  await expect(status).toContainText('READY · union result');
+  await expect(status).toContainText('READY · union result', { timeout: 60_000 });
   await expect(booleanStatus).toContainText('remesh');
   await expect(exportButton).toBeEnabled();
 

@@ -356,6 +356,16 @@ export function buildFabricateSection(controls) {
     compositionNote.className = 'fabricate-composition-note';
     compositionNote.hidden = true;
 
+    const progress = document.createElement('div');
+    progress.className = 'fabricate-progress';
+    progress.hidden = true;
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'lab-button fabricate-cancel';
+    cancelButton.textContent = 'CANCEL';
+    cancelButton.hidden = true;
+    cancelButton.addEventListener('click', () => controls.cancelFabrication?.());
+
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'lab-button fabricate-export';
@@ -366,12 +376,12 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
 
-    panel.append(status, source, reason, rows, prepHint, compositionNote, exportButton);
+    panel.append(status, source, reason, rows, prepHint, progress, compositionNote, cancelButton, exportButton);
     body.appendChild(panel);
 
     controls.fabricateEls = {
       panel, status, source, reason, triangles, vertices, bodies, boolean, objects, volume,
-      worldSize, physical, warnings, preparation, repairStatus, exportButton,
+      worldSize, physical, warnings, preparation, repairStatus, progress, cancelButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
       topology: topologySelect, nonOrientable: nonOrientableSelect,

@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
+  worker: {
+    format: 'es',
+  },
   build: {
     // p5 is lazy-loaded as its own ~1 MB chunk; this budget applies to
     // the chunks on the initial path. Keep the warning honest for those.

@@ -243,7 +243,7 @@ export class Exporter {
 
   buildSTLFromCurrent() {
     const doc = this.app.document;
-    const report = buildFabricationReport({
+    const report = this.app.controls?.fabricationReport ?? buildFabricationReport({
       evaluation: this.app.evaluation,
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
@@ -260,7 +260,7 @@ export class Exporter {
 
   build3MFFromCurrent() {
     const doc = this.app.document;
-    const report = buildFabricationReport({
+    const report = this.app.controls?.fabricationReport ?? buildFabricationReport({
       evaluation: this.app.evaluation,
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
