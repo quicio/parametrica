@@ -78,6 +78,8 @@ export class App {
     this.imageUnderlay = null;
     this.imageInput = null;
     this.pointerDragging = false;
+    // Fabricate can show the prepared solid instead of the authored network.
+    this.fabricationPreview = null;
 
     this.history = new History(50);
     this.lastSnapshot = this.snapshot();
@@ -800,6 +802,12 @@ export class App {
 
   isSurfaceInspectorEnabled() {
     return Boolean(this.surfaceInspector?.enabled);
+  }
+
+  /** Show or clear the prepared fabrication mesh in the canvas. */
+  setFabricationPreview(preview) {
+    const next = preview?.mesh && preview?.layerId ? preview : null;
+    this.fabricationPreview = next;
   }
 
   inspectAtCanvas(canvasX, canvasY) {

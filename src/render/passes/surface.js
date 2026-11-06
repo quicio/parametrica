@@ -99,6 +99,82 @@ RenderPasses.register({
   },
 });
 
+/**
+ * Lattice preview fill — one batched path per depth band.
+ *
+ * The prepared lattice has ~100k faces. Drawing each face with its own
+ * beginShape/endShape costs most of a second. Batching by depth keeps the
+ * painter order and the through-holes while cutting the path count to a few
+ * dozen, which makes the solid preview usable for inspection.
+ */
+RenderPasses.register({
+  id: 'lattice-preview',
+  name: 'Lattice Preview',
+  group: 'surface',
+  internal: true,
+  description: 'Depth-banded solid preview for dense lattice meshes.',
+  appliesTo({ meshes = [] }) {
+    return Array.isArray(meshes) && meshes.length > 0;
+  },
+  draw(p, { meshes = [], view }) {
+    if (!meshes.length) return;
+    const style = view.style ?? {};
+    const fill = style.fill ?? {};
+    const stroke = style.stroke ?? {};
+    const rgb = hexToRgb(fill.enabled ? fill.color : stroke.color, [255, 255, 255]);
+    const alpha = Math.round(clamp01(fill.enabled ? fill.opacity : Math.min(0.9, stroke.opacity ?? 0.9)) * 255);
+    p.noStroke();
+    const bands = 48;
+    for (const mesh of meshes) {
+      const faces = [];
+      let minDepth = Infinity;
+      let maxDepth = -Infinity;
+      for (const face of mesh.faces) {
+        let depth = 0;
+        let visible = true;
+        for (const index of face) {
+          const point = mesh.vertices[index];
+          if (!point) {
+            visible = false;
+            break;
+          }
+          depth += point.depth ?? 0;
+        }
+        if (!visible) continue;
+        const value = depth / face.length;
+        minDepth = Math.min(minDepth, value);
+        maxDepth = Math.max(maxDepth, value);
+        faces.push({ face, depth: value });
+      }
+      if (!faces.length) continue;
+      faces.sort((a, b) => a.depth - b.depth);
+      const span = Math.max(1e-9, maxDepth - minDepth);
+      let cursor = 0;
+      for (let band = 0; band < bands && cursor < faces.length; band++) {
+        const limit = band === bands - 1
+          ? maxDepth + 1
+          : minDepth + (span * (band + 1)) / bands;
+        const slice = [];
+        while (cursor < faces.length && faces[cursor].depth <= limit) {
+          slice.push(faces[cursor]);
+          cursor += 1;
+        }
+        if (!slice.length) continue;
+        const depthAlpha = clamp01(0.4 + 0.55 * ((minDepth + (span * (band + 0.5)) / bands)));
+        p.fill(rgb[0], rgb[1], rgb[2], Math.round(alpha * depthAlpha));
+        p.beginShape(p.TRIANGLES);
+        for (const { face } of slice) {
+          for (const index of face) {
+            const point = mesh.vertices[index];
+            if (point) p.vertex(point.x, point.y);
+          }
+        }
+        p.endShape(p.CLOSE);
+      }
+    }
+  },
+});
+
 function clamp01(value) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;

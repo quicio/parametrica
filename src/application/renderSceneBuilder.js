@@ -30,11 +30,22 @@ import { sanitizeReference } from '../view/spatialReference.js';
 import { createRenderLayer, createRenderScene } from '../render/scene.js';
 
 const SCENE_CACHE = new WeakMap();
+const PREVIEW_IDS = new WeakMap();
+let nextPreviewId = 1;
 
-export function buildRenderScene({ evaluation, document: doc, view = doc.view, projectionOverride = null }) {
+function previewKeyOf(mesh) {
+  if (!mesh || typeof mesh !== 'object') return null;
+  if (!PREVIEW_IDS.has(mesh)) PREVIEW_IDS.set(mesh, nextPreviewId++);
+  return PREVIEW_IDS.get(mesh);
+}
+
+export function buildRenderScene({ evaluation, document: doc, view = doc.view, projectionOverride = null, preview = null }) {
+  const previewKey = preview?.mesh ? previewKeyOf(preview.mesh) : null;
   if (!evaluation) return createRenderScene({ artboard: view?.artboard, view, layers: [] });
   const signature = JSON.stringify([
     projectionOverride,
+    previewKey,
+    preview?.layerId ?? null,
     view?.projection,
     view?.camera,
     view?.frame,
@@ -113,6 +124,28 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
   }
 
   const layers = layerResults.map(({ entry }) => entry);
+  if (preview?.mesh && preview.layerId) {
+    const target = layerResults.find((result) => (
+      result.entry.id === preview.layerId && result.transform
+    ));
+    if (target) {
+      const projected = projectWorldMeshesToView([preview.mesh], {
+        camera: target.transform.camera,
+        projection: target.projection,
+        depthFade: true,
+        depthStrength: 0.55,
+      });
+      const meshes = applyViewTransformToMeshes(projected, target.transform);
+      target.entry.meshes = meshes;
+      target.entry.renderMeshes = meshes;
+      target.entry.modes = ['lattice-preview'];
+      target.entry.style = {
+        ...target.entry.style,
+        fill: { ...(target.entry.style?.fill ?? {}), enabled: true, opacity: 0.92, color: '#ffffff' },
+        stroke: { ...(target.entry.style?.stroke ?? {}), opacity: 0.7 },
+      };
+    }
+  }
   const curves = layers.flatMap((layer) => layer.curves);
   const hasArtboard = groups.some((group) => !isSpatialGroup(group));
   const activeId = doc?.layers?.[doc.activeLayer ?? 0]?.id;

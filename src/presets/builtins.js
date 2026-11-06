@@ -33,6 +33,7 @@ const FABRICATE_DEFAULTS = Object.freeze({
   selfIntersections: 'none',
   remeshResolution: 64,
   lattice: false,
+  latticePreview: 'solid',
 });
 
 function fabricateView(overrides = {}) {

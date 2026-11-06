@@ -388,7 +388,14 @@ export class P5Adapter extends Renderer {
       }
     }
     const scene = evaluation && !quad
-      ? buildRenderScene({ evaluation, document: doc, view: doc.view })
+      ? buildRenderScene({
+        evaluation,
+        document: doc,
+        view: doc.view,
+        preview: this.app.fabricationPreview && !this.app.pointerDragging && !doc.animation?.playing
+          ? this.app.fabricationPreview
+          : null,
+      })
       : null;
     this.lastScene = scene;
 

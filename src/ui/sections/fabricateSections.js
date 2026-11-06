@@ -116,6 +116,30 @@ export function buildFabricateSection(controls) {
     scopeRow.append(scopeLabel, scopeSelect);
     sourceGroup.appendChild(scopeRow);
 
+    const previewRow = document.createElement('div');
+    previewRow.className = 'fabricate-row fabricate-preview-row';
+    const previewLabel = document.createElement('span');
+    previewLabel.className = 'fabricate-label';
+    previewLabel.textContent = 'Preview';
+    const previewSelect = document.createElement('select');
+    previewSelect.className = 'artboard-input fabricate-lattice-preview';
+    for (const [value, label] of [['network', 'Network'], ['solid', 'Solid']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      previewSelect.appendChild(option);
+    }
+    previewSelect.value = fabrication.latticePreview === 'network' ? 'network' : 'solid';
+    previewSelect.title = 'Show the authored strut network or the prepared solid in the canvas.';
+    previewSelect.addEventListener('change', () => {
+      fabrication.latticePreview = previewSelect.value === 'network' ? 'network' : 'solid';
+      controls.syncLatticePreview?.();
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    previewRow.append(previewLabel, previewSelect);
+    sourceGroup.appendChild(previewRow);
+
     const booleanRow = document.createElement('div');
     booleanRow.className = 'fabricate-row';
     const booleanLabel = document.createElement('span');
@@ -442,6 +466,7 @@ export function buildFabricateSection(controls) {
       triangles, vertices, bodies, boolean, objects, volume,
       worldSize, physical, warnings, preparation, repairStatus, lattice, progress, cancelButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
+      latticePreview: previewSelect,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
       topology: topologySelect, nonOrientable: nonOrientableSelect,
       selfIntersections: selfSelect, remeshResolution: remeshInput,

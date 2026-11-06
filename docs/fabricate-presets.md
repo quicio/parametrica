@@ -57,6 +57,19 @@ Every example sets:
 
 Suggested starting values: `Cell size 20`, `Strut 3.5`, `Rim 4`, `Floor 3`.
 
+## Lattice preview
+
+When the lattice report is ready, Fabricate can mirror the prepared body into
+the canvas:
+
+- **Network** draws the authored strut centerlines.
+- **Solid** draws the prepared mesh with the depth-banded preview pass.
+
+The solid preview uses a mesh simplified for display; STL/3MF always export the
+full-resolution source. Camera drags and timeline playback temporarily fall
+back to the network so orbiting stays responsive. The choice is stored in
+`view.fabrication.latticePreview`.
+
 ## Camera and vase orientation
 
 - The 3D camera orbits the world origin: **yaw** turns the eye around **+Z**,

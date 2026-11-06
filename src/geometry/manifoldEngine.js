@@ -124,6 +124,51 @@ export function manifoldBoolean(operation, operands, { tolerance = 1e-4 } = {}) 
   }
 }
 
+/**
+ * Reduce a closed mesh for display. The source and result stay Mesh data;
+ * callers must keep using the original for export.
+ */
+export function manifoldSimplify(mesh, { tolerance = 0.2, repairTolerance = 1e-4 } = {}) {
+  if (!wasm) {
+    return { ok: false, geometry: null, error: { code: 'not-ready', message: 'Manifold is still loading' }, stats: {} };
+  }
+  if (!isMesh(mesh)) {
+    return { ok: false, geometry: null, error: { code: 'invalid-operand', message: 'manifoldSimplify requires a Mesh' }, stats: {} };
+  }
+  const inputTriangles = mesh.faces.length;
+  let source = null;
+  let simplified = null;
+  try {
+    source = wasm.Manifold.ofMesh(toManifoldMesh(mesh, repairTolerance));
+    const status = source.status();
+    if (status !== 'NoError') {
+      return { ok: false, geometry: null, error: { code: 'manifold-error', message: `Manifold returned ${status}` }, stats: { inputTriangles } };
+    }
+    simplified = source.simplify(tolerance);
+    if (simplified.status() !== 'NoError' || simplified.numTri() === 0) {
+      return { ok: false, geometry: null, error: { code: 'empty-result', message: 'simplify produced no geometry' }, stats: { inputTriangles } };
+    }
+    const geometry = fromManifold(simplified, `${mesh.id ?? 'mesh'}-preview`);
+    const validation = validateMesh(geometry);
+    return {
+      ok: true,
+      geometry,
+      validation,
+      stats: {
+        inputTriangles,
+        outputTriangles: geometry.faces.length,
+        tolerance,
+        strategy: 'manifold-simplify',
+      },
+    };
+  } catch (error) {
+    return { ok: false, geometry: null, error: { code: 'manifold-error', message: error?.message ?? String(error) }, stats: { inputTriangles } };
+  } finally {
+    if (simplified) simplified.delete();
+    if (source) source.delete();
+  }
+}
+
 export function manifoldLevelSet(sdf, {
   bounds,
   edgeLength,

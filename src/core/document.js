@@ -81,6 +81,7 @@ export const DEFAULT_FABRICATION = Object.freeze({
   selfIntersections: 'none',
   remeshResolution: 64,
   lattice: false,
+  latticePreview: 'solid',
   quality: 'custom',
 });
 
@@ -112,6 +113,7 @@ export function sanitizeFabricationSettings(raw) {
       ? Math.min(Math.max(Math.floor(Number(source.remeshResolution)), 16), 192)
       : DEFAULT_FABRICATION.remeshResolution,
     lattice: source.lattice === true,
+    latticePreview: ['network', 'solid'].includes(source.latticePreview) ? source.latticePreview : 'solid',
     quality: ['custom', 'draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'custom',
   };
 }

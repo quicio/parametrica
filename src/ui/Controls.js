@@ -26,6 +26,7 @@ import {
 } from '../core/units.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
 import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.js';
+import { manifoldSimplify } from '../geometry/manifoldEngine.js';
 import { buildLayersSection, buildInstanceSection, buildGeneratorSection, buildParamsSection, buildEquationsSection, buildHarmonicsSection, buildOperatorsSection } from './sections/formSections.js';
 import { buildLooksSection, buildCameraSection, buildCanvasSection, buildCoordinatesSection, buildUnitsSection } from './sections/lookSections.js';
 import { buildFabricateSection } from './sections/fabricateSections.js';
@@ -60,6 +61,7 @@ export class Controls {
     this.container = container;
     this.fabricationReport = null;
     this.fabricationInput = null;
+    this.latticePreviewMeshes = new WeakMap();
     this.fabricationJobs = new FabricationJobs({
       onProgress: (progress) => this.onFabricationProgress(progress),
       onResult: (report) => this.onFabricationResult(report),
@@ -200,6 +202,7 @@ export class Controls {
     this.saveUiState();
     if (resetScroll) this.container.scrollTop = 0;
     if (modeId === 'fabricate') this.refreshFabricate?.();
+    this.syncLatticePreview?.(modeId === 'fabricate' ? this.fabricationReport : null);
     this.refreshStatus();
   }
 
@@ -533,7 +536,10 @@ export class Controls {
       preparation: doc.view?.fabrication ?? null,
     };
     this.syncFabricateControls(input);
-    const prepKey = JSON.stringify(input.preparation ?? {});
+    // Preview mode is a view preference; it must not invalidate the prepared
+    // solid or reschedule the worker job.
+    const { latticePreview: _latticePreview, ...fabricationPrep } = input.preparation ?? {};
+    const prepKey = JSON.stringify(fabricationPrep);
     const same = this.fabricationInput?.evaluation === input.evaluation
       && this.fabricationInput?.prepKey === prepKey
       && this.fabricationInput?.layerIndex === input.layerIndex;
@@ -556,6 +562,37 @@ export class Controls {
     this.renderFabricate(report);
   }
 
+  /** Mirror the prepared lattice solid into the canvas when Solid preview is on. */
+  syncLatticePreview(report = this.fabricationReport) {
+    const doc = this.app.document;
+    const preparation = doc.view?.fabrication ?? {};
+    const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
+    const isLattice = activeLayer?.generator?.id === 'surface-lattice';
+    const mesh = report?.source?.geometry ?? null;
+    const show = this.mode === 'fabricate'
+      && preparation.latticePreview !== 'network'
+      && isLattice
+      && Boolean(report?.lattice?.struts)
+      && Boolean(mesh);
+    let previewMesh = mesh;
+    if (show && mesh.faces.length > 60_000) {
+      const cached = this.latticePreviewMeshes.get(mesh);
+      if (cached) {
+        previewMesh = cached;
+      } else {
+        const simplified = manifoldSimplify(mesh, { tolerance: 0.35 });
+        if (simplified.ok && simplified.geometry) {
+          previewMesh = simplified.geometry;
+          this.latticePreviewMeshes.set(mesh, previewMesh);
+        }
+      }
+    }
+    this.app.setFabricationPreview(show ? { mesh: previewMesh, layerId: activeLayer.id } : null);
+    if (this.fabricateEls?.latticePreview) {
+      this.fabricateEls.latticePreview.disabled = !isLattice;
+    }
+  }
+
   syncFabricateControls(input) {
     const els = this.fabricateEls;
     if (!els) return;
@@ -563,6 +600,11 @@ export class Controls {
     const preparation = input.preparation ?? {};
     els.unitSelect.value = PHYSICAL_UNIT_SYSTEMS.includes(units.world) ? units.world : 'unitless';
     els.scaleInput.disabled = units.world === 'unitless';
+    if (els.latticePreview) {
+      const activeLayer = this.app.document.layers?.[this.app.document.activeLayer ?? 0];
+      els.latticePreview.value = preparation.latticePreview === 'network' ? 'network' : 'solid';
+      els.latticePreview.disabled = activeLayer?.generator?.id !== 'surface-lattice';
+    }
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
       : '';
@@ -767,6 +809,7 @@ export class Controls {
       ? `Write ${format === '3MF' ? 'one 3MF package with separate objects' : 'one binary STL'} in millimetres`
       : (report.reason ?? 'Select a validated closed Mesh/Solid');
     this.updateFabricateNarrative(report);
+    this.syncLatticePreview(report);
   }
 
   updateFabricateNarrative(report, errorMessage = null) {
@@ -845,6 +888,7 @@ export class Controls {
       els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
     }
     els.reason.textContent = 'Heavy fabrication job running off the main thread.';
+    this.syncLatticePreview(null);
     this.updateFabricateNarrative(null);
   }
 
@@ -871,6 +915,7 @@ export class Controls {
   onFabricationError(message) {
     const els = this.fabricateEls;
     this.fabricationReport = null;
+    this.syncLatticePreview(null);
     if (!els) return;
     els.status.textContent = 'NOT FABRICABLE';
     els.status.dataset.state = 'invalid';
@@ -886,6 +931,7 @@ export class Controls {
     this.fabricationJobs?.cancel();
     this.fabricationReport = null;
     this.fabricationInput = null;
+    this.latticePreviewMeshes = new WeakMap();
     const els = this.fabricateEls;
     if (!els) return;
     els.status.textContent = 'CANCELLED';

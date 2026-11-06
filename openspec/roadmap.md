@@ -486,6 +486,12 @@ bottom. The vase returns to Z-up, ready for the slicer.
 revolution, a Manifold tube solid with floor and rim, and the `Lattice Vase 200`
 example.
 
+### Phase 17 — Lattice solid preview (shipped)
+
+`lattice-solid-preview` mirrors the prepared lattice body into the canvas with
+a persisted Network/Solid toggle, display simplification and a batched preview
+pass.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -564,6 +570,7 @@ example.
 | `vase-upright-presentation` | archived | shipped |
 | `orbit-camera` | archived | shipped |
 | `surface-lattice` | archived | shipped |
+| `lattice-solid-preview` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

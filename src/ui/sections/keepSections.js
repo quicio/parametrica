@@ -335,6 +335,7 @@ export function buildStyleSection(controls) {
         modeList.hidden = !Array.isArray(layer.modes);
         if (modeList.hidden) return;
         for (const def of RenderPasses.list()) {
+          if (def.internal) continue;
           const rowEl = document.createElement('label');
           rowEl.className = 'mode-toggle layer-mode-toggle';
           const input = document.createElement('input');
@@ -397,10 +398,11 @@ export function buildRenderSection(controls) {
     ));
     const order = RenderPasses.ids();
     view.modes = normalizeModes(view.modes, order);
-    const passApplies = new Map(RenderPasses.list().map((def) => [def.id, controls.renderPassApplies(def)]));
+    const passApplies = new Map(RenderPasses.list().filter((def) => !def.internal).map((def) => [def.id, controls.renderPassApplies(def)]));
     const modeInputs = [];
     const groups = new Map();
     for (const def of RenderPasses.list()) {
+      if (def.internal) continue;
       const group = def.group ?? 'diagnostic';
       if (!groups.has(group)) groups.set(group, []);
       groups.get(group).push(def);

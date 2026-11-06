@@ -365,6 +365,7 @@ function normalizePreparation(raw) {
     selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
     remeshResolution: raw.remeshResolution,
     lattice: raw.lattice === true,
+    latticePreview: raw.latticePreview === 'network' ? 'network' : 'solid',
     quality: raw.quality,
   };
 }

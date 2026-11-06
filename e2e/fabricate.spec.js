@@ -125,6 +125,39 @@ test('lattice preset builds a strut body in the worker and reports it', async ({
   await expect(fabricate.locator('.fabricate-warnings')).toHaveText('validated');
   await expect(exportButton).toBeEnabled();
 
+  const preview = fabricate.locator('.fabricate-lattice-preview');
+  await expect(preview).toHaveValue('solid');
+  await page.waitForTimeout(600);
+  const solidScene = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const layer = app.renderer.lastScene?.layers?.find((entry) => entry.id === app.document.layers[0].id);
+    return {
+      preview: Boolean(app.fabricationPreview),
+      modes: layer?.modes ?? null,
+      meshes: layer?.meshes?.length ?? 0,
+    };
+  });
+  expect(solidScene.preview).toBe(true);
+  expect(solidScene.meshes).toBe(1);
+  expect(solidScene.modes).toContain('lattice-preview');
+
+  await preview.selectOption('network');
+  await page.waitForTimeout(500);
+  const networkScene = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const layer = app.renderer.lastScene?.layers?.find((entry) => entry.id === app.document.layers[0].id);
+    return {
+      preview: Boolean(app.fabricationPreview),
+      meshes: layer?.meshes?.length ?? 0,
+    };
+  });
+  expect(networkScene.preview).toBe(false);
+  expect(networkScene.meshes).toBe(0);
+
+  await preview.selectOption('solid');
+  await page.waitForTimeout(500);
+  await expect(exportButton).toBeEnabled();
+
   const built = await page.evaluate(() => {
     const result = window.__parametrica.exporter.buildSTLFromCurrent();
     return { bytes: result.data.length, triangles: result.triangles };

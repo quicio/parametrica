@@ -11,6 +11,7 @@ import { initManifold } from '../../src/geometry/manifoldEngine.js';
 import { validateMesh } from '../../src/geometry/validate.js';
 import { evaluateDocument } from '../../src/core/engine.js';
 import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
+import { buildRenderScene } from '../../src/application/renderSceneBuilder.js';
 
 const PROFILE = (v) => 45
   + 42.5 * Math.exp(-(((v - 0.42) / 0.22) ** 2))
@@ -74,5 +75,23 @@ export async function run(assert) {
     assert(validation.meta?.manifold, 'lattice solid is manifold');
     assert((validation.meta?.volume ?? 0) > 0, 'lattice solid has positive volume');
     assert(solid.stats.struts > 10 && solid.stats.radius > 0, 'lattice solid reports its struts');
+
+    const layerId = doc.layers[0].id;
+    const networkScene = buildRenderScene({ evaluation, document: doc });
+    const networkLayer = networkScene.layers.find((layer) => layer.id === layerId);
+    assert(networkLayer && networkLayer.meshes.length === 0, 'network scene draws no prepared mesh');
+
+    const solidScene = buildRenderScene({
+      evaluation,
+      document: doc,
+      preview: { mesh: solid.geometry, layerId },
+    });
+    const solidLayer = solidScene.layers.find((layer) => layer.id === layerId);
+    assert(solidLayer?.meshes.length === 1, 'solid preview injects the prepared mesh');
+    assert(solidLayer.modes.includes('lattice-preview'), 'solid preview uses the batched lattice pass');
+    assert(
+      solidLayer.meshes[0].vertices.length === solid.geometry.vertices.length,
+      'solid preview projects every prepared vertex',
+    );
   }
 }
