@@ -72,9 +72,9 @@ function positiveOrNull(value) {
 
 /**
  * Pull the camera back far enough that ordinary scene geometry stays in front
- * of it. The document camera has no position: fov is its distance to the
- * projection plane. One effective camera is resolved per scene/layer and is
- * shared by curves, meshes, references and picking.
+ * of it. The document camera orbits at radius fov, which is also its distance
+ * to the projection plane. One effective camera is resolved per scene/layer
+ * and is shared by curves, meshes, references and picking.
  */
 export function resolveEffectiveCamera(camera, pointLists = []) {
   const cam = camera ?? cameraFrom(null);

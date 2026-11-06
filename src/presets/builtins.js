@@ -37,7 +37,7 @@ const FABRICATE_DEFAULTS = Object.freeze({
 function fabricateView(overrides = {}) {
   return {
     guides: false,
-    camera: { yaw: -0.6, pitch: 0.34 },
+    camera: { yaw: -0.6, pitch: 0.6 },
     units: { ...FABRICATE_UNITS },
     ...overrides,
     fabrication: {
@@ -68,18 +68,14 @@ function fabricateTorus(name, params = {}, view = {}) {
 
 const VASE_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';
 
-// +Y is the vase height. The 3D camera projects +Y upward only when it looks
-// from the far side of the XY plane, so start there instead of upside down.
-const VASE_CAMERA = Object.freeze({ yaw: Math.PI - 0.35, pitch: 0.34 });
-
 function vaseSurface(profile, heightExpression, name) {
   return createLayer('parametric-surface', {
     name,
     generator: {
       params: {
         exprX: `(${profile})*cos(u)`,
-        exprY: heightExpression,
-        exprZ: `(${profile})*sin(u)`,
+        exprY: `(${profile})*sin(u)`,
+        exprZ: heightExpression,
         u0: 0, u1: 2 * PI,
         v0: 0, v1: 1,
         samplesU: 96, samplesV: 64,
@@ -488,8 +484,8 @@ export const BUILT_IN_PRESETS = {
       generator: {
         params: {
           exprX: `(${VASE_PROFILE})*cos(u)`,
-          exprY: '200*v',
-          exprZ: `(${VASE_PROFILE})*sin(u)`,
+          exprY: `(${VASE_PROFILE})*sin(u)`,
+          exprZ: '200*v',
           u0: 0, u1: 2 * PI,
           v0: 0, v1: 1,
           samplesU: 96, samplesV: 64,
@@ -498,7 +494,6 @@ export const BUILT_IN_PRESETS = {
         },
       },
       view: fabricateView({
-        camera: VASE_CAMERA,
         units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
         fabrication: {
           format: 'stl',

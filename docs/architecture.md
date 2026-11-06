@@ -108,7 +108,7 @@ src/
 │   └── analysis.js               world curve analysis
 │
 ├── view/
-│   ├── camera.js                 pinhole camera + project3D
+│   ├── camera.js                 orbit camera + project3D
 │   ├── transform.js              P/W/A contracts, effective camera, frame
 │   ├── spatialReference.js       axes/ground geometry, reference extent
 │   ├── projection.js             camera/orthographic projection + source sidecar
@@ -513,10 +513,11 @@ canvas CSS point
   → SurfacePickResult
 ```
 
-Perspective rays use the inverse of the `project3D` yaw/pitch rotation, with
-the camera eye at `(0,0,-fov)` in camera space. Orthographic rays are parallel
-to the panel eye (+Z, +Y or +X) and start outside the world bounds on the
-corresponding positive axis.
+Perspective rays invert the same orbit basis as `project3D`: the eye sits at
+`fov·(cos p·cos y, cos p·sin y, sin p)` and the ray passes through the plane
+point `(sx, −sy, fov)`. Orthographic rays are parallel to the panel eye
+(+Z, +Y or +X) and start outside the world bounds on the corresponding
+positive axis.
 
 Picking intersects **world** triangles with Möller–Trumbore, double-sided and
 degenerate-safe. The determinant tolerance is relative to triangle edge scale

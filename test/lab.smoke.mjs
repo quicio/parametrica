@@ -510,7 +510,7 @@ console.log('6. documents');
     operators: [], view: { camera: { yaw: 0.5 } }, animation: {},
   });
   assert(partialCam.view.camera.yaw === 0.5, 'partial camera preserves yaw');
-  assert(Math.abs(partialCam.view.camera.pitch - Math.PI / 9) < 1e-6, 'partial camera defaults pitch');
+  assert(Math.abs(partialCam.view.camera.pitch - 0.6) < 1e-6, 'partial camera defaults pitch');
   assert(partialCam.view.camera.fov === 320, 'partial camera defaults fov');
   // Null / non-object camera → defaults applied.
   const nullCam = sanitizeDocument({
@@ -2663,9 +2663,11 @@ console.log('29. world geometry contracts');
 
   // Near-plane handling: points behind the camera must never project to
   // finite screen coordinates. They used to flip across the screen and
-  // produce long radial "spark" lines at some camera angles.
+  // produce long radial "spark" lines at some camera angles. With this
+  // orbit camera at yaw = pitch = 0 the eye is at (fov, 0, 0) looking
+  // toward -X, so "behind" means x > fov.
   const nearCam = { yaw: 0, pitch: 0, fov: 1 };
-  assert(project3D(0, 0, -2, nearCam) === null, 'points behind the camera are clipped');
+  assert(project3D(2, 0, 0, nearCam) === null, 'points behind the camera are clipped');
   assert(project3D(0, 0, 0, nearCam) !== null, 'points in front of the camera still project');
 
   const crossing = [{
@@ -2673,7 +2675,7 @@ console.log('29. world geometry contracts');
     closed: false,
     points: [
       { x: 0, y: 0, z: 1 }, { x: 0, y: 1, z: 0.5 },
-      { x: 0, y: 0, z: -2 }, { x: 0, y: 1, z: -1 },
+      { x: 2, y: 0, z: -2 }, { x: 2, y: 1, z: -1 },
       { x: 0, y: 0, z: 0.5 }, { x: 0, y: 1, z: 1 },
     ],
   }];
@@ -2684,7 +2686,7 @@ console.log('29. world geometry contracts');
     split.flatMap((curve) => curve.points).every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
     'clipped curve coordinates stay finite',
   );
-  const farCurve = [{ id: 'far', points: [{ x: 0, y: 0, z: -1000 }, { x: 1, y: 0, z: -1000 }] }];
+  const farCurve = [{ id: 'far', points: [{ x: 1000, y: 0, z: 0 }, { x: 1000, y: 1, z: 0 }] }];
   const safeProjection = projectWorldCurves(farCurve, { camera: nearCam, fit: 0 });
   assert(
     safeProjection[0]?.points.length === 2 &&
@@ -2695,10 +2697,10 @@ console.log('29. world geometry contracts');
   const plane = createMesh({
     id: 'plane',
     vertices: [
-      { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: 1 },
-      { x: -1, y: 1, z: 1 }, { x: 1, y: 1, z: 1 },
-      { x: -1, y: -1, z: -2 }, { x: 1, y: -1, z: -2 },
-      { x: -1, y: 1, z: -2 }, { x: 1, y: 1, z: -2 },
+      { x: 0, y: -1, z: 1 }, { x: 0, y: 1, z: 1 },
+      { x: 0, y: -1, z: -1 }, { x: 0, y: 1, z: -1 },
+      { x: 2, y: -1, z: 1 }, { x: 2, y: 1, z: 1 },
+      { x: 2, y: -1, z: -1 }, { x: 2, y: 1, z: -1 },
     ],
     faces: [[0, 1, 3, 2], [4, 6, 7, 5], [0, 2, 6, 4], [1, 5, 7, 3]],
   });
@@ -2712,8 +2714,8 @@ console.log('29. world geometry contracts');
   const farPlane = createMesh({
     id: 'far-plane',
     vertices: [
-      { x: 0, y: 0, z: -1000 }, { x: 1, y: 0, z: -1000 },
-      { x: 0, y: 1, z: -1000 }, { x: 1, y: 1, z: -1000 },
+      { x: 1000, y: 0, z: 0 }, { x: 1000, y: 1, z: 0 },
+      { x: 1000, y: 0, z: 1 }, { x: 1000, y: 1, z: 1 },
     ],
     faces: [[0, 1, 2], [1, 3, 2]],
   });

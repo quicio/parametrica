@@ -47,22 +47,24 @@ export function rayForArtboardPoint({ point, transform, worldBBox = null } = {})
     const syw = Math.sin(camera.yaw);
     const cp = Math.cos(camera.pitch);
     const sp = Math.sin(camera.pitch);
-    // Inverse of project3D's rotation. Camera eye is at (0,0,-fov) in
-    // camera space; the projection plane is z = 0.
+    // Inverse of project3D's orbit basis. The eye sits at fov·E, and a
+    // screen point maps to the projection plane point (sx, -sy, fov) in
+    // camera space.
+    const origin = {
+      x: fov * cp * cy,
+      y: fov * cp * syw,
+      z: fov * sp,
+    };
     const direction = normalize({
-      x: cy * sx - syw * cp * sy + syw * sp * fov,
-      y: syw * sx + cy * cp * sy - cy * sp * fov,
-      z: sp * sy + cp * fov,
+      x: -sx * syw + sy * sp * cy - fov * cp * cy,
+      y: sx * cy + sy * sp * syw - fov * cp * syw,
+      z: -sy * cp - fov * sp,
     });
     if (!direction) return null;
     return {
       kind: 'perspective',
       projection: '3d',
-      origin: {
-        x: -fov * syw * sp,
-        y: fov * cy * sp,
-        z: -fov * cp,
-      },
+      origin,
       direction,
       artboardPoint: { x: point.x, y: point.y },
     };

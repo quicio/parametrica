@@ -6,25 +6,24 @@
  * write x3d(t), y3d(t), z3d(t) and projects the resulting point cloud
  * to screen-space via a fixed-pivot yaw + pitch + FOV camera.
  *
- * Camera model (right-handed, looking down +Z toward origin):
- *   yaw   : rotation around the world Z axis (turntable).
- *   pitch : rotation around the camera's X axis (tilt up/down).
- *   fov   : "lens length" — the distance from camera to projection
- *           plane. Larger fov ≈ telephoto (less perspective); smaller
- *           fov ≈ wide-angle (more dramatic depth).
+ * Camera model (orbit around the world Z axis):
+ *   yaw   : azimuth around Z; moves the eye around the object.
+ *   pitch : elevation above the XY plane; may rise or fall past it.
+ *   fov   : orbit radius and lens length. Larger fov ≈ telephoto
+ *           (less perspective); smaller fov ≈ wide-angle.
  *
- * The projection is a pinhole camera:
+ * The camera orbits the origin:
  *
- *   // rotate world by yaw then pitch
- *   x' =  x·cos(yaw) + y·sin(yaw)
- *   y' = -x·sin(yaw)·cos(pitch) + y·cos(yaw)·cos(pitch) + z·sin(pitch)
- *   z' =  x·sin(yaw)·sin(pitch) - y·cos(yaw)·sin(pitch) + z·cos(pitch)
- *   // pinhole: project onto plane at z' = fov
- *   X =  (x' · fov) / (z' + fov)
- *   Y =  (y' · fov) / (z' + fov)
+ *   eye     = fov·(cos p·cos y, cos p·sin y, sin p)
+ *   right   = (−sin y, cos y, 0)
+ *   up      = (−sin p·cos y, −sin p·sin y, cos p)
+ *   forward = (−cos p·cos y, −cos p·sin y, −sin p)
+ *   // pinhole: project onto the plane at forward·p + fov = fov
+ *   X = (right·p · fov) / (forward·p + fov)
+ *   Y = (up·p    · fov) / (forward·p + fov)
  *
- * The +fov offset on z' prevents division-by-zero when points are at
- * the camera plane.
+ * The +fov offset prevents division-by-zero at the eye, and the world's
+ * +Z axis always reads as vertical on screen.
  *
  * Per-point depth is computed during sampling and attached to each
  * point's meta (`.depth`, `.depthAlpha`) so the renderer can fade the

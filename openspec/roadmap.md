@@ -474,6 +474,12 @@ outer/inner surfaces and Manifold difference.
 plane so +Y reads as up, and locks the upright, circular presentation with
 tests.
 
+### Phase 15 — Orbit camera (shipped)
+
+`orbit-camera` replaces the fixed-pivot 3D projection with a full-sphere orbit
+around +Z, so yaw moves around the figure and pitch can inspect the top and
+bottom. The vase returns to Z-up, ready for the slicer.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -550,6 +556,7 @@ tests.
 | `fabricate-presets` | archived | shipped |
 | `vase-200-preset` | archived | shipped |
 | `vase-upright-presentation` | archived | shipped |
+| `orbit-camera` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

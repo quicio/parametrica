@@ -31,12 +31,11 @@ const DEFAULT_OVERLAYS = Object.fromEntries(OVERLAYS.map((o) => [o.id, false]));
  * Default camera state for 3D-projected generators. The renderer
  * reads this when the generator attaches per-point depth. 2D
  * generators ignore it (they emit z=0 by construction). Defaults
- * give the classic Wikipedia-style isometric view: yaw = −30°, pitch
- * ≈ 20°, fov = 320.
+ * give a three-quarter orbit view: yaw = −30°, pitch ≈ 34°, fov = 320.
  */
 const DEFAULT_CAMERA = {
   yaw:   -Math.PI / 6,
-  pitch: Math.PI / 9,
+  pitch: 0.6,
   fov:   320,
 };
 const MIN_CAMERA_FOV = 10;

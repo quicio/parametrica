@@ -33,14 +33,14 @@ Every example sets:
 - **Möbius Challenge**: intentionally blocked. It demonstrates the validation
   and next-action guidance instead of pretending the mesh is fabricable.
 
-## Vase orientation
+## Camera and vase orientation
 
-- Height runs along **+Y**, with the mouth at the high-Y end.
-- The starting 3D camera looks from the far side of the XY plane, so the vase
-  opens upward instead of appearing upside down.
-- Every cross-section is a circle around Y, so front and side silhouettes match.
-- The exporter keeps document axes. Since the height is on Y, a slicer that
-  assumes Z-up shows the vase on its side until it is rotated 90° about X.
+- The 3D camera orbits the world origin: **yaw** turns the eye around **+Z**,
+  **pitch** raises or lowers it, and **+Z stays vertical on screen**.
+- Height runs along **+Z**, with the mouth at the high-Z end.
+- Every cross-section is a circle around Z, so front and side silhouettes match.
+- Because the exported mesh is Z-up, a slicer opens the vase standing on the
+  bed.
 
 ## Mode
 

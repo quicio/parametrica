@@ -82,19 +82,19 @@ export async function run(assert) {
     preparation: vaseDoc.view.fabrication,
   });
   assert(vaseReport.exportable === true, 'Solid Vase 200 is exportable');
-  assert(Math.abs(vaseReport.bbox.height - 200) < 1, 'Solid Vase 200 is 200 mm tall');
+  assert(Math.abs(vaseReport.bbox.depth - 200) < 1, 'Solid Vase 200 is 200 mm tall');
   assert(vaseReport.bbox.width > 170 && vaseReport.bbox.width < 180, 'Solid Vase 200 is about 175 mm wide');
   assert(vaseReport.triangles > 0 && vaseReport.volume > 0, 'Solid Vase 200 has positive fabrication geometry');
   const base = project3D(0, 0, 0, vaseDoc.view.camera);
-  const mouth = project3D(0, 200, 0, vaseDoc.view.camera);
+  const mouth = project3D(0, 0, 200, vaseDoc.view.camera);
   assert(base && mouth && mouth.y < base.y, 'Solid Vase 200 opens upward in the 3D view');
 
-  // Circular cross-sections around Y make the front and side silhouettes equal.
+  // Circular cross-sections around Z make the front and side silhouettes equal.
   const outerMesh = vaseEvaluation.layers[0].meshes[0];
   const rows = new Map();
   for (const point of outerMesh.vertices) {
-    const key = point.y.toFixed(6);
-    const radius = Math.hypot(point.x, point.z);
+    const key = point.z.toFixed(6);
+    const radius = Math.hypot(point.x, point.y);
     const row = rows.get(key) ?? { min: Infinity, max: -Infinity, count: 0 };
     row.min = Math.min(row.min, radius);
     row.max = Math.max(row.max, radius);
