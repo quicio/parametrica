@@ -9,6 +9,7 @@
 import { createMesh, isCurve3D } from './contracts.js';
 import { booleanSolids } from './csg.js';
 import { validateMesh } from './validate.js';
+import { repairMesh } from './repair.js';
 
 const TWO_PI = Math.PI * 2;
 
@@ -43,9 +44,10 @@ export function buildLatticeSolid(curves, {
     return { ok: false, geometry: null, error: { code: 'empty-network', message: 'lattice network produced no struts' } };
   }
 
+  const joints = jointSpheresMesh(polylines, radius, ringCount);
   const floorMesh = floorSolid(curves, radius, floorHeight);
   const rimMesh = rimSolid(curves, height, radius, rimWidth);
-  const operands = [floorMesh, rimMesh, ...tubes].filter(Boolean);
+  const operands = [floorMesh, rimMesh, joints, ...tubes].filter(Boolean);
   const result = booleanSolids('union', operands, {
     strategy: 'manifold',
     tolerance,
@@ -62,6 +64,23 @@ export function buildLatticeSolid(curves, {
   let geometry = result.geometry;
   let validation = result.validation ?? validateMesh(geometry);
   let microCaps = 0;
+  let orientationRepaired = false;
+  if (!validation.ok) {
+    // Manifold's float32 output can leave inconsistently oriented slivers.
+    // A targeted orientation repair is cheaper than rejecting an otherwise
+    // closed lattice.
+    const repaired = repairMesh(geometry, {
+      tolerance: Math.max(1e-4, tolerance),
+      capStrategy: 'auto',
+      orient: true,
+      topology: 'split',
+    });
+    if (repaired.validation?.ok) {
+      geometry = repaired.mesh;
+      validation = repaired.validation;
+      orientationRepaired = repaired.report?.changed === true;
+    }
+  }
   if (!validation.ok) {
     // Manifold's float32 output can leave a micro-triangle open at a
     // near-coincident junction. Cap only microscopic boundary loops; larger
@@ -87,6 +106,7 @@ export function buildLatticeSolid(curves, {
     validation,
     stats: {
       struts: tubes.length,
+      joints: joints?.meta?.jointCount ?? 0,
       operands: operands.length,
       tubeTriangles,
       triangles: geometry.faces.length,
@@ -94,6 +114,7 @@ export function buildLatticeSolid(curves, {
       strategy: result.stats?.strategy ?? 'manifold',
       volume: validation.meta?.volume ?? null,
       microCaps,
+      orientationRepaired,
       radius,
       floor: floorHeight,
       rim: rimWidth,
@@ -167,6 +188,86 @@ export function tubeMesh(points, radius, radialSegments = 8, id = 'lattice-strut
     mesh.meta = { ...mesh.meta, flipped: true };
   }
   return mesh;
+}
+
+function jointSpheresMesh(polylines, radius, slices) {
+  const points = [];
+  const seen = new Map();
+  const degree = new Map();
+  const keyOf = (point) => `${Math.round(point.x * 100)}:${Math.round(point.y * 100)}:${Math.round(point.z * 100)}`;
+  for (const curve of polylines) {
+    for (const point of [curve.points[0], curve.points[curve.points.length - 1]]) {
+      if (!point) continue;
+      const key = keyOf(point);
+      if (!seen.has(key)) {
+        seen.set(key, points.length);
+        points.push(point);
+        degree.set(key, 0);
+      }
+      degree.set(key, (degree.get(key) ?? 0) + 1);
+    }
+  }
+  const vertices = [];
+  const faces = [];
+  let count = 0;
+  const sphereRadius = radius * 1.04;
+  const minDistance = sphereRadius * 2.15;
+  const accepted = [];
+  const sphereSlices = Math.max(5, Math.round(slices * 0.75));
+  const sphereStacks = Math.max(4, Math.round(sphereSlices * 0.7));
+  for (const [key, index] of seen.entries()) {
+    if ((degree.get(key) ?? 0) < 3) continue;
+    const center = points[index];
+    if (accepted.some((other) => Math.hypot(
+      center.x - other.x,
+      center.y - other.y,
+      center.z - other.z,
+    ) < minDistance)) continue;
+    accepted.push(center);
+    appendSphere(vertices, faces, center, sphereRadius, sphereSlices, sphereStacks);
+    count += 1;
+  }
+  if (!faces.length) return null;
+  const mesh = createMesh({
+    id: 'lattice-joints',
+    vertices,
+    faces,
+    meta: { source: 'lattice-joints', jointCount: count },
+  });
+  return orientMesh(mesh);
+}
+
+function appendSphere(vertices, faces, center, radius, slices, stacks) {
+  const base = vertices.length;
+  vertices.push({ x: center.x, y: center.y, z: center.z + radius });
+  for (let i = 1; i < stacks; i++) {
+    const phi = (Math.PI * i) / stacks;
+    const r = radius * Math.sin(phi);
+    const z = center.z + radius * Math.cos(phi);
+    for (let j = 0; j < slices; j++) {
+      const theta = (TWO_PI * j) / slices;
+      vertices.push({ x: center.x + r * Math.cos(theta), y: center.y + r * Math.sin(theta), z });
+    }
+  }
+  const bottom = vertices.length;
+  vertices.push({ x: center.x, y: center.y, z: center.z - radius });
+  for (let j = 0; j < slices; j++) {
+    const next = (j + 1) % slices;
+    faces.push([base, base + 1 + j, base + 1 + next]);
+  }
+  for (let i = 0; i < stacks - 2; i++) {
+    const row = base + 1 + i * slices;
+    const nextRow = row + slices;
+    for (let j = 0; j < slices; j++) {
+      const next = (j + 1) % slices;
+      faces.push([row + j, nextRow + j, nextRow + next, row + next]);
+    }
+  }
+  const lastRow = base + 1 + (stacks - 2) * slices;
+  for (let j = 0; j < slices; j++) {
+    const next = (j + 1) % slices;
+    faces.push([bottom, lastRow + next, lastRow + j]);
+  }
 }
 
 function capMicroHoles(mesh, maxPerimeter) {
@@ -243,7 +344,7 @@ function floorSolid(curves, radius, floorHeight) {
   const maxRadius = Math.max(...bottom.map((point) => Math.hypot(point.x, point.y)));
   const floorRadius = Math.max(0.5, maxRadius + radius);
   const top = Math.max(floorHeight + radius * 2 + 0.5, radius * 2);
-  return cylinderSolid({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: top }, floorRadius, Math.max(10, Math.round(floorRadius)), 'lattice-floor');
+  return cylinderMesh({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: top }, floorRadius, Math.max(10, Math.round(floorRadius)), 'lattice-floor');
 }
 
 function rimSolid(curves, height, radius, rimHalfWidth) {
@@ -265,7 +366,7 @@ function rimSolid(curves, height, radius, rimHalfWidth) {
   return torusSolid(major, minor, centerZ, 96, 10, 'lattice-rim');
 }
 
-function cylinderSolid(a, b, radius, segments, id) {
+export function cylinderMesh(a, b, radius, segments, id) {
   const axis = normalize({ x: b.x - a.x, y: b.y - a.y, z: b.z - a.z }) ?? { x: 0, y: 0, z: 1 };
   const u = perpendicular(axis);
   const v = normalize(cross(axis, u)) ?? perpendicular(axis);

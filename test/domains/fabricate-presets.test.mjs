@@ -21,6 +21,7 @@ const PRESETS = [
   'SDF Enneper',
   'Solid Vase 200',
   'Lattice Vase 200',
+  'Perforated Vase 200',
 ];
 
 export async function run(assert) {
@@ -121,6 +122,7 @@ export async function run(assert) {
   assert(latticeReport.exportable === true, 'Lattice Vase 200 is exportable');
   assert(latticeReport.lattice?.struts > 100, 'Lattice Vase 200 builds a strut network');
   assert((latticeReport.lattice?.radius ?? 0) > 1, 'Lattice Vase 200 reports its strut radius');
+  assert(latticeReport.lattice?.joints > 100, 'Lattice Vase 200 rounds its junctions');
   assert(Math.abs(latticeReport.bbox.depth - 200) < 1, 'Lattice Vase 200 is 200 mm tall');
   assert(latticeReport.bbox.width > 170 && latticeReport.bbox.width < 180, 'Lattice Vase 200 is about 175 mm wide');
   assert(latticeReport.triangles > 1000 && latticeReport.volume > 0, 'Lattice Vase 200 has a positive solid body');
@@ -129,6 +131,29 @@ export async function run(assert) {
     name: 'Lattice Vase 200',
   });
   assert(stl.triangles === latticeReport.triangles && stl.data.length > 84, 'Lattice Vase 200 exports binary STL');
+
+  assert(latticeReport.printability?.minFeatureMm > 3, 'Lattice Vase 200 reports its printable strut size');
+
+  const perforatedDoc = BUILT_IN_PRESETS['Perforated Vase 200']();
+  const perforatedEvaluation = evaluateDocument(perforatedDoc, { time: 0 });
+  const perforatedReport = buildFabricationReport({
+    evaluation: perforatedEvaluation,
+    layerIndex: 0,
+    units: perforatedDoc.view.units,
+    preparation: perforatedDoc.view.fabrication,
+  });
+  assert(perforatedReport.exportable === true, 'Perforated Vase 200 is exportable');
+  assert(perforatedReport.lattice?.mode === 'cutouts', 'Perforated Vase 200 uses cutouts');
+  assert(perforatedReport.lattice?.holes > 50, 'Perforated Vase 200 cuts a useful hole pattern');
+  assert(Math.abs(perforatedReport.bbox.depth - 200) < 1, 'Perforated Vase 200 is 200 mm tall');
+  assert(perforatedReport.bbox.width > 170 && perforatedReport.bbox.width < 180, 'Perforated Vase 200 is about 175 mm wide');
+  assert(perforatedReport.triangles > 1000 && perforatedReport.volume > 0, 'Perforated Vase 200 has a positive body');
+  assert(perforatedReport.printability?.minFeatureMm > 3, 'Perforated Vase 200 reports its strut size');
+  const perforatedStl = exportBinarySTL(perforatedReport.source.geometry, {
+    units: perforatedDoc.view.units,
+    name: 'Perforated Vase 200',
+  });
+  assert(perforatedStl.triangles === perforatedReport.triangles, 'Perforated Vase 200 exports binary STL');
 
   const challenge = BUILT_IN_PRESETS['Möbius Challenge']();
   const challengeReport = buildFabricationReport({

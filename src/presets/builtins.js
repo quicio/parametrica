@@ -33,6 +33,13 @@ const FABRICATE_DEFAULTS = Object.freeze({
   selfIntersections: 'none',
   remeshResolution: 64,
   lattice: false,
+  latticeMode: 'struts',
+  latticeCellSize: 20,
+  latticeStrut: 3.5,
+  latticeWall: 2.5,
+  latticeFloor: 3,
+  latticeRim: 4,
+  latticeSeed: 7,
   latticePreview: 'solid',
 });
 
@@ -553,6 +560,24 @@ export const BUILT_IN_PRESETS = {
         },
       }),
     }),
+
+  'Perforated Vase 200': () => {
+    const doc = BUILT_IN_PRESETS['Solid Vase 200']();
+    doc.name = 'Perforated Vase 200';
+    doc.view.fabrication = {
+      ...doc.view.fabrication,
+      lattice: true,
+      latticeMode: 'cutouts',
+      latticeCellSize: 20,
+      latticeStrut: 3.5,
+      latticeWall: 2.5,
+      latticeFloor: 3,
+      latticeRim: 4,
+      latticeSeed: 7,
+      latticePreview: 'solid',
+    };
+    return doc;
+  },
 
   // ——— Parametric surfaces ———
 

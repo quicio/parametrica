@@ -7,10 +7,10 @@ test('preset library groups, searches and applies a surface', async ({ page }) =
 
   const presets = await openSection(page, 'Presets');
   await expect(presets.locator('.preset-chip', { hasText: 'Surfaces' })).toBeVisible();
-  await expect(presets.locator('.preset-status')).toContainText('50 of 50 presets');
+  await expect(presets.locator('.preset-status')).toContainText('51 of 51 presets');
 
   await presets.locator('.preset-chip', { hasText: 'Surfaces' }).click();
-  await expect(presets.locator('.preset-status')).toContainText('9 of 50 presets');
+  await expect(presets.locator('.preset-status')).toContainText('9 of 51 presets');
   await expect(presets.locator('.preset-item')).toHaveCount(9);
   await expect(presets.locator('.preset-item', { hasText: 'Catenoid' }))
     .toContainText(/minimal surface of revolution/i);
@@ -75,7 +75,7 @@ test('favorites persist and starring does not apply the preset', async ({ page }
 
   await presets.locator('.preset-chip', { hasText: 'Favorites' }).click();
   await expect(presets.locator('.preset-item')).toHaveCount(1);
-  await expect(presets.locator('.preset-status')).toContainText('1 of 50 presets · Favorites');
+  await expect(presets.locator('.preset-status')).toContainText('1 of 51 presets · Favorites');
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));

@@ -567,12 +567,14 @@ export class Controls {
     const doc = this.app.document;
     const preparation = doc.view?.fabrication ?? {};
     const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
-    const isLattice = activeLayer?.generator?.id === 'surface-lattice';
+    const isCutout = preparation.latticeMode === 'cutouts';
+    const isLattice = activeLayer?.generator?.id === 'surface-lattice'
+      || (preparation.lattice === true && isCutout);
     const mesh = report?.source?.geometry ?? null;
     const show = this.mode === 'fabricate'
       && preparation.latticePreview !== 'network'
       && isLattice
-      && Boolean(report?.lattice?.struts)
+      && Boolean(report?.lattice?.struts || report?.lattice?.holes)
       && Boolean(mesh);
     let previewMesh = mesh;
     if (show && mesh.faces.length > 60_000) {
@@ -603,7 +605,12 @@ export class Controls {
     if (els.latticePreview) {
       const activeLayer = this.app.document.layers?.[this.app.document.activeLayer ?? 0];
       els.latticePreview.value = preparation.latticePreview === 'network' ? 'network' : 'solid';
-      els.latticePreview.disabled = activeLayer?.generator?.id !== 'surface-lattice';
+      els.latticePreview.disabled = activeLayer?.generator?.id !== 'surface-lattice'
+        && !(preparation.lattice === true && preparation.latticeMode === 'cutouts');
+      const authored = els.latticePreview.options?.[0];
+      if (authored) {
+        authored.textContent = preparation.latticeMode === 'cutouts' ? 'Authored' : 'Network';
+      }
     }
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
@@ -699,7 +706,9 @@ export class Controls {
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     const formatLabel = preparation.format === '3mf' ? '3MF' : 'Binary STL';
     els.reason.textContent = report.reason ?? (ready
-      ? report.lattice?.struts
+      ? report.lattice?.mode === 'cutouts'
+        ? `${formatLabel} · millimetres · ${report.lattice.holes} holes · ${formatNumber(report.lattice.holeDiameter ?? 0)} mm`
+        : report.lattice?.struts
         ? `${formatLabel} · millimetres · ${report.lattice.struts} struts · ${formatNumber((report.lattice.radius ?? 1.75) * 2)} mm`
         : report.boolean
           ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
@@ -751,13 +760,26 @@ export class Controls {
         ? (changed.length ? changed.join(' · ') : 'prepared')
         : 'off';
     }
+    if (els.printability) {
+      const print = report.printability;
+      els.printability.textContent = print
+        ? `${Math.round((print.overhangRatio ?? 0) * 100)}% overhang · bed ${formatNumber(print.bedContactAreaMm2 ?? 0)} mm²${print.minFeatureMm ? ` · min ${formatNumber(print.minFeatureMm)} mm` : ''}`
+        : '—';
+    }
+    if (els.printChecks) {
+      const print = report.printability;
+      els.printChecks.textContent = print?.warnings?.length ? print.warnings.join(' · ') : 'no warnings';
+      if (els.printChecks.dataset) els.printChecks.dataset.state = print?.status ?? '';
+    }
     if (els.lattice) {
       const lattice = report.lattice;
       const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
       const latticeActive = preparation.lattice === true && activeLayer?.generator?.id === 'surface-lattice';
-      els.lattice.textContent = lattice?.struts
-        ? `${lattice.struts} struts · ${formatNumber((lattice.radius ?? 1.75) * 2)} mm${lattice.microCaps ? ` · ${lattice.microCaps} microcaps` : ''}`
-        : (latticeActive ? 'building…' : 'off');
+      els.lattice.textContent = lattice?.mode === 'cutouts'
+        ? `${lattice.holes} holes · ${formatNumber(lattice.holeDiameter ?? 0)} mm`
+        : lattice?.struts
+          ? `${lattice.struts} struts · ${formatNumber((lattice.radius ?? 1.75) * 2)} mm · ${lattice.joints ?? 0} joints${lattice.microCaps ? ` · ${lattice.microCaps} microcaps` : ''}`
+          : (latticeActive ? 'building…' : 'off');
     }
     if (els.repairStatus) {
       const repair = report.repair;
@@ -829,7 +851,8 @@ export class Controls {
       parts.push(`repair${self} @${preparation.remeshResolution ?? 64}`);
     }
     const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
-    const latticeActive = preparation.lattice === true && activeLayer?.generator?.id === 'surface-lattice';
+    const latticeActive = preparation.lattice === true
+      && (activeLayer?.generator?.id === 'surface-lattice' || preparation.latticeMode === 'cutouts');
     if (latticeActive) {
       parts.push('lattice');
     } else if (preparation.boolean && preparation.boolean !== 'none') {

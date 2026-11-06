@@ -492,6 +492,12 @@ example.
 a persisted Network/Solid toggle, display simplification and a batched preview
 pass.
 
+### Phase 18 — Lattice and print polish (shipped)
+
+`lattice-print-polish` adds area-uniform cells, rounded joints, the
+`Perforated Vase 200` cutout example and overhang/bed/feature checks in every
+Fabricate report.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -571,6 +577,7 @@ pass.
 | `orbit-camera` | archived | shipped |
 | `surface-lattice` | archived | shipped |
 | `lattice-solid-preview` | archived | shipped |
+| `lattice-print-polish` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

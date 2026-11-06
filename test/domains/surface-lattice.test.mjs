@@ -25,6 +25,7 @@ export async function run(assert) {
   assert(a.stats.edges > a.stats.cells, 'lattice network has more edges than cells');
   assert(a.stats.minEdge >= 1.9, 'short sliver edges are filtered out');
   assert(a.stats.meanEdge > 8 && a.stats.meanEdge < 30, 'mean strut edge stays near the requested cell size');
+  assert(a.stats.cellAreaCv < 0.35, 'cell areas stay within a reasonable spread');
 
   const b = buildRevolveLattice({ ...options });
   assert(JSON.stringify(a.curves) === JSON.stringify(b.curves), 'lattice network is deterministic for a seed');
@@ -75,6 +76,7 @@ export async function run(assert) {
     assert(validation.meta?.manifold, 'lattice solid is manifold');
     assert((validation.meta?.volume ?? 0) > 0, 'lattice solid has positive volume');
     assert(solid.stats.struts > 10 && solid.stats.radius > 0, 'lattice solid reports its struts');
+    assert(solid.stats.joints >= 0, 'lattice solid reports its rounded joints');
 
     const layerId = doc.layers[0].id;
     const networkScene = buildRenderScene({ evaluation, document: doc });

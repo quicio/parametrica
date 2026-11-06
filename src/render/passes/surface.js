@@ -122,7 +122,6 @@ RenderPasses.register({
     const fill = style.fill ?? {};
     const stroke = style.stroke ?? {};
     const rgb = hexToRgb(fill.enabled ? fill.color : stroke.color, [255, 255, 255]);
-    const alpha = Math.round(clamp01(fill.enabled ? fill.opacity : Math.min(0.9, stroke.opacity ?? 0.9)) * 255);
     p.noStroke();
     const bands = 48;
     for (const mesh of meshes) {
@@ -161,7 +160,13 @@ RenderPasses.register({
         }
         if (!slice.length) continue;
         const depthAlpha = clamp01(0.4 + 0.55 * ((minDepth + (span * (band + 0.5)) / bands)));
-        p.fill(rgb[0], rgb[1], rgb[2], Math.round(alpha * depthAlpha));
+        const shade = 0.5 + 0.5 * depthAlpha;
+        p.fill(
+          Math.round(rgb[0] * shade),
+          Math.round(rgb[1] * shade),
+          Math.round(rgb[2] * shade),
+          255,
+        );
         p.beginShape(p.TRIANGLES);
         for (const { face } of slice) {
           for (const index of face) {

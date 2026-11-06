@@ -141,9 +141,18 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
       target.entry.modes = ['lattice-preview'];
       target.entry.style = {
         ...target.entry.style,
-        fill: { ...(target.entry.style?.fill ?? {}), enabled: true, opacity: 0.92, color: '#ffffff' },
+        fill: { ...(target.entry.style?.fill ?? {}), enabled: true, opacity: 1, color: '#ffffff' },
         stroke: { ...(target.entry.style?.stroke ?? {}), opacity: 0.7 },
       };
+      // The preview shows the prepared body alone; authored layers would
+      // otherwise paint wireframes over it in layer order.
+      for (const result of layerResults) {
+        if (result === target) continue;
+        result.entry.curves = [];
+        result.entry.meshes = [];
+        result.entry.renderMeshes = [];
+        result.entry.modes = [];
+      }
     }
   }
   const curves = layers.flatMap((layer) => layer.curves);

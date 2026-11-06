@@ -6,7 +6,7 @@ the authored document or the exported geometry.
 ## Requirements
 ### Requirement: Network/Solid preview
 
-Fabricate SHALL offer a persisted Network/Solid preview choice.
+Fabricate SHALL offer a persisted authored/solid preview choice.
 
 #### Scenario: Default
 
@@ -16,14 +16,21 @@ Fabricate SHALL offer a persisted Network/Solid preview choice.
 
 #### Scenario: Network
 
-- **WHEN** the user selects Network
+- **WHEN** the user selects Network on a strut lattice
 - **THEN** the canvas draws the authored strut centerlines
+- **AND** no prepared mesh is injected
+
+#### Scenario: Authored cutouts
+
+- **WHEN** the user selects Authored on a perforated shell
+- **THEN** the canvas draws the authored shell
 - **AND** no prepared mesh is injected
 
 #### Scenario: Solid
 
 - **WHEN** the user selects Solid
 - **THEN** the active layer renders the prepared mesh
+- **AND** other layers do not paint over it
 - **AND** the render uses the lattice preview pass
 
 ### Requirement: Display-only simplification

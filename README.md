@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2654 checks)
+npm test             # node-only verification suite (2685 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (151 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (152 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -187,9 +187,9 @@ No central config to update.
 
 The library is grouped into Curves, Patterns, Fourier, Attractors, 3D Curves,
 Surfaces, Fabricate, Compositions, Helix Lab and Legacy; user saves appear under
-My Presets. The Fabricate category includes ready solids, a solid and a lattice
-200 mm vase, multi-body and boolean examples, repair/cap/SDF demos and a
-non-orientable challenge. Every row
+My Presets. The Fabricate category includes ready solids, solid, lattice and
+perforated 200 mm vases, multi-body and boolean examples, repair/cap/SDF demos
+and a non-orientable challenge. Every row
 shows a deterministic preview derived from its document, and favorites and
 recents persist as workspace metadata without changing the preset JSON.
 
@@ -203,7 +203,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2654
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2685
 checks across the full Node suite (expression engine, noise determinism,
 splines, all 25 registered generators, operators, document round-trip +
 dual-format read, built-in presets, chained mutation across families, SVG
@@ -212,7 +212,7 @@ offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (151 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (152 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting

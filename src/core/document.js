@@ -81,9 +81,22 @@ export const DEFAULT_FABRICATION = Object.freeze({
   selfIntersections: 'none',
   remeshResolution: 64,
   lattice: false,
+  latticeMode: 'struts',
+  latticeCellSize: 20,
+  latticeStrut: 3.5,
+  latticeWall: 2.5,
+  latticeFloor: 3,
+  latticeRim: 4,
+  latticeSeed: 7,
   latticePreview: 'solid',
   quality: 'custom',
 });
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
 
 export function sanitizeFabricationSettings(raw) {
   const source = raw && typeof raw === 'object' ? raw : {};
@@ -113,6 +126,13 @@ export function sanitizeFabricationSettings(raw) {
       ? Math.min(Math.max(Math.floor(Number(source.remeshResolution)), 16), 192)
       : DEFAULT_FABRICATION.remeshResolution,
     lattice: source.lattice === true,
+    latticeMode: ['struts', 'cutouts'].includes(source.latticeMode) ? source.latticeMode : 'struts',
+    latticeCellSize: clampNumber(source.latticeCellSize, 5, 80, 20),
+    latticeStrut: clampNumber(source.latticeStrut, 1, 12, 3.5),
+    latticeWall: clampNumber(source.latticeWall, 0.5, 20, 2.5),
+    latticeFloor: clampNumber(source.latticeFloor, 0, 40, 3),
+    latticeRim: clampNumber(source.latticeRim, 0, 20, 4),
+    latticeSeed: clampNumber(source.latticeSeed, 0, 9999, 7),
     latticePreview: ['network', 'solid'].includes(source.latticePreview) ? source.latticePreview : 'solid',
     quality: ['custom', 'draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'custom',
   };

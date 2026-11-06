@@ -44,6 +44,12 @@ seed.
 - **THEN** the number of cells changes inversely
 - **AND** the network stays on the same surface
 
+#### Scenario: Uniform cells
+
+- **WHEN** the network is generated on a profile whose radius varies
+- **THEN** seed density follows R²
+- **AND** four Lloyd passes keep cell areas within a reasonable spread
+
 #### Scenario: Strut
 
 - **WHEN** the strut diameter changes
@@ -60,9 +66,16 @@ Fabricate SHALL turn the network into one closed solid.
 - **THEN** every curve becomes a closed tube
 - **AND** a solid floor and rim close the ends
 
+#### Scenario: Rounded joints
+
+- **WHEN** three or more tubes meet at a vertex
+- **THEN** a low-poly sphere fills the junction
+- **AND** all junction spheres are packed into one operand
+- **AND** spheres that would overlap are skipped
+
 #### Scenario: Union
 
-- **WHEN** the tubes, floor and rim are combined
+- **WHEN** the tubes, joints, floor and rim are combined
 - **THEN** Manifold produces one body
 - **AND** the result is closed, manifold and has positive volume
 

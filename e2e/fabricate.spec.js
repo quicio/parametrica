@@ -165,3 +165,45 @@ test('lattice preset builds a strut body in the worker and reports it', async ({
   expect(built.triangles).toBeGreaterThan(1000);
   expect(built.bytes).toBeGreaterThan(84);
 });
+
+test('perforated preset subtracts seeded holes and reuses the solid preview', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Perforated Vase 200'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  const status = fabricate.locator('.fabricate-status');
+  await expect(status).toContainText('READY', { timeout: 30_000 });
+  await expect(fabricate.locator('.fabricate-lattice')).toContainText('holes');
+  await expect(fabricate.locator('.fabricate-printability')).toContainText('overhang');
+  await expect(fabricate.locator('.fabricate-lattice-preview')).toHaveValue('solid');
+  const authored = await fabricate.locator('.fabricate-lattice-preview option').first().textContent();
+  expect(authored).toBe('Authored');
+
+  await page.waitForTimeout(500);
+  const scene = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const layer = app.renderer.lastScene?.layers?.find((entry) => entry.id === app.document.layers[0].id);
+    return {
+      preview: Boolean(app.fabricationPreview),
+      meshes: layer?.meshes?.length ?? 0,
+      modes: layer?.modes ?? null,
+    };
+  });
+  expect(scene.preview).toBe(true);
+  expect(scene.meshes).toBe(1);
+  expect(scene.modes).toContain('lattice-preview');
+
+  await fabricate.locator('.fabricate-lattice-preview').selectOption('network');
+  await page.waitForTimeout(400);
+  await expect(fabricate.locator('.fabricate-export')).toBeEnabled();
+  await fabricate.locator('.fabricate-lattice-preview').selectOption('solid');
+  await page.waitForTimeout(400);
+
+  const built = await page.evaluate(() => {
+    const result = window.__parametrica.exporter.buildSTLFromCurrent();
+    return { bytes: result.data.length, triangles: result.triangles };
+  });
+  expect(built.triangles).toBeGreaterThan(1000);
+  expect(built.bytes).toBeGreaterThan(84);
+});

@@ -19,6 +19,7 @@ export function buildRevolveLattice({
   cellSize = 20,
   seed = 1,
   samples = 6,
+  seedWeight = 'radius2',
 } = {}) {
   const safeHeight = Number.isFinite(height) && height > 0 ? height : 200;
   const safeCell = Math.max(4, Number(cellSize) || 20);
@@ -50,11 +51,13 @@ export function buildRevolveLattice({
   const maxRadius = Math.max(...Array.from({ length: 64 }, (_, i) => radiusAtZ(zMin + ((zMax - zMin) * i) / 63)));
 
   const random = mulberry32(hashSeed(seed));
+  const weightOf = (radius) => (seedWeight === 'radius' ? radius : radius * radius);
+  const maxWeight = weightOf(maxRadius);
   const seeds = [];
   let guard = count * 64 + 1024;
   while (seeds.length < count && guard-- > 0) {
     const z = zMin + (zMax - zMin) * random();
-    if (random() * maxRadius > radiusAtZ(z)) continue;
+    if (random() * maxWeight > weightOf(radiusAtZ(z))) continue;
     const theta = random() * TAU;
     seeds.push({ theta, z, x: theta * meanRadius });
   }
@@ -69,7 +72,7 @@ export function buildRevolveLattice({
   // diagram is periodic around theta, so centroids are wrapped back by
   // one circumference before they move.
   let cells = voronoiCells(seeds, { period, zMin, zMax, cellSize: safeCell });
-  for (let pass = 0; pass < 2; pass++) {
+  for (let pass = 0; pass < 4; pass++) {
     if (cells.length !== seeds.length) break;
     for (let i = 0; i < seeds.length; i++) {
       const centroid = polygonCentroid(cells[i]);
@@ -83,6 +86,24 @@ export function buildRevolveLattice({
     }
     cells = voronoiCells(seeds, { period, zMin, zMax, cellSize: safeCell });
   }
+
+  let minCellArea = Infinity;
+  let maxCellArea = 0;
+  let totalCellArea = 0;
+  let cellAreaSquares = 0;
+  for (const polygon of cells) {
+    const points = polygon.map(([x, z]) => surfacePoint(x / meanRadius, z, radiusAtV, safeHeight));
+    const area = polygonArea3d(points);
+    minCellArea = Math.min(minCellArea, area);
+    maxCellArea = Math.max(maxCellArea, area);
+    totalCellArea += area;
+    cellAreaSquares += area * area;
+  }
+  const meanCellArea = cells.length ? totalCellArea / cells.length : 0;
+  const cellAreaVariance = cells.length
+    ? Math.max(0, cellAreaSquares / cells.length - meanCellArea * meanCellArea)
+    : 0;
+  const cellAreaCv = meanCellArea > 0 ? Math.sqrt(cellAreaVariance) / meanCellArea : 0;
 
   const edges = new Map();
   for (const polygon of cells) {
@@ -133,6 +154,7 @@ export function buildRevolveLattice({
 
   return {
     curves,
+    seeds: seeds.map(({ theta, z }) => ({ theta, z })),
     stats: {
       cells: cells.length,
       seeds: seeds.length,
@@ -144,6 +166,11 @@ export function buildRevolveLattice({
       minEdge: Number.isFinite(minEdge) ? minEdge : 0,
       maxEdge,
       meanEdge: curves.length ? totalEdge / curves.length : 0,
+      minCellArea: Number.isFinite(minCellArea) ? minCellArea : 0,
+      maxCellArea,
+      meanCellArea,
+      cellAreaCv,
+      seedWeight,
     },
   };
 }
@@ -204,6 +231,21 @@ function surfacePoint(theta, z, radiusAtV, height) {
     y: radius * Math.sin(theta),
     z,
   };
+}
+
+function polygonArea3d(points) {
+  if (!Array.isArray(points) || points.length < 3) return 0;
+  let nx = 0;
+  let ny = 0;
+  let nz = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    nx += a.y * b.z - a.z * b.y;
+    ny += a.z * b.x - a.x * b.z;
+    nz += a.x * b.y - a.y * b.x;
+  }
+  return 0.5 * Math.hypot(nx, ny, nz);
 }
 
 function vertexKey(theta, z) {

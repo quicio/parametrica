@@ -13,6 +13,8 @@ import { repairMesh } from '../geometry/repair.js';
 import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { buildLatticeSolid } from '../geometry/latticeSolid.js';
+import { analyzePrintability } from '../geometry/printChecks.js';
+import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
@@ -205,6 +207,51 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     bodies = 1;
   }
 
+  let perforationError = null;
+  if (prepare.lattice === true && prepare.latticeMode === 'cutouts' && source?.geometry) {
+    const shell = isSolid(source.geometry) ? source.geometry.boundary : source.geometry;
+    const outerSurface = (activeLayer?.geometry ?? []).find((item) => Array.isArray(item?.grid?.points));
+    const cutters = buildPerforationCutters(shell, {
+      cellSize: prepare.latticeCellSize,
+      strut: prepare.latticeStrut,
+      wall: prepare.latticeWall,
+      floor: prepare.latticeFloor,
+      rim: prepare.latticeRim,
+      seed: prepare.latticeSeed,
+      profile: outerSurface ? radiusProfileFromSurface(outerSurface) : null,
+    });
+    if (!cutters.ok || !cutters.cutters.length) {
+      source = null;
+      perforationError = cutters.error?.message ?? 'perforation generated no holes';
+    } else {
+      const result = booleanSolids('difference', [shell, ...cutters.cutters], {
+        strategy: 'manifold',
+        tolerance: prepare.tolerance,
+        maxInputTriangles: 400_000,
+      });
+      if (!result.ok || !result.geometry) {
+        source = null;
+        perforationError = `Perforation failed: ${result.error?.message ?? 'unknown error'}`;
+      } else {
+        const validation = validateForFabrication(result.geometry);
+        const closed = Boolean(validation.meta?.closed);
+        source = {
+          ...source,
+          geometry: result.geometry,
+          kind: 'mesh',
+          id: 'perforated-shell',
+          validation,
+          closed,
+          exportable: validation.ok && closed,
+          lattice: { ...cutters.stats },
+        };
+        if (!source.exportable) {
+          perforationError = validation.errors?.[0] ?? 'perforated shell failed validation';
+        }
+      }
+    }
+  }
+
   const candidateErrors = candidates[0]?.validation?.errors ?? [];
   const firstError = candidateErrors.find((error) => error.includes('self-intersect')) ?? candidateErrors[0] ?? null;
   return {
@@ -221,16 +268,19 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     booleanError,
     booleanEmpty,
     mergedError,
+    perforationError,
     preparation: source?.preparation ?? null,
     repair: source?.repair ?? null,
     prepared: Boolean(source?.prepared),
     reason: source
       ? null
-      : booleanError
-        ? booleanError
-        : mergedError
-        ? `Multi-body export failed: ${mergedError}`
-        : candidates.length
+      : perforationError
+        ? perforationError
+        : booleanError
+          ? booleanError
+          : mergedError
+            ? `Multi-body export failed: ${mergedError}`
+            : candidates.length
           ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
           : 'The active layer has no Mesh/Solid geometry',
   };
@@ -263,6 +313,10 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
   const bbox = bboxOf(mesh);
   const physical = bboxToMillimetres(bbox, units);
   const unitsReady = millimetresPerUnit(units, 'world') !== null;
+  const minFeature = source.lattice?.radius
+    ? source.lattice.radius * 2
+    : (source.lattice?.mode === 'cutouts' ? source.lattice.strut : null);
+  const printability = analyzePrintability(mesh, { units, minFeature });
   return {
     ...resolved,
     mesh,
@@ -277,6 +331,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     repair: source.repair ?? null,
     prepared: Boolean(source.prepared),
     lattice: source.lattice ?? null,
+    printability,
     unitsReady,
     exportable: source.exportable && unitsReady,
     reason: !unitsReady
@@ -347,6 +402,11 @@ function buildLatticeCandidate(layer, index, prepare) {
   };
 }
 
+function numeric(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function normalizePreparation(raw) {
   if (!raw || typeof raw !== 'object') return { weld: false, cap: false, scope: 'single' };
   return {
@@ -365,6 +425,13 @@ function normalizePreparation(raw) {
     selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
     remeshResolution: raw.remeshResolution,
     lattice: raw.lattice === true,
+    latticeMode: raw.latticeMode === 'cutouts' ? 'cutouts' : 'struts',
+    latticeCellSize: numeric(raw.latticeCellSize, 20),
+    latticeStrut: numeric(raw.latticeStrut, 3.5),
+    latticeWall: numeric(raw.latticeWall, 2.5),
+    latticeFloor: numeric(raw.latticeFloor, 3),
+    latticeRim: numeric(raw.latticeRim, 4),
+    latticeSeed: numeric(raw.latticeSeed, 7),
     latticePreview: raw.latticePreview === 'network' ? 'network' : 'solid',
     quality: raw.quality,
   };
