@@ -9,6 +9,81 @@ import { createDocument, createInstanceLayer } from '../core/document.js';
 
 const PI = Math.PI;
 
+const FABRICATE_UNITS = Object.freeze({
+  world: 'mm',
+  mmPerWorldUnit: 10,
+  artboard: 'unitless',
+  mmPerArtboardUnit: null,
+});
+
+const FABRICATE_DEFAULTS = Object.freeze({
+  format: '3mf',
+  quality: 'standard',
+  scope: 'single',
+  boolean: 'none',
+  csgStrategy: 'manifold',
+  weld: false,
+  cap: false,
+  tolerance: 1e-4,
+  maxHoleEdges: 256,
+  repair: false,
+  capStrategy: 'auto',
+  topology: 'none',
+  nonOrientable: 'cut',
+  selfIntersections: 'none',
+  remeshResolution: 64,
+});
+
+function fabricateView(overrides = {}) {
+  return {
+    guides: false,
+    camera: { yaw: -0.6, pitch: 0.34 },
+    units: { ...FABRICATE_UNITS },
+    ...overrides,
+    fabrication: {
+      ...FABRICATE_DEFAULTS,
+      ...(overrides.fabrication ?? {}),
+    },
+  };
+}
+
+const TORUS_PARAMS = Object.freeze({
+  exprX: '(2 + cos(v))*cos(u)',
+  exprY: '(2 + cos(v))*sin(u)',
+  exprZ: 'sin(v)',
+  u0: 0, u1: 2 * PI,
+  v0: 0, v1: 2 * PI,
+  samplesU: 48, samplesV: 24,
+  closedU: true, closedV: true,
+  fit: 340,
+});
+
+function fabricateTorus(name, params = {}, view = {}) {
+  return createDocument('parametric-surface', {
+    name,
+    generator: { params: { ...TORUS_PARAMS, ...params } },
+    view: fabricateView(view),
+  });
+}
+
+function addTorusInstance(doc, { name, dz = 0, dx = 0, dy = 0 }) {
+  const source = doc.layers[0];
+  const layer = createInstanceLayer(source.id, {
+    name,
+    operators: [{
+      id: 'translate',
+      enabled: true,
+      mods: {},
+      params: { dx, dy, dz },
+    }],
+    style: source.style,
+  });
+  doc.layers.push(layer);
+  doc.activeLayer = doc.layers.length - 1;
+  return layer;
+}
+
+
 export const BUILT_IN_PRESETS = {
   'Lissajous 3:5': () =>
     createDocument('lissajous', {
@@ -260,6 +335,128 @@ export const BUILT_IN_PRESETS = {
         },
       },
     }),
+
+  // ——— Fabricate examples ———
+
+  'Solid Torus': () => fabricateTorus('Solid Torus', {}, {
+    fabrication: { format: '3mf', quality: 'standard', scope: 'single' },
+  }),
+
+  'Twin Tori': () => {
+    const doc = fabricateTorus('Twin Tori', {}, {
+      fabrication: { format: '3mf', quality: 'standard', scope: 'composition' },
+    });
+    doc.layers[0].name = 'Torus A';
+    addTorusInstance(doc, { name: 'Torus B', dz: 5 });
+    return doc;
+  },
+
+  'Boolean Union': () => {
+    const doc = fabricateTorus('Boolean Union', {}, {
+      fabrication: {
+        format: '3mf',
+        scope: 'composition',
+        boolean: 'union',
+        csgStrategy: 'manifold',
+      },
+    });
+    doc.layers[0].name = 'Torus A';
+    addTorusInstance(doc, { name: 'Torus B', dz: 0.5 });
+    return doc;
+  },
+
+  'Boolean Difference': () => {
+    const doc = fabricateTorus('Boolean Difference', {}, {
+      fabrication: {
+        format: 'stl',
+        scope: 'composition',
+        boolean: 'difference',
+        csgStrategy: 'manifold',
+      },
+    });
+    doc.layers[0].name = 'Torus A';
+    addTorusInstance(doc, { name: 'Torus B', dz: 0.5 });
+    return doc;
+  },
+
+  'Cap Catenoid': () => createDocument('parametric-surface', {
+    name: 'Cap Catenoid',
+    generator: {
+      params: {
+        exprX: 'cosh(v)*cos(u)',
+        exprY: 'cosh(v)*sin(u)',
+        exprZ: 'v',
+        u0: 0, u1: 2 * PI,
+        v0: -1.1, v1: 1.1,
+        samplesU: 48, samplesV: 20,
+        closedU: true, closedV: false,
+        fit: 330,
+      },
+    },
+    view: fabricateView({
+      fabrication: {
+        format: 'stl',
+        quality: 'standard',
+        repair: true,
+        weld: true,
+        cap: true,
+        capStrategy: 'auto',
+      },
+    }),
+  }),
+
+  'SDF Enneper': () => createDocument('parametric-surface', {
+    name: 'SDF Enneper',
+    generator: {
+      params: {
+        exprX: '0.55*(u - u^3/3 + u*v^2)',
+        exprY: '0.55*(v - v^3/3 + v*u^2)',
+        exprZ: '0.55*(u^2 - v^2)',
+        u0: -1.8, u1: 1.8,
+        v0: -1.8, v1: 1.8,
+        samplesU: 36, samplesV: 36,
+        closedU: false, closedV: false,
+        fit: 340,
+      },
+    },
+    view: fabricateView({
+      fabrication: {
+        format: 'stl',
+        quality: 'custom',
+        repair: true,
+        capStrategy: 'auto',
+        selfIntersections: 'sdf',
+        remeshResolution: 32,
+      },
+    }),
+  }),
+
+  'Möbius Challenge': () => createDocument('parametric-surface', {
+    name: 'Möbius Challenge',
+    generator: {
+      params: {
+        exprX: '(1.7 + 0.5*v*cos(u/2))*cos(u)',
+        exprY: '(1.7 + 0.5*v*cos(u/2))*sin(u)',
+        exprZ: '0.5*v*sin(u/2)',
+        u0: 0, u1: 2 * PI,
+        v0: -1, v1: 1,
+        samplesU: 48, samplesV: 14,
+        closedU: true, closedV: false,
+        seamU: 'reverse',
+        fit: 330,
+      },
+    },
+    view: fabricateView({
+      fabrication: {
+        format: 'stl',
+        quality: 'standard',
+        repair: true,
+        capStrategy: 'auto',
+        topology: 'split',
+        nonOrientable: 'cut',
+      },
+    }),
+  }),
 
   // ——— Parametric surfaces ———
 

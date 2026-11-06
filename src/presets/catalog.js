@@ -12,6 +12,7 @@ export const PRESET_CATEGORIES = [
   { id: 'attractors', label: 'Attractors', hint: 'Strange attractors' },
   { id: 'space', label: '3D Curves', hint: 'Projected spatial curves' },
   { id: 'surfaces', label: 'Surfaces', hint: 'U/V parametric surfaces' },
+  { id: 'fabricate', label: 'Fabricate', hint: 'Solids, repairs, booleans and multi-body examples' },
   { id: 'compositions', label: 'Compositions', hint: 'Layered and instanced forms' },
   { id: 'helix', label: 'Helix Lab', hint: 'Helix variations' },
   { id: 'legacy', label: 'Legacy', hint: 'Classical and migrated figures' },
@@ -189,6 +190,43 @@ export const PRESET_META = {
     category: 'surfaces',
     description: 'Logarithmic spiral tube with a growing radius.',
     tags: ['surface', 'shell', 'spiral'],
+  },
+
+  /* ——— Fabricate examples ——— */
+  'Solid Torus': {
+    category: 'fabricate',
+    description: 'Closed torus with a millimetre scale and 3MF output ready for Fabricate.',
+    tags: ['fabricate', 'solid', 'torus', '3mf', 'export'],
+  },
+  'Twin Tori': {
+    category: 'fabricate',
+    description: 'Two disjoint closed tori exported as two 3MF objects.',
+    tags: ['fabricate', 'multi-body', '3mf', 'instances'],
+  },
+  'Boolean Union': {
+    category: 'fabricate',
+    description: 'Two overlapping tori combined with a Manifold union.',
+    tags: ['fabricate', 'boolean', 'union', 'manifold'],
+  },
+  'Boolean Difference': {
+    category: 'fabricate',
+    description: 'A torus with a bite cut by a second overlapping torus.',
+    tags: ['fabricate', 'boolean', 'difference', 'manifold'],
+  },
+  'Cap Catenoid': {
+    category: 'fabricate',
+    description: 'Open catenoid prepared with automatic caps for STL export.',
+    tags: ['fabricate', 'repair', 'cap', 'catenoid'],
+  },
+  'SDF Enneper': {
+    category: 'fabricate',
+    description: 'Self-intersecting Enneper surface repaired with Manifold SDF.',
+    tags: ['fabricate', 'self-intersection', 'sdf', 'repair'],
+  },
+  'Möbius Challenge': {
+    category: 'fabricate',
+    description: 'Non-orientable, open example for exploring repair limits and next-action guidance.',
+    tags: ['fabricate', 'topology', 'non-orientable', 'challenge'],
   },
 
   /* ——— Compositions ——— */

@@ -596,7 +596,7 @@ console.log(`7. built-in presets (${Object.keys(BUILT_IN_PRESETS).length})`);
   assert(categories.every((category) => category.id === 'all' || category.id === 'favorites' || category.count > 0), 'empty categories are hidden except Favorites');
   assert(categories.some((category) => category.id === 'favorites' && category.count === 0), 'Favorites is always available');
   assert(categories.some((category) => category.id === 'surfaces' && category.count === 9), 'surface category lists nine presets');
-  assert(pm.search('catenoid').length === 1, 'search matches preset names');
+  assert(pm.search('catenoid').length === 2, 'search matches preset names including Fabricate examples');
   assert(pm.search('minimal').length >= 3, 'search matches tags and descriptions');
   assert(pm.search('parametric-surface').length >= 9, 'search matches the generator id');
 

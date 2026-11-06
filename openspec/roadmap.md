@@ -458,6 +458,11 @@ with progress, result caching and a synchronous fallback.
 `fabricate-workflow` groups Fabricate into Source/Repair/Combine/Output/Checks,
 adds a plan summary, quality presets, suggested resolution and a next action.
 
+### Phase 12 — Fabricate example presets (shipped)
+
+`fabricate-presets` adds a curated Fabricate category: ready solid, multi-body,
+boolean union/difference, cap repair, SDF repair and a non-orientable challenge.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -531,6 +536,7 @@ adds a plan summary, quality presets, suggested resolution and a next action.
 | `sdf-intersection-repair` | archived | shipped |
 | `fabrication-worker` | archived | shipped |
 | `fabricate-workflow` | archived | shipped |
+| `fabricate-presets` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

@@ -148,3 +148,13 @@ Preview identity SHALL include the requested preview size and profile.
 - **WHEN** the same document and size are requested again
 - **THEN** the cached image is reused
 
+### Requirement: Fabricate preview
+
+The Fabricate category SHALL use the standard preset preview pipeline.
+
+#### Scenario: Preview
+
+- **WHEN** a Fabricate example is listed
+- **THEN** its preview is derived from the document
+- **AND** preview failure does not block selection
+

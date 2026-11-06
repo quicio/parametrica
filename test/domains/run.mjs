@@ -22,6 +22,7 @@ import { run as robustPredicates } from './robust-predicates.test.mjs';
 import { run as adaptiveRemesh } from './adaptive-remesh.test.mjs';
 import { run as manifoldEngine } from './manifold-engine.test.mjs';
 import { run as fabricationWorker } from './fabrication-worker.test.mjs';
+import { run as fabricatePresets } from './fabricate-presets.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -51,6 +52,7 @@ await robustPredicates(assert);
 await adaptiveRemesh(assert);
 await await manifoldEngine(assert);
 await fabricationWorker(assert);
+await fabricatePresets(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

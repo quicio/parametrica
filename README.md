@@ -24,7 +24,7 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2501 checks)
+npm test             # node-only verification suite (2579 checks)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (150 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
@@ -186,7 +186,9 @@ No central config to update.
 | Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
 
 The library is grouped into Curves, Patterns, Fourier, Attractors, 3D Curves,
-Surfaces, Helix Lab and Legacy; user saves appear under My Presets. Every row
+Surfaces, Fabricate, Compositions, Helix Lab and Legacy; user saves appear under
+My Presets. The Fabricate category includes ready solids, multi-body and boolean
+examples, repair/cap/SDF demos and a non-orientable challenge. Every row
 shows a deterministic preview derived from its document, and favorites and
 recents persist as workspace metadata without changing the preset JSON.
 
@@ -200,7 +202,7 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2501
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2579
 checks across the full Node suite (expression engine, noise determinism,
 splines, all 24 registered generators, operators, document round-trip +
 dual-format read, built-in presets, chained mutation across families, SVG
