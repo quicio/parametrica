@@ -213,6 +213,16 @@ export class P5Adapter extends Renderer {
     }
   }
 
+  /** Pause the technical canvas while the optional product preview is active. */
+  setProductPreviewActive(active) {
+    this.productPreviewActive = active === true;
+    const canvas = this.p?.drawingContext?.canvas ?? this.p?.canvas;
+    if (canvas) canvas.style.visibility = this.productPreviewActive ? 'hidden' : 'visible';
+    if (!this.p) return;
+    if (this.productPreviewActive) this.p.noLoop();
+    else this.p.loop();
+  }
+
   /** Render one frame immediately (used by sequence export). */
   renderNow() {
     if (!this.p) return;

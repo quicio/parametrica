@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-06
+goal: Add an optional WebGL/PBR product-preview backend behind RenderScene so the prepared fabrication body can be judged with material, lighting and shadows without changing geometry, export or the p5 technical renderer.

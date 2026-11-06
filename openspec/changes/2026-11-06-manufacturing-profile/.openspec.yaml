@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-06
+goal: Define a serializable ManufacturingProfile and a report that separates declared, measured, estimated and unavailable checks, so Fabricate can warn or block with explicit evidence before export.

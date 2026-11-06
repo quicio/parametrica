@@ -156,6 +156,7 @@ src/
 ├── render/
 │   ├── Renderer.js               backend contract
 │   ├── p5/P5Adapter.js           lazy p5 backend, pass composer, quad view, post-layout canvas fit
+│   ├── webgl/ProductPreview.js   optional lazy PBR preview of the prepared body
 │   ├── thumbnail.js              plain-canvas candidate previews
 │   ├── projection.js             legacy curve projection compatibility
 │   ├── camera3d.js               compatibility re-export of view/camera
@@ -352,6 +353,22 @@ P --generator--> W --camera/orthographic--> A --renderer--> device px
 `src/application/renderSceneBuilder.js` is the only place that projects
 spatial layers for presentation. Canvas, SVG and plotter consume the same
 `RenderScene`; exporters do not re-project or re-fit.
+
+#### Optional product preview
+
+The technical renderer remains p5. An optional WebGL/PBR backend can present the
+prepared fabrication body with material, lighting and shadows. It consumes
+`RenderScene.spatial`, an optional sidecar that references the same world mesh
+used by Fabricate plus the camera and view-level preview material. It does not
+rebuild geometry, does not alter the fabrication report and does not affect
+STL/3MF/SVG/plotter export.
+
+`view.preview` is view-level presentation state (`backend`, `material`,
+`quality`, `shadow`, `lighting`, `ao`, `exposure`), separate from
+`finishQuality` (geometric resolution). The backend is lazy-loaded, falls back
+to p5 when WebGL is unavailable or the context is lost, and technical
+overlays/inspection remain on p5. The active product view can be exported as a
+presentation PNG; STL/3MF/SVG/plotter remain on the technical path.
 
 Frame modes (`view.frame.mode`):
 

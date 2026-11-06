@@ -207,3 +207,117 @@ test('perforated preset subtracts seeded holes and reuses the solid preview', as
   expect(built.triangles).toBeGreaterThan(1000);
   expect(built.bytes).toBeGreaterThan(84);
 });
+
+test('product preview renders the prepared lattice with a finish and returns to technical', async ({ page }) => {
+  test.setTimeout(90_000);
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Lattice Vase 200'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  await expect(fabricate.locator('.fabricate-status')).toContainText('READY', { timeout: 30_000 });
+  const renderer = fabricate.locator('.fabricate-product-renderer');
+  await expect(renderer).toBeEnabled();
+  await renderer.selectOption('webgl');
+  await page.waitForFunction(() => Boolean(window.__parametrica.productPreview?.ready), null, { timeout: 15_000 });
+  await page.waitForTimeout(400);
+
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      backend: app.document.view.preview.backend,
+      ready: Boolean(app.productPreview?.ready),
+      active: Boolean(app.productPreviewActive),
+      p5Hidden: app.renderer?.p?.canvas?.style?.visibility === 'hidden',
+      material: app.document.view.preview.material,
+    };
+  });
+  expect(state.backend).toBe('webgl');
+  expect(state.ready).toBe(true);
+  expect(state.active).toBe(true);
+  expect(state.p5Hidden).toBe(true);
+  const visual = await page.evaluate(async () => {
+    const data = window.__parametrica.productPreview?.capture();
+    if (!data) return null;
+    const image = new Image();
+    image.src = data;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 96;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, 96, 96);
+    const pixels = context.getImageData(0, 0, 96, 96).data;
+    const colors = new Set();
+    let sum = 0;
+    let sumSq = 0;
+    let min = 255;
+    let max = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const luma = 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
+      colors.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
+      sum += luma;
+      sumSq += luma * luma;
+      min = Math.min(min, luma);
+      max = Math.max(max, luma);
+    }
+    const count = pixels.length / 4;
+    const mean = sum / count;
+    return { colors: colors.size, min, max, variance: sumSq / count - mean * mean, length: data.length };
+  });
+  expect(visual?.length).toBeGreaterThan(1000);
+  expect(visual?.colors).toBeGreaterThan(20);
+  expect(visual?.variance).toBeGreaterThan(100);
+
+  const material = fabricate.locator('.fabricate-product-material');
+  await material.selectOption('clay');
+  expect(await page.evaluate(() => window.__parametrica.document.view.preview.material)).toBe('clay');
+  const ao = fabricate.locator('.fabricate-product-ao');
+  await ao.check();
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(() => window.__parametrica.productPreview?.useAo)).toBe(true);
+  const aoCapture = await page.evaluate(() => window.__parametrica.productPreview?.capture());
+  expect(aoCapture?.startsWith('data:image/png')).toBe(true);
+  const productExport = fabricate.locator('.fabricate-product-export');
+  await expect(productExport).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await productExport.click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/-product-.*\.png$/);
+
+  await renderer.selectOption('p5');
+  await page.waitForTimeout(400);
+  const back = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      backend: app.document.view.preview.backend,
+      active: Boolean(app.productPreviewActive),
+      p5Hidden: app.renderer?.p?.canvas?.style?.visibility === 'hidden',
+    };
+  });
+  expect(back.backend).toBe('p5');
+  expect(back.active).toBe(false);
+  expect(back.p5Hidden).toBe(false);
+  await expect(fabricate.locator('.fabricate-export')).toBeEnabled();
+
+  await renderer.selectOption('webgl');
+  await page.waitForFunction(() => Boolean(window.__parametrica.productPreview?.ready), null, { timeout: 15_000 });
+  await page.waitForTimeout(400);
+  const lost = await page.evaluate(() => {
+    const gl = window.__parametrica.productPreview?.renderer?.getContext?.();
+    const extension = gl?.getExtension('WEBGL_lose_context');
+    extension?.loseContext();
+    return Boolean(extension);
+  });
+  if (lost) {
+    await page.waitForTimeout(500);
+    const fallback = await page.evaluate(() => ({
+      backend: window.__parametrica.document.view.preview.backend,
+      active: Boolean(window.__parametrica.productPreviewActive),
+      notice: document.getElementById('notice')?.textContent ?? '',
+    }));
+    expect(fallback.backend).toBe('p5');
+    expect(fallback.active).toBe(false);
+    expect(fallback.notice).toContain('WebGL context');
+  }
+});

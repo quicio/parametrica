@@ -21,11 +21,13 @@ const PRESETS = [
   'SDF Enneper',
   'Solid Vase 200',
   'Lattice Vase 200',
+  'Organic Lattice Vase 200',
   'Perforated Vase 200',
 ];
 
 export async function run(assert) {
   await initManifold();
+  const reports = new Map();
   for (const name of PRESETS) {
     assert(typeof BUILT_IN_PRESETS[name] === 'function', `${name} preset exists`);
     const doc = BUILT_IN_PRESETS[name]();
@@ -41,6 +43,7 @@ export async function run(assert) {
     });
     assert(report.exportable === true, `${name} is exportable from Fabricate`);
     assert(report.triangles > 0, `${name} has exportable triangles`);
+    reports.set(name, report);
   }
 
   const torus = buildFabricationReport({
@@ -133,6 +136,15 @@ export async function run(assert) {
   assert(stl.triangles === latticeReport.triangles && stl.data.length > 84, 'Lattice Vase 200 exports binary STL');
 
   assert(latticeReport.printability?.minFeatureMm > 3, 'Lattice Vase 200 reports its printable strut size');
+
+  const organic = reports.get('Organic Lattice Vase 200');
+  assert(organic?.lattice?.curveStyle === 'organic', 'Organic Lattice Vase 200 uses surface curves');
+  assert(organic?.lattice?.finishQuality === 'standard', 'Organic Lattice Vase 200 uses the standard finish');
+  assert(organic?.lattice?.envelope === 'outer', 'Organic Lattice Vase 200 keeps the outer envelope');
+  assert(organic?.lattice?.openingGauge?.count > 0, 'Organic Lattice Vase 200 measures openings');
+  assert(Math.abs(organic.bbox.depth - 200) < 1, 'Organic Lattice Vase 200 is 200 mm tall');
+  assert(organic.bbox.width > 170 && organic.bbox.width < 180, 'Organic Lattice Vase 200 is about 175 mm wide');
+  assert(organic.printability?.lattice?.finishQuality === 'standard', 'Organic Lattice Vase 200 reports finish in print checks');
 
   const perforatedDoc = BUILT_IN_PRESETS['Perforated Vase 200']();
   const perforatedEvaluation = evaluateDocument(perforatedDoc, { time: 0 });

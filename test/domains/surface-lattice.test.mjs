@@ -7,11 +7,13 @@ import '../../src/operators/index.js';
 import '../../src/render/passes/index.js';
 import { buildRevolveLattice } from '../../src/geometry/latticeNetwork.js';
 import { buildLatticeSolid } from '../../src/geometry/latticeSolid.js';
+import { normalizeLatticeSpec, latticeSpecHash, LATTICE_ALGORITHM_VERSION } from '../../src/geometry/latticeSpec.js';
 import { initManifold } from '../../src/geometry/manifoldEngine.js';
 import { validateMesh } from '../../src/geometry/validate.js';
 import { evaluateDocument } from '../../src/core/engine.js';
 import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
 import { buildRenderScene } from '../../src/application/renderSceneBuilder.js';
+import { buildFabricationReport } from '../../src/application/fabricationSource.js';
 
 const PROFILE = (v) => 45
   + 42.5 * Math.exp(-(((v - 0.42) / 0.22) ** 2))
@@ -19,6 +21,18 @@ const PROFILE = (v) => 45
   - 12 * Math.exp(-(((v - 0.75) / 0.14) ** 2));
 
 export async function run(assert) {
+  const spec = normalizeLatticeSpec({ height: 200, floor: 3, cellSize: 20, seed: 7, strut: 3.5 });
+  assert(spec.version === 1 && spec.algorithmVersion === LATTICE_ALGORITHM_VERSION, 'lattice spec is versioned');
+  assert(spec.cell.targetSize === 20, 'cellSize normalizes to targetSize');
+  assert(spec.clearance.minOpeningWidth === 2 && spec.cell.boundaryMode === 'flag', 'lattice spec applies defaults');
+  const clamped = normalizeLatticeSpec({ density: 99, irregularity: -1, relaxation: 99, aspect: 0 });
+  assert(clamped.cell.density === 4 && clamped.cell.irregularity === 0, 'lattice spec clamps numeric ranges');
+  assert(clamped.cell.relaxation === 12 && clamped.cell.aspect === 0.25, 'lattice spec clamps relaxation and aspect');
+  const sameSpec = normalizeLatticeSpec({ height: 200, floor: 3, cellSize: 20, seed: 7, strut: 3.5 });
+  const otherSeedSpec = normalizeLatticeSpec({ height: 200, floor: 3, cellSize: 20, seed: 8, strut: 3.5 });
+  assert(latticeSpecHash(spec) !== latticeSpecHash(otherSeedSpec), 'spec hash changes with the seed');
+  assert(latticeSpecHash(spec) === latticeSpecHash(sameSpec), 'spec hash is deterministic');
+
   const options = { radiusAt: PROFILE, height: 200, floor: 3, cellSize: 20, seed: 7, samples: 4 };
   const a = buildRevolveLattice(options);
   assert(a.stats.cells > 100, `lattice has a useful cell count (${a.stats.cells})`);
@@ -26,11 +40,23 @@ export async function run(assert) {
   assert(a.stats.minEdge >= 1.9, 'short sliver edges are filtered out');
   assert(a.stats.meanEdge > 8 && a.stats.meanEdge < 30, 'mean strut edge stays near the requested cell size');
   assert(a.stats.cellAreaCv < 0.35, 'cell areas stay within a reasonable spread');
+  assert(a.stats.specHash && a.stats.networkHash && a.stats.algorithmVersion === LATTICE_ALGORITHM_VERSION, 'network carries spec provenance');
+  assert(a.nodes.length > 0 && a.cells.every((cell) => cell.openingWidth >= 0 && cell.openingCenter), 'cells report opening width and center');
+  assert(a.cells.every((cell) => Array.isArray(cell.openingPolygon)), 'cells expose opening polygons');
+  assert(a.stats.openingsBelowTarget >= 0 && a.stats.minOpeningWidth > 0, 'network reports opening width stats');
 
   const b = buildRevolveLattice({ ...options });
   assert(JSON.stringify(a.curves) === JSON.stringify(b.curves), 'lattice network is deterministic for a seed');
+  assert(a.specHash === b.specHash && a.networkHash === b.networkHash, 'same spec produces the same network hash');
+  assert(JSON.stringify(a.cells.map((cell) => cell.id)) === JSON.stringify(b.cells.map((cell) => cell.id)), 'cell ids are stable within a generation');
   const changed = buildRevolveLattice({ ...options, seed: 8 });
   assert(JSON.stringify(a.curves) !== JSON.stringify(changed.curves), 'changing the seed changes the cell layout');
+  assert(a.networkHash !== changed.networkHash, 'changing the seed changes the network hash');
+
+  const denser = buildRevolveLattice({ ...options, density: 2 });
+  assert(denser.stats.cells > a.stats.cells, 'density increases the cell count');
+  const larger = buildRevolveLattice({ ...options, cellSize: 30 });
+  assert(larger.stats.cells < a.stats.cells, 'target size decreases the cell count');
 
   let minZ = Infinity;
   let maxZ = -Infinity;
@@ -63,11 +89,18 @@ export async function run(assert) {
   const evaluation = evaluateDocument(doc, { time: 0 });
   assert(evaluation.errors.length === 0, 'lattice preset evaluates without errors');
   assert(evaluation.curves.length > 10, 'lattice preset emits a strut network');
+  const networkMeta = evaluation.layers[0].geometry[0]?.meta ?? {};
   const solid = buildLatticeSolid(evaluation.layers[0].geometry, {
     strut: 3.5,
     floor: 3,
     rim: 4,
     height: 80,
+    radiusAt: (v) => PROFILE(v) - 1.75,
+    openings: networkMeta.latticeOpenings ?? [],
+    minOpeningWidth: 2,
+    specHash: networkMeta.specHash,
+    networkHash: networkMeta.networkHash,
+    algorithmVersion: networkMeta.algorithmVersion,
   });
   assert(solid.ok, `lattice network becomes a closed solid (${solid.error?.message ?? 'ok'})`);
   if (solid.ok) {
@@ -77,6 +110,9 @@ export async function run(assert) {
     assert((validation.meta?.volume ?? 0) > 0, 'lattice solid has positive volume');
     assert(solid.stats.struts > 10 && solid.stats.radius > 0, 'lattice solid reports its struts');
     assert(solid.stats.joints >= 0, 'lattice solid reports its rounded joints');
+    assert(solid.stats.finishQuality === 'standard', 'lattice solid resolves a finish profile');
+    assert(solid.stats.provenance?.specHash, 'lattice solid records provenance');
+    assert(solid.stats.openingGauge?.count > 0, 'lattice solid measures opening clearance on the final body');
 
     const layerId = doc.layers[0].id;
     const networkScene = buildRenderScene({ evaluation, document: doc });
@@ -96,4 +132,53 @@ export async function run(assert) {
       'solid preview projects every prepared vertex',
     );
   }
+
+  const organicDoc = BUILT_IN_PRESETS['Lattice Vase 200']();
+  organicDoc.generator.params = { ...organicDoc.generator.params, cellSize: 40, height: 80 };
+  const organicEvaluation = evaluateDocument(organicDoc, { time: 0 });
+  const organicCurves = organicEvaluation.layers[0].geometry;
+  const organic = buildLatticeSolid(organicCurves, {
+    strut: 3.5,
+    floor: 3,
+    rim: 4,
+    height: 80,
+    finishQuality: 'draft',
+    jointStyle: 'rounded',
+    curveStyle: 'organic',
+    envelope: 'outer',
+    radiusProfile: 'taper',
+    taper: 0.8,
+    radiusAt: (v) => PROFILE(v) - 1.75,
+    openings: organicCurves[0]?.meta?.latticeOpenings ?? [],
+    minOpeningWidth: 2,
+    specHash: organicCurves[0]?.meta?.specHash,
+    networkHash: organicCurves[0]?.meta?.networkHash,
+    algorithmVersion: 1,
+  });
+  assert(organic.ok, `organic lattice becomes a closed solid (${organic.error?.message ?? 'ok'})`);
+  if (organic.ok) {
+    assert(organic.stats.curveStyle === 'organic' && organic.stats.curveFallback === false, 'organic curves are resampled on the surface');
+    assert(organic.stats.jointMethod === 'rounded' && organic.stats.minJointDiameter > 0, 'organic solid reports its joint style');
+    assert(Math.abs(organic.stats.minStrutDiameter - 2.8) < 1e-6, 'taper reduces the minimum strut diameter');
+    assert(organic.stats.openingGauge?.count > 0, 'organic solid runs the opening gauge');
+    assert(organic.stats.provenance?.networkHash === organicCurves[0]?.meta?.networkHash, 'organic solid preserves the network hash');
+  }
+
+  const organicReport = buildFabricationReport({
+    evaluation: organicEvaluation,
+    layerIndex: 0,
+    units: organicDoc.view.units,
+    preparation: {
+      ...organicDoc.view.fabrication,
+      lattice: true,
+      finishQuality: 'draft',
+      curveStyle: 'polyline',
+      jointStyle: 'technical',
+      envelope: 'centerline',
+    },
+  });
+  assert(organicReport.exportable === true, 'lattice fabrication report accepts explicit finish settings');
+  assert(organicReport.lattice?.finishQuality === 'draft', 'finish quality reaches the lattice solid');
+  assert(organicReport.lattice?.curveStyle === 'polyline', 'curve style reaches the lattice solid');
+  assert(organicReport.printability?.lattice?.finishQuality === 'draft', 'print checks report the finish profile');
 }

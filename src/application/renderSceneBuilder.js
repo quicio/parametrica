@@ -55,6 +55,7 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
     view?.style,
     view?.overlays,
     view?.colorRamp,
+    view?.preview,
     view?.artboard,
     doc?.activeLayer,
     doc?.layers?.map((layer) => [
@@ -162,11 +163,13 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
   const referenceTransform = spatial.length
     ? (frameSpec.mode === 'composition' ? (activeResult?.transform ?? null) : sceneTransform)
     : null;
+  const spatialScene = buildSpatialScene({ doc, view, preview });
   const scene = createRenderScene({
     artboard,
     view,
     layers,
     transform: sceneTransform,
+    spatial: spatialScene,
     meta: {
       projection,
       bbox: curves.length ? bboxAll(curves) : (evaluation.bbox ?? null),
@@ -181,6 +184,53 @@ export function buildRenderScene({ evaluation, document: doc, view = doc.view, p
   });
   SCENE_CACHE.set(evaluation, { signature, scene });
   return scene;
+}
+
+export function buildSpatialScene({ doc, view, preview }) {
+  if (!preview?.mesh || !preview.layerId) return null;
+  const mesh = preview.mesh;
+  if (!isMesh(mesh)) return null;
+  const bounds = worldBoundsOfMeshes([mesh]);
+  const layer = (doc?.layers ?? []).find((entry) => entry.id === preview.layerId);
+  return {
+    projection: '3d',
+    camera: { ...(view?.camera ?? {}) },
+    units: { ...(view?.units ?? {}) },
+    frame: view?.frame ?? null,
+    background: view?.preview?.background ?? null,
+    bbox: bounds,
+    reference: sanitizeReference(view?.reference),
+    layers: [{
+      id: preview.layerId,
+      name: layer?.name ?? null,
+      visible: true,
+      opacity: 1,
+      meshes: [mesh],
+      material: view?.preview ?? null,
+    }],
+    source: 'fabrication-preview',
+  };
+}
+
+function worldBoundsOfMeshes(meshes) {
+  let minX = Infinity; let minY = Infinity; let minZ = Infinity;
+  let maxX = -Infinity; let maxY = -Infinity; let maxZ = -Infinity;
+  for (const mesh of meshes) {
+    for (const point of mesh?.vertices ?? []) {
+      if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y) || !Number.isFinite(point?.z)) continue;
+      minX = Math.min(minX, point.x); maxX = Math.max(maxX, point.x);
+      minY = Math.min(minY, point.y); maxY = Math.max(maxY, point.y);
+      minZ = Math.min(minZ, point.z); maxZ = Math.max(maxZ, point.z);
+    }
+  }
+  if (!Number.isFinite(minX)) return null;
+  return {
+    minX, minY, minZ, maxX, maxY, maxZ,
+    width: maxX - minX,
+    height: maxY - minY,
+    depth: maxZ - minZ,
+    center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, z: (minZ + maxZ) / 2 },
+  };
 }
 
 function sourceGroups(evaluation, doc, view) {

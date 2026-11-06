@@ -203,6 +203,7 @@ export class Controls {
     if (resetScroll) this.container.scrollTop = 0;
     if (modeId === 'fabricate') this.refreshFabricate?.();
     this.syncLatticePreview?.(modeId === 'fabricate' ? this.fabricationReport : null);
+    this.app.syncProductPreview?.();
     this.refreshStatus();
   }
 
@@ -602,15 +603,75 @@ export class Controls {
     const preparation = input.preparation ?? {};
     els.unitSelect.value = PHYSICAL_UNIT_SYSTEMS.includes(units.world) ? units.world : 'unitless';
     els.scaleInput.disabled = units.world === 'unitless';
+    const activeLayer = this.app.document.layers?.[this.app.document.activeLayer ?? 0];
+    const isSurfaceLattice = activeLayer?.generator?.id === 'surface-lattice';
     if (els.latticePreview) {
-      const activeLayer = this.app.document.layers?.[this.app.document.activeLayer ?? 0];
       els.latticePreview.value = preparation.latticePreview === 'network' ? 'network' : 'solid';
-      els.latticePreview.disabled = activeLayer?.generator?.id !== 'surface-lattice'
+      els.latticePreview.disabled = !isSurfaceLattice
         && !(preparation.lattice === true && preparation.latticeMode === 'cutouts');
       const authored = els.latticePreview.options?.[0];
       if (authored) {
         authored.textContent = preparation.latticeMode === 'cutouts' ? 'Authored' : 'Network';
       }
+    }
+    if (els.finishQuality) {
+      els.finishQuality.value = ['draft', 'standard', 'high'].includes(preparation.finishQuality)
+        ? preparation.finishQuality
+        : 'standard';
+      els.finishQuality.disabled = !isSurfaceLattice;
+    }
+    if (els.curveStyle) {
+      els.curveStyle.value = preparation.curveStyle === 'organic' ? 'organic' : 'polyline';
+      els.curveStyle.disabled = !isSurfaceLattice;
+    }
+    if (els.jointStyle) {
+      els.jointStyle.value = ['technical', 'rounded', 'blend', 'auto'].includes(preparation.jointStyle)
+        ? preparation.jointStyle
+        : 'technical';
+      els.jointStyle.disabled = !isSurfaceLattice;
+    }
+    if (els.envelope) {
+      els.envelope.value = preparation.envelope === 'outer' ? 'outer' : 'centerline';
+      els.envelope.disabled = !isSurfaceLattice;
+    }
+    if (els.radiusProfile) {
+      els.radiusProfile.value = preparation.radiusProfile === 'taper' ? 'taper' : 'constant';
+      els.radiusProfile.disabled = !isSurfaceLattice;
+    }
+    if (els.taper) {
+      els.taper.value = String(preparation.taper ?? 0.85);
+      els.taper.disabled = !isSurfaceLattice || preparation.radiusProfile !== 'taper';
+    }
+    const previewSettings = this.app.document.view.preview ?? {};
+    const productAvailable = Boolean(this.fabricationReport?.source)
+      && preparation.latticePreview !== 'network'
+      && (this.app.document.view.projection ?? '3d') === '3d';
+    if (els.productRenderer) {
+      els.productRenderer.value = previewSettings.backend === 'webgl' ? 'webgl' : 'p5';
+      els.productRenderer.disabled = !productAvailable;
+      els.productRenderer.title = productAvailable
+        ? 'Technical uses p5; Product uses the optional WebGL/PBR preview.'
+        : 'Build the solid preview in the 3D view to enable Product preview.';
+    }
+    if (els.productMaterial) {
+      els.productMaterial.value = previewSettings.material ?? 'ceramic';
+      els.productMaterial.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productQuality) {
+      els.productQuality.value = previewSettings.quality ?? 'standard';
+      els.productQuality.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productShadow) {
+      els.productShadow.checked = previewSettings.shadow !== false;
+      els.productShadow.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productLighting) {
+      els.productLighting.value = previewSettings.lighting ?? 'studio';
+      els.productLighting.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productAo) {
+      els.productAo.checked = previewSettings.ao === true;
+      els.productAo.disabled = previewSettings.backend !== 'webgl';
     }
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
@@ -768,17 +829,53 @@ export class Controls {
     }
     if (els.printChecks) {
       const print = report.printability;
-      els.printChecks.textContent = print?.warnings?.length ? print.warnings.join(' · ') : 'no warnings';
+      const extra = print?.lattice?.openingWidthMm !== null && print?.lattice?.openingWidthMm !== undefined
+        ? `opening ${formatNumber(print.lattice.openingWidthMm)} mm`
+        : null;
+      els.printChecks.textContent = print?.warnings?.length
+        ? print.warnings.join(' · ')
+        : (extra ?? 'no warnings');
       if (els.printChecks.dataset) els.printChecks.dataset.state = print?.status ?? '';
+    }
+    const previewSettings = this.app.document.view.preview ?? {};
+    const productAvailable = Boolean(report.source)
+      && preparation.latticePreview !== 'network'
+      && (doc.view.projection ?? '3d') === '3d';
+    if (els.productRenderer) {
+      els.productRenderer.value = previewSettings.backend === 'webgl' ? 'webgl' : 'p5';
+      els.productRenderer.disabled = !productAvailable;
+    }
+    if (els.productMaterial) {
+      els.productMaterial.value = previewSettings.material ?? 'ceramic';
+      els.productMaterial.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productQuality) {
+      els.productQuality.value = previewSettings.quality ?? 'standard';
+      els.productQuality.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productShadow) {
+      els.productShadow.checked = previewSettings.shadow !== false;
+      els.productShadow.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productLighting) {
+      els.productLighting.value = previewSettings.lighting ?? 'studio';
+      els.productLighting.disabled = previewSettings.backend !== 'webgl';
+    }
+    if (els.productAo) {
+      els.productAo.checked = previewSettings.ao === true;
+      els.productAo.disabled = previewSettings.backend !== 'webgl';
     }
     if (els.lattice) {
       const lattice = report.lattice;
       const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
       const latticeActive = preparation.lattice === true && activeLayer?.generator?.id === 'surface-lattice';
+      const finish = lattice?.finishQuality ? ` · ${lattice.finishQuality}` : '';
+      const curves = lattice?.curveStyle === 'organic' ? ' organic' : '';
+      const joins = lattice?.jointMethod ? ` ${lattice.jointMethod}` : '';
       els.lattice.textContent = lattice?.mode === 'cutouts'
         ? `${lattice.holes} holes · ${formatNumber(lattice.holeDiameter ?? 0)} mm`
         : lattice?.struts
-          ? `${lattice.struts} struts · ${formatNumber((lattice.radius ?? 1.75) * 2)} mm · ${lattice.joints ?? 0} joints${lattice.microCaps ? ` · ${lattice.microCaps} microcaps` : ''}`
+          ? `${lattice.struts} struts · ${formatNumber((lattice.radius ?? 1.75) * 2)} mm · ${lattice.joints ?? 0} joins${finish}${curves}${joins}${lattice.microCaps ? ` · ${lattice.microCaps} microcaps` : ''}`
           : (latticeActive ? 'building…' : 'off');
     }
     if (els.repairStatus) {
@@ -824,6 +921,13 @@ export class Controls {
         ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · ${report.multiBody ? `${report.bodies} bodies` : 'one body'} · scope: ${report.scope ?? 'single'}`
         : '';
 
+    if (els.productExportButton) {
+      const productVisible = previewSettings.backend === 'webgl'
+        && Boolean(this.app.productPreviewActive)
+        && Boolean(report.source);
+      els.productExportButton.hidden = !productVisible;
+      els.productExportButton.disabled = !productVisible;
+    }
     els.exportButton.disabled = !ready;
     const format = preparation.format === '3mf' ? '3MF' : 'STL';
     els.exportButton.textContent = `EXPORT ${format}`;

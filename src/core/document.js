@@ -89,6 +89,12 @@ export const DEFAULT_FABRICATION = Object.freeze({
   latticeRim: 4,
   latticeSeed: 7,
   latticePreview: 'solid',
+  finishQuality: 'standard',
+  jointStyle: 'technical',
+  curveStyle: 'polyline',
+  envelope: 'centerline',
+  radiusProfile: 'constant',
+  taper: 0.85,
   quality: 'custom',
 });
 
@@ -134,6 +140,12 @@ export function sanitizeFabricationSettings(raw) {
     latticeRim: clampNumber(source.latticeRim, 0, 20, 4),
     latticeSeed: clampNumber(source.latticeSeed, 0, 9999, 7),
     latticePreview: ['network', 'solid'].includes(source.latticePreview) ? source.latticePreview : 'solid',
+    finishQuality: ['draft', 'standard', 'high'].includes(source.finishQuality) ? source.finishQuality : 'standard',
+    jointStyle: ['technical', 'rounded', 'blend', 'auto'].includes(source.jointStyle) ? source.jointStyle : 'technical',
+    curveStyle: ['polyline', 'organic'].includes(source.curveStyle) ? source.curveStyle : 'polyline',
+    envelope: ['centerline', 'outer'].includes(source.envelope) ? source.envelope : 'centerline',
+    radiusProfile: ['constant', 'taper'].includes(source.radiusProfile) ? source.radiusProfile : 'constant',
+    taper: clampNumber(source.taper, 0.25, 1, 0.85),
     quality: ['custom', 'draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'custom',
   };
 }
@@ -171,6 +183,38 @@ export function sanitizeColorRamp(value) {
  * Fresh default view for one document. Every call returns new objects:
  * documents must never share overlays/camera/modes references.
  */
+function createPreviewSettings() {
+  return {
+    backend: 'p5',
+    material: 'ceramic',
+    quality: 'standard',
+    exposure: 1,
+    background: '#070809',
+    shadow: true,
+    contactShadow: true,
+    ao: false,
+    lighting: 'studio',
+  };
+}
+
+function sanitizePreviewSettings(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const exposure = Number(source.exposure);
+  return {
+    backend: source.backend === 'webgl' ? 'webgl' : 'p5',
+    material: ['clay', 'ceramic', 'matte', 'custom'].includes(source.material)
+      ? source.material
+      : 'ceramic',
+    quality: ['draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'standard',
+    exposure: Number.isFinite(exposure) ? Math.min(2, Math.max(0.25, exposure)) : 1,
+    background: color(source.background, '#070809'),
+    shadow: source.shadow !== false,
+    contactShadow: source.contactShadow !== false,
+    ao: source.ao === true,
+    lighting: ['studio', 'soft', 'directional'].includes(source.lighting) ? source.lighting : 'studio',
+  };
+}
+
 export function createDefaultView() {
   return {
     modes: ['stroke'],
@@ -190,6 +234,7 @@ export function createDefaultView() {
     units: createDefaultUnits(),
     coordinates: createCoordinates(),
     passStyle: {},
+    preview: createPreviewSettings(),
     fabrication: sanitizeFabricationSettings(DEFAULT_FABRICATION),
   };
 }
@@ -214,6 +259,7 @@ export const DEFAULT_VIEW = Object.freeze({
   units: DEFAULT_UNITS,
   coordinates: DEFAULT_COORDINATES,
   passStyle: Object.freeze({}),
+  preview: Object.freeze(createPreviewSettings()),
   fabrication: Object.freeze({ ...DEFAULT_FABRICATION }),
   style: Object.freeze({
     stroke: Object.freeze({ ...DEFAULT_STYLE.stroke }),
@@ -255,6 +301,7 @@ function mergeView(base, raw) {
     units: sanitizeUnits(source.units ?? base.units),
     coordinates: sanitizeCoordinates(source.coordinates ?? base.coordinates),
     passStyle: sanitizePassStyle(source.passStyle ?? base.passStyle),
+    preview: sanitizePreviewSettings(source.preview ?? base.preview),
     fabrication: sanitizeFabricationSettings(source.fabrication ?? base.fabrication),
     passOpacity: {
       ...base.passOpacity,

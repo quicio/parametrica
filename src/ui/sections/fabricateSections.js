@@ -46,6 +46,7 @@ export function buildFabricateSection(controls) {
       return groupBody;
     };
     const sourceGroup = makeGroup('Source', 'fabricate-group-source');
+    const finishGroup = makeGroup('Finish', 'fabricate-group-finish');
     const repairGroup = makeGroup('Repair', 'fabricate-group-repair');
     const combineGroup = makeGroup('Combine', 'fabricate-group-combine');
     const outputGroup = makeGroup('Output', 'fabricate-group-output');
@@ -120,7 +121,7 @@ export function buildFabricateSection(controls) {
     previewRow.className = 'fabricate-row fabricate-preview-row';
     const previewLabel = document.createElement('span');
     previewLabel.className = 'fabricate-label';
-    previewLabel.textContent = 'Preview';
+    previewLabel.textContent = 'Body';
     const previewSelect = document.createElement('select');
     previewSelect.className = 'artboard-input fabricate-lattice-preview';
     for (const [value, label] of [['network', 'Network'], ['solid', 'Solid']]) {
@@ -132,13 +133,249 @@ export function buildFabricateSection(controls) {
     previewSelect.value = fabrication.latticePreview === 'network' ? 'network' : 'solid';
     previewSelect.title = 'Show the authored strut network or the prepared solid in the canvas.';
     previewSelect.addEventListener('change', () => {
+      // Preview is display-only: changing it must not re-evaluate geometry or
+      // reschedule the heavy fabrication worker.
       fabrication.latticePreview = previewSelect.value === 'network' ? 'network' : 'solid';
       controls.syncLatticePreview?.();
-      controls.app.rebuild();
       controls.refreshFabricate();
     });
     previewRow.append(previewLabel, previewSelect);
     sourceGroup.appendChild(previewRow);
+
+    const previewSettings = controls.app.document.view.preview;
+    const rendererRow = document.createElement('div');
+    rendererRow.className = 'fabricate-row';
+    const rendererLabel = document.createElement('span');
+    rendererLabel.className = 'fabricate-label';
+    rendererLabel.textContent = 'Renderer';
+    const rendererSelect = document.createElement('select');
+    rendererSelect.className = 'artboard-input fabricate-product-renderer';
+    for (const [value, text] of [['p5', 'Technical'], ['webgl', 'Product']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      rendererSelect.appendChild(option);
+    }
+    rendererSelect.value = previewSettings.backend === 'webgl' ? 'webgl' : 'p5';
+    rendererSelect.title = 'Technical uses p5; Product uses the optional WebGL/PBR preview of the prepared body.';
+    rendererSelect.addEventListener('change', () => {
+      void controls.app.setProductPreviewEnabled?.(rendererSelect.value === 'webgl');
+      controls.refreshFabricate();
+    });
+    rendererRow.append(rendererLabel, rendererSelect);
+    sourceGroup.appendChild(rendererRow);
+
+    const materialRow = document.createElement('div');
+    materialRow.className = 'fabricate-row';
+    const materialLabel = document.createElement('span');
+    materialLabel.className = 'fabricate-label';
+    materialLabel.textContent = 'Material';
+    const materialSelect = document.createElement('select');
+    materialSelect.className = 'artboard-input fabricate-product-material';
+    for (const [value, text] of [['clay', 'Clay'], ['ceramic', 'Ceramic'], ['matte', 'Matte']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      materialSelect.appendChild(option);
+    }
+    materialSelect.value = previewSettings.material ?? 'ceramic';
+    materialSelect.title = 'Presentation material. It does not affect geometry or export.';
+    materialSelect.addEventListener('change', () => {
+      controls.app.document.view.preview.material = materialSelect.value;
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    materialRow.append(materialLabel, materialSelect);
+    sourceGroup.appendChild(materialRow);
+
+    const previewQualityRow = document.createElement('div');
+    previewQualityRow.className = 'fabricate-row';
+    const previewQualityLabel = document.createElement('span');
+    previewQualityLabel.className = 'fabricate-label';
+    previewQualityLabel.textContent = 'Detail';
+    const previewQualitySelect = document.createElement('select');
+    previewQualitySelect.className = 'artboard-input fabricate-product-quality';
+    for (const [value, text] of [['draft', 'Draft'], ['standard', 'Standard'], ['high', 'High']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      previewQualitySelect.appendChild(option);
+    }
+    previewQualitySelect.value = previewSettings.quality ?? 'standard';
+    previewQualitySelect.title = 'Shadow map, pixel ratio and preview cost. This is separate from geometric finish quality.';
+    previewQualitySelect.addEventListener('change', () => {
+      controls.app.document.view.preview.quality = previewQualitySelect.value;
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    previewQualityRow.append(previewQualityLabel, previewQualitySelect);
+    sourceGroup.appendChild(previewQualityRow);
+
+    const shadowRow = document.createElement('div');
+    shadowRow.className = 'fabricate-row';
+    const shadowLabel = document.createElement('span');
+    shadowLabel.className = 'fabricate-label';
+    shadowLabel.textContent = 'Shadows';
+    const shadowInput = document.createElement('input');
+    shadowInput.type = 'checkbox';
+    shadowInput.className = 'artboard-check fabricate-product-shadow';
+    shadowInput.checked = previewSettings.shadow !== false;
+    shadowInput.title = 'Directional shadows and contact shadow in Product preview.';
+    shadowInput.addEventListener('change', () => {
+      controls.app.document.view.preview.shadow = shadowInput.checked;
+      controls.app.document.view.preview.contactShadow = shadowInput.checked;
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    shadowRow.append(shadowLabel, shadowInput);
+    sourceGroup.appendChild(shadowRow);
+
+    const lightingRow = document.createElement('div');
+    lightingRow.className = 'fabricate-row';
+    const lightingLabel = document.createElement('span');
+    lightingLabel.className = 'fabricate-label';
+    lightingLabel.textContent = 'Lighting';
+    const lightingSelect = document.createElement('select');
+    lightingSelect.className = 'artboard-input fabricate-product-lighting';
+    for (const [value, text] of [['studio', 'Studio'], ['soft', 'Soft'], ['directional', 'Directional']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      lightingSelect.appendChild(option);
+    }
+    lightingSelect.value = previewSettings.lighting ?? 'studio';
+    lightingSelect.title = 'Presentation light rig. It does not affect geometry or export.';
+    lightingSelect.addEventListener('change', () => {
+      controls.app.document.view.preview.lighting = lightingSelect.value;
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    lightingRow.append(lightingLabel, lightingSelect);
+    sourceGroup.appendChild(lightingRow);
+
+    const aoRow = document.createElement('div');
+    aoRow.className = 'fabricate-row';
+    const aoLabel = document.createElement('span');
+    aoLabel.className = 'fabricate-label';
+    aoLabel.textContent = 'AO';
+    const aoInput = document.createElement('input');
+    aoInput.type = 'checkbox';
+    aoInput.className = 'artboard-check fabricate-product-ao';
+    aoInput.checked = previewSettings.ao === true;
+    aoInput.title = 'Screen-space ambient occlusion. Expensive on dense lattices.';
+    aoInput.addEventListener('change', () => {
+      controls.app.document.view.preview.ao = aoInput.checked;
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    aoRow.append(aoLabel, aoInput);
+    sourceGroup.appendChild(aoRow);
+
+    const resetRow = document.createElement('div');
+    resetRow.className = 'fabricate-row';
+    const resetLabel = document.createElement('span');
+    resetLabel.className = 'fabricate-label';
+    resetLabel.textContent = 'Preview';
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'lab-button fabricate-product-reset';
+    resetButton.textContent = 'RESET';
+    resetButton.title = 'Reset material, lighting, shadows, AO and preview detail.';
+    resetButton.addEventListener('click', () => {
+      Object.assign(controls.app.document.view.preview, {
+        backend: 'webgl',
+        material: 'ceramic',
+        quality: 'standard',
+        exposure: 1,
+        background: '#070809',
+        shadow: true,
+        contactShadow: true,
+        ao: false,
+        lighting: 'studio',
+      });
+      controls.app.syncProductPreview?.();
+      controls.app.scheduleSessionSave?.();
+      controls.refreshFabricate();
+    });
+    resetRow.append(resetLabel, resetButton);
+    sourceGroup.appendChild(resetRow);
+
+    const makeFinishSelect = (label, className, options, key, title) => {
+      const row = document.createElement('div');
+      row.className = 'fabricate-row';
+      const name = document.createElement('span');
+      name.className = 'fabricate-label';
+      name.textContent = label;
+      const select = document.createElement('select');
+      select.className = `artboard-input ${className}`;
+      for (const [value, text] of options) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        select.appendChild(option);
+      }
+      select.value = fabrication[key] ?? options[0][0];
+      select.title = title;
+      select.addEventListener('change', () => {
+        fabrication[key] = select.value;
+        controls.app.rebuild();
+        controls.refreshFabricate();
+      });
+      row.append(name, select);
+      finishGroup.appendChild(row);
+      return select;
+    };
+    const finishQualitySelect = makeFinishSelect('Finish', 'fabricate-finish-quality', [
+      ['draft', 'Draft'],
+      ['standard', 'Standard'],
+      ['high', 'High · export'],
+    ], 'finishQuality', 'Lattice finish profile; separate from repair resolution.');
+    const curveStyleSelect = makeFinishSelect('Curves', 'fabricate-curve-style', [
+      ['polyline', 'Polyline'],
+      ['organic', 'Organic'],
+    ], 'curveStyle', 'Organic resamples struts in surface coordinates.');
+    const jointStyleSelect = makeFinishSelect('Joints', 'fabricate-joint-style', [
+      ['technical', 'Technical'],
+      ['rounded', 'Rounded'],
+      ['blend', 'Blend (benchmark)'],
+      ['auto', 'Auto'],
+    ], 'jointStyle', 'Joint style; a requested blend falls back to rounded when unvalidated.');
+    const envelopeSelect = makeFinishSelect('Envelope', 'fabricate-envelope', [
+      ['centerline', 'Centerline'],
+      ['outer', 'Outer'],
+    ], 'envelope', 'Outer offsets the centerline inward by half the strut diameter.');
+    const radiusProfileSelect = makeFinishSelect('Radius', 'fabricate-radius-profile', [
+      ['constant', 'Constant'],
+      ['taper', 'Taper'],
+    ], 'radiusProfile', 'Variable strut radius profile.');
+    const taperRow = document.createElement('div');
+    taperRow.className = 'fabricate-row';
+    const taperLabel = document.createElement('span');
+    taperLabel.className = 'fabricate-label';
+    taperLabel.textContent = 'Taper end';
+    const taperInput = document.createElement('input');
+    taperInput.className = 'artboard-input fabricate-taper';
+    taperInput.type = 'number';
+    taperInput.min = '0.25';
+    taperInput.max = '1';
+    taperInput.step = '0.01';
+    taperInput.value = String(fabrication.taper ?? 0.85);
+    taperInput.title = 'Radius at the mouth relative to the base for taper profile.';
+    taperInput.addEventListener('change', () => {
+      const value = Number(taperInput.value);
+      if (!Number.isFinite(value)) return;
+      fabrication.taper = Math.max(0.25, Math.min(1, value));
+      taperInput.value = String(fabrication.taper);
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    taperRow.append(taperLabel, taperInput);
+    finishGroup.appendChild(taperRow);
 
     const booleanRow = document.createElement('div');
     booleanRow.className = 'fabricate-row';
@@ -450,6 +687,16 @@ export function buildFabricateSection(controls) {
     cancelButton.hidden = true;
     cancelButton.addEventListener('click', () => controls.cancelFabrication?.());
 
+    const productExportButton = document.createElement('button');
+    productExportButton.type = 'button';
+    productExportButton.className = 'lab-button fabricate-product-export';
+    productExportButton.textContent = 'EXPORT PRODUCT PNG';
+    productExportButton.hidden = true;
+    productExportButton.addEventListener('click', () => {
+      controls.app.exporter.exportProductPreviewPNG?.();
+      controls.refreshFabricate();
+    });
+
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'lab-button fabricate-export';
@@ -460,15 +707,28 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
 
-    panel.append(status, source, reason, plan, suggestion, nextAction, rows, prepHint, progress, compositionNote, cancelButton, exportButton);
+    panel.append(status, source, reason, plan, suggestion, nextAction, rows, prepHint, progress, compositionNote, cancelButton, productExportButton, exportButton);
     body.appendChild(panel);
 
     controls.fabricateEls = {
       panel, status, source, reason, plan, suggestion, nextAction,
       triangles, vertices, bodies, boolean, objects, volume,
-      worldSize, physical, warnings, preparation, repairStatus, lattice, printability, printChecks, progress, cancelButton, exportButton,
+      worldSize, physical, warnings, preparation, repairStatus, lattice, printability, printChecks, progress, cancelButton, productExportButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       latticePreview: previewSelect,
+      finishQuality: finishQualitySelect,
+      productRenderer: rendererSelect,
+      productMaterial: materialSelect,
+      productQuality: previewQualitySelect,
+      productShadow: shadowInput,
+      productLighting: lightingSelect,
+      productAo: aoInput,
+      productReset: resetButton,
+      curveStyle: curveStyleSelect,
+      jointStyle: jointStyleSelect,
+      envelope: envelopeSelect,
+      radiusProfile: radiusProfileSelect,
+      taper: taperInput,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
       topology: topologySelect, nonOrientable: nonOrientableSelect,
       selfIntersections: selfSelect, remeshResolution: remeshInput,

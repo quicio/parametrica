@@ -13,6 +13,7 @@ export function createRenderScene({
   layers,
   overlays = [],
   transform = null,
+  spatial = null,
   meta = {},
 }) {
   return {
@@ -22,6 +23,7 @@ export function createRenderScene({
     layers,
     overlays,
     transform,
+    spatial,
     meta,
   };
 }

@@ -11,6 +11,7 @@ import { TYPE } from '../core/schema.js';
 import { compileOrThrow, makeScope } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
 import { buildRevolveLattice } from '../geometry/latticeNetwork.js';
+import { normalizeLatticeSpec } from '../geometry/latticeSpec.js';
 import { cameraFrom } from '../render/camera3d.js';
 import { projectWorldCurves } from '../view/projection.js';
 
@@ -46,7 +47,42 @@ Generators.register({
     cellSize: {
       label: 'Cell size (mm)', type: TYPE.NUMBER,
       min: 5, max: 80, step: 0.5, default: 20,
-      doc: 'Nominal Voronoi cell pitch measured on the surface.',
+      doc: 'Target cell pitch on the surface. Openings are smaller by the strut width.',
+    },
+    density: {
+      label: 'Density', type: TYPE.NUMBER,
+      min: 0.25, max: 4, step: 0.05, default: 1,
+      doc: 'Multiplier for seed density and local target area.',
+    },
+    densityExpression: {
+      advanced: true, label: 'Density(u,v)', type: TYPE.EXPRESSION,
+      default: '',
+      doc: 'Optional density multiplier in u,v. Empty = uniform density.',
+    },
+    irregularity: {
+      label: 'Irregularity', type: TYPE.NUMBER,
+      min: 0, max: 1, step: 0.01, default: 0.15,
+      doc: 'Extra seed jitter. 0 keeps the area-weighted field; 1 adds controlled organic variation.',
+    },
+    relaxation: {
+      label: 'Relaxation', type: TYPE.NUMBER,
+      min: 0, max: 12, step: 1, default: 3,
+      doc: 'Power/Lloyd iterations. More iterations equalize cell areas.',
+    },
+    aspect: {
+      advanced: true, label: 'Aspect', type: TYPE.NUMBER,
+      min: 0.25, max: 4, step: 0.05, default: 1,
+      doc: 'Elongates cells in v; the area target is still measured on the surface.',
+    },
+    minOpeningWidth: {
+      label: 'Min opening (mm)', type: TYPE.NUMBER,
+      min: 0, max: 100, step: 0.5, default: 2,
+      doc: 'Design target for the free opening width. The final solid is checked separately.',
+    },
+    boundaryMode: {
+      advanced: true, label: 'Boundary', type: TYPE.SELECT,
+      options: ['flag', 'clip'], default: 'flag',
+      doc: 'Flag or clip cells touching the floor/rim.',
     },
     strut: {
       label: 'Strut (mm)', type: TYPE.NUMBER,
@@ -88,15 +124,64 @@ Generators.register({
       scope.v = v;
       return fn(scope);
     };
-    const network = buildRevolveLattice({
-      radiusAt,
+    let densityAt = null;
+    let densityError = null;
+    const densityExpression = typeof params.densityExpression === 'string'
+      ? params.densityExpression.trim()
+      : '';
+    if (densityExpression) {
+      try {
+        const densityFn = compileOrThrow(densityExpression, 'density(u,v)', 'densityExpression');
+        densityAt = (theta, z) => {
+          scope.u = ((theta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI);
+          scope.v = Math.max(0, Math.min(1, z / (Number(params.height) || 200)));
+          scope.theta = theta;
+          scope.z = z;
+          return densityFn(scope);
+        };
+      } catch (error) {
+        densityError = error?.message ?? 'density expression failed';
+      }
+    }
+    const spec = normalizeLatticeSpec({
+      profile: params.profile,
       height: params.height,
       top: (Number(params.height) || 200) - (Number(params.rim) || 4) / 2,
       floor: params.floor,
       cellSize: params.cellSize,
+      density: params.density,
+      densityExpression,
+      irregularity: params.irregularity,
+      relaxation: params.relaxation,
+      aspect: params.aspect,
+      boundaryMode: params.boundaryMode,
       seed: (Number(params.seed) || 0) + (Number(ctx.seed) || 1) * 9973,
+      strutDiameter: params.strut,
+      minOpeningWidth: params.minOpeningWidth,
+    });
+    const network = buildRevolveLattice({
+      spec,
+      radiusAt,
+      densityAt,
+      densityError,
       samples: params.samples,
     });
+    const height = Number(params.height) || 200;
+    const latticeOpenings = network.cells
+      .filter((cell) => !cell.boundary && !cell.invalidOpening && cell.openingCenter)
+      .map((cell) => {
+        const theta = cell.openingCenter.theta;
+        const z = cell.openingCenter.z;
+        const radius = radiusAt(Math.max(0, Math.min(1, z / height)));
+        return {
+          theta,
+          z,
+          x: radius * Math.cos(theta),
+          y: radius * Math.sin(theta),
+          width: cell.openingWidth,
+          cellId: cell.id,
+        };
+      });
     return network.curves.map((curve, index) => createCurve3D({
       id: `surface-lattice:${ctx.layerIndex ?? 0}:${index}`,
       points: curve.points,
@@ -104,7 +189,13 @@ Generators.register({
       meta: {
         source: 'surface-lattice',
         lattice: network.stats,
+        specHash: network.specHash,
+        networkHash: network.networkHash,
+        algorithmVersion: network.algorithmVersion,
+        edgeId: curve.edgeId,
+        cellIds: curve.cellIds,
         edgeLength: curve.length,
+        ...(index === 0 ? { latticeOpenings } : {}),
       },
     }));
   },

@@ -14,6 +14,7 @@ export function analyzePrintability(mesh, {
   units = null,
   overhangAngle = DEFAULT_OVERHANG_ANGLE,
   minFeature = null,
+  lattice = null,
 } = {}) {
   const vertices = Array.isArray(mesh?.vertices) ? mesh.vertices : [];
   const faces = Array.isArray(mesh?.faces) ? mesh.faces : [];
@@ -26,6 +27,7 @@ export function analyzePrintability(mesh, {
       bedContactAreaMm2: 0,
       totalAreaMm2: 0,
       minFeatureMm: null,
+      lattice: null,
       warnings: ['no mesh to check'],
     };
   }
@@ -86,6 +88,20 @@ export function analyzePrintability(mesh, {
   if (minFeatureMm !== null && minFeatureMm < 2) {
     warnings.push(`minimum feature ${minFeatureMm.toFixed(1)} mm is below 2 mm`);
   }
+  const latticeChecks = lattice ? measureLattice(lattice, scale) : null;
+  if (latticeChecks) {
+    if (latticeChecks.minStrutMm !== null && latticeChecks.minStrutMm < 2) {
+      warnings.push(`minimum strut ${latticeChecks.minStrutMm.toFixed(1)} mm is below 2 mm`);
+    }
+    if (latticeChecks.minJointMm !== null && latticeChecks.targetOpeningMm !== null
+      && latticeChecks.minJointMm < 2) {
+      warnings.push(`minimum joint ${latticeChecks.minJointMm.toFixed(1)} mm is below 2 mm`);
+    }
+    if (latticeChecks.openingWidthMm !== null && latticeChecks.targetOpeningMm !== null
+      && latticeChecks.openingWidthMm + 1e-6 < latticeChecks.targetOpeningMm) {
+      warnings.push(`minimum opening ${latticeChecks.openingWidthMm.toFixed(1)} mm is below ${latticeChecks.targetOpeningMm.toFixed(1)} mm`);
+    }
+  }
   return {
     status: warnings.length ? 'warning' : 'ok',
     overhangAngle,
@@ -94,7 +110,34 @@ export function analyzePrintability(mesh, {
     bedContactAreaMm2: bedContactArea * toMm2,
     totalAreaMm2: totalArea * toMm2,
     minFeatureMm,
+    lattice: latticeChecks,
     warnings,
     unit: scale === 1 ? 'mm' : 'scaled',
+  };
+}
+
+function measureLattice(lattice, scale) {
+  const toMm = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number * scale : null;
+  };
+  const gauge = lattice.openingGauge ?? null;
+  const openingWidthMm = gauge && Number.isFinite(Number(gauge.minWidth))
+    ? Number(gauge.minWidth) * scale
+    : toMm(lattice.minOpeningWidth);
+  return {
+    finishQuality: lattice.finishQuality ?? null,
+    jointStyle: lattice.jointStyle ?? null,
+    jointMethod: lattice.jointMethod ?? null,
+    curveStyle: lattice.curveStyle ?? null,
+    envelope: lattice.envelope ?? null,
+    minStrutMm: toMm(lattice.minStrutDiameter ?? (Number(lattice.radius) * 2)),
+    minJointMm: toMm(lattice.minJointDiameter),
+    openingWidthMm,
+    targetOpeningMm: toMm(lattice.openingTargetWidth),
+    openingsMeasured: gauge?.count ?? null,
+    openingsBelowTarget: gauge?.belowTarget ?? null,
+    manifoldGuaranteed: lattice.manifoldGuaranteed === true,
+    specHash: lattice.specHash ?? null,
   };
 }

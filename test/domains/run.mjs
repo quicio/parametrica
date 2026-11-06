@@ -26,6 +26,7 @@ import { run as adaptiveRemesh } from './adaptive-remesh.test.mjs';
 import { run as manifoldEngine } from './manifold-engine.test.mjs';
 import { run as fabricationWorker } from './fabrication-worker.test.mjs';
 import { run as fabricatePresets } from './fabricate-presets.test.mjs';
+import { run as fabricationPreview } from './fabrication-preview.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -59,6 +60,7 @@ await adaptiveRemesh(assert);
 await await manifoldEngine(assert);
 await fabricationWorker(assert);
 await fabricatePresets(assert);
+await fabricationPreview(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

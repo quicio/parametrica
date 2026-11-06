@@ -41,6 +41,12 @@ const FABRICATE_DEFAULTS = Object.freeze({
   latticeRim: 4,
   latticeSeed: 7,
   latticePreview: 'solid',
+  finishQuality: 'standard',
+  jointStyle: 'technical',
+  curveStyle: 'polyline',
+  envelope: 'centerline',
+  radiusProfile: 'constant',
+  taper: 0.85,
 });
 
 function fabricateView(overrides = {}) {
@@ -557,6 +563,49 @@ export const BUILT_IN_PRESETS = {
           weld: false,
           cap: false,
           tolerance: 1e-4,
+        },
+      }),
+    }),
+
+  'Organic Lattice Vase 200': () =>
+    createDocument('surface-lattice', {
+      name: 'Organic Lattice Vase 200',
+      generator: {
+        params: {
+          // The strut envelope is offset inward by half the diameter in the
+          // solid builder, so the nominal profile remains the outer size.
+          profile: VASE_PROFILE,
+          height: 200,
+          floor: 3,
+          cellSize: 20,
+          density: 1,
+          irregularity: 0.22,
+          relaxation: 4,
+          aspect: 1,
+          minOpeningWidth: 6,
+          strut: 3.5,
+          rim: 4,
+          seed: 7,
+          samples: 6,
+          fit: 340,
+        },
+      },
+      view: fabricateView({
+        units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
+        fabrication: {
+          format: 'stl',
+          quality: 'standard',
+          scope: 'single',
+          lattice: true,
+          csgStrategy: 'manifold',
+          repair: false,
+          weld: false,
+          cap: false,
+          tolerance: 1e-4,
+          finishQuality: 'standard',
+          jointStyle: 'auto',
+          curveStyle: 'organic',
+          envelope: 'outer',
         },
       }),
     }),

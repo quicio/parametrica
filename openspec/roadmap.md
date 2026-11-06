@@ -498,6 +498,71 @@ pass.
 `Perforated Vase 200` cutout example and overhang/bed/feature checks in every
 Fabricate report.
 
+### Phase 19 — Lattice refinement (specified, not implemented)
+
+**Change:** `2026-11-06-lattice-refinement`
+
+Turns the fixed-resolution organic lattice into a measured adaptive result:
+surface-coordinate subdivision, chord/surface deviation, topology-preserving
+refinement, capsule opening validation, quality budgets and 15/20/25 mm
+benchmarks. The local SDF joint remains a benchmark candidate; `rounded`
+stays the production fallback until the decision gate passes.
+
+Depends on `lattice-cell-contracts` and `organic-struts`.
+
+### Phase 20 — Manufacturing profile (specified, not implemented)
+
+**Change:** `2026-11-06-manufacturing-profile`
+
+Adds a serializable manufacturing profile and an evidence-based report:
+process minima, overhang, bed, opening, strut/joint and envelope checks with
+`measured` / `declared` / `estimated` / `unavailable` sources. Geometry
+validity and units remain hard export blocks; manufacturing warnings are
+non-blocking by default and `block` mode is explicit.
+
+Depends on the fabrication contracts, the lattice stats and the refinement
+gauge. It does not add a slicer or support generation.
+
+### Baseline integrity slice (specified, not implemented)
+
+**Change:** `2026-11-06-export-integrity`
+
+Closes two residual audit gaps before manufacturing claims are layered on
+top: 3MF must triangulate polygonal faces instead of writing only
+`face[0..2]`, and `manifoldGuaranteed` must not survive a topology-changing
+post-process. This is a small prerequisite, not a new geometric feature.
+
+### Phase 21 — Product preview (implemented first slice; AO/benchmarks pending)
+
+**Change:** `2026-11-06-fabrication-preview`
+
+Adds an optional WebGL/PBR backend behind `RenderScene` for judging the prepared
+fabrication body with material, directional light, shadows and optional AO.
+p5 remains the technical default and the canonical path for overlays,
+inspection, SVG/plotter and existing exports. The backend and its dependency are
+lazy-loaded; WebGL failure falls back to p5.
+
+This is the high-cost, high-value slice chosen after the technical preview
+proved insufficient for evaluating an organic, fabricable sculpture.
+
+### Lattice program status
+
+| Change | Scope | Status |
+|---|---|---|
+| `2026-11-06-lattice-cell-contracts` | Phase 1: spec, network, distribution, openings | implemented; pending archive |
+| `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; pending archive |
+| `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | specified; not implemented |
+| `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | specified; not implemented |
+| `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | specified; not implemented |
+| `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | implemented; hardware benchmark pending |
+| `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | implemented |
+
+Appearance/PBR is now **implemented**, not deferred. It remains independent of
+the geometry pipeline and ships behind an explicit Technical/Product toggle, with
+p5 as the technical default. SSAO, material/light controls, the software-WebGL
+benchmark and a Product PNG export are in place. A hardware-GPU benchmark and a
+stable CI screenshot policy remain pending.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |

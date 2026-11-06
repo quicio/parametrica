@@ -52,6 +52,7 @@ html, body {
 
 #masthead {
   position: absolute;
+  z-index: 3;
   top: 22px;
   left: 24px;
   pointer-events: none;
@@ -99,6 +100,7 @@ html, body {
 /* ——— Telemetry ——— */
 
 #telemetry {
+  z-index: 3;
   position: absolute;
   left: 24px;
   bottom: 20px;
@@ -4022,4 +4024,29 @@ textarea:focus-visible {
 
 .fabricate-quality-row .fabricate-quality {
   min-width: 90px;
+}
+
+/* ——— Product preview (optional WebGL/PBR) ——— */
+
+.product-preview-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #070809;
+}
+
+.product-preview-layer[hidden] {
+  display: none;
+}
+
+.product-preview-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.product-preview-canvas:active {
+  cursor: grabbing;
 }

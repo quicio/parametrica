@@ -238,6 +238,11 @@ export const PRESET_META = {
     description: 'Openwork vase of revolution: 200 mm tall, 20 mm Voronoi cells and 3.5 mm struts.',
     tags: ['fabricate', 'vase', 'lattice', 'voronoi', 'strut', 'openwork'],
   },
+  'Organic Lattice Vase 200': {
+    category: 'fabricate',
+    description: 'Sculptural openwork vase: 200 mm tall, organic 20 mm cells, rounded joints and a 3.5 mm strut envelope.',
+    tags: ['fabricate', 'vase', 'lattice', 'organic', 'organic-struts', 'openwork'],
+  },
   'Perforated Vase 200': {
     category: 'fabricate',
     description: 'Hollow solid-wall vase with a seeded pattern of 16.5 mm through-holes.',

@@ -338,6 +338,21 @@ export class Exporter {
   }
 
   /**
+   * Export the active WebGL/PBR product preview as a presentation PNG.
+   * This is not a printability proof and does not alter geometry or reports.
+   */
+  exportProductPreviewPNG() {
+    const dataUrl = this.app.productPreview?.capture?.();
+    if (!dataUrl || !String(dataUrl).startsWith('data:image/png')) {
+      this.app.notify?.('Switch to Product preview before exporting a product PNG.', 'error');
+      return null;
+    }
+    const name = slug(this.app.document?.name) || 'parametrica';
+    downloadDataURL(`${name}-product-${timestamp()}.png`, dataUrl);
+    return dataUrl;
+  }
+
+  /**
    * Export the active timeline as one animated GIF. The frame plan comes from
    * the same duration/FPS contract as the PNG sequence; the playhead and
    * playback state are restored even when rendering fails.
@@ -426,6 +441,15 @@ function escapeAttr(value) {
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+function slug(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
 }
 
 function downloadDataURL(filename, dataUrl) {

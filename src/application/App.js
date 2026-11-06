@@ -63,6 +63,7 @@ export class App {
     });
     this.dialogs = new DialogService();
     this.document = createDocument('parametric');
+    this.canvasContainer = canvasContainer;
 
     // Restore the last document before history, evaluation or UI creation so
     // the first paint already shows the generator/view the user left.
@@ -80,6 +81,9 @@ export class App {
     this.pointerDragging = false;
     // Fabricate can show the prepared solid instead of the authored network.
     this.fabricationPreview = null;
+    this.productPreview = null;
+    this.productPreviewLoading = null;
+    this.productPreviewActive = false;
 
     this.history = new History(50);
     this.lastSnapshot = this.snapshot();
@@ -204,6 +208,7 @@ export class App {
     if (!this.document.animation.playing && !this.activeLayerIsInstance()) {
       this.controls?.advisorPanel?.scheduleAuto?.();
     }
+    this.syncProductPreview();
   }
 
   /* ———————— lab observer ———————— */
@@ -808,6 +813,90 @@ export class App {
   setFabricationPreview(preview) {
     const next = preview?.mesh && preview?.layerId ? preview : null;
     this.fabricationPreview = next;
+    this.syncProductPreview();
+  }
+
+  /** Enable or disable the optional WebGL/PBR product preview. */
+  async setProductPreviewEnabled(enabled, { notify = true } = {}) {
+    const wants = enabled === true;
+    const view = this.document.view;
+    view.preview.backend = wants ? 'webgl' : 'p5';
+    if (!wants) {
+      this.productPreview?.setActive(false);
+      this.renderer?.setProductPreviewActive?.(false);
+      this.productPreviewActive = false;
+      this.controls?.refreshFabricate?.();
+      return false;
+    }
+    if ((view.projection ?? '3d') !== '3d') {
+      view.preview.backend = 'p5';
+      if (notify) this.notify('Product preview requires the 3D camera view.', 'error');
+      this.controls?.refreshFabricate?.();
+      return false;
+    }
+    if (!this.fabricationPreview?.mesh) {
+      view.preview.backend = 'p5';
+      if (notify) this.notify('Build the solid preview before switching to Product.', 'error');
+      this.controls?.refreshFabricate?.();
+      return false;
+    }
+    if (!this.productPreviewLoading) {
+      this.productPreviewLoading = import('../render/webgl/ProductPreview.js')
+        .then(({ ProductPreview }) => {
+          if (!this.productPreview) this.productPreview = new ProductPreview(this, this.canvasContainer);
+          this.productPreview.mount();
+          return this.productPreview;
+        })
+        .catch((error) => {
+          console.error('[parametrica] product preview failed:', error);
+          this.productPreview = null;
+          this.document.view.preview.backend = 'p5';
+          if (notify) this.notify('Product preview is unavailable; using Technical preview.', 'error');
+          this.renderer?.setProductPreviewActive?.(false);
+          this.controls?.refreshFabricate?.();
+          return null;
+        })
+        .finally(() => {
+          this.productPreviewLoading = null;
+        });
+    }
+    const preview = await this.productPreviewLoading;
+    if (!preview) return false;
+    this.productPreviewActive = true;
+    this.renderer?.setProductPreviewActive?.(true);
+    this.syncProductPreview();
+    this.controls?.refreshFabricate?.();
+    return true;
+  }
+
+  syncProductPreview() {
+    const view = this.document.view;
+    const wants = view?.preview?.backend === 'webgl';
+    const visible = wants
+      && this.controls?.mode === 'fabricate'
+      && view?.projection === '3d'
+      && Boolean(this.fabricationPreview?.mesh)
+      && view?.fabrication?.latticePreview !== 'network';
+    if (visible && !this.productPreview?.ready && !this.productPreviewLoading) {
+      void this.setProductPreviewEnabled(true, { notify: false });
+      return;
+    }
+    const renderable = visible && Boolean(this.productPreview?.ready);
+    this.renderer?.setProductPreviewActive?.(renderable);
+    this.productPreviewActive = renderable;
+    if (!renderable) {
+      this.productPreview?.setActive(false);
+      return;
+    }
+    const scene = this.evaluation
+      ? buildRenderScene({
+        evaluation: this.evaluation,
+        document: this.document,
+        view,
+        preview: this.fabricationPreview,
+      })
+      : null;
+    this.productPreview.update(scene);
   }
 
   inspectAtCanvas(canvasX, canvasY) {

@@ -16,6 +16,8 @@ import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
+import { compileExpression } from '../math/expression.js';
+import { createStdlib } from '../math/stdlib.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
   const prepare = normalizePreparation(preparation);
@@ -316,7 +318,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
   const minFeature = source.lattice?.radius
     ? source.lattice.radius * 2
     : (source.lattice?.mode === 'cutouts' ? source.lattice.strut : null);
-  const printability = analyzePrintability(mesh, { units, minFeature });
+  const printability = analyzePrintability(mesh, { units, minFeature, lattice: source.lattice ?? null });
   return {
     ...resolved,
     mesh,
@@ -369,13 +371,38 @@ function buildLatticeCandidate(layer, index, prepare) {
   const curves = (layer.geometry ?? []).filter((item) => item?.kind === 'curve3d');
   if (!curves.length) return null;
   const height = Number(params.height) || Math.max(...curves.flatMap((curve) => (curve.points ?? []).map((point) => point.z))) || 200;
+  const compiled = typeof params.profile === 'string' ? compileExpression(params.profile) : null;
+  const profileScope = compiled?.ok
+    ? Object.assign(Object.create(null), createStdlib(Number(params.seed) || 1), { v: 0 })
+    : null;
+  const radiusAt = compiled?.ok
+    ? (v) => {
+      profileScope.v = v;
+      const value = Number(compiled.fn(profileScope));
+      return Number.isFinite(value) ? value : null;
+    }
+    : null;
+  const openingCurve = curves.find((curve) => Array.isArray(curve.meta?.latticeOpenings));
+  const openings = openingCurve?.meta?.latticeOpenings ?? [];
+  const meta = openingCurve?.meta ?? curves[0]?.meta ?? {};
   const result = buildLatticeSolid(curves, {
     strut: Number(params.strut) || 3.5,
     floor: Number(params.floor) || 0,
     rim: Number(params.rim) || 4,
     height,
-    radialSegments: 8,
     tolerance: prepare.tolerance,
+    finishQuality: prepare.finishQuality,
+    jointStyle: prepare.jointStyle,
+    curveStyle: prepare.curveStyle,
+    envelope: prepare.envelope,
+    radiusProfile: prepare.radiusProfile,
+    taper: prepare.taper,
+    radiusAt,
+    openings,
+    minOpeningWidth: Number(params.minOpeningWidth ?? 2),
+    specHash: meta.specHash ?? null,
+    networkHash: meta.networkHash ?? null,
+    algorithmVersion: meta.algorithmVersion ?? null,
   });
   const validation = result.ok
     ? result.validation
@@ -433,6 +460,12 @@ function normalizePreparation(raw) {
     latticeRim: numeric(raw.latticeRim, 4),
     latticeSeed: numeric(raw.latticeSeed, 7),
     latticePreview: raw.latticePreview === 'network' ? 'network' : 'solid',
+    finishQuality: raw.finishQuality === 'draft' || raw.finishQuality === 'high' ? raw.finishQuality : 'standard',
+    jointStyle: ['technical', 'rounded', 'blend', 'auto'].includes(raw.jointStyle) ? raw.jointStyle : 'technical',
+    curveStyle: raw.curveStyle === 'organic' ? 'organic' : 'polyline',
+    envelope: raw.envelope === 'outer' ? 'outer' : 'centerline',
+    radiusProfile: raw.radiusProfile === 'taper' ? 'taper' : 'constant',
+    taper: Number.isFinite(Number(raw.taper)) ? Math.max(0.25, Math.min(1, Number(raw.taper))) : 0.85,
     quality: raw.quality,
   };
 }
