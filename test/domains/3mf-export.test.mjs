@@ -24,6 +24,19 @@ function cube(offset = 0, id = `cube-${offset}`) {
   return createMesh({ id, vertices, faces });
 }
 
+function quadCube() {
+  const vertices = [
+    [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+    [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+  ].map(([x, y, z]) => ({ x, y, z }));
+  const faces = [
+    [0, 1, 2, 3], [4, 7, 6, 5],
+    [0, 4, 5, 1], [1, 5, 6, 2],
+    [2, 6, 7, 3], [0, 3, 7, 4],
+  ];
+  return createMesh({ id: 'quad-cube', vertices, faces });
+}
+
 function readZipStore(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const decoder = new TextDecoder();
@@ -65,6 +78,14 @@ export function run(assert) {
 
   const again = export3MF([first, second], { units: UNITS, name: 'Two cubes' });
   assert(Buffer.compare(Buffer.from(exported.data), Buffer.from(again.data)) === 0, '3MF bytes are deterministic');
+
+  const quads = quadCube();
+  const quadXml = build3MFModelXML([quads], { name: 'Quad cube' });
+  assert((quadXml.match(/<triangle /g) ?? []).length === 12, 'quad faces emit two triangles each');
+  const quadExport = export3MF([quads], { units: UNITS, name: 'Quad cube' });
+  assert(quadExport.triangles === 12, 'quad export counts emitted triangles');
+  const quadModel = new TextDecoder().decode(readZipStore(quadExport.data).get('3D/3dmodel.model'));
+  assert((quadModel.match(/<triangle /g) ?? []).length === 12, 'quad package contains complete triangle list');
 
   const scaled = export3MF([first], { units: { ...UNITS, mmPerWorldUnit: 2 }, name: 'Scaled' });
   assert(scaled.scale === 2, 'explicit world scale is used');

@@ -161,6 +161,11 @@ export async function run(assert) {
     assert(organic.stats.jointMethod === 'rounded' && organic.stats.minJointDiameter > 0, 'organic solid reports its joint style');
     assert(Math.abs(organic.stats.minStrutDiameter - 2.8) < 1e-6, 'taper reduces the minimum strut diameter');
     assert(organic.stats.openingGauge?.count > 0, 'organic solid runs the opening gauge');
+    assert(organic.stats.openingGauge?.method === 'capsule-sampled', 'opening gauge reports its method');
+    assert(organic.stats.refinement?.maxChordDeviation >= 0, 'organic solid reports chord deviation');
+    assert(organic.stats.refinement?.surfaceDeviation >= 0, 'organic solid reports surface deviation');
+    assert(organic.stats.refinement?.meanSamples > 0, 'organic solid reports adaptive sample count');
+    assert(organic.stats.buildMs >= 0 && organic.stats.gaugeMs >= 0, 'organic solid reports build and gauge time');
     assert(organic.stats.provenance?.networkHash === organicCurves[0]?.meta?.networkHash, 'organic solid preserves the network hash');
   }
 

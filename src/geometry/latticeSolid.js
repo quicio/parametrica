@@ -14,9 +14,24 @@ import { repairMesh } from './repair.js';
 const TWO_PI = Math.PI * 2;
 
 const FINISH_PROFILES = Object.freeze({
-  draft: { radialSegments: 8, curveSamples: 2, jointSlices: 8, jointScale: 1.22 },
-  standard: { radialSegments: 10, curveSamples: 4, jointSlices: 12, jointScale: 1.3 },
-  high: { radialSegments: 16, curveSamples: 7, jointSlices: 16, jointScale: 1.38 },
+  draft: {
+    radialSegments: 8,
+    jointSlices: 8,
+    jointScale: 1.22,
+    refinement: { tolerance: 0.3, minSamples: 2, maxSamples: 6 },
+  },
+  standard: {
+    radialSegments: 10,
+    jointSlices: 12,
+    jointScale: 1.3,
+    refinement: { tolerance: 0.15, minSamples: 4, maxSamples: 10 },
+  },
+  high: {
+    radialSegments: 16,
+    jointSlices: 16,
+    jointScale: 1.38,
+    refinement: { tolerance: 0.08, minSamples: 6, maxSamples: 16 },
+  },
 });
 
 export function buildLatticeSolid(curves, {
@@ -33,12 +48,14 @@ export function buildLatticeSolid(curves, {
   radiusProfile = 'constant',
   taper = 0.85,
   radiusAt = null,
+  refinementTolerance = null,
   openings = [],
   minOpeningWidth = null,
   specHash = null,
   networkHash = null,
   algorithmVersion = null,
 } = {}) {
+  const started = now();
   const finish = FINISH_PROFILES[finishQuality] ?? FINISH_PROFILES.standard;
   const baseRadius = Math.max(0.2, (Number(strut) || 3.5) / 2);
   const floorHeight = Math.max(0, Number(floor) || 0);
@@ -67,18 +84,46 @@ export function buildLatticeSolid(curves, {
     : null;
   const curveFallback = curveStyle === 'organic' && !hasSurfaceProfile;
   const resolvedCurveStyle = curveFallback ? 'polyline' : curveStyle;
+  const refinement = {
+    tolerance: Number.isFinite(Number(refinementTolerance)) && Number(refinementTolerance) > 0
+      ? Number(refinementTolerance)
+      : finish.refinement.tolerance,
+    minSamples: finish.refinement.minSamples,
+    maxSamples: finish.refinement.maxSamples,
+  };
 
-  const entries = source.map((curve) => ({
-    curve,
-    points: resolvedCurveStyle === 'organic'
-      ? organicCenterline(curve.points, {
-        radiusAt: radiusFn,
-        envelope,
-        strutRadius: baseRadius,
-        samplesPerSegment: finish.curveSamples,
-      })
-      : shiftPolyline(curve.points, envelope, baseRadius),
-  }));
+  const entries = source.map((curve) => {
+    if (resolvedCurveStyle !== 'organic') {
+      return {
+        curve,
+        points: shiftPolyline(curve.points, envelope, baseRadius),
+        refinement: null,
+      };
+    }
+    const organic = organicCenterline(curve.points, {
+      radiusAt: radiusFn,
+      envelope,
+      strutRadius: baseRadius,
+      refinement,
+    });
+    return { curve, points: organic.points, refinement: organic };
+  });
+  const refined = entries.filter((entry) => entry.refinement);
+  const refinementStats = refined.length
+    ? {
+      tolerance: refinement.tolerance,
+      maxChordDeviation: refined.reduce((max, entry) => Math.max(max, entry.refinement.maxChordDeviation), 0),
+      surfaceDeviation: refined.reduce((max, entry) => Math.max(max, entry.refinement.surfaceDeviation), 0),
+      meanSamples: refined.reduce((sum, entry) => sum + entry.refinement.samples, 0) / refined.length,
+      curveFallback,
+    }
+    : {
+      tolerance: refinement.tolerance,
+      maxChordDeviation: null,
+      surfaceDeviation: null,
+      meanSamples: 0,
+      curveFallback,
+    };
 
   const tubes = [];
   let tubeTriangles = 0;
@@ -153,10 +198,13 @@ export function buildLatticeSolid(curves, {
   const jointCount = joints?.meta?.jointCount ?? 0;
   const jointRadius = joints?.meta?.jointRadius ?? baseRadius;
   const requestedBlend = jointStyle === 'blend';
+  const gaugeStarted = now();
   const measured = measureOpeningClearance(geometry, openings, {
     minOpeningWidth,
+    strutDiameter: baseRadius * 2,
     cellSize: Math.max(4, (Number(minOpeningWidth) || 4) * 2),
   });
+  const gaugeMs = Math.round(now() - gaugeStarted);
   const minRadius = radiusProfile === 'taper'
     ? baseRadius * Math.max(0.1, Math.min(1, Number(taper) || 1))
     : baseRadius;
@@ -193,6 +241,9 @@ export function buildLatticeSolid(curves, {
       minJointDiameter: jointRadius * 2,
       openingTargetWidth: Number.isFinite(Number(minOpeningWidth)) ? Number(minOpeningWidth) : null,
       openingGauge: measured,
+      gaugeMs,
+      buildMs: Math.round(now() - started),
+      refinement: refinementStats,
       floor: floorHeight,
       rim: rimWidth,
       specHash,
@@ -208,6 +259,7 @@ export function buildLatticeSolid(curves, {
         curveStyle: resolvedCurveStyle,
         curveFallback,
         envelope,
+        refinementTolerance: refinement.tolerance,
       },
     },
   };
@@ -357,27 +409,88 @@ function organicCenterline(points, {
   radiusAt,
   envelope,
   strutRadius,
-  samplesPerSegment,
+  refinement,
 }) {
   const surfacePoints = toSurfaceCoordinates(points, radiusAt);
-  if (surfacePoints.length < 2) return points;
-  const steps = Math.max(1, Math.round(samplesPerSegment) || 1);
+  if (surfacePoints.length < 2) {
+    return {
+      points,
+      maxChordDeviation: null,
+      surfaceDeviation: null,
+      samples: 0,
+    };
+  }
   const angularScale = Math.max(1, meanRadiusOf(points));
   const out = [];
+  let maxChordDeviation = 0;
   for (let i = 0; i < surfacePoints.length - 1; i++) {
     const p0 = surfacePoints[Math.max(0, i - 1)];
     const p1 = surfacePoints[i];
     const p2 = surfacePoints[i + 1];
     const p3 = surfacePoints[Math.min(surfacePoints.length - 1, i + 2)];
-    for (let step = 0; step < steps; step++) {
-      const t = step / steps;
+    const evaluate = (t) => {
       const [theta, z, radius] = catmullRomCentripetal(p0, p1, p2, p3, t, angularScale);
-      out.push(surfacePoint(theta, z, radius, radiusAt, envelope, strutRadius));
+      return surfacePoint(theta, z, radius, radiusAt, envelope, strutRadius);
+    };
+    const adaptive = adaptiveSegment(evaluate, refinement);
+    maxChordDeviation = Math.max(maxChordDeviation, adaptive.maxDeviation);
+    for (let step = 0; step < adaptive.samples.length - 1; step++) {
+      out.push(adaptive.samples[step]);
     }
   }
   const last = surfacePoints[surfacePoints.length - 1];
   out.push(surfacePoint(last[0], last[1], last[2], radiusAt, envelope, strutRadius));
-  return out;
+  let surfaceDeviation = 0;
+  if (radiusAt) {
+    for (const point of out) {
+      const expected = Math.max(1e-6, radiusAt(point.z) - (envelope === 'outer' ? strutRadius : 0));
+      surfaceDeviation = Math.max(surfaceDeviation, Math.abs(Math.hypot(point.x, point.y) - expected));
+    }
+  }
+  return {
+    points: out,
+    maxChordDeviation,
+    surfaceDeviation,
+    samples: out.length,
+  };
+}
+
+function adaptiveSegment(evaluate, { tolerance, minSamples, maxSamples }) {
+  const minimum = Math.max(1, Math.round(minSamples) || 1);
+  const maximum = Math.max(minimum, Math.round(maxSamples) || minimum);
+  const values = Array.from({ length: minimum + 1 }, (_, index) => index / minimum);
+  const deviation = (a, b) => {
+    const pointA = evaluate(a);
+    const pointB = evaluate(b);
+    const mid = evaluate((a + b) / 2);
+    const chord = {
+      x: (pointA.x + pointB.x) / 2,
+      y: (pointA.y + pointB.y) / 2,
+      z: (pointA.z + pointB.z) / 2,
+    };
+    return Math.hypot(mid.x - chord.x, mid.y - chord.y, mid.z - chord.z);
+  };
+  while (values.length - 1 < maximum) {
+    let worstIndex = -1;
+    let worst = 0;
+    for (let i = 0; i < values.length - 1; i++) {
+      const value = deviation(values[i], values[i + 1]);
+      if (value > worst) {
+        worst = value;
+        worstIndex = i;
+      }
+    }
+    if (worstIndex < 0 || worst <= tolerance) break;
+    values.splice(worstIndex + 1, 0, (values[worstIndex] + values[worstIndex + 1]) / 2);
+  }
+  let maxDeviation = 0;
+  for (let i = 0; i < values.length - 1; i++) {
+    maxDeviation = Math.max(maxDeviation, deviation(values[i], values[i + 1]));
+  }
+  return {
+    samples: values.map((t) => evaluate(t)),
+    maxDeviation,
+  };
 }
 
 function toSurfaceCoordinates(points, radiusAt) {
@@ -466,25 +579,51 @@ function meanRadiusOf(points) {
   return count ? total / count : 1;
 }
 
-function measureOpeningClearance(mesh, openings, { minOpeningWidth = null, cellSize = 8 } = {}) {
+function measureOpeningClearance(mesh, openings, {
+  minOpeningWidth = null,
+  strutDiameter = 3.5,
+  cellSize = 8,
+} = {}) {
   const list = (Array.isArray(openings) ? openings : [])
     .filter((opening) => Number.isFinite(opening?.x) && Number.isFinite(opening?.y) && Number.isFinite(opening?.z));
   if (!list.length || !mesh?.vertices?.length || !mesh?.faces?.length) return null;
   const triangles = buildTriangleGrid(mesh, cellSize);
   if (!triangles.count) return null;
+  const target = Number(minOpeningWidth);
+  const span = Math.max(
+    Math.max(2, Number(strutDiameter) || 3.5) * 2,
+    Number.isFinite(target) && target > 0 ? target * 4 : 8,
+  );
+  const samples = 5;
   let min = Infinity;
   let max = 0;
   let total = 0;
   let below = 0;
   for (const opening of list) {
-    const distance = nearestTriangleDistance(triangles, opening, cellSize);
-    const width = Number.isFinite(distance) ? distance * 2 : 0;
+    const radial = Math.hypot(opening.x, opening.y);
+    const normal = radial > 1e-9
+      ? { x: opening.x / radial, y: opening.y / radial, z: 0 }
+      : { x: 0, y: 0, z: 1 };
+    let radius = Infinity;
+    for (let i = 0; i < samples; i++) {
+      const offset = -span / 2 + (span * i) / (samples - 1);
+      const point = {
+        x: opening.x + normal.x * offset,
+        y: opening.y + normal.y * offset,
+        z: opening.z + normal.z * offset,
+      };
+      radius = Math.min(radius, nearestTriangleDistance(triangles, point, cellSize));
+    }
+    const width = Number.isFinite(radius) ? radius * 2 : 0;
     min = Math.min(min, width);
     max = Math.max(max, width);
     total += width;
-    if (Number.isFinite(Number(minOpeningWidth)) && width + 1e-6 < Number(minOpeningWidth)) below += 1;
+    if (Number.isFinite(target) && target > 0 && width + 1e-6 < target) below += 1;
   }
   return {
+    method: 'capsule-sampled',
+    samplesPerOpening: samples,
+    span,
     count: list.length,
     minWidth: Number.isFinite(min) ? min : 0,
     maxWidth: max,
@@ -830,6 +969,10 @@ function subtract(a, b) {
 
 function scale(a, factor) {
   return { x: a.x * factor, y: a.y * factor, z: a.z * factor };
+}
+
+function now() {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
 function normalize(v) {

@@ -135,6 +135,7 @@ function measureLattice(lattice, scale) {
     minJointMm: toMm(lattice.minJointDiameter),
     openingWidthMm,
     targetOpeningMm: toMm(lattice.openingTargetWidth),
+    openingMethod: gauge?.method ?? null,
     openingsMeasured: gauge?.count ?? null,
     openingsBelowTarget: gauge?.belowTarget ?? null,
     manifoldGuaranteed: lattice.manifoldGuaranteed === true,

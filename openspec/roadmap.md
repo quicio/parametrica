@@ -551,8 +551,8 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 |---|---|---|
 | `2026-11-06-lattice-cell-contracts` | Phase 1: spec, network, distribution, openings | implemented; pending archive |
 | `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; pending archive |
-| `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | specified; not implemented |
-| `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | specified; not implemented |
+| `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | implemented |
+| `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | implemented core; SDF/benchmarks pending |
 | `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | specified; not implemented |
 | `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | implemented; hardware benchmark pending |
 | `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | implemented |
@@ -562,6 +562,11 @@ the geometry pipeline and ships behind an explicit Technical/Product toggle, wit
 p5 as the technical default. SSAO, material/light controls, the software-WebGL
 benchmark and a Product PNG export are in place. A hardware-GPU benchmark and a
 stable CI screenshot policy remain pending.
+
+The refinement core is now **implemented**: adaptive chord sampling, surface
+deviation reporting, capsule-sampled opening checks, refinement provenance and
+build/gauge timing. The local SDF joint gate, full 15/20/25 lattice benchmark and
+visual golden evidence remain pending.
 
 ## 5.1 Specification status
 

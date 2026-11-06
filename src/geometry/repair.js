@@ -9,6 +9,7 @@
 import { createMesh } from './contracts.js';
 import { boundaryLoops, weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
+import { clearManifoldGuarantee } from './trust.js';
 import { repairTopology } from './topologyRepair.js';
 import { orient2dSign, pointInTriangle2D as robustPointInTriangle2D } from './robustPredicates.js';
 
@@ -121,7 +122,7 @@ function cleanupMesh(mesh, tolerance) {
   }
   if (!faces.length) {
     return {
-      mesh: createMesh({ id: mesh.id, vertices: mesh.vertices, faces: [], meta: mesh.meta }),
+      mesh: createMesh({ id: mesh.id, vertices: mesh.vertices, faces: [], meta: clearManifoldGuarantee(mesh.meta) }),
       report,
     };
   }
@@ -129,7 +130,7 @@ function cleanupMesh(mesh, tolerance) {
     id: mesh.id,
     vertices: mesh.vertices,
     faces,
-    meta: mesh.meta,
+    meta: clearManifoldGuarantee(mesh.meta),
   });
   const welded = weldMesh(raw, { tolerance });
   report.weldedVertices += welded.stats.mergedVertices;
@@ -172,7 +173,7 @@ function removeDegenerateFaces(mesh, areaEps) {
       normals: null,
       faceNormals: null,
       uvs: null,
-      meta: mesh.meta,
+      meta: clearManifoldGuarantee(mesh.meta),
     }),
     removed,
   };
@@ -206,7 +207,7 @@ function removeDuplicateFaces(mesh) {
       normals: null,
       faceNormals: null,
       uvs: null,
-      meta: mesh.meta,
+      meta: clearManifoldGuarantee(mesh.meta),
     }),
     removed,
   };
@@ -281,7 +282,7 @@ export function repairOrientation(mesh, tolerance = DEFAULT_REPAIR_TOLERANCE) {
       normals: null,
       faceNormals: null,
       uvs: null,
-      meta: mesh.meta,
+      meta: clearManifoldGuarantee(mesh.meta),
     }),
     report,
   };
@@ -409,7 +410,7 @@ export function capWithStrategy(mesh, {
       normals: null,
       faceNormals: null,
       uvs: null,
-      meta: mesh.meta,
+      meta: clearManifoldGuarantee(mesh.meta),
     }),
     report,
   };

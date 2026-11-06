@@ -55,6 +55,11 @@ Implementado en esta rama:
 - Envolvente `centerline`/`outer` y perfiles de acabado separados de la
   calidad de reparación/SDF.
 - `Organic Lattice Vase 200` y controles Finish en Fabricate.
+- Refinamiento adaptativo por desviación de cuerda, con tolerancia por perfil,
+  desviación de superficie reportada y presupuesto de muestras.
+- Gauge de aperturas por cápsula muestreada sobre el sólido final.
+- 3MF con triangulación completa de caras y ciclo de vida de
+  `manifoldGuaranteed`.
 
 Pendiente de benchmark o revisión humana:
 

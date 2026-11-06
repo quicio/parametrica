@@ -7,6 +7,7 @@
  */
 
 import { createMesh } from './contracts.js';
+import { clearManifoldGuarantee } from './trust.js';
 import { validateMesh } from './validate.js';
 
 export const DEFAULT_WELD_TOLERANCE = 1e-6;
@@ -84,7 +85,7 @@ export function weldMesh(mesh, { tolerance = DEFAULT_WELD_TOLERANCE } = {}) {
     normals: null,
     faceNormals: null,
     uvs: null,
-    meta: { ...source.meta, prepared: { weld: true, tolerance: tol } },
+    meta: { ...clearManifoldGuarantee(source.meta), prepared: { weld: true, tolerance: tol } },
   });
   return {
     mesh: result,
@@ -206,7 +207,7 @@ export function capMesh(mesh, { maxHoleEdges = DEFAULT_MAX_HOLE_EDGES } = {}) {
     normals: null,
     faceNormals: null,
     uvs: null,
-    meta: { ...mesh.meta, prepared: { ...(mesh.meta?.prepared ?? {}), cap: true, maxHoleEdges: limit } },
+    meta: { ...clearManifoldGuarantee(mesh.meta), prepared: { ...(mesh.meta?.prepared ?? {}), cap: true, maxHoleEdges: limit } },
   });
   return {
     mesh: result,
