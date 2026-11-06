@@ -60,6 +60,8 @@ surface operators, physical units, STL export and the Fabricate mode.
   `docs/self-intersection.md`. Intersecting meshes are rejected, not repaired.
 - Phase 5C adds explicit active-layer and composition multi-body scopes; see
   `docs/multi-body.md`. Shells are separate, not a boolean union.
+- Phase 5D adds explicit union/difference/intersection CSG recipes; see
+  `docs/solid-booleans.md`. Results are revalidated and never repaired.
 
 ## 4D — Fabricate mode
 

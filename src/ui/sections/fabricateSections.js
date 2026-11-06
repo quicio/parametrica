@@ -88,13 +88,43 @@ export function buildFabricateSection(controls) {
     }
     scopeSelect.value = fabrication.scope ?? 'single';
     scopeSelect.title = 'Single exports the first valid body; multi-body scopes merge separate closed shells.';
-    scopeSelect.addEventListener('change', () => {
-      fabrication.scope = scopeSelect.value;
+    scopeRow.append(scopeLabel, scopeSelect);
+    rows.appendChild(scopeRow);
+
+    const booleanRow = document.createElement('div');
+    booleanRow.className = 'fabricate-row';
+    const booleanLabel = document.createElement('span');
+    booleanLabel.className = 'fabricate-label';
+    booleanLabel.textContent = 'Boolean';
+    const booleanSelect = document.createElement('select');
+    booleanSelect.className = 'artboard-input fabricate-boolean';
+    for (const [value, label] of [
+      ['none', 'None'],
+      ['union', 'Union'],
+      ['difference', 'Difference'],
+      ['intersection', 'Intersection'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      booleanSelect.appendChild(option);
+    }
+    booleanSelect.value = fabrication.boolean ?? 'none';
+    booleanSelect.title = 'Combine selected bodies; difference subtracts later bodies from the first.';
+    booleanSelect.addEventListener('change', () => {
+      fabrication.boolean = booleanSelect.value;
       controls.app.rebuild();
       controls.refreshFabricate();
     });
-    scopeRow.append(scopeLabel, scopeSelect);
-    rows.appendChild(scopeRow);
+    scopeSelect.addEventListener('change', () => {
+      fabrication.scope = scopeSelect.value;
+      if (fabrication.scope === 'single') fabrication.boolean = 'none';
+      booleanSelect.value = fabrication.boolean ?? 'none';
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    booleanRow.append(booleanLabel, booleanSelect);
+    rows.appendChild(booleanRow);
     const prepRow = document.createElement('div');
     prepRow.className = 'fabricate-row fabricate-prepare-row';
     const prepLabel = document.createElement('span');
@@ -153,6 +183,7 @@ export function buildFabricateSection(controls) {
     const triangles = makeRow('Triangles', 'fabricate-triangles');
     const vertices = makeRow('Vertices', 'fabricate-vertices');
     const bodies = makeRow('Body count', 'fabricate-bodies');
+    const boolean = makeRow('Boolean result', 'fabricate-boolean-status');
     const volume = makeRow('Volume', 'fabricate-volume');
     const worldSize = makeRow('World bbox', 'fabricate-world-size');
     const physical = makeRow('Physical', 'fabricate-physical-size');
@@ -176,9 +207,9 @@ export function buildFabricateSection(controls) {
     body.appendChild(panel);
 
     controls.fabricateEls = {
-      panel, status, source, reason, triangles, vertices, bodies, volume,
+      panel, status, source, reason, triangles, vertices, bodies, boolean, volume,
       worldSize, physical, warnings, preparation, exportButton, unitSelect, scaleInput,
-      scopeSelect, compositionNote, weld: weld.input, cap: cap.input, prepHint,
+      scopeSelect, booleanSelect, compositionNote, weld: weld.input, cap: cap.input, prepHint,
     };
     controls.refreshFabricate();
 }

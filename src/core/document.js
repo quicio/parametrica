@@ -60,12 +60,14 @@ export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
 export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvature', 'arc']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
 export const FABRICATION_SCOPES = Object.freeze(['single', 'active-layer', 'composition']);
+export const FABRICATION_BOOLEANS = Object.freeze(['none', 'union', 'difference', 'intersection']);
 export const DEFAULT_FABRICATION = Object.freeze({
   weld: false,
   cap: false,
-  tolerance: 1e-6,
+  tolerance: 1e-4,
   maxHoleEdges: 256,
   scope: 'single',
+  boolean: 'none',
 });
 
 export function sanitizeFabricationSettings(raw) {
@@ -82,6 +84,9 @@ export function sanitizeFabricationSettings(raw) {
       ? Math.min(Math.max(Math.floor(maxHoleEdges), 3), 4096)
       : DEFAULT_FABRICATION.maxHoleEdges,
     scope: FABRICATION_SCOPES.includes(source.scope) ? source.scope : DEFAULT_FABRICATION.scope,
+    boolean: (FABRICATION_SCOPES.includes(source.scope) ? source.scope : DEFAULT_FABRICATION.scope) === 'single'
+      ? 'none'
+      : (FABRICATION_BOOLEANS.includes(source.boolean) ? source.boolean : DEFAULT_FABRICATION.boolean),
   };
 }
 

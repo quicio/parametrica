@@ -8,6 +8,7 @@
 
 import { isMesh, isSolid } from '../geometry/contracts.js';
 import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
+import { booleanSolids } from '../geometry/csg.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
@@ -79,8 +80,44 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
   let source = scope === 'single' || exportable.length <= 1 ? exportable[0] ?? null : null;
   let mergedError = null;
   let bodies = source ? 1 : 0;
+  let booleanError = null;
+  let booleanEmpty = false;
 
-  if (scope !== 'single' && exportable.length > 1) {
+  if (scope !== 'single' && prepare.boolean !== 'none') {
+    if (exportable.length < 2) {
+      source = null;
+      booleanError = `Boolean ${prepare.boolean} requires at least two validated bodies`;
+    } else {
+      const operands = exportable.map((candidate) => (
+        isSolid(candidate.geometry) ? candidate.geometry.boundary : candidate.geometry
+      ));
+      const result = booleanSolids(prepare.boolean, operands, { tolerance: prepare.tolerance });
+      if (!result.ok) {
+        source = null;
+        booleanError = `Boolean ${prepare.boolean} failed: ${result.error?.message ?? 'unknown error'}`;
+      } else if (result.empty) {
+        source = null;
+        booleanEmpty = true;
+        booleanError = 'Boolean result is empty';
+      } else {
+        source = {
+          geometry: result.geometry,
+          kind: 'mesh',
+          id: `boolean-${prepare.boolean}`,
+          validation: result.validation,
+          closed: true,
+          exportable: true,
+          prepared: exportable.some((candidate) => candidate.prepared),
+          preparation: aggregatePreparation(exportable),
+          bodies: 1,
+          bodyIds: exportable.map((candidate) => candidate.id),
+          multiBody: false,
+          boolean: { operation: prepare.boolean, operands: exportable.length, stats: result.stats },
+        };
+        bodies = 1;
+      }
+    }
+  } else if (scope !== 'single' && exportable.length > 1) {
     const meshes = exportable.map((candidate) => (
       isSolid(candidate.geometry) ? candidate.geometry.boundary : candidate.geometry
     ));
@@ -128,12 +165,17 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     bodies,
     scope,
     multiBody: Boolean(source?.multiBody),
+    boolean: source?.boolean ?? null,
+    booleanError,
+    booleanEmpty,
     mergedError,
     preparation: source?.preparation ?? null,
     prepared: Boolean(source?.prepared),
     reason: source
       ? null
-      : mergedError
+      : booleanError
+        ? booleanError
+        : mergedError
         ? `Multi-body export failed: ${mergedError}`
         : candidates.length
           ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
@@ -154,7 +196,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       bbox: null,
       physical: null,
       warnings: [],
-      errors: resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? []),
+      errors: resolved.booleanError ? [resolved.booleanError] : (resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? [])),
       preparation: null,
       prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
@@ -217,6 +259,7 @@ function normalizePreparation(raw) {
     tolerance: raw.tolerance,
     maxHoleEdges: raw.maxHoleEdges,
     scope: ['single', 'active-layer', 'composition'].includes(raw.scope) ? raw.scope : 'single',
+    boolean: ['none', 'union', 'difference', 'intersection'].includes(raw.boolean) ? raw.boolean : 'none',
   };
 }
 

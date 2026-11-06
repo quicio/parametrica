@@ -13,8 +13,8 @@ Add `src/geometry/csg.js` with:
 
 ```js
 booleanSolids(operation, operands, {
-  tolerance = 1e-6,
-  maxDepth = 64,
+  tolerance = 1e-4,
+  maxDepth = 4096,
   maxPolygons = 250_000,
   maxInputTriangles = 50_000,
 })

@@ -92,7 +92,7 @@ export function run(assert) {
   assert(view.fabrication.weld === false && view.fabrication.cap === false, 'preparation is off by default');
   const sanitized = sanitizeFabricationSettings({ weld: 1, cap: true, tolerance: -2, maxHoleEdges: 99999 });
   assert(sanitized.weld === false && sanitized.cap === true, 'preparation flags require explicit booleans');
-  assert(sanitized.tolerance === 1e-6 && sanitized.maxHoleEdges === 4096, 'preparation numeric settings clamp safely');
+  assert(sanitized.tolerance === 1e-4 && sanitized.maxHoleEdges === 4096, 'preparation numeric settings clamp safely');
   const legacy = createDocument('parametric-surface');
   delete legacy.view.fabrication;
   assert(sanitizeDocument(legacy).view.fabrication.weld === false, 'legacy documents sanitize preparation off');
