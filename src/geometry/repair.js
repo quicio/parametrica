@@ -10,6 +10,7 @@ import { createMesh } from './contracts.js';
 import { boundaryLoops, weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
 import { repairTopology } from './topologyRepair.js';
+import { orient2dSign, pointInTriangle2D as robustPointInTriangle2D } from './robustPredicates.js';
 
 export const DEFAULT_REPAIR_TOLERANCE = 1e-4;
 export const DEFAULT_CAP_STRATEGY = 'auto';
@@ -436,7 +437,7 @@ function loopPlanarity(vertices, loop, tolerance) {
   const planarLimit = Math.max(tolerance * 10, diagonal * 1e-4);
   const near = maxDistance <= planarLimit;
   const projected = projectLoop(points, normal);
-  const triangles2d = earClip(projected.points, tolerance);
+  const triangles2d = earClip(projected.points);
   const triangles = triangles2d
     ? triangles2d.map((triangle) => triangle.map((index) => loop[index]))
     : null;
@@ -473,7 +474,7 @@ function projectLoop(points, normal) {
   return { axis, points: projected };
 }
 
-function earClip(points, tolerance) {
+function earClip(points) {
   if (points.length < 3) return null;
   let order = points.map((_, index) => index);
   if (signedArea2D(points) < 0) order = order.reverse();
@@ -485,11 +486,11 @@ function earClip(points, tolerance) {
       const previous = order[(i - 1 + order.length) % order.length];
       const current = order[i];
       const next = order[(i + 1) % order.length];
-      if (orientation2D(points[previous], points[current], points[next]) <= tolerance) continue;
+      if (orient2dSign(points[previous], points[current], points[next]) <= 0) continue;
       let contains = false;
       for (const index of order) {
         if (index === previous || index === current || index === next) continue;
-        if (pointInTriangle2D(points[index], points[previous], points[current], points[next], tolerance)) {
+        if (robustPointInTriangle2D(points[index], points[previous], points[current], points[next])) {
           contains = true;
           break;
         }
@@ -516,19 +517,6 @@ function signedArea2D(points) {
     area += current.x * next.y - next.x * current.y;
   }
   return area / 2;
-}
-
-function orientation2D(a, b, c) {
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-
-function pointInTriangle2D(point, a, b, c, tolerance) {
-  const o1 = orientation2D(a, b, point);
-  const o2 = orientation2D(b, c, point);
-  const o3 = orientation2D(c, a, point);
-  const hasNegative = o1 < -tolerance || o2 < -tolerance || o3 < -tolerance;
-  const hasPositive = o1 > tolerance || o2 > tolerance || o3 > tolerance;
-  return !(hasNegative && hasPositive);
 }
 
 function newellNormal(points) {

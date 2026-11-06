@@ -432,6 +432,12 @@ generation metadata in the notebook; unit group 24.
 
 All four are implemented, validated and shipped.
 
+### Phase 7 — Robust geometry kernel (shipped)
+
+`robust-geometry-kernel` adds exact orientation fallbacks, adaptive tolerance,
+snap rounding and triangle-intersection primitives. It is the foundation for
+exact self-intersection splitting and surface CSG.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -499,6 +505,7 @@ All four are implemented, validated and shipped.
 | `multi-body` | archived | shipped |
 | `solid-booleans` | archived | shipped |
 | `advanced-repair` | archived | shipped |
+| `robust-geometry-kernel` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Specify and implement a dependency-free robust geometry kernel with exact sign fallbacks, adaptive tolerance, snap rounding and triangle intersection primitives.

@@ -7,6 +7,8 @@
  * The detector reports face-index pairs and never edits the mesh.
  */
 
+import { orient3dSign } from './robustPredicates.js';
+
 const DEFAULT_MAX_PAIRS = 32;
 const LEAF_SIZE = 8;
 
@@ -106,35 +108,52 @@ function trianglesIntersect(a, b, eps) {
   if (!planeA || !planeB) return false;
 
   const distA = a.map((point) => signedDistance(point, planeB));
-  if (allAbove(distA, eps) || allBelow(distA, eps)) return false;
+  const sidesA = a.map((point, index) => robustSide(b, point, distA[index], eps));
+  if (allPositive(sidesA) || allNegative(sidesA)) return false;
   const distB = b.map((point) => signedDistance(point, planeA));
-  if (allAbove(distB, eps) || allBelow(distB, eps)) return false;
+  const sidesB = b.map((point, index) => robustSide(a, point, distB[index], eps));
+  if (allPositive(sidesB) || allNegative(sidesB)) return false;
 
-  const coplanar = distA.every((value) => Math.abs(value) <= eps)
-    && distB.every((value) => Math.abs(value) <= eps);
+  const coplanar = sidesA.every((side) => side === 0) && sidesB.every((side) => side === 0);
   if (coplanar) return coplanarIntersect(a, b, planeA.normal, eps);
 
   const direction = cross(planeA.normal, planeB.normal);
   const axis = dominantAxis(direction);
   if (Math.abs(direction[axis]) <= eps) return false;
-  const intervalA = planeInterval(a, distA, axis, eps);
-  const intervalB = planeInterval(b, distB, axis, eps);
+  const intervalA = planeInterval(a, sidesA, distA, axis, eps);
+  const intervalB = planeInterval(b, sidesB, distB, axis, eps);
   if (!intervalA || !intervalB) return false;
   return intervalA.min <= intervalB.max + eps && intervalB.min <= intervalA.max + eps;
 }
 
-function planeInterval(points, distances, axis, eps) {
+function robustSide(planePoints, point, distance, eps) {
+  if (distance < -eps) return -1;
+  if (distance > eps) return 1;
+  return orient3dSign(planePoints[0], planePoints[1], planePoints[2], point);
+}
+
+function allPositive(values) {
+  return values.every((value) => value > 0);
+}
+
+function allNegative(values) {
+  return values.every((value) => value < 0);
+}
+
+function planeInterval(points, sides, distances, axis, eps) {
   const values = [];
   for (let i = 0; i < points.length; i++) {
-    const current = distances[i];
-    if (Math.abs(current) <= eps) {
+    const current = sides[i];
+    if (current === 0) {
       values.push(points[i][axis]);
       continue;
     }
-    const next = distances[(i + 1) % points.length];
-    if (Math.abs(next) <= eps) continue;
+    const next = sides[(i + 1) % points.length];
+    if (next === 0) continue;
     if (current * next < 0) {
-      const t = current / (current - next);
+      const d1 = distances[i];
+      const d2 = distances[(i + 1) % points.length];
+      const t = Math.abs(d1 - d2) <= eps ? 0.5 : d1 / (d1 - d2);
       const point = {
         x: points[i].x + (points[(i + 1) % points.length].x - points[i].x) * t,
         y: points[i].y + (points[(i + 1) % points.length].y - points[i].y) * t,
@@ -223,14 +242,6 @@ function planeOf(points) {
 
 function signedDistance(point, plane) {
   return plane.normal.x * point.x + plane.normal.y * point.y + plane.normal.z * point.z + plane.d;
-}
-
-function allAbove(values, eps) {
-  return values.every((value) => value > eps);
-}
-
-function allBelow(values, eps) {
-  return values.every((value) => value < -eps);
 }
 
 function dominantAxis(vector) {

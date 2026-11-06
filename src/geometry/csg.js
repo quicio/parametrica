@@ -10,6 +10,7 @@ import { createMesh, isMesh, isSolid } from './contracts.js';
 import { weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
 import { remesh } from './remesh.js';
+import { adaptiveTolerance } from './robustPredicates.js';
 
 export const CSG_OPERATIONS = Object.freeze(['union', 'difference', 'intersection']);
 export const CSG_DEFAULT_TOLERANCE = 1e-4;
@@ -41,7 +42,7 @@ export function booleanSolids(operation, operands, {
   strategy = 'auto',
   remeshResolution = 64,
 } = {}) {
-  const eps = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : CSG_DEFAULT_TOLERANCE;
+  let eps = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : CSG_DEFAULT_TOLERANCE;
   const stats = {
     operation,
     operands: Array.isArray(operands) ? operands.length : 0,
@@ -55,6 +56,7 @@ export function booleanSolids(operation, operands, {
     strategy: strategy === 'auto' ? 'bsp' : strategy,
     fallback: null,
     remeshResolution: null,
+    toleranceSource: tolerance === 'auto' ? 'auto' : 'explicit',
   };
   if (!CSG_OPERATIONS.includes(operation)) {
     return failure('invalid-operation', `unsupported boolean operation "${operation}"`, stats);
@@ -90,6 +92,12 @@ export function booleanSolids(operation, operands, {
       `boolean input has ${stats.inputTriangles} triangles (limit ${maxInputTriangles})`,
       stats,
     );
+  }
+  if (tolerance === 'auto') {
+    const points = meshes.flatMap((mesh) => mesh.vertices);
+    const adaptive = adaptiveTolerance(points, { factor: 1e-7, floor: 1e-9, ceiling: 1e-3 });
+    eps = adaptive.epsilon;
+    stats.tolerance = eps;
   }
 
   if (strategy === 'remesh') {

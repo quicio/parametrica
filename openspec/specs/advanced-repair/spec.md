@@ -170,3 +170,13 @@ Advanced repair SHALL optionally resolve self-intersections.
   volume/triangle deltas are reported
 - **AND** failures are returned as structured errors
 
+### Requirement: Robust ear clipping
+
+Planar cap ear clipping SHALL use exact 2D orientation signs.
+
+#### Scenario: Near-collinear vertex
+
+- **WHEN** a projected polygon has a near-collinear vertex
+- **THEN** the exact sign decides whether it is a valid ear
+- **AND** cap determinism is preserved
+

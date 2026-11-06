@@ -18,6 +18,7 @@ import { run as threeMf } from './3mf-export.test.mjs';
 import { run as topologyRepair } from './topology-repair.test.mjs';
 import { run as selfIntersectionRepair } from './self-intersection-repair.test.mjs';
 import { run as csgRobustness } from './csg-robustness.test.mjs';
+import { run as robustPredicates } from './robust-predicates.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -43,6 +44,7 @@ threeMf(assert);
 topologyRepair(assert);
 selfIntersectionRepair(assert);
 csgRobustness(assert);
+robustPredicates(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);
