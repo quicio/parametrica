@@ -9,6 +9,7 @@ import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
 import { evaluateDocument } from '../../src/core/engine.js';
 import { buildFabricationReport } from '../../src/application/fabricationSource.js';
 import { initManifold } from '../../src/geometry/manifoldEngine.js';
+import { project3D } from '../../src/view/camera.js';
 
 const PRESETS = [
   'Solid Torus',
@@ -73,16 +74,39 @@ export async function run(assert) {
   assert(sdf.repair?.selfIntersectionStrategy === 'sdf', 'SDF Enneper reports the SDF strategy');
 
   const vaseDoc = BUILT_IN_PRESETS['Solid Vase 200']();
+  const vaseEvaluation = evaluateDocument(vaseDoc, { time: 0 });
   const vaseReport = buildFabricationReport({
-    evaluation: evaluateDocument(vaseDoc, { time: 0 }),
+    evaluation: vaseEvaluation,
     layerIndex: 0,
     units: vaseDoc.view.units,
     preparation: vaseDoc.view.fabrication,
   });
   assert(vaseReport.exportable === true, 'Solid Vase 200 is exportable');
-  assert(Math.abs(vaseReport.bbox.depth - 200) < 1, 'Solid Vase 200 is 200 mm tall');
+  assert(Math.abs(vaseReport.bbox.height - 200) < 1, 'Solid Vase 200 is 200 mm tall');
   assert(vaseReport.bbox.width > 170 && vaseReport.bbox.width < 180, 'Solid Vase 200 is about 175 mm wide');
   assert(vaseReport.triangles > 0 && vaseReport.volume > 0, 'Solid Vase 200 has positive fabrication geometry');
+  const base = project3D(0, 0, 0, vaseDoc.view.camera);
+  const mouth = project3D(0, 200, 0, vaseDoc.view.camera);
+  assert(base && mouth && mouth.y < base.y, 'Solid Vase 200 opens upward in the 3D view');
+
+  // Circular cross-sections around Y make the front and side silhouettes equal.
+  const outerMesh = vaseEvaluation.layers[0].meshes[0];
+  const rows = new Map();
+  for (const point of outerMesh.vertices) {
+    const key = point.y.toFixed(6);
+    const radius = Math.hypot(point.x, point.z);
+    const row = rows.get(key) ?? { min: Infinity, max: -Infinity, count: 0 };
+    row.min = Math.min(row.min, radius);
+    row.max = Math.max(row.max, radius);
+    row.count += 1;
+    rows.set(key, row);
+  }
+  let worstSpread = 0;
+  for (const row of rows.values()) worstSpread = Math.max(worstSpread, row.max - row.min);
+  assert(rows.size > 2 && worstSpread < 1e-6, 'Solid Vase 200 has circular cross-sections (front and side match)');
+  const mouthRow = [...rows.entries()].sort((a, b) => Number(b[0]) - Number(a[0]))[0][1];
+  const mouthDiameter = mouthRow.max + mouthRow.min;
+  assert(Math.abs(mouthDiameter - 135) < 3, `Solid Vase 200 mouth is about 135 mm (got ${mouthDiameter.toFixed(1)})`);
 
   const challenge = BUILT_IN_PRESETS['Möbius Challenge']();
   const challengeReport = buildFabricationReport({

@@ -468,6 +468,12 @@ boolean union/difference, cap repair, SDF repair and a non-orientable challenge.
 `vase-200-preset` adds a 200 mm hollow vase with a 2.5 mm solid wall, built from
 outer/inner surfaces and Manifold difference.
 
+### Phase 14 — Upright vase presentation (shipped)
+
+`vase-upright-presentation` starts the vase preset on the far side of the XY
+plane so +Y reads as up, and locks the upright, circular presentation with
+tests.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -543,6 +549,7 @@ outer/inner surfaces and Manifold difference.
 | `fabricate-workflow` | archived | shipped |
 | `fabricate-presets` | archived | shipped |
 | `vase-200-preset` | archived | shipped |
+| `vase-upright-presentation` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

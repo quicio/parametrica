@@ -33,6 +33,15 @@ Every example sets:
 - **Möbius Challenge**: intentionally blocked. It demonstrates the validation
   and next-action guidance instead of pretending the mesh is fabricable.
 
+## Vase orientation
+
+- Height runs along **+Y**, with the mouth at the high-Y end.
+- The starting 3D camera looks from the far side of the XY plane, so the vase
+  opens upward instead of appearing upside down.
+- Every cross-section is a circle around Y, so front and side silhouettes match.
+- The exporter keeps document axes. Since the height is on Y, a slicer that
+  assumes Z-up shows the vase on its side until it is rotated 90° about X.
+
 ## Mode
 
 Loading an example does **not** switch modes automatically. Apply the preset and
