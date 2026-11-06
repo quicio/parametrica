@@ -13,6 +13,7 @@ import './operators/index.js';
 import './render/passes/index.js';
 
 import { App } from './application/App.js';
+import { initManifold } from './geometry/manifoldEngine.js';
 
 const app = new App({
   canvasContainer: document.getElementById('canvas-container'),
@@ -22,3 +23,7 @@ const app = new App({
 
 window.__parametrica = app;
 window.__parametricaReady = app.renderer.readyPromise;
+window.__parametricaManifoldReady = initManifold().catch((error) => {
+  console.warn('[parametrica] Manifold failed to load:', error.message);
+  return null;
+});

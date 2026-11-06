@@ -127,6 +127,7 @@ export function buildFabricateSection(controls) {
     csgSelect.className = 'artboard-input fabricate-csg-strategy';
     for (const [value, label] of [
       ['auto', 'Auto CSG'],
+      ['manifold', 'Manifold CSG'],
       ['bsp', 'BSP CSG'],
       ['remesh', 'Remesh CSG'],
     ]) {

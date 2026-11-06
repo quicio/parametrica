@@ -20,6 +20,7 @@ import { run as selfIntersectionRepair } from './self-intersection-repair.test.m
 import { run as csgRobustness } from './csg-robustness.test.mjs';
 import { run as robustPredicates } from './robust-predicates.test.mjs';
 import { run as adaptiveRemesh } from './adaptive-remesh.test.mjs';
+import { run as manifoldEngine } from './manifold-engine.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -47,6 +48,7 @@ selfIntersectionRepair(assert);
 csgRobustness(assert);
 robustPredicates(assert);
 adaptiveRemesh(assert);
+manifoldEngine(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

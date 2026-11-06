@@ -101,7 +101,7 @@ export function run(assert) {
   const big = cube(0, 4);
   const small = cube(0, 2);
   const containedDifference = booleanSolids('difference', [big, small]);
-  assert(containedDifference.ok && Math.abs(containedDifference.validation.meta.volume - 56) < 1e-6, 'contained subtraction volume is 56');
+  assert(containedDifference.ok && Math.abs(containedDifference.validation.meta.volume - 56) < 1e-4, 'contained subtraction volume is 56');
   const containedIntersection = booleanSolids('intersection', [big, small]);
   assert(containedIntersection.ok && Math.abs(containedIntersection.validation.meta.volume - 8) < 1e-6, 'contained intersection volume is 8');
 

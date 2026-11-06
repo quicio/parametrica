@@ -65,7 +65,7 @@ export const FABRICATION_BOOLEANS = Object.freeze(['none', 'union', 'difference'
 export const FABRICATION_FORMATS = Object.freeze(['stl', '3mf']);
 export const FABRICATION_TOPOLOGY = Object.freeze(['none', 'split', 'remove']);
 export const FABRICATION_NON_ORIENTABLE = Object.freeze(['cut', 'reject']);
-export const FABRICATION_CSG_STRATEGIES = Object.freeze(['auto', 'bsp', 'remesh']);
+export const FABRICATION_CSG_STRATEGIES = Object.freeze(['auto', 'manifold', 'bsp', 'remesh']);
 export const DEFAULT_FABRICATION = Object.freeze({
   weld: false,
   cap: false,

@@ -438,6 +438,11 @@ All four are implemented, validated and shipped.
 snap rounding and triangle-intersection primitives. `adaptive-remesh` adds
 feature-edge detection and projection for better fallback fidelity.
 
+### Phase 8 — Manifold CSG engine (shipped)
+
+`manifold-engine` integrates Manifold WASM as the primary robust CSG engine,
+with lazy initialization, validation and BSP/remesh fallbacks.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -507,6 +512,7 @@ feature-edge detection and projection for better fallback fidelity.
 | `advanced-repair` | archived | shipped |
 | `robust-geometry-kernel` | archived | shipped |
 | `adaptive-remesh` | archived | shipped |
+| `manifold-engine` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

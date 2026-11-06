@@ -11,6 +11,7 @@ import { weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
 import { remesh } from './remesh.js';
 import { adaptiveTolerance } from './robustPredicates.js';
+import { isManifoldReady, manifoldBoolean } from './manifoldEngine.js';
 
 export const CSG_OPERATIONS = Object.freeze(['union', 'difference', 'intersection']);
 export const CSG_DEFAULT_TOLERANCE = 1e-4;
@@ -100,8 +101,26 @@ export function booleanSolids(operation, operands, {
     stats.tolerance = eps;
   }
 
+  let manifoldFallback = null;
+  if (strategy === 'manifold' || (strategy === 'auto' && isManifoldReady())) {
+    const result = manifoldBoolean(operation, meshes, { tolerance: eps });
+    if (result.ok) {
+      result.stats.requestedStrategy = strategy;
+      result.stats.strategy = 'manifold';
+      return result;
+    }
+    if (strategy === 'manifold') return result;
+    manifoldFallback = result.error?.code ?? 'manifold-failed';
+    stats.manifoldFallback = manifoldFallback;
+  }
+
   if (strategy === 'remesh') {
-    return booleanRemesh(operation, meshes, { remeshResolution, tolerance: eps, stats });
+    return booleanRemesh(operation, meshes, {
+      remeshResolution,
+      tolerance: eps,
+      stats,
+      fallback: manifoldFallback,
+    });
   }
 
   const budget = { splits: 0, maxPolygons, maxDepth, depth: 0 };
@@ -140,7 +159,7 @@ export function booleanSolids(operation, operands, {
           remeshResolution,
           tolerance: eps,
           stats,
-          fallback: 'bsp-invalid',
+          fallback: manifoldFallback ?? 'bsp-invalid',
         });
       }
       return failure('invalid-result', validation.errors[0] ?? 'boolean result failed validation', stats, validation);
@@ -156,6 +175,7 @@ export function booleanSolids(operation, operands, {
       csg: { operation, operands: list.length, tolerance: eps },
     };
     stats.outputTriangles = mesh.faces.length;
+    stats.fallback = manifoldFallback;
     return { ok: true, empty: false, geometry: mesh, validation, stats };
   } catch (error) {
     if (strategy === 'auto') {

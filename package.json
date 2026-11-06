@@ -15,7 +15,8 @@
     "generate:e2e-session": "node scripts/generate-e2e-session.mjs",
     "pretest:e2e": "npm run generate:e2e-session",
     "check:specs": "node scripts/check-spec-purposes.mjs",
-    "bench:instances": "node scripts/bench-instances.mjs"
+    "bench:instances": "node scripts/bench-instances.mjs",
+    "bench:manifold": "node scripts/bench-manifold.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -26,6 +27,7 @@
     "d3-delaunay": "^6.0.4",
     "gifenc": "^1.0.3",
     "lil-gui": "^0.19.2",
+    "manifold-3d": "^3.5.4",
     "p5": "^1.11.0",
     "polygon-clipping": "^0.15.7"
   },

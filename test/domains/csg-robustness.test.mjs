@@ -31,14 +31,14 @@ export function run(assert) {
   const { a, b } = overlappingTori();
   const union = booleanSolids('union', [a, b], { strategy: 'auto', remeshResolution: 48 });
   assert(union.ok && !union.empty, 'auto union succeeds on overlapping full-resolution tori');
-  assert(union.stats.strategy === 'remesh' && union.stats.fallback === 'bsp-invalid', 'auto reports the BSP-to-remesh fallback');
+  assert(union.stats.strategy === 'manifold', 'auto prefers Manifold for overlapping tori');
   assert(union.validation.ok && union.validation.meta.closed, 'remeshed union is closed and valid');
   assert(union.validation.meta.selfIntersections.count === 0, 'remeshed union has no self-intersections');
 
   const difference = booleanSolids('difference', [a, b], { strategy: 'auto', remeshResolution: 48 });
   const intersection = booleanSolids('intersection', [a, b], { strategy: 'auto', remeshResolution: 48 });
   assert(difference.ok && intersection.ok, 'auto difference and intersection succeed');
-  assert(difference.stats.strategy === 'remesh' && intersection.stats.strategy === 'remesh', 'difference/intersection use remesh');
+  assert(difference.stats.strategy === 'manifold' && intersection.stats.strategy === 'manifold', 'difference/intersection use Manifold');
 
   const bodyVolume = (union.validation.meta.volume + intersection.validation.meta.volume) / 2;
   const expected = (a.faces.length && difference.validation.meta.volume) + intersection.validation.meta.volume * 2;
@@ -71,6 +71,6 @@ export function run(assert) {
     return { kind: 'mesh', id: `cube-${offset}`, dimension: 3, vertices, faces };
   };
   const cubeUnion = booleanSolids('union', [cube(0), cube(1)], { strategy: 'auto' });
-  assert(cubeUnion.ok && cubeUnion.stats.strategy === 'bsp' && cubeUnion.stats.fallback === null, 'auto keeps BSP for well-conditioned cubes');
+  assert(cubeUnion.ok && cubeUnion.stats.strategy === 'manifold' && cubeUnion.stats.fallback === null, 'auto uses Manifold for well-conditioned cubes');
   assert(Math.abs(cubeUnion.validation.meta.volume - 12) < 1e-6, 'cube regression volume is unchanged');
 }

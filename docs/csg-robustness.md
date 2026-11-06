@@ -9,16 +9,15 @@ remesh as the robust fallback.
 `view.fabrication.csgStrategy`:
 
 ```text
-auto | bsp | remesh
+auto | manifold | bsp | remesh
 ```
 
-- `bsp`: existing tree-based engine; fast for cubes/spheres and disjoint or
-  nested bodies.
-- `remesh`: signed-distance/parity field plus marching tetrahedra; robust for
-  overlapping non-convex bodies.
-- `auto` (default): try BSP first; if it returns invalid topology or exceeds its
-  budget, fall back to remesh. The result reports `strategy`, `fallback` and the
-  remesh resolution.
+- `manifold`: primary engine via Manifold WASM; guaranteed manifold output for
+  valid operands.
+- `bsp`: existing tree-based fallback; fast for well-conditioned cubes/spheres.
+- `remesh`: signed-distance/parity fallback; robust but approximate.
+- `auto` (default): Manifold when ready; BSP then remesh if it fails. The result
+  reports `strategy`, `fallback` and the remesh resolution.
 
 ## Tolerance
 
@@ -34,10 +33,13 @@ self-intersections and positive volume. Failed results never reach STL/3MF.
 
 ## Robustness status
 
-- Cube matrix regression remains on BSP.
-- Full-resolution overlapping tori union/difference/intersection validate via
-  remesh with `fallback: bsp-invalid`.
-- Union/intersection volume consistency is within 2% at resolution 48.
+- Cube matrix can use Manifold or BSP; both produce correct volumes.
+- Full-resolution overlapping tori union/difference/intersection run through
+  Manifold directly and validate.
+- Manifold tori reference: union ~289 ms, difference ~203 ms, intersection
+  ~163 ms.
+- Remesh remains the fallback when Manifold is unavailable or input is not
+  manifold-compatible.
 - Remesh output is approximate and may smooth features.
 
 ## UI
@@ -53,6 +55,7 @@ Switching strategy does not change selected bodies, repair or units.
 
 ## Limits
 
-- No exact surface-splitting CSG strategy yet.
+- Manifold requires manifold input; self-intersecting meshes need repair first.
+- No exact surface-splitting strategy for self-intersections yet.
 - Remesh resolution trades speed for fidelity.
 - Highly pathological inputs can still return a structured failure.

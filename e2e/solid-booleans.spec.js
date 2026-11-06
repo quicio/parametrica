@@ -5,6 +5,7 @@ async function boot(page) {
   await page.goto('/');
   await page.waitForFunction(() => Boolean(window.__parametrica?.renderer?.p));
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
+  await page.evaluate(() => window.__parametricaManifoldReady);
 }
 
 test('Fabricate applies explicit union, difference and empty intersection', async ({ page }) => {
@@ -62,7 +63,7 @@ test('Fabricate applies explicit union, difference and empty intersection', asyn
   await page.waitForTimeout(900);
   await expect(status).toContainText('READY · union result');
   await expect(booleanStatus).toContainText('union · 2 operands');
-  await expect(booleanStatus).toContainText('bsp');
+  await expect(booleanStatus).toContainText('manifold');
   await expect(bodies).toHaveText('1');
   await expect(reason).toContainText('union of 2 bodies');
   await expect(exportButton).toBeEnabled();
