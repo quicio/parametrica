@@ -123,8 +123,50 @@ export function buildFabricateSection(controls) {
       controls.app.rebuild();
       controls.refreshFabricate();
     });
-    booleanRow.append(booleanLabel, booleanSelect);
+    const csgSelect = document.createElement('select');
+    csgSelect.className = 'artboard-input fabricate-csg-strategy';
+    for (const [value, label] of [
+      ['auto', 'Auto CSG'],
+      ['bsp', 'BSP CSG'],
+      ['remesh', 'Remesh CSG'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      csgSelect.appendChild(option);
+    }
+    csgSelect.value = fabrication.csgStrategy ?? 'auto';
+    csgSelect.title = 'Auto uses BSP for well-conditioned solids and remesh when BSP fails.';
+    csgSelect.addEventListener('change', () => {
+      fabrication.csgStrategy = csgSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    booleanRow.append(booleanLabel, booleanSelect, csgSelect);
     rows.appendChild(booleanRow);
+
+    const formatRow = document.createElement('div');
+    formatRow.className = 'fabricate-row';
+    const formatLabel = document.createElement('span');
+    formatLabel.className = 'fabricate-label';
+    formatLabel.textContent = 'Format';
+    const formatSelect = document.createElement('select');
+    formatSelect.className = 'artboard-input fabricate-format';
+    for (const [value, label] of [['stl', 'STL'], ['3mf', '3MF']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      formatSelect.appendChild(option);
+    }
+    formatSelect.value = fabrication.format ?? 'stl';
+    formatSelect.title = 'STL writes one anonymous mesh; 3MF preserves one object per validated body.';
+    formatSelect.addEventListener('change', () => {
+      fabrication.format = formatSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    formatRow.append(formatLabel, formatSelect);
+    rows.appendChild(formatRow);
     const prepRow = document.createElement('div');
     prepRow.className = 'fabricate-row fabricate-prepare-row';
     const prepLabel = document.createElement('span');
@@ -197,6 +239,33 @@ export function buildFabricateSection(controls) {
     }
     strategySelect.value = fabrication.capStrategy ?? 'auto';
     strategySelect.title = 'Cap strategy used when repair is enabled.';
+    const topologySelect = document.createElement('select');
+    topologySelect.className = 'artboard-input fabricate-topology';
+    for (const [value, label] of [
+      ['none', 'No topology'],
+      ['split', 'Split topology'],
+      ['remove', 'Remove topology'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      topologySelect.appendChild(option);
+    }
+    topologySelect.value = fabrication.topology ?? 'none';
+    topologySelect.title = 'Split non-manifold edge fans into separate manifold edges.';
+    const nonOrientableSelect = document.createElement('select');
+    nonOrientableSelect.className = 'artboard-input fabricate-nonorientable';
+    for (const [value, label] of [
+      ['cut', 'Cut seams'],
+      ['reject', 'Reject non-orientable'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      nonOrientableSelect.appendChild(option);
+    }
+    nonOrientableSelect.value = fabrication.nonOrientable ?? 'cut';
+    nonOrientableSelect.title = 'How to handle non-orientable orientation conflicts.';
     repairInput.addEventListener('change', () => {
       fabrication.repair = repairInput.checked;
       controls.app.rebuild();
@@ -207,7 +276,52 @@ export function buildFabricateSection(controls) {
       controls.app.rebuild();
       controls.refreshFabricate();
     });
-    repairWrap.append(repairToggle, strategySelect);
+    topologySelect.addEventListener('change', () => {
+      fabrication.topology = topologySelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    nonOrientableSelect.addEventListener('change', () => {
+      fabrication.nonOrientable = nonOrientableSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    const selfSelect = document.createElement('select');
+    selfSelect.className = 'artboard-input fabricate-self-intersections';
+    for (const [value, label] of [
+      ['none', 'No self-intersection repair'],
+      ['auto', 'Auto self-intersections'],
+      ['remesh', 'Remesh self-intersections'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      selfSelect.appendChild(option);
+    }
+    selfSelect.value = fabrication.selfIntersections ?? 'none';
+    selfSelect.title = 'Resolve self-intersections by deterministic remeshing.';
+    const remeshInput = document.createElement('input');
+    remeshInput.type = 'number';
+    remeshInput.className = 'artboard-input fabricate-remesh-resolution';
+    remeshInput.min = '16';
+    remeshInput.max = '192';
+    remeshInput.step = '16';
+    remeshInput.value = String(fabrication.remeshResolution ?? 64);
+    remeshInput.title = 'Remesh grid resolution.';
+    selfSelect.addEventListener('change', () => {
+      fabrication.selfIntersections = selfSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    remeshInput.addEventListener('change', () => {
+      const value = Number(remeshInput.value);
+      if (!Number.isFinite(value)) return;
+      fabrication.remeshResolution = Math.max(16, Math.min(192, Math.floor(value)));
+      remeshInput.value = String(fabrication.remeshResolution);
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    repairWrap.append(repairToggle, strategySelect, topologySelect, nonOrientableSelect, selfSelect, remeshInput);
     repairRow.append(repairLabel, repairWrap);
     rows.appendChild(repairRow);
 
@@ -228,6 +342,7 @@ export function buildFabricateSection(controls) {
     const vertices = makeRow('Vertices', 'fabricate-vertices');
     const bodies = makeRow('Body count', 'fabricate-bodies');
     const boolean = makeRow('Boolean result', 'fabricate-boolean-status');
+    const objects = makeRow('Objects', 'fabricate-objects');
     const volume = makeRow('Volume', 'fabricate-volume');
     const worldSize = makeRow('World bbox', 'fabricate-world-size');
     const physical = makeRow('Physical', 'fabricate-physical-size');
@@ -244,7 +359,8 @@ export function buildFabricateSection(controls) {
     exportButton.className = 'lab-button fabricate-export';
     exportButton.textContent = 'EXPORT STL';
     exportButton.addEventListener('click', () => {
-      controls.app.exporter.exportSTL();
+      if (fabrication.format === '3mf') controls.app.exporter.export3MF();
+      else controls.app.exporter.exportSTL();
       controls.refreshFabricate();
     });
 
@@ -252,10 +368,12 @@ export function buildFabricateSection(controls) {
     body.appendChild(panel);
 
     controls.fabricateEls = {
-      panel, status, source, reason, triangles, vertices, bodies, boolean, volume,
+      panel, status, source, reason, triangles, vertices, bodies, boolean, objects, volume,
       worldSize, physical, warnings, preparation, repairStatus, exportButton,
-      unitSelect, scaleInput, scopeSelect, booleanSelect, compositionNote,
+      unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
+      topology: topologySelect, nonOrientable: nonOrientableSelect,
+      selfIntersections: selfSelect, remeshResolution: remeshInput,
       prepHint,
     };
     controls.refreshFabricate();

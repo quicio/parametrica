@@ -64,6 +64,10 @@ surface operators, physical units, STL export and the Fabricate mode.
   `docs/solid-booleans.md`. Results are revalidated and never repaired.
 - Phase 5E adds explicit orientation/cleanup/cap repair with a report; see
   `docs/advanced-repair.md`.
+- Phase 6 adds 3MF export, topology repair, self-intersection remesh repair and
+  robust CSG strategies. See `docs/3mf-export.md`,
+  `docs/mesh-topology-repair.md`, `docs/self-intersection-repair.md` and
+  `docs/csg-robustness.md`.
 
 ## 4D — Fabricate mode
 

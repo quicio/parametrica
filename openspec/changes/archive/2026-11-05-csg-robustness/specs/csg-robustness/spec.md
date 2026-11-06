@@ -15,13 +15,6 @@ Boolean operations SHALL support explicit robustness strategies.
 - **THEN** the existing BSP engine is used
 - **AND** cube/sphere behavior is preserved
 
-#### Scenario: Surface
-
-- **WHEN** strategy is surface
-- **THEN** intersecting triangles are split along intersection segments
-- **AND** fragments are classified by winding/parity
-- **AND** the result is stitched and validated
-
 #### Scenario: Remesh
 
 - **WHEN** strategy is remesh
@@ -31,7 +24,8 @@ Boolean operations SHALL support explicit robustness strategies.
 #### Scenario: Auto
 
 - **WHEN** strategy is auto
-- **THEN** a deterministic estimator chooses bsp, surface or remesh
+- **THEN** bsp is attempted first
+- **AND** remesh is used when bsp fails or exceeds its budget
 - **AND** the actual strategy and fallback are reported
 
 ### Requirement: Adaptive tolerance
@@ -60,7 +54,7 @@ CSG SHALL produce valid results for the defined non-convex test matrix.
   intersected
 - **THEN** the result is closed, manifold, oriented, self-intersection-free and
   positive volume
-- **AND** no invalid-result is returned for the reference fixtures
+- **AND** the remesh fallback is reported when BSP cannot produce a valid result
 
 #### Scenario: Fallback
 

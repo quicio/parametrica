@@ -139,9 +139,9 @@ export function run(assert) {
   assert(!tooFew.ok && tooFew.error.code === 'invalid-operand', 'fewer than two operands are rejected');
   const tooLarge = booleanSolids('union', [a, b], { maxInputTriangles: 1 });
   assert(!tooLarge.ok && tooLarge.error.code === 'complexity', 'input triangle limit returns complexity');
-  const tooDeep = booleanSolids('union', [a, b], { maxDepth: 1 });
+  const tooDeep = booleanSolids('union', [a, b], { strategy: 'bsp', maxDepth: 1 });
   assert(!tooDeep.ok && tooDeep.error.code === 'complexity', 'BSP depth limit returns complexity');
-  const tooMany = booleanSolids('union', [a, b], { maxPolygons: 1 });
+  const tooMany = booleanSolids('union', [a, b], { strategy: 'bsp', maxPolygons: 1 });
   assert(!tooMany.ok && tooMany.error.code === 'complexity', 'polygon budget returns complexity');
 
   const evaluation = { layers: [{ id: 'layer-1', name: 'Layer 1', visible: true, geometry: [], meshes: [a, b] }] };

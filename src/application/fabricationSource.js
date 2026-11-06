@@ -10,6 +10,7 @@ import { isMesh, isSolid } from '../geometry/contracts.js';
 import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
 import { booleanSolids } from '../geometry/csg.js';
 import { repairMesh } from '../geometry/repair.js';
+import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
@@ -35,12 +36,20 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     if (!isMesh(item) && !isSolid(item)) return;
     seen.add(item);
     if (isMesh(item) && prepare.repair) {
-      const repaired = repairMesh(item, {
+      const repairOptions = {
         tolerance: prepare.tolerance,
         maxHoleEdges: prepare.maxHoleEdges,
         capStrategy: prepare.capStrategy,
         orient: true,
-      });
+        topology: prepare.topology,
+        nonOrientable: prepare.nonOrientable,
+        maxTopologyEdges: prepare.maxTopologyEdges,
+        strategy: prepare.selfIntersections,
+        remeshResolution: prepare.remeshResolution,
+      };
+      const repaired = prepare.selfIntersections === 'none'
+        ? repairMesh(item, repairOptions)
+        : repairSelfIntersections(item, repairOptions);
       const validation = validateForFabrication(repaired.mesh);
       const closed = Boolean(validation.meta?.closed);
       candidates.push({
@@ -120,7 +129,11 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
       const operands = exportable.map((candidate) => (
         isSolid(candidate.geometry) ? candidate.geometry.boundary : candidate.geometry
       ));
-      const result = booleanSolids(prepare.boolean, operands, { tolerance: prepare.tolerance });
+      const result = booleanSolids(prepare.boolean, operands, {
+        tolerance: prepare.tolerance,
+        strategy: prepare.csgStrategy,
+        remeshResolution: prepare.remeshResolution,
+      });
       if (!result.ok) {
         source = null;
         booleanError = `Boolean ${prepare.boolean} failed: ${result.error?.message ?? 'unknown error'}`;
@@ -296,6 +309,12 @@ function normalizePreparation(raw) {
     boolean: ['none', 'union', 'difference', 'intersection'].includes(raw.boolean) ? raw.boolean : 'none',
     repair: raw.repair === true,
     capStrategy: ['auto', 'fan', 'planar', 'none'].includes(raw.capStrategy) ? raw.capStrategy : 'auto',
+    topology: ['none', 'split', 'remove'].includes(raw.topology) ? raw.topology : 'none',
+    nonOrientable: ['cut', 'reject'].includes(raw.nonOrientable) ? raw.nonOrientable : 'cut',
+    maxTopologyEdges: raw.maxTopologyEdges,
+    csgStrategy: ['auto', 'bsp', 'remesh'].includes(raw.csgStrategy) ? raw.csgStrategy : 'auto',
+    selfIntersections: ['none', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
+    remeshResolution: raw.remeshResolution,
   };
 }
 
@@ -327,9 +346,12 @@ function aggregateRepair(candidates) {
     'removedInvalidFaces', 'removedDegenerateFaces', 'removedDuplicateFaces',
     'weldedVertices', 'cappedLoops', 'planarCaps', 'fanCaps', 'fallbackCaps',
     'skippedLoops', 'flippedFaces', 'flippedShells', 'orientationContradictions',
+    'selfIntersectionPairs',
   ]) {
     report[key] = entries.reduce((sum, entry) => sum + (Number(entry[key]) || 0), 0);
   }
+  report.selfIntersectionStrategy = entries.find((entry) => entry.selfIntersectionStrategy && entry.selfIntersectionStrategy !== 'none')?.selfIntersectionStrategy ?? 'none';
+  report.remeshResolution = entries.find((entry) => entry.remeshResolution)?.remeshResolution ?? null;
   report.changed = entries.some((entry) => entry.changed);
   report.warnings = [...new Set(entries.flatMap((entry) => entry.warnings ?? []))];
   report.errors = [...new Set(entries.flatMap((entry) => entry.errors ?? []))];

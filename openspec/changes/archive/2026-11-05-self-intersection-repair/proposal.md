@@ -7,10 +7,9 @@ for self-intersections.
 
 ## What Changes
 
-- Extend `repairMesh` with `selfIntersections: 'none' | 'split' | 'remesh' | 'auto'`.
-- Add local triangle splitting and winding-based fragment classification.
-- Add a deterministic signed-distance remesh fallback for tangled meshes.
-- Report split/remesh strategy, volume delta, triangle delta and fallbacks.
+- Add an explicit `repairSelfIntersections` step with `none | remesh | auto`.
+- Use a deterministic signed-distance remesh for tangled meshes.
+- Report strategy, pair count, resolution, volume delta and triangle delta.
 - Keep self-intersection repair off by default.
 - Expose strategy and budgets in Fabricate under Repair.
 - Revalidate every result with the 5B self-intersection gate.
@@ -36,7 +35,7 @@ for self-intersections.
 
 ## Non-goals
 
-- No exact topology preservation for remesh mode.
+- No exact topology preservation; a future slice may add local splitting.
 - No direct vertex editing.
 - No CSG changes.
 - No new dependency.

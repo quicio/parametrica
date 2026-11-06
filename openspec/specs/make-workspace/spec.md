@@ -213,3 +213,90 @@ Fabricate SHALL expose explicit repair and cap strategy controls.
 - **THEN** export remains disabled
 - **AND** the remaining validation errors are shown
 
+### Requirement: Format selector
+
+Fabricate SHALL offer STL and 3MF export formats.
+
+#### Scenario: Default
+
+- **WHEN** the user opens Fabricate
+- **THEN** STL remains the default format
+
+#### Scenario: 3MF
+
+- **WHEN** the user selects 3MF and exports
+- **THEN** the download uses the `.3mf` extension
+- **AND** the report shows object and triangle counts
+
+#### Scenario: Shared source
+
+- **WHEN** the format changes
+- **THEN** the selected bodies, repair, CSG and units settings are unchanged
+
+### Requirement: Topology repair controls
+
+Fabricate SHALL expose topology repair under Repair.
+
+#### Scenario: Controls
+
+- **WHEN** Repair is enabled
+- **THEN** the panel offers non-manifold strategies and non-orientable handling
+- **AND** no topology repair runs by default
+
+#### Scenario: Report
+
+- **WHEN** topology repair runs
+- **THEN** the panel reports split edges, duplicated vertices, cuts, removals
+  and remaining errors
+
+#### Scenario: Failure
+
+- **WHEN** topology remains invalid or a closed non-orientable surface is
+  requested
+- **THEN** export remains disabled
+- **AND** the reason identifies the unsupported topology
+
+### Requirement: Self-intersection repair controls
+
+Fabricate SHALL expose self-intersection repair under Repair.
+
+#### Scenario: Controls
+
+- **WHEN** Repair is enabled
+- **THEN** the panel offers Off, Split, Remesh and Auto
+- **AND** Off remains the default
+
+#### Scenario: Report
+
+- **WHEN** the step runs
+- **THEN** the panel reports strategy, remaining pairs, fallbacks, resolution and
+  volume/triangle deltas
+
+#### Scenario: Failure
+
+- **WHEN** repair cannot resolve the mesh
+- **THEN** export remains disabled
+- **AND** the reason identifies remaining self-intersections or complexity
+
+### Requirement: CSG strategy controls
+
+Fabricate SHALL expose the robust CSG strategy.
+
+#### Scenario: Controls
+
+- **WHEN** a boolean recipe is selected
+- **THEN** Auto, BSP and Remesh are available
+- **AND** Auto remains the default
+
+#### Scenario: Report
+
+- **WHEN** a boolean runs
+- **THEN** the panel reports actual strategy, fallback, epsilon, splits, timing
+  and volume delta
+
+#### Scenario: Failure
+
+- **WHEN** all strategies fail
+- **THEN** export remains disabled
+- **AND** the reason identifies topology, complexity or remesh failure
+

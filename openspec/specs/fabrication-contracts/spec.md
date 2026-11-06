@@ -246,3 +246,67 @@ geometry.
 - **THEN** the exporter never cleans, caps, welds or reorients geometry
 - **AND** the validation failure remains visible
 
+### Requirement: 3MF body grouping
+
+3MF export SHALL preserve independent body identity.
+
+#### Scenario: Object per body
+
+- **WHEN** multiple bodies are exported
+- **THEN** one 3MF object is written per body
+- **AND** they are not merged into a single anonymous mesh
+
+#### Scenario: No material promise
+
+- **WHEN** the first 3MF slice is used
+- **THEN** no materials, colors or textures are written
+- **AND** the limitation is documented
+
+### Requirement: Topology-repaired source
+
+Fabrication SHALL validate topology-repaired geometry before export.
+
+#### Scenario: Repaired source
+
+- **WHEN** topology repair produces a mesh
+- **THEN** manifold, orientation, self-intersection and volume gates run again
+- **AND** the report identifies topology actions
+
+#### Scenario: Remaining topology errors
+
+- **WHEN** non-manifold edges or non-orientable topology remain
+- **THEN** STL export is rejected
+- **AND** no partial file is written
+
+### Requirement: Self-intersection-repaired source
+
+Fabrication SHALL validate self-intersection-repaired geometry before export.
+
+#### Scenario: Repaired source
+
+- **WHEN** self-intersection repair produces a mesh
+- **THEN** the self-intersection gate runs again
+- **AND** the report identifies the repair strategy
+
+#### Scenario: Remaining intersections
+
+- **WHEN** intersections remain
+- **THEN** STL export is rejected
+- **AND** no partial file is written
+
+### Requirement: Robust CSG source
+
+Fabrication SHALL validate robust CSG results before export.
+
+#### Scenario: Valid result
+
+- **WHEN** a robust CSG strategy produces geometry
+- **THEN** the standard fabrication gate runs again
+- **AND** the report identifies strategy, fallback and volume delta
+
+#### Scenario: Invalid or failed result
+
+- **WHEN** the result fails validation or all strategies fail
+- **THEN** STL/3MF export is rejected
+- **AND** no partial file is written
+

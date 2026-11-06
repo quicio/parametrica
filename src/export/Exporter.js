@@ -15,6 +15,7 @@ import { drawOverlays } from '../viz/overlays.js';
 import { SvgContext } from './svgContext.js';
 import { artboardToMillimetres, millimetresPerUnit } from '../core/units.js';
 import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
+import { export3MF, THREE_MF_MIME_TYPE } from './3mf.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
 import { resolvePassStyle } from '../render/passStyle.js';
 
@@ -257,11 +258,43 @@ export class Exporter {
     });
   }
 
+  build3MFFromCurrent() {
+    const doc = this.app.document;
+    const report = buildFabricationReport({
+      evaluation: this.app.evaluation,
+      layerIndex: doc.activeLayer ?? 0,
+      units: doc.view?.units ?? null,
+      preparation: doc.view?.fabrication ?? null,
+    });
+    if (!report.exportable || !report.source) {
+      throw new Error(report.reason ?? 'No validated closed Mesh/Solid to export');
+    }
+    const bodies = report.boolean || report.scope === 'single'
+      ? [report.source.geometry]
+      : report.candidates.filter((candidate) => candidate.exportable).map((candidate) => candidate.geometry);
+    return export3MF(bodies, {
+      units: doc.view?.units ?? null,
+      name: doc.name,
+    });
+  }
+
   exportSTL() {
     try {
       const result = this.buildSTLFromCurrent();
       downloadBytes(`parametrica-${timestamp()}.stl`, result.data, STL_MIME_TYPE);
       this.app.notify?.(`Exported STL · ${result.triangles} triangles · ${result.unit}`);
+      return result;
+    } catch (error) {
+      this.app.notify?.(error.message, 'error');
+      return null;
+    }
+  }
+
+  export3MF() {
+    try {
+      const result = this.build3MFFromCurrent();
+      downloadBytes(`parametrica-${timestamp()}.3mf`, result.data, THREE_MF_MIME_TYPE);
+      this.app.notify?.(`Exported 3MF · ${result.objects} objects · ${result.triangles} triangles · ${result.unit}`);
       return result;
     } catch (error) {
       this.app.notify?.(error.message, 'error');

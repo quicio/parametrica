@@ -62,6 +62,10 @@ export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvatu
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
 export const FABRICATION_SCOPES = Object.freeze(['single', 'active-layer', 'composition']);
 export const FABRICATION_BOOLEANS = Object.freeze(['none', 'union', 'difference', 'intersection']);
+export const FABRICATION_FORMATS = Object.freeze(['stl', '3mf']);
+export const FABRICATION_TOPOLOGY = Object.freeze(['none', 'split', 'remove']);
+export const FABRICATION_NON_ORIENTABLE = Object.freeze(['cut', 'reject']);
+export const FABRICATION_CSG_STRATEGIES = Object.freeze(['auto', 'bsp', 'remesh']);
 export const DEFAULT_FABRICATION = Object.freeze({
   weld: false,
   cap: false,
@@ -71,6 +75,12 @@ export const DEFAULT_FABRICATION = Object.freeze({
   boolean: 'none',
   repair: false,
   capStrategy: 'auto',
+  format: 'stl',
+  topology: 'none',
+  nonOrientable: 'cut',
+  csgStrategy: 'auto',
+  selfIntersections: 'none',
+  remeshResolution: 64,
 });
 
 export function sanitizeFabricationSettings(raw) {
@@ -92,6 +102,14 @@ export function sanitizeFabricationSettings(raw) {
       : (FABRICATION_BOOLEANS.includes(source.boolean) ? source.boolean : DEFAULT_FABRICATION.boolean),
     repair: source.repair === true,
     capStrategy: CAP_STRATEGIES.includes(source.capStrategy) ? source.capStrategy : DEFAULT_FABRICATION.capStrategy,
+    format: FABRICATION_FORMATS.includes(source.format) ? source.format : DEFAULT_FABRICATION.format,
+    topology: FABRICATION_TOPOLOGY.includes(source.topology) ? source.topology : DEFAULT_FABRICATION.topology,
+    nonOrientable: FABRICATION_NON_ORIENTABLE.includes(source.nonOrientable) ? source.nonOrientable : DEFAULT_FABRICATION.nonOrientable,
+    csgStrategy: FABRICATION_CSG_STRATEGIES.includes(source.csgStrategy) ? source.csgStrategy : DEFAULT_FABRICATION.csgStrategy,
+    selfIntersections: ['none', 'remesh', 'auto'].includes(source.selfIntersections) ? source.selfIntersections : DEFAULT_FABRICATION.selfIntersections,
+    remeshResolution: Number.isFinite(Number(source.remeshResolution))
+      ? Math.min(Math.max(Math.floor(Number(source.remeshResolution)), 16), 192)
+      : DEFAULT_FABRICATION.remeshResolution,
   };
 }
 

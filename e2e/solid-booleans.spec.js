@@ -61,7 +61,8 @@ test('Fabricate applies explicit union, difference and empty intersection', asyn
   await boolean.selectOption('union');
   await page.waitForTimeout(900);
   await expect(status).toContainText('READY · union result');
-  await expect(booleanStatus).toHaveText('union · 2 operands');
+  await expect(booleanStatus).toContainText('union · 2 operands');
+  await expect(booleanStatus).toContainText('bsp');
   await expect(bodies).toHaveText('1');
   await expect(reason).toContainText('union of 2 bodies');
   await expect(exportButton).toBeEnabled();
@@ -76,7 +77,7 @@ test('Fabricate applies explicit union, difference and empty intersection', asyn
   await boolean.selectOption('difference');
   await page.waitForTimeout(900);
   await expect(status).toContainText('READY · difference result');
-  await expect(booleanStatus).toHaveText('difference · 2 operands');
+  await expect(booleanStatus).toContainText('difference · 2 operands');
   await expect(reason).toContainText('difference of 2 bodies');
   const differenceVolume = await page.evaluate(() => window.__parametrica.exporter.buildSTLFromCurrent().volume);
   expect(differenceVolume).toBeGreaterThan(0);

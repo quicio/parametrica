@@ -9,6 +9,7 @@
 import { createMesh } from './contracts.js';
 import { boundaryLoops, weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
+import { repairTopology } from './topologyRepair.js';
 
 export const DEFAULT_REPAIR_TOLERANCE = 1e-4;
 export const DEFAULT_CAP_STRATEGY = 'auto';
@@ -23,6 +24,9 @@ export function repairMesh(mesh, {
   maxHoleEdges = 256,
   capStrategy = DEFAULT_CAP_STRATEGY,
   orient = true,
+  topology = 'none',
+  nonOrientable = 'cut',
+  maxTopologyEdges = 4096,
 } = {}) {
   const eps = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : DEFAULT_REPAIR_TOLERANCE;
   const strategy = CAP_STRATEGIES.includes(capStrategy) ? capStrategy : DEFAULT_CAP_STRATEGY;
@@ -39,6 +43,24 @@ export function repairMesh(mesh, {
   const cleaned = cleanupMesh(current, eps);
   current = cleaned.mesh;
   mergeReport(report, cleaned.report);
+
+  if (topology !== 'none') {
+    const repaired = repairTopology(current, {
+      tolerance: eps,
+      nonManifold: topology,
+      nonOrientable,
+      maxEdges: maxTopologyEdges,
+    });
+    mergeReport(report, repaired.report);
+    if (!repaired.mesh) {
+      return {
+        mesh: null,
+        validation: repaired.validation,
+        report: { ...report, errors: repaired.validation?.errors ?? repaired.report.errors ?? [] },
+      };
+    }
+    current = repaired.mesh;
+  }
 
   if (strategy !== 'none') {
     const capped = capWithStrategy(current, {
@@ -557,6 +579,12 @@ function emptyReport(strategy = DEFAULT_CAP_STRATEGY) {
     flippedFaces: 0,
     flippedShells: 0,
     orientationContradictions: 0,
+    topologyNonManifoldEdges: 0,
+    topologySplitEdges: 0,
+    topologyRemovedFaces: 0,
+    topologyDuplicatedVertices: 0,
+    topologyCuts: 0,
+    topologyNonOrientable: false,
     warnings: [],
     errors: [],
   };
@@ -567,9 +595,19 @@ function mergeReport(target, source) {
     'removedInvalidFaces', 'removedDegenerateFaces', 'removedDuplicateFaces',
     'weldedVertices', 'cappedLoops', 'planarCaps', 'fanCaps', 'fallbackCaps',
     'skippedLoops', 'flippedFaces', 'flippedShells', 'orientationContradictions',
+    'nonManifoldEdges', 'splitEdges', 'topologyRemovedFaces', 'duplicatedVertices',
+    'cuts', 'orientationConflicts',
   ]) {
-    target[key] += Number(source[key]) || 0;
+    const targetKey = key === 'nonManifoldEdges' ? 'topologyNonManifoldEdges'
+      : key === 'splitEdges' ? 'topologySplitEdges'
+        : key === 'topologyRemovedFaces' ? 'topologyRemovedFaces'
+          : key === 'duplicatedVertices' ? 'topologyDuplicatedVertices'
+            : key === 'cuts' ? 'topologyCuts'
+              : key === 'orientationConflicts' ? 'orientationContradictions'
+                : key;
+    target[targetKey] += Number(source[key]) || 0;
   }
+  if (source.nonOrientable) target.topologyNonOrientable = true;
   target.warnings.push(...(source.warnings ?? []));
   target.errors.push(...(source.errors ?? []));
 }
@@ -583,7 +621,11 @@ function actionCount(report) {
     + report.flippedFaces
     + report.flippedShells
     + report.orientationContradictions
-    + report.skippedLoops;
+    + report.skippedLoops
+    + report.topologySplitEdges
+    + report.topologyRemovedFaces
+    + report.topologyDuplicatedVertices
+    + report.topologyCuts;
 }
 
 function faceArea(vertices, face) {

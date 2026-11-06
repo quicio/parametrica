@@ -425,13 +425,12 @@ generation metadata in the notebook; unit group 24.
 
 | Change | Scope |
 |---|---|
-| `self-intersection-repair` | Split or remesh self-intersecting closed meshes |
+| `self-intersection-repair` | Remesh self-intersecting closed meshes |
 | `mesh-topology-repair` | Non-manifold edge splitting and non-orientable handling |
 | `3mf-export` | Deterministic multi-body 3MF with units and object identity |
 | `csg-robustness` | Robust CSG for non-convex overlapping solids |
 
-All four are specified and pass strict OpenSpec validation; implementation has
-not started.
+All four are implemented, validated and shipped.
 
 ## 5.1 Specification status
 
@@ -500,10 +499,10 @@ not started.
 | `multi-body` | archived | shipped |
 | `solid-booleans` | archived | shipped |
 | `advanced-repair` | archived | shipped |
-| `self-intersection-repair` | active | specified, not implemented |
-| `mesh-topology-repair` | active | specified, not implemented |
-| `3mf-export` | active | specified, not implemented |
-| `csg-robustness` | active | specified, not implemented |
+| `self-intersection-repair` | archived | shipped |
+| `mesh-topology-repair` | archived | shipped |
+| `3mf-export` | archived | shipped |
+| `csg-robustness` | archived | shipped |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

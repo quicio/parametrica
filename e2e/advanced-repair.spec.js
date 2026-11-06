@@ -83,3 +83,48 @@ test('Fabricate repairs an open surface explicitly and reports actions', async (
   await expect(repairStatus).toHaveText('off');
   await expect(exportButton).toBeDisabled();
 });
+
+test('Fabricate exposes topology repair controls without changing a clean solid', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    app.applyPreset('Torus');
+    app.document.view.units = {
+      world: 'mm',
+      mmPerWorldUnit: 1,
+      artboard: 'unitless',
+      mmPerArtboardUnit: null,
+    };
+    app.rebuild();
+  });
+  await page.waitForTimeout(600);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  const repair = fabricate.locator('.fabricate-repair');
+  const topology = fabricate.locator('.fabricate-topology');
+  const nonOrientable = fabricate.locator('.fabricate-nonorientable');
+  const status = fabricate.locator('.fabricate-status');
+  const repairStatus = fabricate.locator('.fabricate-repair-status');
+
+  await expect(topology).toBeDisabled();
+  await expect(nonOrientable).toBeDisabled();
+  await expect(topology).toHaveValue('none');
+  await repair.check();
+  await page.waitForTimeout(700);
+  await expect(topology).toBeEnabled();
+  await expect(nonOrientable).toBeEnabled();
+  await topology.selectOption('split');
+  await nonOrientable.selectOption('cut');
+  await page.waitForTimeout(700);
+  await expect(status).toContainText('READY · repaired closed body');
+  await expect(repairStatus).toHaveText('no changes');
+  expect(await page.evaluate(() => ({
+    topology: window.__parametrica.document.view.fabrication.topology,
+    nonOrientable: window.__parametrica.document.view.fabrication.nonOrientable,
+  }))).toEqual({ topology: 'split', nonOrientable: 'cut' });
+
+  await repair.uncheck();
+  await page.waitForTimeout(500);
+  await expect(topology).toBeDisabled();
+  await expect(nonOrientable).toBeDisabled();
+});

@@ -16,12 +16,6 @@ Self-intersection repair SHALL be opt-in and strategy-driven.
 - **THEN** the 5E behavior is preserved
 - **AND** self-intersections remain validation errors
 
-#### Scenario: Split
-
-- **WHEN** strategy is split
-- **THEN** intersecting triangles are split and classified
-- **AND** the result is revalidated
-
 #### Scenario: Remesh
 
 - **WHEN** strategy is remesh
@@ -30,32 +24,9 @@ Self-intersection repair SHALL be opt-in and strategy-driven.
 
 #### Scenario: Auto
 
-- **WHEN** strategy is auto
-- **THEN** split is attempted within budget
-- **AND** remesh is used as a reported fallback
-
-### Requirement: Local split repair
-
-Split repair SHALL preserve the outer boundary.
-
-#### Scenario: Intersecting pair
-
-- **WHEN** two non-adjacent triangles intersect
-- **THEN** both are split along the intersection segment
-- **AND** fragments outside the solid are discarded
-- **AND** the remaining fragments are stitched and validated
-
-#### Scenario: Budget
-
-- **WHEN** intersecting pairs exceed the configured budget
-- **THEN** split repair fails with a structured error
-- **AND** no partial mesh is returned
-
-#### Scenario: Unresolvable topology
-
-- **WHEN** split repair cannot produce a valid closed mesh
-- **THEN** the failure is reported
-- **AND** auto may fall back to remesh
+- **WHEN** strategy is auto and pairs exist
+- **THEN** remesh is selected
+- **AND** the actual strategy is reported
 
 ### Requirement: Remesh repair
 

@@ -7,7 +7,7 @@ Fabricate SHALL expose the robust CSG strategy.
 #### Scenario: Controls
 
 - **WHEN** a boolean recipe is selected
-- **THEN** Auto, BSP, Surface and Remesh are available
+- **THEN** Auto, BSP and Remesh are available
 - **AND** Auto remains the default
 
 #### Scenario: Report

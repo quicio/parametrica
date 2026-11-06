@@ -9,6 +9,7 @@
 import { createMesh, isMesh, isSolid } from './contracts.js';
 import { weldMesh } from './solidPrep.js';
 import { validateMesh } from './validate.js';
+import { remesh } from './remesh.js';
 
 export const CSG_OPERATIONS = Object.freeze(['union', 'difference', 'intersection']);
 export const CSG_DEFAULT_TOLERANCE = 1e-4;
@@ -37,6 +38,8 @@ export function booleanSolids(operation, operands, {
   maxDepth = 4096,
   maxPolygons = 250_000,
   maxInputTriangles = 50_000,
+  strategy = 'auto',
+  remeshResolution = 64,
 } = {}) {
   const eps = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : CSG_DEFAULT_TOLERANCE;
   const stats = {
@@ -48,6 +51,10 @@ export function booleanSolids(operation, operands, {
     splits: 0,
     depth: 0,
     tolerance: eps,
+    requestedStrategy: strategy,
+    strategy: strategy === 'auto' ? 'bsp' : strategy,
+    fallback: null,
+    remeshResolution: null,
   };
   if (!CSG_OPERATIONS.includes(operation)) {
     return failure('invalid-operation', `unsupported boolean operation "${operation}"`, stats);
@@ -85,6 +92,10 @@ export function booleanSolids(operation, operands, {
     );
   }
 
+  if (strategy === 'remesh') {
+    return booleanRemesh(operation, meshes, { remeshResolution, tolerance: eps, stats });
+  }
+
   const budget = { splits: 0, maxPolygons, maxDepth, depth: 0 };
   try {
     let polygons = toPolygons(meshes[0]);
@@ -116,6 +127,14 @@ export function booleanSolids(operation, operands, {
       validation = validateMesh(mesh);
     }
     if (!validation.ok) {
+      if (strategy === 'auto') {
+        return booleanRemesh(operation, meshes, {
+          remeshResolution,
+          tolerance: eps,
+          stats,
+          fallback: 'bsp-invalid',
+        });
+      }
       return failure('invalid-result', validation.errors[0] ?? 'boolean result failed validation', stats, validation);
     }
     const volume = validation.meta?.volume;
@@ -131,8 +150,42 @@ export function booleanSolids(operation, operands, {
     stats.outputTriangles = mesh.faces.length;
     return { ok: true, empty: false, geometry: mesh, validation, stats };
   } catch (error) {
+    if (strategy === 'auto') {
+      return booleanRemesh(operation, meshes, {
+        remeshResolution,
+        tolerance: eps,
+        stats,
+        fallback: error.code ?? 'bsp-failed',
+      });
+    }
     return failure(error.code ?? 'invalid-result', error.message ?? String(error), stats);
   }
+}
+
+function booleanRemesh(operation, meshes, { remeshResolution, tolerance, stats, fallback = null }) {
+  const result = remesh(meshes, {
+    operation,
+    resolution: remeshResolution,
+    tolerance,
+  });
+  stats.strategy = 'remesh';
+  stats.fallback = fallback;
+  stats.remeshResolution = remeshResolution;
+  if (!result.ok) {
+    return failure(result.error?.code ?? 'remesh-failed', result.error?.message ?? 'remesh failed', stats);
+  }
+  if (result.empty) {
+    return { ok: true, empty: true, geometry: null, validation: null, stats };
+  }
+  stats.outputTriangles = result.mesh.faces.length;
+  stats.outputPolygons = result.mesh.faces.length;
+  return {
+    ok: true,
+    empty: false,
+    geometry: result.mesh,
+    validation: result.validation,
+    stats,
+  };
 }
 
 function combine(operation, a, b) {

@@ -11,7 +11,7 @@ closed, manifold, oriented, self-intersection-free, positive volume.
 
 ```js
 booleanSolids(operation, operands, {
-  strategy: 'auto' | 'bsp' | 'surface' | 'remesh',
+  strategy: 'auto' | 'bsp' | 'remesh',
   tolerance: 'auto' | number,
   maxInputTriangles = 50_000,
   maxDepth = 4096,
@@ -39,22 +39,7 @@ Return adds:
   magnitude is large, to reduce catastrophic cancellation.
 - Record the actual eps in stats.
 
-### D3: Surface strategy
-
-For each triangle pair that intersects:
-
-1. Compute the intersection segment/surface curve.
-2. Split both triangles along the segment.
-3. Classify fragments with a robust generalized winding number or parity test.
-4. Keep the fragments selected by the operation.
-5. Stitch, weld, resolve T-junctions, orient and validate.
-
-Coplanar overlapping triangles are handled by projecting to the shared plane and
-using polygon clipping before classification.
-
-This strategy targets non-convex operands without building a global BSP tree.
-
-### D4: Remesh fallback
+### D3: Remesh strategy
 
 If surface splitting exceeds budgets or leaves invalid topology:
 
@@ -65,25 +50,21 @@ If surface splitting exceeds budgets or leaves invalid topology:
 
 The result is approximate; exact feature preservation is not promised.
 
-### D5: Auto strategy
+### D4: Auto strategy
 
 - Convex/well-conditioned operands: `bsp`.
-- Non-convex or high-split BSP: `surface`.
-- Surface failure/complexity: `remesh`.
+- If BSP returns invalid topology or complexity: `remesh`.
 - If remesh fails: structured failure.
 - The actual strategy and fallback are always reported.
 
-Convexity can be estimated with a hull/volume or normal-cone test; the spec
-requires a deterministic estimator, not a specific implementation.
-
-### D6: Validation and repair integration
+### D5: Validation and repair integration
 
 - Every result re-runs `validateMesh` (including self-intersection).
 - Run T-junction resolution and orientation repair before validation.
 - Do not silently cap or fill holes unless the selected repair options say so.
 - Failed results return no geometry.
 
-### D7: Fabricate
+### D6: Fabricate
 
 Add `view.fabrication.csgStrategy` (`auto` default). The Boolean controls show
 strategy and fallback in the report. Changing strategy does not change selected
@@ -100,11 +81,12 @@ bodies, repair or units.
 
 ### Robustness
 
-- Overlapping full-resolution tori: union, difference, intersection all valid.
+- Overlapping full-resolution tori: union, difference, intersection all valid
+  through the remesh path.
 - Two overlapping spheres at multiple offsets.
 - Torus+cube overlapping and nested.
 - Highly non-convex preset pairs (Enneper, Helicoid) where operands are valid.
-- Volume compared to a Monte Carlo estimate within 2%.
+- Volume consistency: union + intersection ≈ 2 × body volume within 2%.
 - Repeated runs deterministic.
 - Strategy fallback reported.
 - Performance: cube/sphere under 2s, tori under 10s on reference hardware.

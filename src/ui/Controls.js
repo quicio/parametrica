@@ -540,7 +540,25 @@ export class Controls {
       els.capStrategy.value = preparation.capStrategy ?? 'auto';
       els.capStrategy.disabled = preparation.repair !== true;
     }
+    if (els.topology) {
+      els.topology.value = preparation.topology ?? 'none';
+      els.topology.disabled = preparation.repair !== true;
+    }
+    if (els.nonOrientable) {
+      els.nonOrientable.value = preparation.nonOrientable ?? 'cut';
+      els.nonOrientable.disabled = preparation.repair !== true;
+    }
+    if (els.selfIntersections) {
+      els.selfIntersections.value = preparation.selfIntersections ?? 'none';
+      els.selfIntersections.disabled = preparation.repair !== true;
+    }
+    if (els.remeshResolution) {
+      els.remeshResolution.value = String(preparation.remeshResolution ?? 64);
+      els.remeshResolution.disabled = preparation.repair !== true
+        || (preparation.selfIntersections ?? 'none') === 'none';
+    }
     if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
+    if (els.formatSelect) els.formatSelect.value = preparation.format === '3mf' ? '3mf' : 'stl';
     if (els.booleanSelect) {
       els.booleanSelect.value = report.scope === 'single' ? 'none' : (report.boolean?.operation ?? preparation.boolean ?? 'none');
       els.booleanSelect.disabled = report.scope === 'single' || (report.closed ?? 0) < 2;
@@ -549,6 +567,10 @@ export class Controls {
           option.disabled = (report.closed ?? 0) < 2;
         }
       }
+    }
+    if (els.csgSelect) {
+      els.csgSelect.value = preparation.csgStrategy ?? 'auto';
+      els.csgSelect.disabled = report.scope === 'single' || (report.boolean?.operation ?? 'none') === 'none';
     }
     const ready = Boolean(report.exportable);
     const state = ready
@@ -579,10 +601,11 @@ export class Controls {
           ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
           : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
+    const formatLabel = preparation.format === '3mf' ? '3MF' : 'Binary STL';
     els.reason.textContent = report.reason ?? (ready
       ? report.boolean
-        ? `Binary STL · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
-        : `Binary STL · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+        ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+        : `${formatLabel} · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
       : report.candidates.length && (preparation.weld || preparation.cap)
         ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
         : 'Enable Weld or Cap to prepare an open mesh, or select a validated body.');
@@ -590,9 +613,14 @@ export class Controls {
     els.triangles.textContent = report.source ? String(report.triangles) : '—';
     els.vertices.textContent = report.source ? String(report.vertices) : '—';
     if (els.bodies) els.bodies.textContent = String(report.bodies ?? 0);
+    if (els.objects) {
+      const objects = report.boolean ? 1 : (report.scope === 'single' ? 1 : (report.closed ?? 0));
+      els.objects.textContent = String(objects);
+    }
     if (els.boolean) {
+      const stats = report.boolean?.stats;
       els.boolean.textContent = report.boolean
-        ? `${report.boolean.operation} · ${report.boolean.operands} operands`
+        ? `${report.boolean.operation} · ${report.boolean.operands} operands · ${stats?.strategy ?? 'bsp'}${stats?.fallback ? ` (${stats.fallback})` : ''}`
         : (report.booleanEmpty ? 'empty' : 'none');
     }
 
@@ -642,6 +670,15 @@ export class Controls {
         if (repair.fallbackCaps) actions.push(`${repair.fallbackCaps} fan fallbacks`);
         if (repair.skippedLoops) actions.push(`${repair.skippedLoops} holes skipped`);
         if (repair.orientationContradictions) actions.push(`${repair.orientationContradictions} orientation conflicts`);
+        if (repair.topologySplitEdges) actions.push(`${repair.topologySplitEdges} edges split`);
+        if (repair.topologyDuplicatedVertices) actions.push(`${repair.topologyDuplicatedVertices} vertices duplicated`);
+        if (repair.topologyCuts) actions.push(`${repair.topologyCuts} seam cuts`);
+        if (repair.topologyRemovedFaces) actions.push(`${repair.topologyRemovedFaces} topology faces removed`);
+        if (repair.topologyNonOrientable) actions.push('non-orientable topology');
+        if (repair.selfIntersectionPairs) actions.push(`${repair.selfIntersectionPairs} self-intersecting pairs`);
+        if (repair.selfIntersectionStrategy && repair.selfIntersectionStrategy !== 'none') {
+          actions.push(`self-intersections ${repair.selfIntersectionStrategy}${repair.remeshResolution ? ` @${repair.remeshResolution}` : ''}`);
+        }
       }
       els.repairStatus.textContent = repair
         ? (actions.length ? actions.join(' · ') : 'no changes')
@@ -660,8 +697,10 @@ export class Controls {
         : '';
 
     els.exportButton.disabled = !ready;
+    const format = preparation.format === '3mf' ? '3MF' : 'STL';
+    els.exportButton.textContent = `EXPORT ${format}`;
     els.exportButton.title = ready
-      ? 'Write one binary STL in millimetres'
+      ? `Write ${format === '3MF' ? 'one 3MF package with separate objects' : 'one binary STL'} in millimetres`
       : (report.reason ?? 'Select a validated closed Mesh/Solid');
   }
 

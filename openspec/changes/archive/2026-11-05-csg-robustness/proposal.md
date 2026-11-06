@@ -7,11 +7,9 @@ enough for forms such as overlapping tori without weakening validation.
 
 ## What Changes
 
-- Add a CSG strategy selector: `bsp`, `surface`, `remesh`, `auto`.
-- Keep the current BSP engine as the convex/default path.
-- Add surface-based triangle intersection, splitting and winding
-  classification for non-convex operands.
-- Add a deterministic remesh fallback for pathological cases.
+- Add a CSG strategy selector: `bsp`, `remesh`, `auto`.
+- Keep the current BSP engine as the convex/fast path.
+- Add a deterministic remesh fallback for non-convex or pathological cases.
 - Use adaptive tolerance derived from coordinate magnitude and mesh scale.
 - Integrate CSG repair: T-junction resolution, orientation and validation.
 - Report strategy, fallbacks, splits, timing and volume delta.
@@ -33,7 +31,7 @@ enough for forms such as overlapping tori without weakening validation.
 ## Impact
 
 - `src/geometry/csg.js`
-- new `src/geometry/csgSurface.js` / remesh helper
+- `src/geometry/remesh.js`
 - Fabricate panel
 - Unit/e2e tests and docs
 

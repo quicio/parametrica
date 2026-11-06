@@ -136,3 +136,37 @@ Repair SHALL return a structured report.
 - **THEN** the validation errors are returned
 - **AND** no invalid geometry is silently accepted
 
+### Requirement: Topology repair step
+
+Advanced repair SHALL optionally run topology repair before orientation/caps.
+
+#### Scenario: Order
+
+- **WHEN** topology repair is enabled
+- **THEN** non-manifold splitting and seam cutting run before orientation and
+  caps
+- **AND** the final result is validated
+
+#### Scenario: Report
+
+- **WHEN** topology repair changes the mesh
+- **THEN** its actions are merged into the repair report
+- **AND** failures remain structured
+
+### Requirement: Self-intersection repair step
+
+Advanced repair SHALL optionally resolve self-intersections.
+
+#### Scenario: Order
+
+- **WHEN** self-intersection repair is requested
+- **THEN** it runs after cleanup/weld and before final orientation/cap
+- **AND** the final result is validated
+
+#### Scenario: Report
+
+- **WHEN** the step runs
+- **THEN** strategy, pairs, split faces, remesh fallback, resolution and
+  volume/triangle deltas are reported
+- **AND** failures are returned as structured errors
+

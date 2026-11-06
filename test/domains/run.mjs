@@ -14,6 +14,10 @@ import { run as selfIntersection } from './self-intersection.test.mjs';
 import { run as multiBody } from './multi-body.test.mjs';
 import { run as solidBooleans } from './solid-booleans.test.mjs';
 import { run as advancedRepair } from './advanced-repair.test.mjs';
+import { run as threeMf } from './3mf-export.test.mjs';
+import { run as topologyRepair } from './topology-repair.test.mjs';
+import { run as selfIntersectionRepair } from './self-intersection-repair.test.mjs';
+import { run as csgRobustness } from './csg-robustness.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -35,6 +39,10 @@ selfIntersection(assert);
 multiBody(assert);
 solidBooleans(assert);
 advancedRepair(assert);
+threeMf(assert);
+topologyRepair(assert);
+selfIntersectionRepair(assert);
+csgRobustness(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);
