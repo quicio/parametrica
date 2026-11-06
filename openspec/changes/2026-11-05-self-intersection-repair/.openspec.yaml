@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Specify deterministic self-intersection repair through triangle splitting or signed-distance remeshing, with explicit limits and validation.

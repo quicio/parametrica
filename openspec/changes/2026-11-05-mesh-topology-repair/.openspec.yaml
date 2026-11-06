@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Specify non-manifold edge splitting and non-orientable topology handling with explicit reports and no silent fabrication.

@@ -421,6 +421,18 @@ generation metadata in the notebook; unit group 24.
 
 ---
 
+### Phase 6 — Robustness and interchange (specified, not implemented)
+
+| Change | Scope |
+|---|---|
+| `self-intersection-repair` | Split or remesh self-intersecting closed meshes |
+| `mesh-topology-repair` | Non-manifold edge splitting and non-orientable handling |
+| `3mf-export` | Deterministic multi-body 3MF with units and object identity |
+| `csg-robustness` | Robust CSG for non-convex overlapping solids |
+
+All four are specified and pass strict OpenSpec validation; implementation has
+not started.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -488,6 +500,10 @@ generation metadata in the notebook; unit group 24.
 | `multi-body` | archived | shipped |
 | `solid-booleans` | archived | shipped |
 | `advanced-repair` | archived | shipped |
+| `self-intersection-repair` | active | specified, not implemented |
+| `mesh-topology-repair` | active | specified, not implemented |
+| `3mf-export` | active | specified, not implemented |
+| `csg-robustness` | active | specified, not implemented |
 
 A “specified” change has complete proposal/spec/design/tasks artifacts and
 passes `openspec validate`; implementation has not started.

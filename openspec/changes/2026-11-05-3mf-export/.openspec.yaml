@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-05
+goal: Specify a deterministic minimal 3MF exporter for one or more validated bodies, with units, stable packaging and no materials in the first slice.
