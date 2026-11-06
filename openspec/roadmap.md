@@ -463,6 +463,11 @@ adds a plan summary, quality presets, suggested resolution and a next action.
 `fabricate-presets` adds a curated Fabricate category: ready solid, multi-body,
 boolean union/difference, cap repair, SDF repair and a non-orientable challenge.
 
+### Phase 13 — Hollow vase example (shipped)
+
+`vase-200-preset` adds a 200 mm hollow vase with a 2.5 mm solid wall, built from
+outer/inner surfaces and Manifold difference.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -537,6 +542,7 @@ boolean union/difference, cap repair, SDF repair and a non-orientable challenge.
 | `fabrication-worker` | archived | shipped |
 | `fabricate-workflow` | archived | shipped |
 | `fabricate-presets` | archived | shipped |
+| `vase-200-preset` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

@@ -17,6 +17,7 @@ const PRESETS = [
   'Boolean Difference',
   'Cap Catenoid',
   'SDF Enneper',
+  'Solid Vase 200',
 ];
 
 export async function run(assert) {
@@ -70,6 +71,18 @@ export async function run(assert) {
     preparation: BUILT_IN_PRESETS['SDF Enneper']().view.fabrication,
   });
   assert(sdf.repair?.selfIntersectionStrategy === 'sdf', 'SDF Enneper reports the SDF strategy');
+
+  const vaseDoc = BUILT_IN_PRESETS['Solid Vase 200']();
+  const vaseReport = buildFabricationReport({
+    evaluation: evaluateDocument(vaseDoc, { time: 0 }),
+    layerIndex: 0,
+    units: vaseDoc.view.units,
+    preparation: vaseDoc.view.fabrication,
+  });
+  assert(vaseReport.exportable === true, 'Solid Vase 200 is exportable');
+  assert(Math.abs(vaseReport.bbox.depth - 200) < 1, 'Solid Vase 200 is 200 mm tall');
+  assert(vaseReport.bbox.width > 170 && vaseReport.bbox.width < 180, 'Solid Vase 200 is about 175 mm wide');
+  assert(vaseReport.triangles > 0 && vaseReport.volume > 0, 'Solid Vase 200 has positive fabrication geometry');
 
   const challenge = BUILT_IN_PRESETS['Möbius Challenge']();
   const challengeReport = buildFabricationReport({

@@ -5,7 +5,7 @@
  * operator stack. They are families to explore, not logos to admire.
  */
 
-import { createDocument, createInstanceLayer } from '../core/document.js';
+import { createDocument, createLayer, createInstanceLayer } from '../core/document.js';
 
 const PI = Math.PI;
 
@@ -63,6 +63,26 @@ function fabricateTorus(name, params = {}, view = {}) {
     name,
     generator: { params: { ...TORUS_PARAMS, ...params } },
     view: fabricateView(view),
+  });
+}
+
+const VASE_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';
+
+function vaseSurface(profile, zExpression, name) {
+  return createLayer('parametric-surface', {
+    name,
+    generator: {
+      params: {
+        exprX: `(${profile})*cos(u)`,
+        exprY: `(${profile})*sin(u)`,
+        exprZ: zExpression,
+        u0: 0, u1: 2 * PI,
+        v0: 0, v1: 1,
+        samplesU: 96, samplesV: 64,
+        closedU: true, closedV: false,
+        fit: 340,
+      },
+    },
   });
 }
 
@@ -457,6 +477,46 @@ export const BUILT_IN_PRESETS = {
       },
     }),
   }),
+
+  'Solid Vase 200': () => {
+    const doc = createDocument('parametric-surface', {
+      name: 'Solid Vase 200',
+      generator: {
+        params: {
+          exprX: `(${VASE_PROFILE})*cos(u)`,
+          exprY: `(${VASE_PROFILE})*sin(u)`,
+          exprZ: '200*v',
+          u0: 0, u1: 2 * PI,
+          v0: 0, v1: 1,
+          samplesU: 96, samplesV: 64,
+          closedU: true, closedV: false,
+          fit: 340,
+        },
+      },
+      view: fabricateView({
+        units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
+        fabrication: {
+          format: 'stl',
+          quality: 'standard',
+          scope: 'composition',
+          boolean: 'difference',
+          csgStrategy: 'manifold',
+          repair: true,
+          weld: true,
+          cap: true,
+          capStrategy: 'auto',
+          tolerance: 1e-4,
+          maxHoleEdges: 512,
+        },
+      }),
+    });
+    doc.layers[0].name = 'Outer shell';
+    const inner = vaseSurface(`${VASE_PROFILE} - 2.5`, '3 + 207*v', 'Inner shell');
+    inner.style = doc.layers[0].style;
+    doc.layers.push(inner);
+    doc.activeLayer = 0;
+    return doc;
+  },
 
   // ——— Parametric surfaces ———
 

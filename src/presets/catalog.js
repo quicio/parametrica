@@ -228,6 +228,11 @@ export const PRESET_META = {
     description: 'Non-orientable, open example for exploring repair limits and next-action guidance.',
     tags: ['fabricate', 'topology', 'non-orientable', 'challenge'],
   },
+  'Solid Vase 200': {
+    category: 'fabricate',
+    description: 'Hollow vase of revolution: 200 mm tall, 175 mm diameter, 135 mm mouth, 2.5 mm wall.',
+    tags: ['fabricate', 'vase', 'solid', 'wall', 'boolean', 'difference'],
+  },
 
   /* ——— Compositions ——— */
   'Vortex Stack': {

@@ -12,6 +12,7 @@ fabrication controls without manual setup.
 | **Cap Catenoid** | Open surface + Repair + automatic caps |
 | **SDF Enneper** | Self-intersection repair through Manifold SDF |
 | **Möbius Challenge** | Non-orientable/open limits and next-action guidance |
+| **Solid Vase 200** | Hollow vase of revolution: 200 mm tall, ~175 mm diameter, ~135 mm mouth, 2.5 mm solid wall |
 
 ## Defaults
 
@@ -28,6 +29,7 @@ Every example sets:
 - **Boolean Union / Difference**: Manifold strategy; one body.
 - **Cap Catenoid**: Repair + caps; exportable.
 - **SDF Enneper**: SDF strategy; exportable after the worker finishes.
+- **Solid Vase 200**: exportable hollow shell; outer and inner surfaces capped and subtracted with Manifold.
 - **Möbius Challenge**: intentionally blocked. It demonstrates the validation
   and next-action guidance instead of pretending the mesh is fabricable.
 
