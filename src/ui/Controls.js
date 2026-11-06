@@ -527,8 +527,19 @@ export class Controls {
       : '';
     els.scaleInput.placeholder = units.world === 'unitless' ? 'set mm/unit' : 'mm per world unit';
     const preparation = doc.view?.fabrication ?? {};
-    if (els.weld) els.weld.checked = preparation.weld === true;
-    if (els.cap) els.cap.checked = preparation.cap === true;
+    if (els.weld) {
+      els.weld.checked = preparation.weld === true;
+      els.weld.disabled = preparation.repair === true;
+    }
+    if (els.cap) {
+      els.cap.checked = preparation.cap === true;
+      els.cap.disabled = preparation.repair === true;
+    }
+    if (els.repair) els.repair.checked = preparation.repair === true;
+    if (els.capStrategy) {
+      els.capStrategy.value = preparation.capStrategy ?? 'auto';
+      els.capStrategy.disabled = preparation.repair !== true;
+    }
     if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
     if (els.booleanSelect) {
       els.booleanSelect.value = report.scope === 'single' ? 'none' : (report.boolean?.operation ?? preparation.boolean ?? 'none');
@@ -550,7 +561,9 @@ export class Controls {
         ? `READY · ${report.boolean.operation} result`
         : report.multiBody
           ? `READY · ${report.bodies} bodies`
-          : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
+          : report.repair
+            ? 'READY · repaired closed body'
+            : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
       : state === 'units'
         ? 'UNITS REQUIRED'
         : state === 'invalid'
@@ -568,8 +581,8 @@ export class Controls {
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     els.reason.textContent = report.reason ?? (ready
       ? report.boolean
-        ? `Binary STL · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.prepared ? ' · prepared' : ''}`
-        : `Binary STL · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.prepared ? ' · prepared' : ''}`
+        ? `Binary STL · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+        : `Binary STL · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
       : report.candidates.length && (preparation.weld || preparation.cap)
         ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
         : 'Enable Weld or Cap to prepare an open mesh, or select a validated body.');
@@ -610,6 +623,28 @@ export class Controls {
       if (prep?.addedTriangles) changed.push(`+${prep.addedTriangles} triangles`);
       els.preparation.textContent = report.prepared
         ? (changed.length ? changed.join(' · ') : 'prepared')
+        : 'off';
+    }
+    if (els.repairStatus) {
+      const repair = report.repair;
+      const actions = [];
+      if (repair) {
+        const removed = (repair.removedInvalidFaces ?? 0)
+          + (repair.removedDegenerateFaces ?? 0)
+          + (repair.removedDuplicateFaces ?? 0);
+        if (removed) actions.push(`${removed} faces removed`);
+        if (repair.weldedVertices) actions.push(`${repair.weldedVertices} welded`);
+        if (repair.flippedFaces) actions.push(`${repair.flippedFaces} faces flipped`);
+        if (repair.flippedShells) actions.push(`${repair.flippedShells} shells flipped`);
+        if (repair.cappedLoops) {
+          actions.push(`${repair.cappedLoops} caps (${repair.planarCaps ?? 0} planar / ${repair.fanCaps ?? 0} fan)`);
+        }
+        if (repair.fallbackCaps) actions.push(`${repair.fallbackCaps} fan fallbacks`);
+        if (repair.skippedLoops) actions.push(`${repair.skippedLoops} holes skipped`);
+        if (repair.orientationContradictions) actions.push(`${repair.orientationContradictions} orientation conflicts`);
+      }
+      els.repairStatus.textContent = repair
+        ? (actions.length ? actions.join(' · ') : 'no changes')
         : 'off';
     }
 

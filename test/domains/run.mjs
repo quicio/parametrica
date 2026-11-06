@@ -13,6 +13,7 @@ import { run as solidPreparation } from './solid-preparation.test.mjs';
 import { run as selfIntersection } from './self-intersection.test.mjs';
 import { run as multiBody } from './multi-body.test.mjs';
 import { run as solidBooleans } from './solid-booleans.test.mjs';
+import { run as advancedRepair } from './advanced-repair.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -33,6 +34,7 @@ solidPreparation(assert);
 selfIntersection(assert);
 multiBody(assert);
 solidBooleans(assert);
+advancedRepair(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

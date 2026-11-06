@@ -9,6 +9,7 @@
 import { isMesh, isSolid } from '../geometry/contracts.js';
 import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
 import { booleanSolids } from '../geometry/csg.js';
+import { repairMesh } from '../geometry/repair.js';
 import { validateForFabrication } from '../export/geometryExport.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
@@ -33,6 +34,34 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     if (!item || seen.has(item)) return;
     if (!isMesh(item) && !isSolid(item)) return;
     seen.add(item);
+    if (isMesh(item) && prepare.repair) {
+      const repaired = repairMesh(item, {
+        tolerance: prepare.tolerance,
+        maxHoleEdges: prepare.maxHoleEdges,
+        capStrategy: prepare.capStrategy,
+        orient: true,
+      });
+      const validation = validateForFabrication(repaired.mesh);
+      const closed = Boolean(validation.meta?.closed);
+      candidates.push({
+        geometry: repaired.mesh,
+        kind: repaired.mesh?.kind ?? item.kind,
+        id: repaired.mesh?.id ?? item.id ?? null,
+        validation: {
+          ...validation,
+          warnings: [...new Set([...(validation.warnings ?? []), ...(repaired.report.warnings ?? [])])],
+        },
+        closed,
+        exportable: validation.ok && closed,
+        prepared: true,
+        repair: repaired.report,
+        preparation: null,
+        layerId: layer?.id ?? null,
+        layerName: layer?.name ?? null,
+        layerIndex: index,
+      });
+      return;
+    }
     if (isMesh(item) && (prepare.weld || prepare.cap)) {
       const prepared = prepareMesh(item, prepare);
       const validation = validateForFabrication(prepared.mesh);
@@ -108,6 +137,7 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
           closed: true,
           exportable: true,
           prepared: exportable.some((candidate) => candidate.prepared),
+          repair: aggregateRepair(exportable),
           preparation: aggregatePreparation(exportable),
           bodies: 1,
           bodyIds: exportable.map((candidate) => candidate.id),
@@ -138,6 +168,7 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
           closed: true,
           exportable: true,
           prepared,
+          repair: aggregateRepair(exportable),
           preparation: aggregatePreparation(exportable),
           bodies: exportable.length,
           bodyIds: exportable.map((candidate) => candidate.id),
@@ -170,6 +201,7 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     booleanEmpty,
     mergedError,
     preparation: source?.preparation ?? null,
+    repair: source?.repair ?? null,
     prepared: Boolean(source?.prepared),
     reason: source
       ? null
@@ -198,6 +230,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       warnings: [],
       errors: resolved.booleanError ? [resolved.booleanError] : (resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? [])),
       preparation: null,
+      repair: null,
       prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
       exportable: false,
@@ -219,6 +252,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     warnings: source.validation.warnings ?? [],
     errors: source.validation.errors ?? [],
     preparation: source.preparation ?? null,
+    repair: source.repair ?? null,
     prepared: Boolean(source.prepared),
     unitsReady,
     exportable: source.exportable && unitsReady,
@@ -260,6 +294,8 @@ function normalizePreparation(raw) {
     maxHoleEdges: raw.maxHoleEdges,
     scope: ['single', 'active-layer', 'composition'].includes(raw.scope) ? raw.scope : 'single',
     boolean: ['none', 'union', 'difference', 'intersection'].includes(raw.boolean) ? raw.boolean : 'none',
+    repair: raw.repair === true,
+    capStrategy: ['auto', 'fan', 'planar', 'none'].includes(raw.capStrategy) ? raw.capStrategy : 'auto',
   };
 }
 
@@ -281,4 +317,21 @@ function aggregatePreparation(candidates) {
     }
   }
   return stats;
+}
+
+function aggregateRepair(candidates) {
+  const entries = candidates.map((candidate) => candidate.repair).filter(Boolean);
+  if (!entries.length) return null;
+  const report = { strategy: entries[0].strategy ?? 'auto', warnings: [], errors: [] };
+  for (const key of [
+    'removedInvalidFaces', 'removedDegenerateFaces', 'removedDuplicateFaces',
+    'weldedVertices', 'cappedLoops', 'planarCaps', 'fanCaps', 'fallbackCaps',
+    'skippedLoops', 'flippedFaces', 'flippedShells', 'orientationContradictions',
+  ]) {
+    report[key] = entries.reduce((sum, entry) => sum + (Number(entry[key]) || 0), 0);
+  }
+  report.changed = entries.some((entry) => entry.changed);
+  report.warnings = [...new Set(entries.flatMap((entry) => entry.warnings ?? []))];
+  report.errors = [...new Set(entries.flatMap((entry) => entry.errors ?? []))];
+  return report;
 }

@@ -62,6 +62,8 @@ surface operators, physical units, STL export and the Fabricate mode.
   `docs/multi-body.md`. Shells are separate, not a boolean union.
 - Phase 5D adds explicit union/difference/intersection CSG recipes; see
   `docs/solid-booleans.md`. Results are revalidated and never repaired.
+- Phase 5E adds explicit orientation/cleanup/cap repair with a report; see
+  `docs/advanced-repair.md`.
 
 ## 4D — Fabricate mode
 

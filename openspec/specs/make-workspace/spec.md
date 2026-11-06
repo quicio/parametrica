@@ -67,7 +67,7 @@ operations outside explicit recipes.
 
 #### Scenario: Unsupported action
 
-- **WHEN** the user needs direct vertex editing or implicit repair
+- **WHEN** the user needs direct vertex editing or self-intersection repair
 - **THEN** the mode reports that these are not available
 - **AND** does not silently modify the source
 
@@ -88,6 +88,13 @@ operations outside explicit recipes.
 - **WHEN** the user selects union, difference or intersection
 - **THEN** only validated closed bodies are combined
 - **AND** the result is validated before export
+- **AND** the render/document geometry remains unchanged
+
+#### Scenario: Explicit repair
+
+- **WHEN** the user enables Repair
+- **THEN** only the derived fabrication copy is cleaned, capped and reoriented
+- **AND** the repair actions are reported
 - **AND** the render/document geometry remains unchanged
 
 ### Requirement: Preparation controls
@@ -176,4 +183,33 @@ bodies.
 - **WHEN** the boolean is empty or fails
 - **THEN** export remains disabled
 - **AND** the reason states empty, invalid result or complexity
+
+### Requirement: Repair controls
+
+Fabricate SHALL expose explicit repair and cap strategy controls.
+
+#### Scenario: Repair toggle
+
+- **WHEN** the user opens Fabricate
+- **THEN** Repair is off by default
+- **AND** enabling it prepares the derived source with orientation, cleanup and
+  caps
+
+#### Scenario: Cap strategy
+
+- **WHEN** repair is enabled
+- **THEN** the panel offers Auto, Fan and Planar cap strategies
+- **AND** Auto is the default
+
+#### Scenario: Repair report
+
+- **WHEN** repair runs
+- **THEN** the panel reports flipped faces/shells, removed faces, welded
+  vertices, caps, fallbacks and skipped loops
+
+#### Scenario: Failed repair
+
+- **WHEN** repair cannot produce a valid body
+- **THEN** export remains disabled
+- **AND** the remaining validation errors are shown
 

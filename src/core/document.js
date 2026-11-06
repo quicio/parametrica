@@ -19,6 +19,7 @@ import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/s
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
 import { sanitizePassStyle } from '../render/passStyle.js';
+import { CAP_STRATEGIES } from '../geometry/repair.js';
 import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
 
 export const DOCUMENT_VERSION = 3;
@@ -68,6 +69,8 @@ export const DEFAULT_FABRICATION = Object.freeze({
   maxHoleEdges: 256,
   scope: 'single',
   boolean: 'none',
+  repair: false,
+  capStrategy: 'auto',
 });
 
 export function sanitizeFabricationSettings(raw) {
@@ -87,6 +90,8 @@ export function sanitizeFabricationSettings(raw) {
     boolean: (FABRICATION_SCOPES.includes(source.scope) ? source.scope : DEFAULT_FABRICATION.scope) === 'single'
       ? 'none'
       : (FABRICATION_BOOLEANS.includes(source.boolean) ? source.boolean : DEFAULT_FABRICATION.boolean),
+    repair: source.repair === true,
+    capStrategy: CAP_STRATEGIES.includes(source.capStrategy) ? source.capStrategy : DEFAULT_FABRICATION.capStrategy,
   };
 }
 

@@ -167,6 +167,50 @@ export function buildFabricateSection(controls) {
     );
     prepHint.classList.add('fabricate-prep-hint');
 
+    const repairRow = document.createElement('div');
+    repairRow.className = 'fabricate-row fabricate-repair-row';
+    const repairLabel = document.createElement('span');
+    repairLabel.className = 'fabricate-label';
+    repairLabel.textContent = 'Repair';
+    const repairWrap = document.createElement('span');
+    repairWrap.className = 'fabricate-repair-controls';
+    const repairToggle = document.createElement('label');
+    repairToggle.className = 'fabricate-prep-toggle';
+    const repairInput = document.createElement('input');
+    repairInput.type = 'checkbox';
+    repairInput.className = 'artboard-check fabricate-repair';
+    repairInput.checked = fabrication.repair === true;
+    const repairText = document.createElement('span');
+    repairText.textContent = 'Orient + clean';
+    repairToggle.append(repairInput, repairText);
+    const strategySelect = document.createElement('select');
+    strategySelect.className = 'artboard-input fabricate-cap-strategy';
+    for (const [value, label] of [
+      ['auto', 'Auto caps'],
+      ['fan', 'Fan caps'],
+      ['planar', 'Planar caps'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      strategySelect.appendChild(option);
+    }
+    strategySelect.value = fabrication.capStrategy ?? 'auto';
+    strategySelect.title = 'Cap strategy used when repair is enabled.';
+    repairInput.addEventListener('change', () => {
+      fabrication.repair = repairInput.checked;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    strategySelect.addEventListener('change', () => {
+      fabrication.capStrategy = strategySelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    repairWrap.append(repairToggle, strategySelect);
+    repairRow.append(repairLabel, repairWrap);
+    rows.appendChild(repairRow);
+
     const makeRow = (label, className) => {
       const row = document.createElement('div');
       row.className = 'fabricate-row';
@@ -189,6 +233,7 @@ export function buildFabricateSection(controls) {
     const physical = makeRow('Physical', 'fabricate-physical-size');
     const warnings = makeRow('Checks', 'fabricate-warnings');
     const preparation = makeRow('Preparation', 'fabricate-preparation');
+    const repairStatus = makeRow('Repair report', 'fabricate-repair-status');
 
     const compositionNote = document.createElement('div');
     compositionNote.className = 'fabricate-composition-note';
@@ -208,8 +253,10 @@ export function buildFabricateSection(controls) {
 
     controls.fabricateEls = {
       panel, status, source, reason, triangles, vertices, bodies, boolean, volume,
-      worldSize, physical, warnings, preparation, exportButton, unitSelect, scaleInput,
-      scopeSelect, booleanSelect, compositionNote, weld: weld.input, cap: cap.input, prepHint,
+      worldSize, physical, warnings, preparation, repairStatus, exportButton,
+      unitSelect, scaleInput, scopeSelect, booleanSelect, compositionNote,
+      weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
+      prepHint,
     };
     controls.refreshFabricate();
 }
