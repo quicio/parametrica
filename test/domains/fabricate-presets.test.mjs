@@ -10,6 +10,7 @@ import { evaluateDocument } from '../../src/core/engine.js';
 import { buildFabricationReport } from '../../src/application/fabricationSource.js';
 import { initManifold } from '../../src/geometry/manifoldEngine.js';
 import { project3D } from '../../src/view/camera.js';
+import { exportBinarySTL } from '../../src/export/stl.js';
 
 const PRESETS = [
   'Solid Torus',
@@ -19,6 +20,7 @@ const PRESETS = [
   'Cap Catenoid',
   'SDF Enneper',
   'Solid Vase 200',
+  'Lattice Vase 200',
 ];
 
 export async function run(assert) {
@@ -107,6 +109,26 @@ export async function run(assert) {
   const mouthRow = [...rows.entries()].sort((a, b) => Number(b[0]) - Number(a[0]))[0][1];
   const mouthDiameter = mouthRow.max + mouthRow.min;
   assert(Math.abs(mouthDiameter - 135) < 3, `Solid Vase 200 mouth is about 135 mm (got ${mouthDiameter.toFixed(1)})`);
+
+  const latticeDoc = BUILT_IN_PRESETS['Lattice Vase 200']();
+  const latticeEvaluation = evaluateDocument(latticeDoc, { time: 0 });
+  const latticeReport = buildFabricationReport({
+    evaluation: latticeEvaluation,
+    layerIndex: 0,
+    units: latticeDoc.view.units,
+    preparation: latticeDoc.view.fabrication,
+  });
+  assert(latticeReport.exportable === true, 'Lattice Vase 200 is exportable');
+  assert(latticeReport.lattice?.struts > 100, 'Lattice Vase 200 builds a strut network');
+  assert((latticeReport.lattice?.radius ?? 0) > 1, 'Lattice Vase 200 reports its strut radius');
+  assert(Math.abs(latticeReport.bbox.depth - 200) < 1, 'Lattice Vase 200 is 200 mm tall');
+  assert(latticeReport.bbox.width > 170 && latticeReport.bbox.width < 180, 'Lattice Vase 200 is about 175 mm wide');
+  assert(latticeReport.triangles > 1000 && latticeReport.volume > 0, 'Lattice Vase 200 has a positive solid body');
+  const stl = exportBinarySTL(latticeReport.source.geometry, {
+    units: latticeDoc.view.units,
+    name: 'Lattice Vase 200',
+  });
+  assert(stl.triangles === latticeReport.triangles && stl.data.length > 84, 'Lattice Vase 200 exports binary STL');
 
   const challenge = BUILT_IN_PRESETS['Möbius Challenge']();
   const challengeReport = buildFabricationReport({

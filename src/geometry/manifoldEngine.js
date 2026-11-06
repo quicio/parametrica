@@ -103,7 +103,12 @@ export function manifoldBoolean(operation, operands, { tolerance = 1e-4 } = {}) 
     stats.outputTriangles = output.faces.length;
     stats.repaired = repaired.report?.changed ?? false;
     if (!validation.ok) {
-      return failure('invalid-result', validation.errors[0] ?? 'Manifold output failed validation', stats, validation);
+      // Keep the raw result so callers that own a post-repair step can close
+      // small cracks instead of discarding potentially valid geometry.
+      return {
+        ...failure('invalid-result', validation.errors[0] ?? 'Manifold output failed validation', stats, validation),
+        geometry: output,
+      };
     }
     output.meta = {
       ...output.meta,

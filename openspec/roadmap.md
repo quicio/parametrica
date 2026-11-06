@@ -480,6 +480,12 @@ tests.
 around +Z, so yaw moves around the figure and pitch can inspect the top and
 bottom. The vase returns to Z-up, ready for the slicer.
 
+### Phase 16 — Surface lattice (shipped)
+
+`surface-lattice` adds a deterministic Voronoi strut network on a surface of
+revolution, a Manifold tube solid with floor and rim, and the `Lattice Vase 200`
+example.
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
@@ -557,6 +563,7 @@ bottom. The vase returns to Z-up, ready for the slicer.
 | `vase-200-preset` | archived | shipped |
 | `vase-upright-presentation` | archived | shipped |
 | `orbit-camera` | archived | shipped |
+| `surface-lattice` | archived | shipped |
 | `self-intersection-repair` | archived | shipped |
 | `mesh-topology-repair` | archived | shipped |
 | `3mf-export` | archived | shipped |

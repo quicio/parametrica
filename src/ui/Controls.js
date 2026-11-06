@@ -629,13 +629,15 @@ export class Controls {
         ? (report.unitsReady ? 'invalid' : 'units')
         : 'empty';
     els.status.textContent = ready
-      ? (report.boolean
-        ? `READY · ${report.boolean.operation} result`
-        : report.multiBody
-          ? `READY · ${report.bodies} bodies`
-          : report.repair
-            ? 'READY · repaired closed body'
-            : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
+      ? (report.lattice?.struts
+        ? 'READY · lattice body'
+        : report.boolean
+          ? `READY · ${report.boolean.operation} result`
+          : report.multiBody
+            ? `READY · ${report.bodies} bodies`
+            : report.repair
+              ? 'READY · repaired closed body'
+              : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
       : state === 'units'
         ? 'UNITS REQUIRED'
         : state === 'invalid'
@@ -645,17 +647,21 @@ export class Controls {
     els.panel.dataset.exportable = String(ready);
 
     els.source.textContent = report.source
-      ? report.boolean
-        ? `${report.layerName ?? 'Active layer'} · boolean ${report.boolean.operation} · ${report.boolean.operands} operands`
-        : report.multiBody
-          ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
-          : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
+      ? report.lattice?.struts
+        ? `${report.layerName ?? 'Active layer'} · lattice network · ${report.lattice.struts} struts`
+        : report.boolean
+          ? `${report.layerName ?? 'Active layer'} · boolean ${report.boolean.operation} · ${report.boolean.operands} operands`
+          : report.multiBody
+            ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
+            : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     const formatLabel = preparation.format === '3mf' ? '3MF' : 'Binary STL';
     els.reason.textContent = report.reason ?? (ready
-      ? report.boolean
-        ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
-        : `${formatLabel} · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+      ? report.lattice?.struts
+        ? `${formatLabel} · millimetres · ${report.lattice.struts} struts · ${formatNumber((report.lattice.radius ?? 1.75) * 2)} mm`
+        : report.boolean
+          ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+          : `${formatLabel} · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
       : report.candidates.length && (preparation.weld || preparation.cap)
         ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
         : 'Enable Weld or Cap to prepare an open mesh, or select a validated body.');
@@ -702,6 +708,14 @@ export class Controls {
       els.preparation.textContent = report.prepared
         ? (changed.length ? changed.join(' · ') : 'prepared')
         : 'off';
+    }
+    if (els.lattice) {
+      const lattice = report.lattice;
+      const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
+      const latticeActive = preparation.lattice === true && activeLayer?.generator?.id === 'surface-lattice';
+      els.lattice.textContent = lattice?.struts
+        ? `${lattice.struts} struts · ${formatNumber((lattice.radius ?? 1.75) * 2)} mm${lattice.microCaps ? ` · ${lattice.microCaps} microcaps` : ''}`
+        : (latticeActive ? 'building…' : 'off');
     }
     if (els.repairStatus) {
       const repair = report.repair;
@@ -771,7 +785,11 @@ export class Controls {
         : '';
       parts.push(`repair${self} @${preparation.remeshResolution ?? 64}`);
     }
-    if (preparation.boolean && preparation.boolean !== 'none') {
+    const activeLayer = doc.layers?.[doc.activeLayer ?? 0];
+    const latticeActive = preparation.lattice === true && activeLayer?.generator?.id === 'surface-lattice';
+    if (latticeActive) {
+      parts.push('lattice');
+    } else if (preparation.boolean && preparation.boolean !== 'none') {
       parts.push(`${preparation.boolean}${preparation.csgStrategy ? ` (${preparation.csgStrategy})` : ''}`);
     }
     parts.push(format);

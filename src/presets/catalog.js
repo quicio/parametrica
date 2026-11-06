@@ -233,6 +233,11 @@ export const PRESET_META = {
     description: 'Hollow vase of revolution: 200 mm tall, 175 mm diameter, 135 mm mouth, 2.5 mm wall.',
     tags: ['fabricate', 'vase', 'solid', 'wall', 'boolean', 'difference'],
   },
+  'Lattice Vase 200': {
+    category: 'fabricate',
+    description: 'Openwork vase of revolution: 200 mm tall, 20 mm Voronoi cells and 3.5 mm struts.',
+    tags: ['fabricate', 'vase', 'lattice', 'voronoi', 'strut', 'openwork'],
+  },
 
   /* ——— Compositions ——— */
   'Vortex Stack': {

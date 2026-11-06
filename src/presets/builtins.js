@@ -32,6 +32,7 @@ const FABRICATE_DEFAULTS = Object.freeze({
   nonOrientable: 'cut',
   selfIntersections: 'none',
   remeshResolution: 64,
+  lattice: false,
 });
 
 function fabricateView(overrides = {}) {
@@ -517,6 +518,40 @@ export const BUILT_IN_PRESETS = {
     doc.activeLayer = 0;
     return doc;
   },
+
+  'Lattice Vase 200': () =>
+    createDocument('surface-lattice', {
+      name: 'Lattice Vase 200',
+      generator: {
+        params: {
+          // Struts are centred half a diameter inside the nominal profile, so
+          // the tube envelope keeps the 175 mm outer diameter.
+          profile: `(${VASE_PROFILE}) - 1.75`,
+          height: 200,
+          floor: 3,
+          cellSize: 20,
+          strut: 3.5,
+          rim: 4,
+          seed: 7,
+          samples: 6,
+          fit: 340,
+        },
+      },
+      view: fabricateView({
+        units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
+        fabrication: {
+          format: 'stl',
+          quality: 'standard',
+          scope: 'single',
+          lattice: true,
+          csgStrategy: 'manifold',
+          repair: false,
+          weld: false,
+          cap: false,
+          tolerance: 1e-4,
+        },
+      }),
+    }),
 
   // ——— Parametric surfaces ———
 

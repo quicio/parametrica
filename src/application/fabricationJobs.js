@@ -7,7 +7,8 @@ import { buildFabricationReport } from './fabricationSource.js';
 export function isHeavyFabrication(preparation = {}) {
   return (preparation.boolean && preparation.boolean !== 'none')
     || preparation.repair === true
-    || (preparation.selfIntersections && preparation.selfIntersections !== 'none');
+    || (preparation.selfIntersections && preparation.selfIntersections !== 'none')
+    || preparation.lattice === true;
 }
 
 export class FabricationJobs {

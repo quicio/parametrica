@@ -13,6 +13,7 @@ fabrication controls without manual setup.
 | **SDF Enneper** | Self-intersection repair through Manifold SDF |
 | **Möbius Challenge** | Non-orientable/open limits and next-action guidance |
 | **Solid Vase 200** | Hollow vase of revolution: 200 mm tall, ~175 mm diameter, ~135 mm mouth, 2.5 mm solid wall |
+| **Lattice Vase 200** | Openwork vase: 200 mm tall, 20 mm Voronoi cells, 3.5 mm struts, solid floor and rim |
 
 ## Defaults
 
@@ -30,8 +31,31 @@ Every example sets:
 - **Cap Catenoid**: Repair + caps; exportable.
 - **SDF Enneper**: SDF strategy; exportable after the worker finishes.
 - **Solid Vase 200**: exportable hollow shell; outer and inner surfaces capped and subtracted with Manifold.
+- **Lattice Vase 200**: the viewport shows the strut network; Fabricate builds and exports one closed lattice solid.
 - **Möbius Challenge**: intentionally blocked. It demonstrates the validation
   and next-action guidance instead of pretending the mesh is fabricable.
+
+## Lattice example
+
+`Lattice Vase 200` explores the cellular wall from the reference photo.
+
+- The generator samples a periodic **Voronoi** network on the surface of
+  revolution. Two Lloyd relaxation passes even out the cells.
+- `Cell size` is the nominal cell pitch on the surface; `Seed` changes the
+  layout without changing the density.
+- The viewport draws one curve per cell edge, so the network reads as a
+  wireframe lattice.
+- In Fabricate, every curve becomes a closed tube of `Strut` diameter. A solid
+  floor and a rim ring close the ends, and Manifold unions everything into one
+  body.
+- The union occasionally leaves a microscopic crack at a near-coincident
+  junction; the builder caps only microscopic loops and rejects larger holes.
+- The lattice stops half a rim below the mouth and the floor starts at `z = 0`,
+  so the assembled body is exactly 200 mm tall.
+- Strut centerlines sit half a strut inside the nominal profile, so the tube
+  envelope keeps the 175 mm outer diameter.
+
+Suggested starting values: `Cell size 20`, `Strut 3.5`, `Rim 4`, `Floor 3`.
 
 ## Camera and vase orientation
 

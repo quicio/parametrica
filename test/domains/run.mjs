@@ -7,6 +7,7 @@
 
 import { run as coordinates } from './coordinates.test.mjs';
 import { run as orbitCamera } from './orbit-camera.test.mjs';
+import { run as surfaceLattice } from './surface-lattice.test.mjs';
 import { run as appearance } from './appearance.test.mjs';
 import { run as surfaceSeams } from './surface-seams.test.mjs';
 import { run as maintainability } from './maintainability.test.mjs';
@@ -38,6 +39,7 @@ function assert(cond, msg) {
 
 await coordinates(assert);
 await orbitCamera(assert);
+await surfaceLattice(assert);
 await appearance(assert);
 await surfaceSeams(assert);
 await maintainability(assert);

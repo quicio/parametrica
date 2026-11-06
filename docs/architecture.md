@@ -114,7 +114,7 @@ src/
 │   ├── projection.js             camera/orthographic projection + source sidecar
 │   └── cameraController.js       orbit/zoom state transitions
 │
-├── generators/                   24 registered models across 17 modules
+├── generators/                   25 registered models across 18 modules
 │   ├── index.js                  side-effect imports
 │   ├── helpers.js                compatibility facade for focused helpers
 │   ├── context.js                compileOrThrow / makeScope
@@ -135,6 +135,7 @@ src/
 │   ├── parametric3D.js           projected x/y/z curves
 │   ├── helix.js                  generalized helix + true 3D metadata
 │   ├── parametricSurface.js      x(u,v), y(u,v), z(u,v) world Surface
+│   ├── surfaceLattice.js         seeded Voronoi strut network on a revolution
 │   └── bilateralSpline.js        v1 legacy, preserved
 │
 ├── operators/
@@ -751,7 +752,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 1 | expression engine | precedence, right-assoc, unary, stdlib, error spans, perturbation |
 | 2 | noise determinism | same seed = identical field, different seed ≠ same field |
 | 3 | splines | Catmull-Rom → Bézier conversion, cubic spline |
-| 4 | generators | evalOK over all 24 registered models + variations |
+| 4 | generators | evalOK over all 25 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
 | 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |

@@ -12,6 +12,7 @@ import { booleanSolids } from '../geometry/csg.js';
 import { repairMesh } from '../geometry/repair.js';
 import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.js';
 import { validateForFabrication } from '../export/geometryExport.js';
+import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
@@ -31,6 +32,9 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
 
   const candidates = [];
   const seen = new Set();
+  const latticeCandidate = prepare.lattice === true && activeLayer
+    ? buildLatticeCandidate(activeLayer, activeIndex, prepare)
+    : null;
   const add = (item, layer, index) => {
     if (!item || seen.has(item)) return;
     if (!isMesh(item) && !isSolid(item)) return;
@@ -109,9 +113,13 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
       layerIndex: index,
     });
   };
-  for (const { layer, index } of selection) {
-    for (const item of layer?.geometry ?? []) add(item, layer, index);
-    for (const mesh of layer?.meshes ?? []) add(mesh, layer, index);
+  if (latticeCandidate) {
+    candidates.push(latticeCandidate);
+  } else {
+    for (const { layer, index } of selection) {
+      for (const item of layer?.geometry ?? []) add(item, layer, index);
+      for (const mesh of layer?.meshes ?? []) add(mesh, layer, index);
+    }
   }
 
   const exportable = candidates.filter((candidate) => candidate.exportable);
@@ -234,6 +242,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
   if (!source) {
     return {
       ...resolved,
+      lattice: resolved.candidates?.[0]?.lattice ?? null,
       mesh: null,
       triangles: 0,
       vertices: 0,
@@ -267,6 +276,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     preparation: source.preparation ?? null,
     repair: source.repair ?? null,
     prepared: Boolean(source.prepared),
+    lattice: source.lattice ?? null,
     unitsReady,
     exportable: source.exportable && unitsReady,
     reason: !unitsReady
@@ -298,6 +308,45 @@ function bboxOf(mesh) {
   };
 }
 
+function buildLatticeCandidate(layer, index, prepare) {
+  if (layer?.generator?.id !== 'surface-lattice') return null;
+  const params = layer.generator?.params ?? {};
+  const curves = (layer.geometry ?? []).filter((item) => item?.kind === 'curve3d');
+  if (!curves.length) return null;
+  const height = Number(params.height) || Math.max(...curves.flatMap((curve) => (curve.points ?? []).map((point) => point.z))) || 200;
+  const result = buildLatticeSolid(curves, {
+    strut: Number(params.strut) || 3.5,
+    floor: Number(params.floor) || 0,
+    rim: Number(params.rim) || 4,
+    height,
+    radialSegments: 8,
+    tolerance: prepare.tolerance,
+  });
+  const validation = result.ok
+    ? result.validation
+    : {
+      ok: false,
+      warnings: [],
+      errors: [result.error?.message ?? 'lattice solid build failed'],
+      meta: { closed: false, manifold: false, volume: null },
+    };
+  const closed = Boolean(validation?.meta?.closed);
+  return {
+    geometry: result.geometry ?? null,
+    kind: result.geometry?.kind ?? 'mesh',
+    id: result.geometry?.id ?? 'lattice-solid',
+    validation,
+    closed,
+    exportable: Boolean(result.ok && validation?.ok && closed),
+    prepared: Boolean(result.ok),
+    preparation: null,
+    lattice: result.stats ?? {},
+    layerId: layer.id ?? null,
+    layerName: layer.name ?? null,
+    layerIndex: index,
+  };
+}
+
 function normalizePreparation(raw) {
   if (!raw || typeof raw !== 'object') return { weld: false, cap: false, scope: 'single' };
   return {
@@ -315,6 +364,7 @@ function normalizePreparation(raw) {
     csgStrategy: ['auto', 'manifold', 'bsp', 'remesh'].includes(raw.csgStrategy) ? raw.csgStrategy : 'auto',
     selfIntersections: ['none', 'sdf', 'remesh', 'auto'].includes(raw.selfIntersections) ? raw.selfIntersections : 'none',
     remeshResolution: raw.remeshResolution,
+    lattice: raw.lattice === true,
     quality: raw.quality,
   };
 }

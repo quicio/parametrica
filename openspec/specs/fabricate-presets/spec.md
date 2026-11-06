@@ -100,16 +100,6 @@ Fabricate SHALL include a solid-wall hollow vase example.
 - **THEN** the report is exportable in millimetres
 - **AND** the body has positive volume and triangle count
 
-### Requirement: No lattice yet
-
-The vase example SHALL be a solid wall, not a perforated lattice.
-
-#### Scenario: Scope
-
-- **WHEN** the preset is used
-- **THEN** the wall is continuous
-- **AND** the lattice remains a future capability
-
 ### Requirement: Upright vase presentation
 
 The hollow vase example SHALL stand with its height on the vertical Z axis and
@@ -142,4 +132,21 @@ its mouth at the top of the 3D view.
 - **WHEN** the vase is exported to STL or 3MF
 - **THEN** its height stays on Z
 - **AND** a slicer can stand it on the bed without rotating it
+
+### Requirement: Solid and lattice examples are separate
+
+`Solid Vase 200` SHALL remain a continuous solid wall, while
+`Lattice Vase 200` SHALL provide the openwork variant.
+
+#### Scenario: Solid
+
+- **WHEN** `Solid Vase 200` is used
+- **THEN** the wall is continuous
+- **AND** the lattice preparation is off
+
+#### Scenario: Lattice
+
+- **WHEN** `Lattice Vase 200` is used
+- **THEN** its wall is the cellular strut network
+- **AND** both examples remain independently selectable
 

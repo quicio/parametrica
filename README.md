@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2607 checks)
+npm test             # node-only verification suite (2646 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (150 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (151 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -77,7 +77,7 @@ leaving your machine.
 ## Architecture
 
 ```
-generators/  (24 registered)  one file each, self-registered
+generators/  (25 registered)  one file each, self-registered
 operators/   (37 registered)  geometry/ + topology/, each Curve[] → Curve[]
 math/               safe Pratt-parser expression engine + seeded simplex noise
 sampling/           uniform + adaptive + arc-length resampling + bbox helpers
@@ -187,8 +187,9 @@ No central config to update.
 
 The library is grouped into Curves, Patterns, Fourier, Attractors, 3D Curves,
 Surfaces, Fabricate, Compositions, Helix Lab and Legacy; user saves appear under
-My Presets. The Fabricate category includes ready solids, a hollow 200 mm vase, multi-body
-and boolean examples, repair/cap/SDF demos and a non-orientable challenge. Every row
+My Presets. The Fabricate category includes ready solids, a solid and a lattice
+200 mm vase, multi-body and boolean examples, repair/cap/SDF demos and a
+non-orientable challenge. Every row
 shows a deterministic preview derived from its document, and favorites and
 recents persist as workspace metadata without changing the preset JSON.
 
@@ -202,16 +203,16 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2607
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2646
 checks across the full Node suite (expression engine, noise determinism,
-splines, all 24 registered generators, operators, document round-trip +
+splines, all 25 registered generators, operators, document round-trip +
 dual-format read, built-in presets, chained mutation across families, SVG
 export, animation, sampling, performance budget, reliability regressions,
 offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (150 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (151 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting

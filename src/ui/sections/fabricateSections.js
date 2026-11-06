@@ -408,6 +408,7 @@ export function buildFabricateSection(controls) {
     const warnings = makeRow('Checks', 'fabricate-warnings');
     const preparation = makeRow('Preparation', 'fabricate-preparation');
     const repairStatus = makeRow('Repair report', 'fabricate-repair-status');
+    const lattice = makeRow('Lattice', 'fabricate-lattice');
 
     const compositionNote = document.createElement('div');
     compositionNote.className = 'fabricate-composition-note';
@@ -439,7 +440,7 @@ export function buildFabricateSection(controls) {
     controls.fabricateEls = {
       panel, status, source, reason, plan, suggestion, nextAction,
       triangles, vertices, bodies, boolean, objects, volume,
-      worldSize, physical, warnings, preparation, repairStatus, progress, cancelButton, exportButton,
+      worldSize, physical, warnings, preparation, repairStatus, lattice, progress, cancelButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       weld: weld.input, cap: cap.input, repair: repairInput, capStrategy: strategySelect,
       topology: topologySelect, nonOrientable: nonOrientableSelect,

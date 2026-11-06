@@ -108,3 +108,27 @@ test('Fabricate is read-only, unit-gated and exports a validated closed body', a
   await expect(restored).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.panel-section[data-mode="fabricate"]').first()).toBeVisible();
 });
+
+test('lattice preset builds a strut body in the worker and reports it', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Lattice Vase 200'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  const status = fabricate.locator('.fabricate-status');
+  const exportButton = fabricate.locator('.fabricate-export');
+  await expect(status).toContainText('READY', { timeout: 30_000 });
+  await expect(status).toHaveAttribute('data-state', 'ready');
+  await expect(fabricate.locator('.fabricate-lattice')).toContainText('struts');
+  await expect(fabricate.locator('.fabricate-reason')).toContainText('struts');
+  await expect(fabricate.locator('.fabricate-volume')).toContainText('mm³');
+  await expect(fabricate.locator('.fabricate-warnings')).toHaveText('validated');
+  await expect(exportButton).toBeEnabled();
+
+  const built = await page.evaluate(() => {
+    const result = window.__parametrica.exporter.buildSTLFromCurrent();
+    return { bytes: result.data.length, triangles: result.triangles };
+  });
+  expect(built.triangles).toBeGreaterThan(1000);
+  expect(built.bytes).toBeGreaterThan(84);
+});
