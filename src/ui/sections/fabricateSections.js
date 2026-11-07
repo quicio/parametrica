@@ -811,7 +811,7 @@ export function buildFabricateSection(controls) {
       controls.refreshFabricate();
     });
 
-    panel.append(status, source, reason, plan, suggestion, nextAction, rows, prepHint, progress, compositionNote, cancelButton, productExportButton, exportButton);
+    panel.append(status, source, reason, progress, cancelButton, exportButton, productExportButton, plan, suggestion, nextAction, rows, prepHint, compositionNote);
     body.appendChild(panel);
 
     controls.fabricateEls = {

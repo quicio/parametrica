@@ -68,7 +68,7 @@ export class StartWithOverlay {
     title.textContent = 'Start with';
     const hint = document.createElement('div');
     hint.className = 'start-with-hint';
-    hint.textContent = 'Choose a starting figure. You can change everything later.';
+    hint.textContent = 'Click a card to begin. You can change everything later.';
     header.append(eyebrow, title, hint);
 
     const grid = document.createElement('div');
@@ -126,7 +126,7 @@ export class StartWithOverlay {
     const cancel = document.createElement('button');
     cancel.type = 'button';
     cancel.className = 'lab-button start-with-cancel';
-    cancel.textContent = this.firstRun ? 'START WITH PARAMETRIC' : 'CANCEL';
+    cancel.textContent = this.firstRun ? 'USE CLASSIC CURVE' : 'CANCEL';
     cancel.addEventListener('click', () => this.cancel());
     actions.appendChild(cancel);
 

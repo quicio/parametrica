@@ -33,7 +33,7 @@ import { buildFabricateSection } from './sections/fabricateSections.js';
 import { buildStyleSection, buildRenderSection, buildOverlaysSection, buildImageSection, buildAnimationSection, buildTimelineSection, buildMutationSection, buildAnalysisSection, buildNotebookSection, buildAdvisorSection, buildExploreSection, buildEvolutionSection, buildPresetsSection, buildExportSection } from './sections/keepSections.js';
 
 const UI_STATE_KEY = 'parametrica.ui.v1';
-const DEFAULT_OPEN = new Set(['generator', 'parameters']);
+const DEFAULT_OPEN = new Set(['generator', 'parameters', 'looks', 'explore', 'timeline', 'image', 'presets', 'fabricate']);
 const SECTION_ALIASES = {
   camera: 'view',
   render: 'view',
@@ -51,8 +51,26 @@ const MODES = [
   { id: 'perform', label: 'Perform' },
   { id: 'ingest', label: 'Ingest' },
   { id: 'keep', label: 'Keep' },
-  { id: 'fabricate', label: 'Fabricate' },
+  { id: 'fabricate', label: 'Make' },
 ];
+const MODE_INTENTS = {
+  form: 'Geometry and parameters',
+  look: 'Appearance only · geometry untouched',
+  explore: 'Variations, sensitivity and analysis',
+  perform: 'Time, keyframes and motion',
+  ingest: 'Image underlay and contour tracing',
+  keep: 'Notebook, presets and 2D export',
+  fabricate: 'Readiness, checks and manufacturing',
+};
+const MODE_PRIMARY = {
+  form: 'generator',
+  look: 'looks',
+  explore: 'explore',
+  perform: 'timeline',
+  ingest: 'image',
+  keep: 'presets',
+  fabricate: 'fabricate',
+};
 
 export class Controls {
   /** @param {object} app  @param {HTMLElement} container */
@@ -154,9 +172,12 @@ export class Controls {
       button.type = 'button';
       button.className = 'panel-mode';
       button.dataset.mode = mode.id;
+      button.id = `panel-mode-${mode.id}`;
       button.setAttribute('role', 'tab');
+      button.tabIndex = mode.id === this.mode ? 0 : -1;
       button.textContent = mode.label;
       button.addEventListener('click', () => this.setMode(mode.id, { resetScroll: true }));
+      button.addEventListener('keydown', (event) => this.handleModeKey(event, mode.id));
       bar.appendChild(button);
     }
 
@@ -175,14 +196,48 @@ export class Controls {
       const index = this.app.document.activeLayer ?? 0;
       this.app.setLayerVisible(index, true);
     });
-    status.append(text, show);
+    const resetLayout = document.createElement('button');
+    resetLayout.type = 'button';
+    resetLayout.className = 'panel-status-reset';
+    resetLayout.textContent = 'RESET';
+    resetLayout.title = 'Reset panel sections to their default open state';
+    resetLayout.setAttribute('aria-label', 'Reset panel layout');
+    resetLayout.addEventListener('click', () => {
+      this.uiState.sections = {};
+      for (const meta of this.sectionEls.values()) {
+        this.applySectionOpen(meta, DEFAULT_OPEN.has(meta.id));
+      }
+      this.saveUiState();
+      this.setMode(this.mode);
+    });
+    status.append(text, show, resetLayout);
 
-    header.append(bar, status);
+    const intent = document.createElement('div');
+    intent.className = 'panel-intent';
+    intent.textContent = MODE_INTENTS[this.mode] ?? MODE_INTENTS.form;
+
+    header.append(bar, status, intent);
     this.container.appendChild(header);
     this.modeBar = bar;
     this.statusEl = status;
     this.statusText = text;
     this.statusShow = show;
+    this.modeIntent = intent;
+  }
+
+  handleModeKey(event, modeId) {
+    const index = MODES.findIndex((mode) => mode.id === modeId);
+    if (index < 0) return;
+    let next = null;
+    if (event.key === 'ArrowRight') next = (index + 1) % MODES.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + MODES.length) % MODES.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = MODES.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    const nextMode = MODES[next];
+    this.setMode(nextMode.id, { resetScroll: true });
+    this.modeBar?.querySelector(`[data-mode="${nextMode.id}"]`)?.focus();
   }
 
   setMode(modeId, { resetScroll = false } = {}) {
@@ -194,10 +249,17 @@ export class Controls {
         const active = button.dataset.mode === modeId;
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', String(active));
+        button.tabIndex = active ? 0 : -1;
       }
     }
+    if (this.modeIntent) this.modeIntent.textContent = MODE_INTENTS[modeId] ?? MODE_INTENTS.form;
     for (const meta of this.sectionEls.values()) {
       meta.el.hidden = meta.mode !== modeId;
+    }
+    const modeSections = [...this.sectionEls.values()].filter((meta) => meta.mode === modeId);
+    if (modeSections.length && modeSections.every((meta) => meta.body.hidden)) {
+      const primary = this.sectionEls.get(MODE_PRIMARY[modeId]);
+      if (primary) this.applySectionOpen(primary, true);
     }
     this.saveUiState();
     if (resetScroll) this.container.scrollTop = 0;
@@ -252,15 +314,15 @@ export class Controls {
     const tracks = (doc.animation?.timeline?.tracks ?? [])
       .filter((track) => (track.layer ?? 0) === index).length;
     const projection = doc.view?.projection ?? '3d';
+    const generatorName = generator?.name ?? layer.generator?.id ?? 'generator';
+    const chain = instance ? `instance ← ${source?.name ?? 'missing source'}` : generatorName;
     const parts = [
       `Layer ${index + 1}/${layers.length}`,
       layer.name,
       visible ? 'visible' : 'hidden',
-      instance
-        ? `instance ← ${source?.name ?? 'missing source'}`
-        : (generator?.name ?? layer.generator.id),
-      `${operators.length} op${operators.length === 1 ? '' : 's'}${disabled ? ` · ${disabled} off` : ''}`,
     ];
+    if (chain && chain !== layer.name) parts.push(chain);
+    parts.push(`${operators.length} op${operators.length === 1 ? '' : 's'}${disabled ? ` · ${disabled} off` : ''}`);
     if (mods) parts.push(`${mods} mod${mods === 1 ? '' : 's'}`);
     if (layer.locked) parts.push('content locked');
     if (tracks) parts.push(`${tracks} track${tracks === 1 ? '' : 's'}`);
@@ -725,6 +787,8 @@ export class Controls {
   renderFabricate(report) {
     const els = this.fabricateEls;
     if (!els) return;
+    if (els.progress) els.progress.hidden = true;
+    if (els.cancelButton) els.cancelButton.hidden = true;
     const doc = this.app.document;
     const preparation = doc.view?.fabrication ?? {};
     if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
@@ -819,7 +883,9 @@ export class Controls {
       ? `${formatPhysicalLength(report.physical.width)} × ${formatPhysicalLength(report.physical.height)} × ${formatPhysicalLength(report.physical.depth ?? 0)}`
       : 'unitless';
     const checks = [...(report.errors ?? []), ...(report.warnings ?? [])];
-    els.warnings.textContent = checks.length ? checks.join(' · ') : 'validated';
+    els.warnings.textContent = checks.length
+      ? checks.join(' · ')
+      : (!report.source ? 'no body to validate' : 'validated');
     if (els.preparation) {
       const prep = report.preparation;
       const changed = [];
@@ -844,7 +910,7 @@ export class Controls {
         : null;
       els.printChecks.textContent = print?.warnings?.length
         ? print.warnings.join(' · ')
-        : (extra ?? 'no warnings');
+        : (!report.source ? 'no checks' : (extra ?? 'no warnings'));
       if (els.printChecks.dataset) els.printChecks.dataset.state = print?.status ?? '';
     }
     if (els.manufacturing) {
@@ -1015,7 +1081,6 @@ export class Controls {
   nextFabricationAction(report, preparation, errorMessage = null) {
     if (errorMessage) return `Next: ${errorMessage}`;
     if (!report) return 'Next: running heavy fabrication job…';
-    if (!report.unitsReady) return 'Next: set an explicit world scale in Output.';
     if (!report.source) {
       if (!report.candidates?.length) return 'Next: select a spatial layer with a closed body.';
       if (!preparation.repair && !preparation.cap) return 'Next: enable Repair or Cap to close the mesh.';
@@ -1028,6 +1093,7 @@ export class Controls {
       }
       return `Next: ${report.reason ?? 'inspect the checks.'}`;
     }
+    if (!report.unitsReady) return 'Next: set an explicit world scale in Output.';
     return 'Ready to export.';
   }
 

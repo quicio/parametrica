@@ -82,6 +82,10 @@ export function buildLayersSection(controls) {
     layers.forEach((layer, index) => {
       const row = document.createElement('div');
       row.className = 'layer-row';
+      row.setAttribute('role', 'button');
+      row.tabIndex = index === controls.app.document.activeLayer ? 0 : -1;
+      row.setAttribute('aria-label', `Select layer ${layer.name}`);
+      if (index === controls.app.document.activeLayer) row.setAttribute('aria-current', 'true');
       row.classList.toggle('active', index === controls.app.document.activeLayer);
       row.classList.toggle('hidden', layer.visible === false);
       row.classList.toggle('locked', Boolean(layer.locked));
@@ -90,6 +94,7 @@ export function buildLayersSection(controls) {
       visibility.className = 'layer-icon';
       visibility.textContent = layer.visible === false ? '○' : '●';
       visibility.title = layer.visible === false ? 'Show layer' : 'Hide layer';
+      visibility.setAttribute('aria-label', visibility.title);
       visibility.addEventListener('click', (event) => {
         event.stopPropagation();
         const next = layer.visible === false;
@@ -128,6 +133,11 @@ export function buildLayersSection(controls) {
         sourceLabel.textContent = source ? `↳ ${source.name}` : '↳ missing source';
         sourceLabel.title = source ? `Source: ${source.name}` : 'Source layer is missing';
       }
+      const nameWrap = isInstance ? document.createElement('span') : null;
+      if (nameWrap) {
+        nameWrap.className = 'layer-name-wrap';
+        nameWrap.append(name, sourceLabel);
+      }
 
       const rename = layerButton('✎', 'Rename layer', () => controls.renameLayerPrompt(index));
       const up = layerButton('↑', 'Move layer up', () => controls.app.moveLayer(index, -1), index === 0);
@@ -135,10 +145,16 @@ export function buildLayersSection(controls) {
       const duplicate = layerButton('⧉', 'Duplicate layer', () => controls.app.duplicateLayer(index));
       const remove = layerButton('×', 'Remove layer', () => controls.app.removeLayer(index), layers.length <= 1);
 
-      if (badge) row.append(visibility, lock, badge, name, sourceLabel, rename, up, down, duplicate, remove);
+      if (badge) row.append(visibility, lock, badge, nameWrap, rename, up, down, duplicate, remove);
       else row.append(visibility, lock, name, rename, up, down, duplicate, remove);
-      row.addEventListener('click', () => {
+      const selectRow = () => {
         if (index !== controls.app.document.activeLayer) controls.app.setActiveLayer(index);
+      };
+      row.addEventListener('click', selectRow);
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        selectRow();
       });
       list.appendChild(row);
     });
@@ -351,6 +367,7 @@ function layerButton(label, title, onClick, disabled = false) {
   button.className = 'layer-icon';
   button.textContent = label;
   button.title = title;
+  button.setAttribute('aria-label', title);
   button.disabled = disabled;
   button.addEventListener('click', (event) => {
     event.stopPropagation();

@@ -61,7 +61,7 @@ export class NotebookPanel {
     org.className = 'notebook-org';
     const projectLabel = document.createElement('span');
     projectLabel.className = 'notebook-org-label';
-    projectLabel.textContent = 'Proyecto';
+    projectLabel.textContent = 'Project';
     this.projectSelect = document.createElement('select');
     this.projectSelect.className = 'notebook-project';
     this.projectSelect.setAttribute('aria-label', 'Active project');
@@ -187,7 +187,7 @@ export class NotebookPanel {
 
     const series = notebook.seriesFor(this.activeProjectId);
     this.seriesSelect.replaceChildren(
-      option('', 'Sin serie'),
+      option('', 'No series'),
       ...series.map((entry) => option(entry.id, entry.name)),
     );
     this.seriesSelect.value = this.activeSeriesId ?? '';
@@ -204,7 +204,7 @@ export class NotebookPanel {
     head.className = 'notebook-group-head';
     const title = document.createElement('div');
     title.className = 'notebook-group-title';
-    title.textContent = series ? series.name : 'Sin serie';
+    title.textContent = series ? series.name : 'No series';
     const count = document.createElement('span');
     count.className = 'notebook-group-count';
     count.textContent = String(items.length);
