@@ -754,6 +754,88 @@ export function buildFabricateSection(controls) {
     const minOpeningInput = numberRow('Min opening (mm)', 'minOpeningWidth', 0, 50, 0.5, 'fabricate-manufacturing-opening');
     const overhangInput = numberRow('Overhang (°)', 'overhangAngle', 0, 89, 1, 'fabricate-manufacturing-overhang');
 
+    const slicerRow = document.createElement('div');
+    slicerRow.className = 'fabricate-row';
+    const slicerLabel = document.createElement('span');
+    slicerLabel.className = 'fabricate-label';
+    slicerLabel.textContent = 'Slicer';
+    const slicerInput = document.createElement('input');
+    slicerInput.className = 'artboard-input fabricate-manufacturing-slicer';
+    slicerInput.type = 'text';
+    slicerInput.placeholder = 'e.g. Orca 2.2';
+    slicerInput.maxLength = 80;
+    slicerInput.value = manufacturingProfile.verification?.slicer ?? '';
+    slicerInput.addEventListener('change', () => {
+      fabrication.manufacturing = sanitizeManufacturingProfile({
+        ...fabrication.manufacturing,
+        verification: {
+          ...(fabrication.manufacturing.verification ?? {}),
+          slicer: slicerInput.value,
+        },
+      });
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    slicerRow.append(slicerLabel, slicerInput);
+    manufacturingGroup.appendChild(slicerRow);
+
+    const verificationRow = document.createElement('div');
+    verificationRow.className = 'fabricate-row';
+    const verificationLabel = document.createElement('span');
+    verificationLabel.className = 'fabricate-label';
+    verificationLabel.textContent = 'Slicer result';
+    const verificationSelect = document.createElement('select');
+    verificationSelect.className = 'artboard-input fabricate-manufacturing-verification';
+    for (const [value, text] of [
+      ['unverified', 'Not verified'],
+      ['pass', 'Pass'],
+      ['fail', 'Fail'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      verificationSelect.appendChild(option);
+    }
+    verificationSelect.value = manufacturingProfile.verification?.result ?? 'unverified';
+    verificationSelect.addEventListener('change', () => {
+      fabrication.manufacturing = sanitizeManufacturingProfile({
+        ...fabrication.manufacturing,
+        verification: {
+          ...(fabrication.manufacturing.verification ?? {}),
+          result: verificationSelect.value,
+        },
+      });
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    verificationRow.append(verificationLabel, verificationSelect);
+    manufacturingGroup.appendChild(verificationRow);
+
+    const notesRow = document.createElement('div');
+    notesRow.className = 'fabricate-row';
+    const notesLabel = document.createElement('span');
+    notesLabel.className = 'fabricate-label';
+    notesLabel.textContent = 'Slicer notes';
+    const notesInput = document.createElement('input');
+    notesInput.className = 'artboard-input fabricate-manufacturing-notes';
+    notesInput.type = 'text';
+    notesInput.placeholder = 'Material / layer height / notes';
+    notesInput.maxLength = 240;
+    notesInput.value = manufacturingProfile.verification?.notes ?? '';
+    notesInput.addEventListener('change', () => {
+      fabrication.manufacturing = sanitizeManufacturingProfile({
+        ...fabrication.manufacturing,
+        verification: {
+          ...(fabrication.manufacturing.verification ?? {}),
+          notes: notesInput.value,
+        },
+      });
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    notesRow.append(notesLabel, notesInput);
+    manufacturingGroup.appendChild(notesRow);
+
     const syncManufacturingInputs = () => {
       const profile = fabrication.manufacturing ?? manufacturingProfile;
       manufacturingSelect.value = profile.process ?? 'fdm';
@@ -762,6 +844,9 @@ export function buildFabricateSection(controls) {
       minStrutInput.value = String(profile.minStrut ?? '');
       minOpeningInput.value = String(profile.minOpeningWidth ?? '');
       overhangInput.value = String(profile.overhangAngle ?? '');
+      slicerInput.value = profile.verification?.slicer ?? '';
+      verificationSelect.value = profile.verification?.result ?? 'unverified';
+      notesInput.value = profile.verification?.notes ?? '';
     };
     syncManufacturingInputs();
 
@@ -822,6 +907,8 @@ export function buildFabricateSection(controls) {
       manufacturingProcess: manufacturingSelect, manufacturingGating: gatingSelect,
       manufacturingWall: minWallInput, manufacturingStrut: minStrutInput,
       manufacturingOpening: minOpeningInput, manufacturingOverhang: overhangInput,
+      manufacturingSlicer: slicerInput, manufacturingVerification: verificationSelect,
+      manufacturingNotes: notesInput,
       progress, progressLabel, progressFill, cancelButton, productExportButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       latticePreview: previewSelect,

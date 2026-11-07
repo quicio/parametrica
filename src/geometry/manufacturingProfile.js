@@ -56,6 +56,9 @@ export function sanitizeManufacturingProfile(raw) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const process = MANUFACTURING_PROCESSES.includes(source.process) ? source.process : 'fdm';
   const preset = MANUFACTURING_PRESETS[process] ?? MANUFACTURING_PRESETS.fdm;
+  const verification = source.verification && typeof source.verification === 'object'
+    ? source.verification
+    : {};
   const nozzle = source.nozzle === null ? null : clampNumber(source.nozzle, 0.01, 2, preset.nozzle);
   return {
     version: 1,
@@ -69,6 +72,14 @@ export function sanitizeManufacturingProfile(raw) {
     gating: MANUFACTURING_GATING.includes(source.gating) ? source.gating : preset.gating,
     orientation: 'current',
     units: 'mm',
+    verification: {
+      slicer: typeof verification.slicer === 'string' ? verification.slicer.slice(0, 80) : '',
+      material: typeof verification.material === 'string' ? verification.material.slice(0, 80) : '',
+      result: ['unverified', 'pass', 'fail'].includes(verification.result)
+        ? verification.result
+        : 'unverified',
+      notes: typeof verification.notes === 'string' ? verification.notes.slice(0, 240) : '',
+    },
   };
 }
 
@@ -127,7 +138,8 @@ export function buildManufacturingReport({
     checks,
     exportAllowed: !blocked,
     exportReason: blocked ? `Manufacturing block: ${failed.map((check) => check.label).join(', ')}` : null,
-    verifiedBySlicer: false,
+    verifiedBySlicer: resolved.verification.result === 'pass',
+    verification: resolved.verification,
   };
 }
 

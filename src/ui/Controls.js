@@ -133,7 +133,7 @@ export class Controls {
     body.className = 'panel-body';
     body.id = `${el.id}-body`;
     el.append(header, body);
-    this.container.appendChild(el);
+    (this.sectionsHost ?? this.container).appendChild(el);
 
     const saved = this.uiState.sections[sectionId] ?? this.uiState.sections[SECTION_ALIASES[sectionId]];
     const isOpen = typeof saved === 'boolean' ? saved : (open ?? DEFAULT_OPEN.has(sectionId));
@@ -174,6 +174,7 @@ export class Controls {
       button.dataset.mode = mode.id;
       button.id = `panel-mode-${mode.id}`;
       button.setAttribute('role', 'tab');
+      button.setAttribute('aria-controls', 'panel-sections-region');
       button.tabIndex = mode.id === this.mode ? 0 : -1;
       button.textContent = mode.label;
       button.addEventListener('click', () => this.setMode(mode.id, { resetScroll: true }));
@@ -216,13 +217,82 @@ export class Controls {
     intent.className = 'panel-intent';
     intent.textContent = MODE_INTENTS[this.mode] ?? MODE_INTENTS.form;
 
-    header.append(bar, status, intent);
+    const chain = document.createElement('div');
+    chain.className = 'panel-chain';
+    chain.setAttribute('aria-label', 'Generative chain');
+
+    header.append(bar, status, intent, chain);
     this.container.appendChild(header);
     this.modeBar = bar;
     this.statusEl = status;
     this.statusText = text;
     this.statusShow = show;
     this.modeIntent = intent;
+    this.chainEl = chain;
+  }
+
+  renderChain(layer, index, instance, source, operators) {
+    if (!this.chainEl) return;
+    const parts = [];
+    const add = (label, title, onClick, className = '') => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `panel-chain-step ${className}`.trim();
+      button.textContent = label;
+      button.title = title;
+      button.addEventListener('click', onClick);
+      parts.push(button);
+    };
+    const arrow = () => {
+      const span = document.createElement('span');
+      span.className = 'panel-chain-arrow';
+      span.setAttribute('aria-hidden', 'true');
+      span.textContent = '→';
+      parts.push(span);
+    };
+    const sourceName = instance ? (source?.name ?? 'missing source') : layer.name;
+    add(
+      `Source · ${sourceName}`,
+      instance ? `Select source layer ${sourceName}` : 'Open generator section',
+      () => {
+        if (instance && source) {
+          const sourceIndex = this.app.document.layers?.indexOf(source) ?? -1;
+          if (sourceIndex >= 0) this.app.setActiveLayer(sourceIndex);
+        } else {
+          this.setMode('form');
+          this.openSectionById('generator');
+        }
+      },
+      'panel-chain-source',
+    );
+    arrow();
+    add(
+      `${operators.length} op${operators.length === 1 ? '' : 's'}`,
+      'Open operators',
+      () => {
+        this.setMode('form');
+        this.openSectionById('operators');
+      },
+      'panel-chain-ops',
+    );
+    arrow();
+    const solidReady = Boolean(this.fabricationReport?.source);
+    add(
+      solidReady ? 'Solid ready' : 'Solid —',
+      'Open Fabricate',
+      () => this.setMode('fabricate'),
+      solidReady ? 'panel-chain-solid ready' : 'panel-chain-solid',
+    );
+    this.chainEl.replaceChildren(...parts);
+  }
+
+  openSectionById(sectionId) {
+    const meta = this.sectionEls.get(sectionId);
+    if (!meta) return;
+    this.uiState.sections[sectionId] = true;
+    this.applySectionOpen(meta, true);
+    this.saveUiState();
+    meta.header.scrollIntoView({ block: 'nearest' });
   }
 
   handleModeKey(event, modeId) {
@@ -253,6 +323,7 @@ export class Controls {
       }
     }
     if (this.modeIntent) this.modeIntent.textContent = MODE_INTENTS[modeId] ?? MODE_INTENTS.form;
+    if (this.sectionsHost) this.sectionsHost.setAttribute('aria-labelledby', `panel-mode-${modeId}`);
     for (const meta of this.sectionEls.values()) {
       meta.el.hidden = meta.mode !== modeId;
     }
@@ -330,6 +401,7 @@ export class Controls {
     this.statusText.textContent = parts.join(' · ');
     this.statusEl.classList.toggle('hidden-layer', !visible);
     this.statusShow.hidden = visible;
+    this.renderChain(layer, index, instance, source, operators);
   }
 
   saveUiState() {
@@ -384,6 +456,7 @@ export class Controls {
     this.imagePanel = null;
     this.evolutionPanel = null;
     this.container.innerHTML = '';
+    this.sectionsHost = null;
     this.sectionEls = new Map();
     this.modeBar = null;
     this.statusEl = null;
@@ -391,6 +464,13 @@ export class Controls {
     this.statusShow = null;
     this.advancedToggle = null;
     this.buildModeBar();
+    const sectionsHost = document.createElement('div');
+    sectionsHost.className = 'panel-sections';
+    sectionsHost.id = 'panel-sections-region';
+    sectionsHost.setAttribute('role', 'tabpanel');
+    sectionsHost.setAttribute('aria-labelledby', `panel-mode-${this.mode}`);
+    this.container.appendChild(sectionsHost);
+    this.sectionsHost = sectionsHost;
 
     this.buildLayersSection();
     this.buildInstanceSection();
@@ -745,6 +825,9 @@ export class Controls {
     if (els.manufacturingStrut) els.manufacturingStrut.value = String(manufacturing.minStrut ?? '');
     if (els.manufacturingOpening) els.manufacturingOpening.value = String(manufacturing.minOpeningWidth ?? '');
     if (els.manufacturingOverhang) els.manufacturingOverhang.value = String(manufacturing.overhangAngle ?? '');
+    if (els.manufacturingSlicer) els.manufacturingSlicer.value = manufacturing.verification?.slicer ?? '';
+    if (els.manufacturingVerification) els.manufacturingVerification.value = manufacturing.verification?.result ?? 'unverified';
+    if (els.manufacturingNotes) els.manufacturingNotes.value = manufacturing.verification?.notes ?? '';
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
       : '';
@@ -916,7 +999,7 @@ export class Controls {
     if (els.manufacturing) {
       const manufacturing = report.manufacturing;
       els.manufacturing.textContent = manufacturing
-        ? `${manufacturing.overall} · ${manufacturing.process} · ${manufacturing.gating}`
+        ? `${manufacturing.overall} · ${manufacturing.process} · ${manufacturing.gating} · slicer ${manufacturing.verification?.result ?? 'unverified'}`
         : '—';
       if (els.manufacturing.dataset) els.manufacturing.dataset.state = manufacturing?.overall ?? '';
     }

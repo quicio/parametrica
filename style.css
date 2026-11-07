@@ -4598,3 +4598,59 @@ textarea:focus-visible,
     letter-spacing: 0.005em;
   }
 }
+
+.panel-chain {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.panel-chain-step {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  max-width: 42%;
+  overflow: hidden;
+  padding: 1px 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-chain-step:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.panel-chain-arrow {
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+input[type="range"] {
+  accent-color: var(--swiss-red);
+}
+
+.lil-gui .controller.number .slider {
+  background: #161616;
+  border: 1px solid var(--hairline);
+  height: 12px;
+}
+
+.lil-gui .controller.number .fill {
+  background: var(--swiss-red);
+}
+
+.panel-chain-step,
+.panel-chain-arrow {
+  font-size: 11px;
+}

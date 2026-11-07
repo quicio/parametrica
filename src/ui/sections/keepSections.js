@@ -763,7 +763,11 @@ export function buildPresetsSection(controls) {
 }
 
 export function buildExportSection(controls) {
-    const gui = controls.makeGui(controls.section('Export', { id: 'export', mode: 'keep' }));
+    const body = controls.section('2D Export', { id: 'export', mode: 'keep' });
+    body.appendChild(controls.panelHint(
+      'Vector, raster and document export. Manufacturing export lives in Make.',
+    ));
+    const gui = controls.makeGui(body);
     const ex = controls.app.exporter;
     gui.add({ svg: () => ex.exportSVG() }, 'svg').name('Export SVG');
     gui.add({ plotter: () => ex.exportPlotterSVG() }, 'plotter').name('Export Plotter SVG');

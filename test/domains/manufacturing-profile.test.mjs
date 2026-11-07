@@ -47,6 +47,13 @@ export async function run(assert) {
   assert(manufacturingPreset('resin').nozzle === 0.05, 'process presets expose provisional nozzle values');
   assert(MANUFACTURING_PRESETS.custom.process === 'custom', 'custom preset exists');
 
+  const verified = sanitizeManufacturingProfile({
+    ...defaults,
+    verification: { slicer: 'Orca 2.2', material: 'PLA', result: 'pass', notes: '0.2 mm layers' },
+  });
+  assert(verified.verification.slicer === 'Orca 2.2', 'slicer verification survives sanitization');
+  assert(verified.verification.result === 'pass', 'slicer result survives sanitization');
+
   const pass = buildManufacturingReport({
     profile: defaults,
     printability: PRINT,
@@ -62,6 +69,16 @@ export async function run(assert) {
   assert(sourceById.overhang === 'measured' && sourceById.bed === 'measured', 'overhang and bed are measured');
   assert(sourceById.wall === 'unavailable', 'wall thickness is unavailable, not invented');
   assert(pass.checks.find((check) => check.id === 'wall').severity === 'unknown', 'unavailable wall is unknown');
+
+  const verifiedReport = buildManufacturingReport({
+    profile: verified,
+    printability: PRINT,
+    lattice: LATTICE,
+    units: UNITS,
+    bbox: BBOX,
+  });
+  assert(verifiedReport.verifiedBySlicer === true, 'manual slicer verification is reported');
+  assert(verifiedReport.verification.material === 'PLA', 'verification material is reported');
 
   const failProfile = sanitizeManufacturingProfile({
     ...defaults,

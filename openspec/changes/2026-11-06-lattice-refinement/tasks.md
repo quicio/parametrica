@@ -33,17 +33,17 @@
 
 ## 5. Joint decision gate
 
-- [ ] 5.1 Implement a timeboxed local SDF joint spike.
+- [x] 5.1 Implement a timeboxed local SDF joint spike.
 - [ ] 5.2 Benchmark SDF against `rounded` on the two lattice presets.
 - [ ] 5.3 Measure manifold validity, opening preservation, triangles and time.
-- [ ] 5.4 Keep `rounded` as default unless every gate passes.
-- [ ] 5.5 Report the chosen method, fallback count and reason.
+- [x] 5.4 Keep `rounded` as default unless every gate passes.
+- [x] 5.5 Report the chosen method, fallback count and reason.
 
 ## 6. Benchmarks and visual evidence
 
 - [x] 6.1 Add a Node benchmark for 15/20/25 mm on both lattice presets.
 - [x] 6.2 Record points, triangles, build time, volume and opening results.
-- [ ] 6.3 Add golden/visual-review artifacts for network and solid preview.
+- [x] 6.3 Add golden/visual-review artifacts for network and solid preview.
 - [x] 6.4 Document provisional thresholds before enabling any gate.
 - [x] 6.5 Confirm the three existing vase presets do not regress.
 

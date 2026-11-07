@@ -29,7 +29,7 @@
 - [x] 4.2 Pass it through the worker without re-defaulting.
 - [x] 4.3 Show profile and check table in Fabricate.
 - [x] 4.4 Keep preview and export on the same source profile.
-- [ ] 4.5 Add an optional manual slicer-verification record.
+- [x] 4.5 Add an optional manual slicer-verification record.
 
 ## 5. Presets and documentation
 
