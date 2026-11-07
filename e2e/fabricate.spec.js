@@ -110,6 +110,7 @@ test('Fabricate is read-only, unit-gated and exports a validated closed body', a
 });
 
 test('lattice preset builds a strut body in the worker and reports it', async ({ page }) => {
+  test.setTimeout(120_000);
   await boot(page);
   await page.evaluate(() => window.__parametrica.applyPreset('Lattice Vase 200'));
   await page.waitForTimeout(500);
@@ -124,6 +125,25 @@ test('lattice preset builds a strut body in the worker and reports it', async ({
   await expect(fabricate.locator('.fabricate-volume')).toContainText('mm³');
   await expect(fabricate.locator('.fabricate-warnings')).toHaveText('validated');
   await expect(exportButton).toBeEnabled();
+
+  await page.evaluate(() => {
+    const app = window.__parametrica;
+    window.__fabricationReportBeforeOrbit = app.fabricationReport;
+    app.document.view.camera.yaw += 0.35;
+    app.document.view.camera.pitch = Math.min(1.2, app.document.view.camera.pitch + 0.1);
+    app.rebuild();
+  });
+  await page.waitForTimeout(500);
+  const orbitState = await page.evaluate(() => ({
+    sameReport: window.__parametrica.fabricationReport === window.__fabricationReportBeforeOrbit,
+    running: window.__parametrica.fabricationJobs?.running === true,
+    status: document.querySelector('.fabricate-status')?.textContent ?? '',
+    progressHidden: document.querySelector('.fabricate-progress')?.hidden !== false,
+  }));
+  expect(orbitState.sameReport).toBe(true);
+  expect(orbitState.running).toBe(false);
+  expect(orbitState.status).toContain('READY');
+  expect(orbitState.progressHidden).toBe(true);
 
   const preview = fabricate.locator('.fabricate-lattice-preview');
   await expect(preview).toHaveValue('solid');

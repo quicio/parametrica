@@ -541,8 +541,11 @@ export class Controls {
     // solid or reschedule the worker job.
     const { latticePreview: _latticePreview, ...fabricationPrep } = input.preparation ?? {};
     const prepKey = JSON.stringify(fabricationPrep);
-    const same = this.fabricationInput?.evaluation === input.evaluation
+    const unitsKey = JSON.stringify(doc.view?.units ?? null);
+    const docKey = fabricationDocumentKey(doc, input.layerIndex);
+    const same = this.fabricationInput?.docKey === docKey
       && this.fabricationInput?.prepKey === prepKey
+      && this.fabricationInput?.unitsKey === unitsKey
       && this.fabricationInput?.layerIndex === input.layerIndex;
     if (isHeavyFabrication(input.preparation)) {
       if (same && this.fabricationReport) {
@@ -551,7 +554,7 @@ export class Controls {
       }
       if (same && this.fabricationJobs.running) return;
       this.fabricationReport = null;
-      this.fabricationInput = { ...input, prepKey };
+      this.fabricationInput = { ...input, prepKey, docKey, unitsKey };
       this.renderFabricateWorking('preparing', 0);
       this.fabricationJobs.schedule(input);
       return;
@@ -559,7 +562,7 @@ export class Controls {
     this.fabricationJobs.cancel();
     const report = buildFabricationReport(input);
     this.fabricationReport = report;
-    this.fabricationInput = { ...input, prepKey };
+    this.fabricationInput = { ...input, prepKey, docKey, unitsKey };
     this.renderFabricate(report);
   }
 
@@ -1036,13 +1039,32 @@ export class Controls {
     els.panel.dataset.exportable = 'false';
     els.exportButton.disabled = true;
     if (els.cancelButton) els.cancelButton.hidden = false;
-    if (els.progress) {
-      els.progress.hidden = false;
-      els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
-    }
-    els.reason.textContent = 'Heavy fabrication job running off the main thread.';
+    this.updateFabricationProgress(phase, value);
+    els.reason.textContent = 'Preparing the fabrication body in the worker. You can keep orbiting the camera.';
     this.syncLatticePreview(null);
     this.updateFabricateNarrative(null);
+  }
+
+  updateFabricationProgress(phase, value) {
+    const els = this.fabricateEls;
+    if (!els) return;
+    const percent = Math.max(0, Math.min(100, Math.round((Number(value) || 0) * 100)));
+    const labels = {
+      engine: 'Starting engine',
+      preparing: 'Preparing solid',
+      boolean: 'Combining bodies',
+      sdf: 'Repairing surface',
+      done: 'Finishing',
+    };
+    if (els.progress) els.progress.hidden = false;
+    if (els.progressLabel) {
+      els.progressLabel.textContent = `${labels[phase] ?? phase}${percent > 0 && percent < 100 ? ` · ${percent}%` : '…'}`;
+    }
+    if (els.progressFill) {
+      els.progressFill.classList.toggle('indeterminate', percent < 100);
+      if (percent >= 100) els.progressFill.style.width = '100%';
+      else els.progressFill.style.width = percent > 0 ? `${Math.max(8, percent)}%` : '35%';
+    }
   }
 
   onFabricationProgress({ phase, value }) {
@@ -1050,10 +1072,7 @@ export class Controls {
     const els = this.fabricateEls;
     if (!els) return;
     els.status.textContent = `WORKING · ${phase}`;
-    if (els.progress) {
-      els.progress.hidden = false;
-      els.progress.textContent = `${phase} · ${Math.round((Number(value) || 0) * 100)}%`;
-    }
+    this.updateFabricationProgress(phase, value);
   }
 
   onFabricationResult(report) {
@@ -1362,6 +1381,26 @@ export class Controls {
 
 
 
+
+function fabricationDocumentKey(doc, layerIndex) {
+  const layers = (doc?.layers ?? []).map((layer) => ({
+    id: layer?.id ?? null,
+    type: layer?.type ?? null,
+    visible: layer?.visible !== false,
+    locked: layer?.locked === true,
+    seed: layer?.seed ?? null,
+    generator: layer?.generator ?? null,
+    operators: layer?.operators ?? null,
+    source: layer?.source ?? null,
+    transform: layer?.transform ?? null,
+  }));
+  return JSON.stringify({
+    layerIndex,
+    layers,
+    seed: doc?.seed ?? null,
+    time: doc?.animation?.time ?? 0,
+  });
+}
 
 function countMods(stage) {
   if (!stage?.mods) return 0;

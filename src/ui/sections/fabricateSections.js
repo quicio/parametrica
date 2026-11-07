@@ -775,6 +775,15 @@ export function buildFabricateSection(controls) {
     const progress = document.createElement('div');
     progress.className = 'fabricate-progress';
     progress.hidden = true;
+    const progressLabel = document.createElement('div');
+    progressLabel.className = 'fabricate-progress-label';
+    progressLabel.textContent = 'Preparing solid…';
+    const progressBar = document.createElement('div');
+    progressBar.className = 'fabricate-progress-bar';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'fabricate-progress-fill indeterminate';
+    progressBar.appendChild(progressFill);
+    progress.append(progressLabel, progressBar);
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
     cancelButton.className = 'lab-button fabricate-cancel';
@@ -813,7 +822,7 @@ export function buildFabricateSection(controls) {
       manufacturingProcess: manufacturingSelect, manufacturingGating: gatingSelect,
       manufacturingWall: minWallInput, manufacturingStrut: minStrutInput,
       manufacturingOpening: minOpeningInput, manufacturingOverhang: overhangInput,
-      progress, cancelButton, productExportButton, exportButton,
+      progress, progressLabel, progressFill, cancelButton, productExportButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       latticePreview: previewSelect,
       finishQuality: finishQualitySelect,

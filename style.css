@@ -4050,3 +4050,44 @@ textarea:focus-visible {
 .product-preview-canvas:active {
   cursor: grabbing;
 }
+
+/* ——— Fabricate progress ——— */
+
+.fabricate-progress {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 2px;
+}
+
+.fabricate-progress-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.fabricate-progress-bar {
+  position: relative;
+  overflow: hidden;
+  height: 7px;
+  border: 1px solid var(--line);
+  background: #050607;
+}
+
+.fabricate-progress-fill {
+  height: 100%;
+  width: 35%;
+  background: var(--ink);
+  transition: width 180ms ease-out;
+}
+
+.fabricate-progress-fill.indeterminate {
+  animation: fabricate-progress-slide 1.15s ease-in-out infinite;
+  transform: translateX(-120%);
+}
+
+@keyframes fabricate-progress-slide {
+  0% { transform: translateX(-120%); }
+  55% { transform: translateX(210%); }
+  100% { transform: translateX(210%); }
+}
