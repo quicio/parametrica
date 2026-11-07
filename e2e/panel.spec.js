@@ -119,6 +119,9 @@ test('spatial reference toggles without changing the frame or export', async ({ 
 
 test('workspace modes and accordion state persist', async ({ page }) => {
   await boot(page);
+  const modeBar = await page.locator('.panel-modes').boundingBox();
+  expect(modeBar.height).toBeLessThan(50);
+  await expect(page.locator('.panel-mode')).toHaveCount(7);
   await expect(page.locator('.panel-mode[data-mode="form"]')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.panel-section[data-section-id="generator"]')).toBeVisible();
   await expect(page.locator('.panel-section[data-section-id="notebook"]')).toBeHidden();

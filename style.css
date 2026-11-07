@@ -4549,3 +4549,52 @@ textarea:focus-visible,
 .start-with-actions .lab-button {
   font-size: 11px;
 }
+
+/* ——— Mode bar: one line, wider instrument rail ——— */
+
+:root {
+  --panel-width: clamp(400px, 29vw, 440px);
+}
+
+.panel-modes {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.panel-mode {
+  font-size: 11px;
+  letter-spacing: 0.005em;
+  padding: 9px 0;
+}
+
+@media (max-width: 1500px) {
+  .panel-modes {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .panel-mode {
+    font-size: 11px;
+    letter-spacing: 0.005em;
+  }
+}
+
+@media (max-width: 1300px) {
+  .panel-modes {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .panel-mode {
+    font-size: 10.5px;
+    letter-spacing: 0.005em;
+  }
+}
+
+@media (max-width: 900px) {
+  .panel-modes {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .panel-mode {
+    font-size: 10px;
+    letter-spacing: 0.005em;
+  }
+}
