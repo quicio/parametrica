@@ -17,20 +17,20 @@ const FINISH_PROFILES = Object.freeze({
   draft: {
     radialSegments: 8,
     jointSlices: 8,
-    jointScale: 1.22,
-    refinement: { tolerance: 0.3, minSamples: 2, maxSamples: 6 },
+    jointScale: 1.2,
+    refinement: { tolerance: 0.3, minSamples: 2, maxSamples: 6, maxPoints: 80_000 },
   },
   standard: {
     radialSegments: 10,
     jointSlices: 12,
-    jointScale: 1.3,
-    refinement: { tolerance: 0.15, minSamples: 4, maxSamples: 10 },
+    jointScale: 1.5,
+    refinement: { tolerance: 0.15, minSamples: 4, maxSamples: 10, maxPoints: 240_000 },
   },
   high: {
     radialSegments: 16,
     jointSlices: 16,
-    jointScale: 1.38,
-    refinement: { tolerance: 0.08, minSamples: 6, maxSamples: 16 },
+    jointScale: 1.3,
+    refinement: { tolerance: 0.08, minSamples: 6, maxSamples: 16, maxPoints: 600_000 },
   },
 });
 
@@ -43,12 +43,15 @@ export function buildLatticeSolid(curves, {
   tolerance = 1e-4,
   finishQuality = 'standard',
   jointStyle = 'technical',
+  jointScale = null,
   curveStyle = 'polyline',
   envelope = 'centerline',
   radiusProfile = 'constant',
   taper = 0.85,
   radiusAt = null,
   refinementTolerance = null,
+  refinementPointBudget = null,
+  openingValidation = 'capsule',
   openings = [],
   minOpeningWidth = null,
   specHash = null,
@@ -90,7 +93,11 @@ export function buildLatticeSolid(curves, {
       : finish.refinement.tolerance,
     minSamples: finish.refinement.minSamples,
     maxSamples: finish.refinement.maxSamples,
+    maxPoints: Number.isFinite(Number(refinementPointBudget)) && Number(refinementPointBudget) > 0
+      ? Math.round(Number(refinementPointBudget))
+      : finish.refinement.maxPoints,
   };
+  const pointBudget = { used: 0, max: refinement.maxPoints };
 
   const entries = source.map((curve) => {
     if (resolvedCurveStyle !== 'organic') {
@@ -105,6 +112,7 @@ export function buildLatticeSolid(curves, {
       envelope,
       strutRadius: baseRadius,
       refinement,
+      budget: pointBudget,
     });
     return { curve, points: organic.points, refinement: organic };
   });
@@ -115,6 +123,9 @@ export function buildLatticeSolid(curves, {
       maxChordDeviation: refined.reduce((max, entry) => Math.max(max, entry.refinement.maxChordDeviation), 0),
       surfaceDeviation: refined.reduce((max, entry) => Math.max(max, entry.refinement.surfaceDeviation), 0),
       meanSamples: refined.reduce((sum, entry) => sum + entry.refinement.samples, 0) / refined.length,
+      pointCount: refined.reduce((sum, entry) => sum + entry.refinement.samples, 0),
+      budgetPoints: refinement.maxPoints,
+      budgetExceeded: pointBudget.used > refinement.maxPoints,
       curveFallback,
     }
     : {
@@ -122,6 +133,9 @@ export function buildLatticeSolid(curves, {
       maxChordDeviation: null,
       surfaceDeviation: null,
       meanSamples: 0,
+      pointCount: 0,
+      budgetPoints: refinement.maxPoints,
+      budgetExceeded: false,
       curveFallback,
     };
 
@@ -140,19 +154,68 @@ export function buildLatticeSolid(curves, {
     return { ok: false, geometry: null, error: { code: 'empty-network', message: 'lattice network produced no struts' } };
   }
 
-  const joints = jointSpheresMesh(entries.map((entry) => entry.points), baseRadius, sides, {
+  const resolvedJointScale = Number.isFinite(Number(jointScale)) && Number(jointScale) > 0
+    ? Number(jointScale)
+    : finish.jointScale;
+  const jointPoints = entries.map((entry) => entry.points);
+  let joints = jointSpheresMesh(jointPoints, baseRadius, sides, {
     jointStyle,
-    jointScale: finish.jointScale,
+    jointScale: resolvedJointScale,
     jointSlices: finish.jointSlices,
   });
   const floorMesh = floorSolid(entries.map((entry) => ({ points: entry.points })), baseRadius, floorHeight);
   const rimMesh = rimSolid(entries.map((entry) => ({ points: entry.points })), surfaceHeight, baseRadius, rimWidth);
-  const operands = [floorMesh, rimMesh, joints, ...tubes].filter(Boolean);
-  const result = booleanSolids('union', operands, {
+  let operands = [floorMesh, rimMesh, joints, ...tubes].filter(Boolean);
+  let result = booleanSolids('union', operands, {
     strategy: 'manifold',
     tolerance,
     maxInputTriangles: 600_000,
   });
+  let jointFallback = null;
+  if (!result.ok || result.empty || !result.geometry) {
+    const styleCandidates = jointStyle === 'technical'
+      ? ['rounded', 'technical']
+      : [jointStyle === 'auto' ? 'rounded' : jointStyle, 'technical', 'rounded'];
+    const scaleCandidates = [...new Set([
+      resolvedJointScale,
+      1.6,
+      1.5,
+      1.4,
+      1.35,
+      1.3,
+      1.25,
+      1.2,
+      1.15,
+      1.1,
+      1.0,
+    ].map((value) => Math.round(value * 100) / 100))];
+    let retried = false;
+    for (const style of styleCandidates) {
+      for (const scale of scaleCandidates) {
+        if (style === jointStyle && scale === resolvedJointScale) continue;
+        const candidate = jointSpheresMesh(jointPoints, baseRadius, sides, {
+          jointStyle: style,
+          jointScale: scale,
+          jointSlices: finish.jointSlices,
+        });
+        const retryOperands = [floorMesh, rimMesh, candidate, ...tubes].filter(Boolean);
+        const retry = booleanSolids('union', retryOperands, {
+          strategy: 'manifold',
+          tolerance,
+          maxInputTriangles: 600_000,
+        });
+        if (retry.ok && retry.geometry) {
+          joints = candidate;
+          operands = retryOperands;
+          result = retry;
+          jointFallback = style === jointStyle ? `joint-scale-${scale}` : `${jointStyle}-to-${style}@${scale}`;
+          retried = true;
+          break;
+        }
+      }
+      if (retried) break;
+    }
+  }
   if (result.empty || !result.geometry) {
     return {
       ok: false,
@@ -198,11 +261,14 @@ export function buildLatticeSolid(curves, {
   const jointCount = joints?.meta?.jointCount ?? 0;
   const jointRadius = joints?.meta?.jointRadius ?? baseRadius;
   const requestedBlend = jointStyle === 'blend';
+  const actualJointStyle = jointFallback ? 'rounded' : jointStyle;
   const gaugeStarted = now();
   const measured = measureOpeningClearance(geometry, openings, {
     minOpeningWidth,
     strutDiameter: baseRadius * 2,
     cellSize: Math.max(4, (Number(minOpeningWidth) || 4) * 2),
+    validation: openingValidation,
+    maxOpenings: finishQuality === 'draft' ? 64 : null,
   });
   const gaugeMs = Math.round(now() - gaugeStarted);
   const minRadius = radiusProfile === 'taper'
@@ -218,8 +284,10 @@ export function buildLatticeSolid(curves, {
       joints: jointCount,
       blendedJoints: 0,
       fallbackJoints: requestedBlend ? jointCount : 0,
-      jointMethod: jointStyle === 'technical' ? 'technical' : 'rounded',
-      jointStyle,
+      jointMethod: actualJointStyle === 'technical' ? 'technical' : 'rounded',
+      jointStyle: actualJointStyle,
+      requestedJointStyle: jointStyle,
+      jointFallback,
       jointRadius,
       curveStyle: resolvedCurveStyle,
       requestedCurveStyle: curveStyle,
@@ -253,8 +321,10 @@ export function buildLatticeSolid(curves, {
         specHash,
         networkHash,
         algorithmVersion,
-        jointStyle,
-        jointMethod: jointStyle === 'technical' ? 'technical' : 'rounded',
+        jointStyle: actualJointStyle,
+        requestedJointStyle: jointStyle,
+        jointFallback,
+        jointMethod: actualJointStyle === 'technical' ? 'technical' : 'rounded',
         finishQuality,
         curveStyle: resolvedCurveStyle,
         curveFallback,
@@ -372,7 +442,7 @@ function jointSpheresMesh(polylines, radius, slices, {
   const vertices = [];
   const faces = [];
   let count = 0;
-  const requested = jointStyle === 'technical' ? 1.04 : jointScale;
+  const requested = jointStyle === 'technical' ? 1.2 : jointScale;
   const sphereRadius = radius * requested;
   const minDistance = sphereRadius * 2.15;
   const accepted = [];
@@ -410,6 +480,7 @@ function organicCenterline(points, {
   envelope,
   strutRadius,
   refinement,
+  budget,
 }) {
   const surfacePoints = toSurfaceCoordinates(points, radiusAt);
   if (surfacePoints.length < 2) {
@@ -432,12 +503,13 @@ function organicCenterline(points, {
       const [theta, z, radius] = catmullRomCentripetal(p0, p1, p2, p3, t, angularScale);
       return surfacePoint(theta, z, radius, radiusAt, envelope, strutRadius);
     };
-    const adaptive = adaptiveSegment(evaluate, refinement);
+    const adaptive = adaptiveSegment(evaluate, refinement, budget);
     maxChordDeviation = Math.max(maxChordDeviation, adaptive.maxDeviation);
     for (let step = 0; step < adaptive.samples.length - 1; step++) {
       out.push(adaptive.samples[step]);
     }
   }
+  if (budget) budget.used += out.length + 1;
   const last = surfacePoints[surfacePoints.length - 1];
   out.push(surfacePoint(last[0], last[1], last[2], radiusAt, envelope, strutRadius));
   let surfaceDeviation = 0;
@@ -455,7 +527,7 @@ function organicCenterline(points, {
   };
 }
 
-function adaptiveSegment(evaluate, { tolerance, minSamples, maxSamples }) {
+function adaptiveSegment(evaluate, { tolerance, minSamples, maxSamples }, budget = null) {
   const minimum = Math.max(1, Math.round(minSamples) || 1);
   const maximum = Math.max(minimum, Math.round(maxSamples) || minimum);
   const values = Array.from({ length: minimum + 1 }, (_, index) => index / minimum);
@@ -481,6 +553,7 @@ function adaptiveSegment(evaluate, { tolerance, minSamples, maxSamples }) {
       }
     }
     if (worstIndex < 0 || worst <= tolerance) break;
+    if (budget && budget.used + values.length >= budget.max) break;
     values.splice(worstIndex + 1, 0, (values[worstIndex] + values[worstIndex + 1]) / 2);
   }
   let maxDeviation = 0;
@@ -583,10 +656,16 @@ function measureOpeningClearance(mesh, openings, {
   minOpeningWidth = null,
   strutDiameter = 3.5,
   cellSize = 8,
+  validation = 'capsule',
+  maxOpenings = null,
 } = {}) {
-  const list = (Array.isArray(openings) ? openings : [])
+  const all = (Array.isArray(openings) ? openings : [])
     .filter((opening) => Number.isFinite(opening?.x) && Number.isFinite(opening?.y) && Number.isFinite(opening?.z));
-  if (!list.length || !mesh?.vertices?.length || !mesh?.faces?.length) return null;
+  if (!all.length || !mesh?.vertices?.length || !mesh?.faces?.length) return null;
+  const limit = Number.isFinite(Number(maxOpenings)) && Number(maxOpenings) > 0
+    ? Math.min(all.length, Math.floor(Number(maxOpenings)))
+    : all.length;
+  const list = all.slice(0, limit);
   const triangles = buildTriangleGrid(mesh, cellSize);
   if (!triangles.count) return null;
   const target = Number(minOpeningWidth);
@@ -594,7 +673,7 @@ function measureOpeningClearance(mesh, openings, {
     Math.max(2, Number(strutDiameter) || 3.5) * 2,
     Number.isFinite(target) && target > 0 ? target * 4 : 8,
   );
-  const samples = 5;
+  const samples = validation === 'estimate' ? 1 : 5;
   let min = Infinity;
   let max = 0;
   let total = 0;
@@ -621,10 +700,13 @@ function measureOpeningClearance(mesh, openings, {
     if (Number.isFinite(target) && target > 0 && width + 1e-6 < target) below += 1;
   }
   return {
-    method: 'capsule-sampled',
+    method: validation === 'estimate' ? 'estimate' : 'capsule-sampled',
     samplesPerOpening: samples,
     span,
     count: list.length,
+    checkedCount: list.length,
+    skippedCount: all.length - list.length,
+    totalCount: all.length,
     minWidth: Number.isFinite(min) ? min : 0,
     maxWidth: max,
     meanWidth: total / list.length,

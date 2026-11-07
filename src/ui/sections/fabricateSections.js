@@ -6,6 +6,7 @@
  */
 
 import { PHYSICAL_UNIT_SYSTEMS } from '../../core/units.js';
+import { manufacturingPreset, sanitizeManufacturingProfile } from '../../geometry/manufacturingProfile.js';
 export function buildFabricateSection(controls) {
     const body = controls.section('Fabricate', { id: 'fabricate', mode: 'fabricate' });
     body.appendChild(controls.panelHint(
@@ -51,6 +52,7 @@ export function buildFabricateSection(controls) {
     const combineGroup = makeGroup('Combine', 'fabricate-group-combine');
     const outputGroup = makeGroup('Output', 'fabricate-group-output');
     const checksGroup = makeGroup('Checks', 'fabricate-group-checks');
+    const manufacturingGroup = makeGroup('Manufacturing', 'fabricate-group-manufacturing');
 
     const scaleRow = document.createElement('div');
     scaleRow.className = 'fabricate-row';
@@ -645,7 +647,7 @@ export function buildFabricateSection(controls) {
     repairRow.append(repairLabel, repairWrap);
     repairGroup.appendChild(repairRow);
 
-    const makeRow = (label, className) => {
+    const makeRow = (label, className, group = checksGroup) => {
       const row = document.createElement('div');
       row.className = 'fabricate-row';
       const name = document.createElement('span');
@@ -655,7 +657,7 @@ export function buildFabricateSection(controls) {
       value.className = `fabricate-value ${className}`;
       value.textContent = '—';
       row.append(name, value);
-      checksGroup.appendChild(row);
+      group.appendChild(row);
       return value;
     };
     const triangles = makeRow('Triangles', 'fabricate-triangles');
@@ -672,6 +674,99 @@ export function buildFabricateSection(controls) {
     const lattice = makeRow('Lattice', 'fabricate-lattice');
     const printability = makeRow('Printability', 'fabricate-printability');
     const printChecks = makeRow('Print checks', 'fabricate-print-checks');
+
+    const manufacturingProfile = fabrication.manufacturing;
+    const manufacturingRow = document.createElement('div');
+    manufacturingRow.className = 'fabricate-row';
+    const manufacturingLabel = document.createElement('span');
+    manufacturingLabel.className = 'fabricate-label';
+    manufacturingLabel.textContent = 'Profile';
+    const manufacturingSelect = document.createElement('select');
+    manufacturingSelect.className = 'artboard-input fabricate-manufacturing-process';
+    for (const [value, text] of [['fdm', 'FDM 0.4'], ['resin', 'Resin'], ['custom', 'Custom']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      manufacturingSelect.appendChild(option);
+    }
+    manufacturingSelect.value = manufacturingProfile.process ?? 'fdm';
+    manufacturingSelect.title = 'Provisional process minima. They are not calibrated print guarantees.';
+    manufacturingSelect.addEventListener('change', () => {
+      fabrication.manufacturing = manufacturingPreset(manufacturingSelect.value);
+      syncManufacturingInputs();
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    manufacturingRow.append(manufacturingLabel, manufacturingSelect);
+    manufacturingGroup.appendChild(manufacturingRow);
+
+    const gatingRow = document.createElement('div');
+    gatingRow.className = 'fabricate-row';
+    const gatingLabel = document.createElement('span');
+    gatingLabel.className = 'fabricate-label';
+    gatingLabel.textContent = 'Gate';
+    const gatingSelect = document.createElement('select');
+    gatingSelect.className = 'artboard-input fabricate-manufacturing-gating';
+    for (const [value, text] of [['warn', 'Warn only'], ['block', 'Block failures']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      gatingSelect.appendChild(option);
+    }
+    gatingSelect.value = manufacturingProfile.gating ?? 'warn';
+    gatingSelect.title = 'Warnings do not block by default. Block mode stops failing manufacturing checks.';
+    gatingSelect.addEventListener('change', () => {
+      fabrication.manufacturing.gating = gatingSelect.value;
+      controls.app.rebuild();
+      controls.refreshFabricate();
+    });
+    gatingRow.append(gatingLabel, gatingSelect);
+    manufacturingGroup.appendChild(gatingRow);
+
+    const numberRow = (label, key, min, max, step, className) => {
+      const row = document.createElement('div');
+      row.className = 'fabricate-row';
+      const name = document.createElement('span');
+      name.className = 'fabricate-label';
+      name.textContent = label;
+      const input = document.createElement('input');
+      input.className = `artboard-input ${className}`;
+      input.type = 'number';
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      input.value = String(fabrication.manufacturing[key] ?? '');
+      input.addEventListener('change', () => {
+        fabrication.manufacturing = sanitizeManufacturingProfile({
+          ...fabrication.manufacturing,
+          [key]: Number(input.value),
+        });
+        input.value = String(fabrication.manufacturing[key] ?? '');
+        controls.app.rebuild();
+        controls.refreshFabricate();
+      });
+      row.append(name, input);
+      manufacturingGroup.appendChild(row);
+      return input;
+    };
+    const minWallInput = numberRow('Min wall (mm)', 'minWall', 0.2, 20, 0.1, 'fabricate-manufacturing-wall');
+    const minStrutInput = numberRow('Min strut (mm)', 'minStrut', 0.2, 20, 0.1, 'fabricate-manufacturing-strut');
+    const minOpeningInput = numberRow('Min opening (mm)', 'minOpeningWidth', 0, 50, 0.5, 'fabricate-manufacturing-opening');
+    const overhangInput = numberRow('Overhang (°)', 'overhangAngle', 0, 89, 1, 'fabricate-manufacturing-overhang');
+
+    const syncManufacturingInputs = () => {
+      const profile = fabrication.manufacturing ?? manufacturingProfile;
+      manufacturingSelect.value = profile.process ?? 'fdm';
+      gatingSelect.value = profile.gating ?? 'warn';
+      minWallInput.value = String(profile.minWall ?? '');
+      minStrutInput.value = String(profile.minStrut ?? '');
+      minOpeningInput.value = String(profile.minOpeningWidth ?? '');
+      overhangInput.value = String(profile.overhangAngle ?? '');
+    };
+    syncManufacturingInputs();
+
+    const manufacturingStatus = makeRow('Manufacturing', 'fabricate-manufacturing-status', manufacturingGroup);
+    const manufacturingChecks = makeRow('Manufacturing checks', 'fabricate-manufacturing-checks', manufacturingGroup);
 
     const compositionNote = document.createElement('div');
     compositionNote.className = 'fabricate-composition-note';
@@ -713,7 +808,12 @@ export function buildFabricateSection(controls) {
     controls.fabricateEls = {
       panel, status, source, reason, plan, suggestion, nextAction,
       triangles, vertices, bodies, boolean, objects, volume,
-      worldSize, physical, warnings, preparation, repairStatus, lattice, printability, printChecks, progress, cancelButton, productExportButton, exportButton,
+      worldSize, physical, warnings, preparation, repairStatus, lattice, printability, printChecks,
+      manufacturing: manufacturingStatus, manufacturingChecks,
+      manufacturingProcess: manufacturingSelect, manufacturingGating: gatingSelect,
+      manufacturingWall: minWallInput, manufacturingStrut: minStrutInput,
+      manufacturingOpening: minOpeningInput, manufacturingOverhang: overhangInput,
+      progress, cancelButton, productExportButton, exportButton,
       unitSelect, scaleInput, scopeSelect, booleanSelect, formatSelect, compositionNote,
       latticePreview: previewSelect,
       finishQuality: finishQualitySelect,

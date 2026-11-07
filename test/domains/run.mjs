@@ -28,6 +28,7 @@ import { run as fabricationWorker } from './fabrication-worker.test.mjs';
 import { run as fabricatePresets } from './fabricate-presets.test.mjs';
 import { run as fabricationPreview } from './fabrication-preview.test.mjs';
 import { run as exportIntegrity } from './export-integrity.test.mjs';
+import { run as manufacturingProfile } from './manufacturing-profile.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -63,6 +64,7 @@ await fabricationWorker(assert);
 await fabricatePresets(assert);
 await fabricationPreview(assert);
 await exportIntegrity(assert);
+await manufacturingProfile(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

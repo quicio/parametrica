@@ -673,6 +673,13 @@ export class Controls {
       els.productAo.checked = previewSettings.ao === true;
       els.productAo.disabled = previewSettings.backend !== 'webgl';
     }
+    const manufacturing = preparation.manufacturing ?? {};
+    if (els.manufacturingProcess) els.manufacturingProcess.value = manufacturing.process ?? 'fdm';
+    if (els.manufacturingGating) els.manufacturingGating.value = manufacturing.gating ?? 'warn';
+    if (els.manufacturingWall) els.manufacturingWall.value = String(manufacturing.minWall ?? '');
+    if (els.manufacturingStrut) els.manufacturingStrut.value = String(manufacturing.minStrut ?? '');
+    if (els.manufacturingOpening) els.manufacturingOpening.value = String(manufacturing.minOpeningWidth ?? '');
+    if (els.manufacturingOverhang) els.manufacturingOverhang.value = String(manufacturing.overhangAngle ?? '');
     els.scaleInput.value = Number.isFinite(units.mmPerWorldUnit) && units.mmPerWorldUnit > 0
       ? String(units.mmPerWorldUnit)
       : '';
@@ -836,6 +843,25 @@ export class Controls {
         ? print.warnings.join(' · ')
         : (extra ?? 'no warnings');
       if (els.printChecks.dataset) els.printChecks.dataset.state = print?.status ?? '';
+    }
+    if (els.manufacturing) {
+      const manufacturing = report.manufacturing;
+      els.manufacturing.textContent = manufacturing
+        ? `${manufacturing.overall} · ${manufacturing.process} · ${manufacturing.gating}`
+        : '—';
+      if (els.manufacturing.dataset) els.manufacturing.dataset.state = manufacturing?.overall ?? '';
+    }
+    if (els.manufacturingChecks) {
+      const manufacturing = report.manufacturing;
+      const issues = (manufacturing?.checks ?? [])
+        .filter((check) => check.severity !== 'ok')
+        .map((check) => `${check.label}: ${check.source}`);
+      els.manufacturingChecks.textContent = manufacturing
+        ? (issues.length ? issues.join(' · ') : 'all checks pass')
+        : '—';
+      if (els.manufacturingChecks.dataset) {
+        els.manufacturingChecks.dataset.state = manufacturing?.overall ?? '';
+      }
     }
     const previewSettings = this.app.document.view.preview ?? {};
     const productAvailable = Boolean(report.source)

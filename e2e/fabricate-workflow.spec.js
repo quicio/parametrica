@@ -15,7 +15,7 @@ test('Fabricate groups controls and explains the next action', async ({ page }) 
 
   const fabricate = await openSection(page, 'Fabricate');
   const groupTitles = fabricate.locator('.fabricate-group-title');
-  await expect(groupTitles).toHaveText(['Source', 'Finish', 'Repair', 'Combine', 'Output', 'Checks']);
+  await expect(groupTitles).toHaveText(['Source', 'Finish', 'Repair', 'Combine', 'Output', 'Checks', 'Manufacturing']);
 
   const plan = fabricate.locator('.fabricate-plan');
   const suggestion = fabricate.locator('.fabricate-suggestion');

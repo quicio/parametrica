@@ -9,7 +9,7 @@
 ## 2. Adaptive sampling
 
 - [x] 2.1 Subdivide edges in `(θ,z)` by chord deviation.
-- [ ] 2.2 Respect min/max samples and global point budget.
+- [x] 2.2 Respect min/max samples and global point budget.
 - [x] 2.3 Preserve endpoints, node ids, edge ids and cell ids.
 - [x] 2.4 Keep seam unwrap and surface mapping after subdivision.
 - [x] 2.5 Fall back to polyline when the profile is unavailable and report it.
@@ -19,8 +19,8 @@
 
 - [x] 3.1 Define the capsule gauge geometry and orientation.
 - [x] 3.2 Implement the capsule gauge with a deterministic triangle query.
-- [ ] 3.3 Keep the point-clearance estimate as an explicit cheaper mode.
-- [ ] 3.4 Report checked/skipped cells and per-cell violations.
+- [x] 3.3 Keep the point-clearance estimate as an explicit cheaper mode.
+- [x] 3.4 Report checked/skipped cells and per-cell violations.
 - [x] 3.5 Verify the gauge after post-processing and Manifold repair.
 
 ## 4. Budgets and finish profiles
@@ -41,19 +41,19 @@
 
 ## 6. Benchmarks and visual evidence
 
-- [ ] 6.1 Add a Node benchmark for 15/20/25 mm on both lattice presets.
-- [ ] 6.2 Record points, triangles, build time, volume and opening results.
+- [x] 6.1 Add a Node benchmark for 15/20/25 mm on both lattice presets.
+- [x] 6.2 Record points, triangles, build time, volume and opening results.
 - [ ] 6.3 Add golden/visual-review artifacts for network and solid preview.
 - [x] 6.4 Document provisional thresholds before enabling any gate.
 - [x] 6.5 Confirm the three existing vase presets do not regress.
 
 ## 7. Acceptance
 
-- [ ] 7.1 Unit tests for refinement, deviation, gauge and budgets.
-- [ ] 7.2 Regression tests for the three existing vase presets and exports.
+- [x] 7.1 Unit tests for refinement, deviation, gauge and budgets.
+- [x] 7.2 Regression tests for the three existing vase presets and exports.
 - [ ] 7.3 E2E for the organic preset at `draft` and `high`.
-- [ ] 7.4 Benchmark report committed with measured values.
-- [ ] 7.5 Docs updated and full gates run.
+- [x] 7.4 Benchmark report committed with measured values.
+- [x] 7.5 Docs updated and full gates run.
 
 ## Acceptance criteria
 

@@ -17,6 +17,7 @@ import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
 import { compileExpression } from '../math/expression.js';
+import { buildManufacturingReport, sanitizeManufacturingProfile } from '../geometry/manufacturingProfile.js';
 import { createStdlib } from '../math/stdlib.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
@@ -272,6 +273,7 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     mergedError,
     perforationError,
     preparation: source?.preparation ?? null,
+    manufacturing: prepare.manufacturing,
     repair: source?.repair ?? null,
     prepared: Boolean(source?.prepared),
     reason: source
@@ -304,6 +306,7 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
       warnings: [],
       errors: resolved.booleanError ? [resolved.booleanError] : (resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? [])),
       preparation: null,
+      manufacturing: null,
       repair: null,
       prepared: false,
       unitsReady: millimetresPerUnit(units, 'world') !== null,
@@ -319,6 +322,14 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     ? source.lattice.radius * 2
     : (source.lattice?.mode === 'cutouts' ? source.lattice.strut : null);
   const printability = analyzePrintability(mesh, { units, minFeature, lattice: source.lattice ?? null });
+  const manufacturing = buildManufacturingReport({
+    profile: resolved.manufacturing,
+    printability,
+    lattice: source.lattice ?? null,
+    units,
+    bbox,
+  });
+  const manufacturingBlocked = manufacturing.exportAllowed === false;
   return {
     ...resolved,
     mesh,
@@ -334,11 +345,14 @@ export function buildFabricationReport({ evaluation = null, layerIndex = 0, unit
     prepared: Boolean(source.prepared),
     lattice: source.lattice ?? null,
     printability,
+    manufacturing,
     unitsReady,
-    exportable: source.exportable && unitsReady,
+    exportable: source.exportable && unitsReady && !manufacturingBlocked,
     reason: !unitsReady
       ? 'Set an explicit world scale (mm per world unit) before exporting'
-      : null,
+      : manufacturingBlocked
+        ? manufacturing.exportReason
+        : null,
   };
 }
 
@@ -466,6 +480,7 @@ function normalizePreparation(raw) {
     envelope: raw.envelope === 'outer' ? 'outer' : 'centerline',
     radiusProfile: raw.radiusProfile === 'taper' ? 'taper' : 'constant',
     taper: Number.isFinite(Number(raw.taper)) ? Math.max(0.25, Math.min(1, Number(raw.taper))) : 0.85,
+    manufacturing: sanitizeManufacturingProfile(raw.manufacturing),
     quality: raw.quality,
   };
 }

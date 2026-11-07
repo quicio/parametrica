@@ -136,6 +136,9 @@ export async function run(assert) {
   assert(stl.triangles === latticeReport.triangles && stl.data.length > 84, 'Lattice Vase 200 exports binary STL');
 
   assert(latticeReport.printability?.minFeatureMm > 3, 'Lattice Vase 200 reports its printable strut size');
+  assert(latticeReport.manufacturing?.profile?.process === 'fdm', 'Lattice Vase 200 carries a manufacturing profile');
+  assert(latticeReport.manufacturing?.checks?.length >= 5, 'Lattice Vase 200 reports manufacturing checks');
+  assert(latticeReport.manufacturing?.exportAllowed === true, 'warn-mode manufacturing checks allow export');
 
   const organic = reports.get('Organic Lattice Vase 200');
   assert(organic?.lattice?.curveStyle === 'organic', 'Organic Lattice Vase 200 uses surface curves');

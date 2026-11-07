@@ -553,7 +553,7 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 | `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; pending archive |
 | `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | implemented |
 | `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | implemented core; SDF/benchmarks pending |
-| `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | specified; not implemented |
+| `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | implemented; slicer verification pending |
 | `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | implemented; hardware benchmark pending |
 | `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | implemented |
 
@@ -567,6 +567,12 @@ The refinement core is now **implemented**: adaptive chord sampling, surface
 deviation reporting, capsule-sampled opening checks, refinement provenance and
 build/gauge timing. The local SDF joint gate, full 15/20/25 lattice benchmark and
 visual golden evidence remain pending.
+
+The manufacturing profile is now **implemented** as an evidence report:
+serializable FDM/Resin/Custom minima, measured/declared/estimated/unavailable
+labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
+Wall thickness remains correctly `unavailable` until a real estimator exists;
+external slicer verification remains a manual record.
 
 ## 5.1 Specification status
 

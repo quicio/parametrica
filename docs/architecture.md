@@ -363,6 +363,12 @@ used by Fabricate plus the camera and view-level preview material. It does not
 rebuild geometry, does not alter the fabrication report and does not affect
 STL/3MF/SVG/plotter export.
 
+`view.fabrication.manufacturing` is the optional manufacturing profile
+(process, minima, overhang, gating). The Fabricate report labels each check as
+`measured`, `declared`, `estimated` or `unavailable`; geometric invalidity and
+missing units remain hard blocks, while manufacturing failures warn by default
+and can block only in explicit `block` mode.
+
 `view.preview` is view-level presentation state (`backend`, `material`,
 `quality`, `shadow`, `lighting`, `ao`, `exposure`), separate from
 `finishQuality` (geometric resolution). The backend is lazy-loaded, falls back

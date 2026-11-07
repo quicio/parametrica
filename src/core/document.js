@@ -57,6 +57,8 @@ const DEFAULT_STYLE = {
 const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
 export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
+import { DEFAULT_MANUFACTURING_PROFILE, sanitizeManufacturingProfile } from '../geometry/manufacturingProfile.js';
+
 export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvature', 'arc']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);
 export const FABRICATION_SCOPES = Object.freeze(['single', 'active-layer', 'composition']);
@@ -95,6 +97,7 @@ export const DEFAULT_FABRICATION = Object.freeze({
   envelope: 'centerline',
   radiusProfile: 'constant',
   taper: 0.85,
+  manufacturing: DEFAULT_MANUFACTURING_PROFILE,
   quality: 'custom',
 });
 
@@ -146,6 +149,7 @@ export function sanitizeFabricationSettings(raw) {
     envelope: ['centerline', 'outer'].includes(source.envelope) ? source.envelope : 'centerline',
     radiusProfile: ['constant', 'taper'].includes(source.radiusProfile) ? source.radiusProfile : 'constant',
     taper: clampNumber(source.taper, 0.25, 1, 0.85),
+    manufacturing: sanitizeManufacturingProfile(source.manufacturing),
     quality: ['custom', 'draft', 'standard', 'high'].includes(source.quality) ? source.quality : 'custom',
   };
 }

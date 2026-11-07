@@ -92,16 +92,32 @@ export function manifoldBoolean(operation, operands, { tolerance = 1e-4 } = {}) 
       source: 'manifold',
       boolean: { operation, operands: list.length, tolerance },
     };
-    const repaired = repairMesh(geometry, {
-      tolerance,
-      capStrategy: 'none',
-      orient: false,
-      topology: 'split',
-    });
-    const output = repaired.mesh ?? geometry;
-    const validation = repaired.validation ?? validateMesh(output);
+    const rawValidation = validateMesh(geometry);
+    let output = geometry;
+    let validation = rawValidation;
+    let repairedReport = null;
+    if (!rawValidation.ok) {
+      const attempts = [false, true].flatMap((orient) => [false, true].map((split) => ({
+        orient,
+        topology: split ? 'split' : 'none',
+      })));
+      for (const attempt of attempts) {
+        const repaired = repairMesh(geometry, {
+          tolerance,
+          capStrategy: 'none',
+          orient: attempt.orient,
+          topology: attempt.topology,
+        });
+        repairedReport = repaired.report ?? repairedReport;
+        if (repaired.validation?.ok) {
+          output = repaired.mesh ?? geometry;
+          validation = repaired.validation;
+          break;
+        }
+      }
+    }
     stats.outputTriangles = output.faces.length;
-    stats.repaired = repaired.report?.changed ?? false;
+    stats.repaired = repairedReport?.changed ?? false;
     if (!validation.ok) {
       // Keep the raw result so callers that own a post-repair step can close
       // small cracks instead of discarding potentially valid geometry.

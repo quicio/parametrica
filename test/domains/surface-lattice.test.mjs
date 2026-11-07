@@ -162,6 +162,9 @@ export async function run(assert) {
     assert(Math.abs(organic.stats.minStrutDiameter - 2.8) < 1e-6, 'taper reduces the minimum strut diameter');
     assert(organic.stats.openingGauge?.count > 0, 'organic solid runs the opening gauge');
     assert(organic.stats.openingGauge?.method === 'capsule-sampled', 'opening gauge reports its method');
+    assert(organic.stats.openingGauge?.checkedCount === organic.stats.openingGauge?.totalCount, 'standard quality checks every opening');
+    assert(organic.stats.openingGauge?.skippedCount === 0, 'standard quality reports no skipped openings');
+    assert(organic.stats.refinement?.budgetPoints > 0 && organic.stats.refinement?.pointCount > 0, 'refinement reports its point budget');
     assert(organic.stats.refinement?.maxChordDeviation >= 0, 'organic solid reports chord deviation');
     assert(organic.stats.refinement?.surfaceDeviation >= 0, 'organic solid reports surface deviation');
     assert(organic.stats.refinement?.meanSamples > 0, 'organic solid reports adaptive sample count');
