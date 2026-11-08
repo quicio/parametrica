@@ -396,6 +396,31 @@ function buildLatticeCandidate(layer, index, prepare) {
       return Number.isFinite(value) ? value : null;
     }
     : null;
+  const radiusExpression = typeof params.radiusExpression === 'string'
+    ? params.radiusExpression.trim()
+    : '';
+  let radiusAtPoint = null;
+  if (radiusExpression) {
+    const radiusCompiled = compileExpression(radiusExpression);
+    if (radiusCompiled.ok) {
+      const baseRadius = (Number(params.strut) || 3.5) / 2;
+      const scope = Object.assign(Object.create(null), createStdlib(Number(params.seed) || 1), {
+        v: 0,
+        t: 0,
+        z: 0,
+        base: baseRadius,
+      });
+      radiusAtPoint = (t, point) => {
+        scope.v = Math.max(0, Math.min(1, (Number(point?.z) || 0) / height));
+        scope.t = t;
+        scope.z = Number(point?.z) || 0;
+        scope.base = baseRadius;
+        const value = Number(radiusCompiled.fn(scope));
+        if (!Number.isFinite(value)) return baseRadius;
+        return Math.max(0.25, Math.min(2, value)) * baseRadius;
+      };
+    }
+  }
   const openingCurve = curves.find((curve) => Array.isArray(curve.meta?.latticeOpenings));
   const openings = openingCurve?.meta?.latticeOpenings ?? [];
   const meta = openingCurve?.meta ?? curves[0]?.meta ?? {};
@@ -414,6 +439,8 @@ function buildLatticeCandidate(layer, index, prepare) {
     blendBudget: prepare.blendBudget,
     blendEdgeLength: prepare.blendEdgeLength,
     radiusAt,
+    radiusAtPoint,
+    radiusExpression,
     openings,
     minOpeningWidth: Number(params.minOpeningWidth ?? 2),
     specHash: meta.specHash ?? null,

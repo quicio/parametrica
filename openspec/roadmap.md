@@ -550,7 +550,7 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 | Change | Scope | Status |
 |---|---|---|
 | `2026-11-06-lattice-cell-contracts` | Phase 1: spec, network, distribution, openings | archived (2026-11-08) |
-| `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; 3 advanced tasks pending |
+| `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | archived (2026-11-08) |
 | `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | archived (2026-11-08) |
 | `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | archived (2026-11-08) |
 | `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | archived (2026-11-08) |

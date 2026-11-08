@@ -167,6 +167,9 @@ export async function run(assert) {
     assert(organic.stats.refinement?.budgetPoints > 0 && organic.stats.refinement?.pointCount > 0, 'refinement reports its point budget');
     assert(organic.stats.refinement?.maxChordDeviation >= 0, 'organic solid reports chord deviation');
     assert(organic.stats.refinement?.surfaceDeviation >= 0, 'organic solid reports surface deviation');
+    assert(organic.stats.refinement?.surfaceProjection === 'surface', 'organic solid projects through the surface');
+    assert(organic.stats.refinement?.surfaceToleranceExceeded === false, 'organic surface stays within tolerance');
+    assert(organic.stats.smoothedChains > 0, 'degree-2 chains are G1-smoothed');
     assert(organic.stats.refinement?.meanSamples > 0, 'organic solid reports adaptive sample count');
     assert(organic.stats.buildMs >= 0 && organic.stats.gaugeMs >= 0, 'organic solid reports build and gauge time');
     assert(organic.stats.provenance?.networkHash === organicCurves[0]?.meta?.networkHash, 'organic solid preserves the network hash');
@@ -195,6 +198,24 @@ export async function run(assert) {
     assert(organicBlend.stats.sdfJoints?.eligible >= organicBlend.stats.blendedJoints, 'blend selection reports eligible nodes');
     assert(organicBlend.stats.fallbackJoints >= 0, 'budgeted blend reports rounded fallback count');
   }
+
+  const expressionDoc = BUILT_IN_PRESETS['Lattice Vase 200']();
+  expressionDoc.generator.params = {
+    ...expressionDoc.generator.params,
+    cellSize: 40,
+    height: 80,
+    radiusExpression: '1 + 0.2*v',
+  };
+  const expressionEvaluation = evaluateDocument(expressionDoc, { time: 0 });
+  const expressionReport = buildFabricationReport({
+    evaluation: expressionEvaluation,
+    layerIndex: 0,
+    units: expressionDoc.view.units,
+    preparation: { ...expressionDoc.view.fabrication, finishQuality: 'draft' },
+  });
+  assert(expressionReport.exportable === true, 'radius expression builds an exportable solid');
+  assert(expressionReport.lattice?.radiusProfile === 'expression', 'radius expression reaches the solid');
+  assert(expressionReport.lattice?.minStrutDiameter > 0, 'radius expression reports a minimum strut');
 
   const organicReport = buildFabricationReport({
     evaluation: organicEvaluation,

@@ -1,10 +1,10 @@
 ## 1. Curves and sections
 
 - [x] 1.1 Implement centripetal Catmull-Rom in surface coordinates.
-- [ ] 1.2 Unwrap the seam and project 3D fallbacks within tolerance.
-- [ ] 1.3 Derive tangents and preserve G1 on degree-2 chains.
+- [x] 1.2 Unwrap the seam and project 3D fallbacks within tolerance.
+- [x] 1.3 Derive tangents and preserve G1 on degree-2 chains.
 - [x] 1.4 Adaptive sampling by chord deviation.
-- [ ] 1.5 Variable radius (constant/taper/expression) with clamps.
+- [x] 1.5 Variable radius (constant/taper/expression) with clamps.
 - [x] 1.6 Circular section sweep with per-ring radius.
 
 ## 2. Joints

@@ -11,7 +11,7 @@ explicit quality profile.
 - **THEN** every edge becomes a curved, variable-radius strut
 - **AND** a solid floor and rim close the ends
 
-#### Scenario: Joints
+#### Scenario: Rounded joints
 
 - **WHEN** three or more struts meet at a vertex
 - **THEN** the configured joint style fills the junction

@@ -91,6 +91,11 @@ Generators.register({
       min: 1, max: 12, step: 0.1, default: 3.5,
       doc: 'Strut diameter used when Fabricate turns the network into a solid.',
     },
+    radiusExpression: {
+      advanced: true, label: 'Radius(v,t)', type: TYPE.EXPRESSION,
+      default: '',
+      doc: 'Optional radius multiplier in v and t. 1 = base strut radius; clamped 0.25..2.',
+    },
     rim: {
       label: 'Rim (mm)', type: TYPE.NUMBER,
       min: 1, max: 20, step: 0.5, default: 4,

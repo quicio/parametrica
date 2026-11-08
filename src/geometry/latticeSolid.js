@@ -50,10 +50,14 @@ export function buildLatticeSolid(curves, {
   blendEdgeLength = null,
   blendMaxAngle = 150,
   curveStyle = 'polyline',
+  smoothChains = true,
+  surfaceTolerance = 0.1,
   envelope = 'centerline',
   radiusProfile = 'constant',
   taper = 0.85,
   radiusAt = null,
+  radiusAtPoint = null,
+  radiusExpression = null,
   refinementTolerance = null,
   refinementPointBudget = null,
   openingValidation = 'capsule',
@@ -131,6 +135,9 @@ export function buildLatticeSolid(curves, {
       pointCount: refined.reduce((sum, entry) => sum + entry.refinement.samples, 0),
       budgetPoints: refinement.maxPoints,
       budgetExceeded: pointBudget.used > refinement.maxPoints,
+      surfaceProjection: 'surface',
+      surfaceTolerance: Number(surfaceTolerance) || 0.1,
+      surfaceToleranceExceeded: (refined.reduce((max, entry) => Math.max(max, entry.refinement.surfaceDeviation), 0)) > (Number(surfaceTolerance) || 0.1),
       curveFallback,
     }
     : {
@@ -141,16 +148,33 @@ export function buildLatticeSolid(curves, {
       pointCount: 0,
       budgetPoints: refinement.maxPoints,
       budgetExceeded: false,
+      surfaceProjection: curveFallback ? 'polyline' : 'surface',
+      surfaceTolerance: Number(surfaceTolerance) || 0.1,
+      surfaceToleranceExceeded: false,
       curveFallback,
     };
+
+  const chainSmoothing = resolvedCurveStyle === 'organic'
+    && smoothChains
+    && finishQuality !== 'high'
+    && radiusFn
+    ? smoothDegreeTwoChains(entries, {
+      radiusAt: radiusFn,
+      envelope,
+      strutRadius: baseRadius,
+    })
+    : { smoothed: 0 };
 
   const tubes = [];
   let tubeTriangles = 0;
   for (let i = 0; i < entries.length; i++) {
-    const tube = tubeMesh(entries[i].points, baseRadius, sides, `lattice-strut-${i}`, {
-      radiusProfile,
-      taper,
-    });
+    const tube = tubeMesh(
+      entries[i].points,
+      typeof radiusAtPoint === 'function' ? radiusAtPoint : baseRadius,
+      sides,
+      `lattice-strut-${i}`,
+      { radiusProfile, taper },
+    );
     if (!tube) continue;
     tubes.push(tube);
     tubeTriangles += tube.faces.length;
@@ -295,9 +319,20 @@ export function buildLatticeSolid(curves, {
     maxOpenings: finishQuality === 'draft' ? 64 : null,
   });
   const gaugeMs = Math.round(now() - gaugeStarted);
-  const minRadius = radiusProfile === 'taper'
+  let minRadius = radiusProfile === 'taper'
     ? baseRadius * Math.max(0.1, Math.min(1, Number(taper) || 1))
     : baseRadius;
+  if (typeof radiusAtPoint === 'function') {
+    minRadius = Infinity;
+    for (const entry of entries) {
+      for (let index = 0; index < entry.points.length; index++) {
+        const value = Number(radiusAtPoint(entry.points.length > 1 ? index / (entry.points.length - 1) : 0, entry.points[index]));
+        if (Number.isFinite(value)) minRadius = Math.min(minRadius, value);
+      }
+    }
+    if (!Number.isFinite(minRadius)) minRadius = baseRadius;
+  }
+  const resolvedRadiusProfile = typeof radiusAtPoint === 'function' ? 'expression' : radiusProfile;
 
   return {
     ok: true,
@@ -331,7 +366,8 @@ export function buildLatticeSolid(curves, {
       curveFallback,
       envelope,
       finishQuality,
-      radiusProfile,
+      radiusProfile: resolvedRadiusProfile,
+      radiusExpression: radiusExpression || null,
       operands: operands.length,
       tubeTriangles,
       triangles: geometry.faces.length,
@@ -349,6 +385,8 @@ export function buildLatticeSolid(curves, {
       gaugeMs,
       buildMs: Math.round(now() - started),
       refinement: refinementStats,
+      smoothedChains: chainSmoothing.smoothed,
+      chainSmoothing: chainSmoothing.smoothed > 0 ? 'g1' : 'off',
       floor: floorHeight,
       rim: rimWidth,
       specHash,
@@ -363,10 +401,15 @@ export function buildLatticeSolid(curves, {
         jointFallback,
         jointMethod,
         finishQuality,
+        radiusProfile: resolvedRadiusProfile,
+        radiusExpression: radiusExpression || null,
         curveStyle: resolvedCurveStyle,
         curveFallback,
         envelope,
         refinementTolerance: refinement.tolerance,
+        surfaceTolerance: refinementStats.surfaceTolerance,
+        smoothedChains: chainSmoothing.smoothed,
+      chainSmoothing: chainSmoothing.smoothed > 0 ? 'g1' : 'off',
       },
     },
   };
@@ -384,7 +427,8 @@ export function tubeMesh(points, radius, radialSegments = 8, id = 'lattice-strut
   const taper = Math.max(0.1, Math.min(1, Number(options.taper) || 1));
   const radiusAt = (index) => {
     if (typeof radius === 'function') {
-      const value = Number(radius(path.length > 1 ? index / (path.length - 1) : 0));
+      const t = path.length > 1 ? index / (path.length - 1) : 0;
+      const value = Number(radius(t, path[index]));
       return Math.max(0.05, Number.isFinite(value) ? value : 1);
     }
     if (radiusProfile === 'taper') {
@@ -609,6 +653,91 @@ function jointSpheresMesh(polylines, radius, slices, {
     },
   });
   return orientMesh(mesh);
+}
+
+function smoothDegreeTwoChains(entries, { radiusAt, envelope, strutRadius }) {
+  const keyOf = (point) => `${Math.round(point.x * 100)}:${Math.round(point.y * 100)}:${Math.round(point.z * 100)}`;
+  const incidence = new Map();
+  entries.forEach((entry, entryIndex) => {
+    const points = entry.points;
+    if (!points || points.length < 3) return;
+    const add = (end, point, neighbor, neighborIndex) => {
+      if (!point || !neighbor) return;
+      const away = normalize({
+        x: neighbor.x - point.x,
+        y: neighbor.y - point.y,
+        z: neighbor.z - point.z,
+      });
+      if (!away) return;
+      const key = keyOf(point);
+      if (!incidence.has(key)) incidence.set(key, []);
+      incidence.get(key).push({ entryIndex, end, point, neighborIndex, away });
+    };
+    add('start', points[0], points[1], 1);
+    add('end', points[points.length - 1], points[points.length - 2], points.length - 2);
+  });
+  let smoothed = 0;
+  for (const list of incidence.values()) {
+    if (list.length !== 2) continue;
+    const [a, b] = list;
+    if (a.entryIndex === b.entryIndex) continue;
+    const dot = a.away.x * b.away.x + a.away.y * b.away.y + a.away.z * b.away.z;
+    if (dot > -0.2) continue;
+    const target = normalize({
+      x: a.away.x - b.away.x,
+      y: a.away.y - b.away.y,
+      z: a.away.z - b.away.z,
+    });
+    if (!target) continue;
+    const setNeighbor = (item, direction) => {
+      const original = entries[item.entryIndex].points[item.neighborIndex];
+      const distance = Math.hypot(
+        original.x - item.point.x,
+        original.y - item.point.y,
+        original.z - item.point.z,
+      );
+      const candidate = {
+        x: item.point.x + direction.x * distance,
+        y: item.point.y + direction.y * distance,
+        z: item.point.z + direction.z * distance,
+      };
+      entries[item.entryIndex].points[item.neighborIndex] = projectToSurface(
+        candidate,
+        radiusAt,
+        envelope,
+        strutRadius,
+      );
+    };
+    const blend = 0.05;
+    const aDirection = normalize({
+      x: a.away.x * (1 - blend) + target.x * blend,
+      y: a.away.y * (1 - blend) + target.y * blend,
+      z: a.away.z * (1 - blend) + target.z * blend,
+    }) ?? a.away;
+    const bDirection = normalize({
+      x: b.away.x * (1 - blend) - target.x * blend,
+      y: b.away.y * (1 - blend) - target.y * blend,
+      z: b.away.z * (1 - blend) - target.z * blend,
+    }) ?? b.away;
+    setNeighbor(a, aDirection);
+    setNeighbor(b, bDirection);
+    smoothed += 1;
+  }
+  return { smoothed };
+}
+
+function projectToSurface(point, radiusAt, envelope, strutRadius) {
+  const length = Math.hypot(point.x, point.y);
+  if (length < 1e-9) return point;
+  const surface = Math.max(1e-6, Number(radiusAt(point.z)) || 1e-6);
+  const radius = envelope === 'outer'
+    ? Math.max(1e-6, surface - strutRadius)
+    : surface;
+  return {
+    x: (point.x / length) * radius,
+    y: (point.y / length) * radius,
+    z: point.z,
+  };
 }
 
 function organicCenterline(points, {
