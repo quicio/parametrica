@@ -344,9 +344,9 @@ export function buildFabricateSection(controls) {
     const jointStyleSelect = makeFinishSelect('Joints', 'fabricate-joint-style', [
       ['technical', 'Technical'],
       ['rounded', 'Rounded'],
-      ['blend', 'Blend (benchmark)'],
+      ['blend', 'Blend (SDF)'],
       ['auto', 'Auto'],
-    ], 'jointStyle', 'Joint style; a requested blend falls back to rounded when unvalidated.');
+    ], 'jointStyle', 'Budgeted local SDF blend; remaining nodes use rounded fallback.');
     const envelopeSelect = makeFinishSelect('Envelope', 'fabricate-envelope', [
       ['centerline', 'Centerline'],
       ['outer', 'Outer'],

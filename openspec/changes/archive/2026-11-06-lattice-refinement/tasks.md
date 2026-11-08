@@ -29,13 +29,13 @@
 - [x] 4.2 Record points, triangles, build time and gauge time.
 - [x] 4.3 Report the resolved profile through the worker and Fabricate.
 - [x] 4.4 Prevent silent profile upgrades on preview or export.
-- [ ] 4.5 Decide whether any budget becomes a CI gate only after measurement.
+- [x] 4.5 Decide whether any budget becomes a CI gate only after measurement.
 
 ## 5. Joint decision gate
 
 - [x] 5.1 Implement a timeboxed local SDF joint spike.
-- [ ] 5.2 Benchmark SDF against `rounded` on the two lattice presets.
-- [ ] 5.3 Measure manifold validity, opening preservation, triangles and time.
+- [x] 5.2 Benchmark SDF against `rounded` on the two lattice presets.
+- [x] 5.3 Measure manifold validity, opening preservation, triangles and time.
 - [x] 5.4 Keep `rounded` as default unless every gate passes.
 - [x] 5.5 Report the chosen method, fallback count and reason.
 
@@ -51,7 +51,7 @@
 
 - [x] 7.1 Unit tests for refinement, deviation, gauge and budgets.
 - [x] 7.2 Regression tests for the three existing vase presets and exports.
-- [ ] 7.3 E2E for the organic preset at `draft` and `high`.
+- [x] 7.3 E2E for the organic preset at `draft` and `high`.
 - [x] 7.4 Benchmark report committed with measured values.
 - [x] 7.5 Docs updated and full gates run.
 

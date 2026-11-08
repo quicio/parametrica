@@ -172,6 +172,30 @@ export async function run(assert) {
     assert(organic.stats.provenance?.networkHash === organicCurves[0]?.meta?.networkHash, 'organic solid preserves the network hash');
   }
 
+  const organicBlend = buildLatticeSolid(organicCurves, {
+    strut: 3.5,
+    floor: 3,
+    rim: 4,
+    height: 80,
+    finishQuality: 'draft',
+    jointStyle: 'blend',
+    blendBudget: 4,
+    curveStyle: 'organic',
+    envelope: 'outer',
+    radiusAt: (v) => PROFILE(v) - 1.75,
+    openings: organicCurves[0]?.meta?.latticeOpenings ?? [],
+    minOpeningWidth: 2,
+  });
+  assert(organicBlend.ok, `budgeted SDF blend builds a closed solid (${organicBlend.error?.message ?? 'ok'})`);
+  if (organicBlend.ok) {
+    assert(organicBlend.stats.blendedJoints > 0, 'budgeted blend reports SDF joints');
+    assert(organicBlend.stats.jointMethod === 'sdf-levelset', 'budgeted blend reports the SDF method');
+    assert(organicBlend.stats.sdfJoints?.budget === 4, 'budgeted blend reports its budget');
+    assert(organicBlend.stats.sdfJoints?.maxAngle === 150, 'budgeted blend reports its angle gate');
+    assert(organicBlend.stats.sdfJoints?.eligible >= organicBlend.stats.blendedJoints, 'blend selection reports eligible nodes');
+    assert(organicBlend.stats.fallbackJoints >= 0, 'budgeted blend reports rounded fallback count');
+  }
+
   const organicReport = buildFabricationReport({
     evaluation: organicEvaluation,
     layerIndex: 0,

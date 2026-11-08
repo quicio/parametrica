@@ -33,14 +33,14 @@ test('product preview 15/20/25 mm benchmark', async ({ page }) => {
     const metrics = await page.evaluate(async () => {
       const app = window.__parametrica;
       const benchmark = await app.productPreview.benchmark({ frames: 120 });
-      const lattice = app.fabricationReport?.lattice ?? {};
+      const lattice = app.controls.fabricationReport?.lattice ?? {};
       return {
         ...benchmark,
         struts: lattice.struts ?? null,
         trianglesMesh: lattice.triangles ?? null,
         openingTarget: lattice.openingTargetWidth ?? null,
         openingMin: lattice.openingGauge?.minWidth ?? null,
-        bbox: app.fabricationReport?.bbox ?? null,
+        bbox: app.controls.fabricationReport?.bbox ?? null,
       };
     });
     results.push({ cellSize, ...metrics });

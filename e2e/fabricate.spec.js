@@ -128,14 +128,14 @@ test('lattice preset builds a strut body in the worker and reports it', async ({
 
   await page.evaluate(() => {
     const app = window.__parametrica;
-    window.__fabricationReportBeforeOrbit = app.fabricationReport;
+    window.__fabricationReportBeforeOrbit = app.controls.fabricationReport;
     app.document.view.camera.yaw += 0.35;
     app.document.view.camera.pitch = Math.min(1.2, app.document.view.camera.pitch + 0.1);
     app.rebuild();
   });
   await page.waitForTimeout(500);
   const orbitState = await page.evaluate(() => ({
-    sameReport: window.__parametrica.fabricationReport === window.__fabricationReportBeforeOrbit,
+    sameReport: window.__parametrica.controls.fabricationReport === window.__fabricationReportBeforeOrbit,
     running: window.__parametrica.fabricationJobs?.running === true,
     status: document.querySelector('.fabricate-status')?.textContent ?? '',
     progressHidden: document.querySelector('.fabricate-progress')?.hidden !== false,

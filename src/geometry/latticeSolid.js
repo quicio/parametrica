@@ -10,6 +10,8 @@ import { createMesh, isCurve3D } from './contracts.js';
 import { booleanSolids } from './csg.js';
 import { validateMesh } from './validate.js';
 import { repairMesh } from './repair.js';
+import { mergeMeshes } from './solidPrep.js';
+import { buildLocalJointSdf } from './latticeJointBlend.js';
 
 const TWO_PI = Math.PI * 2;
 
@@ -27,10 +29,10 @@ const FINISH_PROFILES = Object.freeze({
     refinement: { tolerance: 0.15, minSamples: 4, maxSamples: 10, maxPoints: 240_000 },
   },
   high: {
-    radialSegments: 16,
-    jointSlices: 16,
-    jointScale: 1.3,
-    refinement: { tolerance: 0.08, minSamples: 6, maxSamples: 16, maxPoints: 600_000 },
+    radialSegments: 12,
+    jointSlices: 12,
+    jointScale: 1.28,
+    refinement: { tolerance: 0.1, minSamples: 5, maxSamples: 12, maxPoints: 600_000 },
   },
 });
 
@@ -44,6 +46,9 @@ export function buildLatticeSolid(curves, {
   finishQuality = 'standard',
   jointStyle = 'technical',
   jointScale = null,
+  blendBudget = 24,
+  blendEdgeLength = null,
+  blendMaxAngle = 150,
   curveStyle = 'polyline',
   envelope = 'centerline',
   radiusProfile = 'constant',
@@ -158,20 +163,33 @@ export function buildLatticeSolid(curves, {
     ? Number(jointScale)
     : finish.jointScale;
   const jointPoints = entries.map((entry) => entry.points);
+  const sdfJointSet = jointStyle === 'blend'
+    ? buildSdfJointMeshes(jointPoints, baseRadius, {
+      budget: blendBudget,
+      blendRadius: Math.max(0.25, baseRadius * 0.35),
+      edgeLength: Number.isFinite(Number(blendEdgeLength)) && Number(blendEdgeLength) > 0
+        ? Number(blendEdgeLength)
+        : Math.max(0.25, baseRadius * 0.22),
+      jointScale: resolvedJointScale,
+      maxAngle: blendMaxAngle,
+    })
+    : null;
   let joints = jointSpheresMesh(jointPoints, baseRadius, sides, {
     jointStyle,
     jointScale: resolvedJointScale,
     jointSlices: finish.jointSlices,
+    onlyKeys: sdfJointSet?.fallbackKeys?.size ? sdfJointSet.fallbackKeys : null,
   });
+  let jointMeshes = [joints, sdfJointSet?.mesh].filter(Boolean);
   const floorMesh = floorSolid(entries.map((entry) => ({ points: entry.points })), baseRadius, floorHeight);
   const rimMesh = rimSolid(entries.map((entry) => ({ points: entry.points })), surfaceHeight, baseRadius, rimWidth);
-  let operands = [floorMesh, rimMesh, joints, ...tubes].filter(Boolean);
+  let operands = [floorMesh, rimMesh, ...jointMeshes, ...tubes].filter(Boolean);
   let result = booleanSolids('union', operands, {
     strategy: 'manifold',
     tolerance,
     maxInputTriangles: 600_000,
   });
-  let jointFallback = null;
+  let jointFallback = sdfJointSet?.fallbackKeys?.size ? 'sdf-budget-fallback' : null;
   if (!result.ok || result.empty || !result.geometry) {
     const styleCandidates = jointStyle === 'technical'
       ? ['rounded', 'technical']
@@ -208,7 +226,9 @@ export function buildLatticeSolid(curves, {
           joints = candidate;
           operands = retryOperands;
           result = retry;
-          jointFallback = style === jointStyle ? `joint-scale-${scale}` : `${jointStyle}-to-${style}@${scale}`;
+          jointFallback = jointStyle === 'blend'
+            ? `blend-to-${style}@${scale}`
+            : (style === jointStyle ? `joint-scale-${scale}` : `${jointStyle}-to-${style}@${scale}`);
           retried = true;
           break;
         }
@@ -258,10 +278,14 @@ export function buildLatticeSolid(curves, {
     };
   }
 
-  const jointCount = joints?.meta?.jointCount ?? 0;
+  const sphereJointCount = joints?.meta?.jointCount ?? 0;
+  const sdfJointCount = sdfJointSet?.blended ?? 0;
+  const jointCount = sphereJointCount + sdfJointCount;
   const jointRadius = joints?.meta?.jointRadius ?? baseRadius;
   const requestedBlend = jointStyle === 'blend';
-  const actualJointStyle = jointFallback ? 'rounded' : jointStyle;
+  const hasSdfJoints = sdfJointCount > 0 && jointFallback !== 'blend-to-rounded';
+  const actualJointStyle = hasSdfJoints ? 'blend' : (jointFallback ? 'rounded' : jointStyle);
+  const jointMethod = hasSdfJoints ? 'sdf-levelset' : (actualJointStyle === 'technical' ? 'technical' : 'rounded');
   const gaugeStarted = now();
   const measured = measureOpeningClearance(geometry, openings, {
     minOpeningWidth,
@@ -282,9 +306,22 @@ export function buildLatticeSolid(curves, {
     stats: {
       struts: tubes.length,
       joints: jointCount,
-      blendedJoints: 0,
-      fallbackJoints: requestedBlend ? jointCount : 0,
-      jointMethod: actualJointStyle === 'technical' ? 'technical' : 'rounded',
+      blendedJoints: sdfJointCount,
+      fallbackJoints: sdfJointSet?.fallbackKeys?.size ?? (requestedBlend ? jointCount : 0),
+      jointMethod,
+      sdfJoints: sdfJointSet
+        ? {
+          budget: Math.max(0, Math.round(Number(blendBudget) || 0)),
+          processed: sdfJointSet.processed,
+          blended: sdfJointSet.blended,
+          failed: sdfJointSet.failed,
+          fallback: sdfJointSet.fallbackKeys.size,
+          total: sdfJointSet.total,
+          eligible: sdfJointSet.eligible,
+          maxAngle: sdfJointSet.maxAngle,
+          edgeLength: sdfJointSet.edgeLength,
+        }
+        : null,
       jointStyle: actualJointStyle,
       requestedJointStyle: jointStyle,
       jointFallback,
@@ -324,7 +361,7 @@ export function buildLatticeSolid(curves, {
         jointStyle: actualJointStyle,
         requestedJointStyle: jointStyle,
         jointFallback,
-        jointMethod: actualJointStyle === 'technical' ? 'technical' : 'rounded',
+        jointMethod,
         finishQuality,
         curveStyle: resolvedCurveStyle,
         curveFallback,
@@ -418,46 +455,145 @@ export function tubeMesh(points, radius, radialSegments = 8, id = 'lattice-strut
   return mesh;
 }
 
+function collectJointNodes(polylines, radius, jointScale) {
+  const points = [];
+  const seen = new Map();
+  const degree = new Map();
+  const branches = new Map();
+  const keyOf = (point) => `${Math.round(point.x * 100)}:${Math.round(point.y * 100)}:${Math.round(point.z * 100)}`;
+  const add = (point) => {
+    if (!point) return null;
+    const key = keyOf(point);
+    if (!seen.has(key)) {
+      seen.set(key, points.length);
+      points.push(point);
+      degree.set(key, 0);
+      branches.set(key, []);
+    }
+    degree.set(key, (degree.get(key) ?? 0) + 1);
+    return key;
+  };
+  for (const pointsOfCurve of polylines) {
+    if (!pointsOfCurve?.length) continue;
+    const first = pointsOfCurve[0];
+    const second = pointsOfCurve[1];
+    const last = pointsOfCurve[pointsOfCurve.length - 1];
+    const beforeLast = pointsOfCurve[pointsOfCurve.length - 2];
+    const firstKey = add(first);
+    const lastKey = add(last);
+    if (firstKey && second) branches.get(firstKey).push({ a: first, b: second });
+    if (lastKey && beforeLast) branches.get(lastKey).push({ a: last, b: beforeLast });
+  }
+  const minDistance = radius * jointScale * 2.15;
+  const accepted = [];
+  for (const [key, index] of seen.entries()) {
+    if ((degree.get(key) ?? 0) < 3) continue;
+    const center = points[index];
+    if (accepted.some((node) => Math.hypot(
+      center.x - node.center.x,
+      center.y - node.center.y,
+      center.z - node.center.z,
+    ) < minDistance)) continue;
+    const nodeBranches = branches.get(key) ?? [];
+    accepted.push({ key, center, branches: nodeBranches, minAngle: minBranchAngle(center, nodeBranches) });
+  }
+  return { nodes: accepted, points };
+}
+
+function buildSdfJointMeshes(polylines, radius, {
+  budget = 24,
+  blendRadius = 0.6,
+  edgeLength = 0.4,
+  jointScale = 1.25,
+  maxAngle = 150,
+} = {}) {
+  const data = collectJointNodes(polylines, radius, jointScale);
+  const fallbackKeys = new Set();
+  const meshes = [];
+  let blended = 0;
+  let failed = 0;
+  let processed = 0;
+  const limit = Math.max(0, Math.round(Number(budget) || 0));
+  const eligible = data.nodes
+    .filter((node) => node.minAngle <= maxAngle)
+    .sort((a, b) => a.minAngle - b.minAngle);
+  for (const node of eligible) {
+    if (processed >= limit) {
+      fallbackKeys.add(node.key);
+      continue;
+    }
+    processed += 1;
+    const result = buildLocalJointSdf({
+      branches: node.branches.map((branch) => ({ ...branch, radius })),
+      blendRadius,
+      edgeLength,
+    });
+    if (result.ok && result.geometry) {
+      meshes.push(result.geometry);
+      blended += 1;
+    } else {
+      fallbackKeys.add(node.key);
+      failed += 1;
+    }
+  }
+  let mesh = null;
+  if (meshes.length) {
+    const merged = mergeMeshes(meshes, { id: 'lattice-sdf-joints' });
+    mesh = merged.mesh;
+    if (!mesh) {
+      blended = 0;
+      for (const node of data.nodes) fallbackKeys.add(node.key);
+    }
+  }
+  return {
+    mesh,
+    blended,
+    failed,
+    processed,
+    fallbackKeys,
+    total: data.nodes.length,
+    eligible: eligible.length,
+    maxAngle,
+    edgeLength,
+  };
+}
+
+function minBranchAngle(center, branches) {
+  if (!Array.isArray(branches) || branches.length < 2) return 180;
+  const vectors = branches.map((branch) => {
+    const dx = branch.b.x - center.x;
+    const dy = branch.b.y - center.y;
+    const dz = branch.b.z - center.z;
+    const length = Math.hypot(dx, dy, dz);
+    return length > 1e-9 ? { x: dx / length, y: dy / length, z: dz / length } : null;
+  }).filter(Boolean);
+  let min = 180;
+  for (let i = 0; i < vectors.length; i++) {
+    for (let j = i + 1; j < vectors.length; j++) {
+      const dot = Math.max(-1, Math.min(1, vectors[i].x * vectors[j].x + vectors[i].y * vectors[j].y + vectors[i].z * vectors[j].z));
+      min = Math.min(min, Math.acos(dot) * 180 / Math.PI);
+    }
+  }
+  return min;
+}
+
 function jointSpheresMesh(polylines, radius, slices, {
   jointStyle = 'technical',
   jointScale = 1.3,
   jointSlices = 12,
+  onlyKeys = null,
 } = {}) {
-  const points = [];
-  const seen = new Map();
-  const degree = new Map();
-  const keyOf = (point) => `${Math.round(point.x * 100)}:${Math.round(point.y * 100)}:${Math.round(point.z * 100)}`;
-  for (const pointsOfCurve of polylines) {
-    for (const point of [pointsOfCurve[0], pointsOfCurve[pointsOfCurve.length - 1]]) {
-      if (!point) continue;
-      const key = keyOf(point);
-      if (!seen.has(key)) {
-        seen.set(key, points.length);
-        points.push(point);
-        degree.set(key, 0);
-      }
-      degree.set(key, (degree.get(key) ?? 0) + 1);
-    }
-  }
   const vertices = [];
   const faces = [];
   let count = 0;
   const requested = jointStyle === 'technical' ? 1.2 : jointScale;
   const sphereRadius = radius * requested;
-  const minDistance = sphereRadius * 2.15;
-  const accepted = [];
   const sphereSlices = Math.max(5, Math.round(jointSlices));
   const sphereStacks = Math.max(4, Math.round(sphereSlices * 0.7));
-  for (const [key, index] of seen.entries()) {
-    if ((degree.get(key) ?? 0) < 3) continue;
-    const center = points[index];
-    if (accepted.some((other) => Math.hypot(
-      center.x - other.x,
-      center.y - other.y,
-      center.z - other.z,
-    ) < minDistance)) continue;
-    accepted.push(center);
-    appendSphere(vertices, faces, center, sphereRadius, sphereSlices, sphereStacks);
+  const data = collectJointNodes(polylines, radius, requested);
+  for (const node of data.nodes) {
+    if (onlyKeys && !onlyKeys.has(node.key)) continue;
+    appendSphere(vertices, faces, node.center, sphereRadius, sphereSlices, sphereStacks);
     count += 1;
   }
   if (!faces.length) return null;

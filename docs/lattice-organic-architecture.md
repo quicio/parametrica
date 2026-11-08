@@ -50,8 +50,8 @@ Implementado en esta rama:
 - Curvas orgánicas Catmull-Rom centrípetas en `(θ,z)`, con unwrap de seam y
   radio por muestra; fallback explícito a polyline si falta el perfil.
 - Radio constante o taper; sección circular con radio por anillo.
-- Joints technical/rounded; `blend` solicitado cae a `rounded` y se reporta
-  como fallback (sin benchmark SDF todavía).
+- Joints technical/rounded; `blend` usa SDF local presupuestado y completa el
+  resto con `rounded`, reportando método, budget y fallback.
 - Envolvente `centerline`/`outer` y perfiles de acabado separados de la
   calidad de reparación/SDF.
 - `Organic Lattice Vase 200` y controles Finish en Fabricate.
@@ -985,7 +985,7 @@ paralelo, pero no debe modificar `lattice-spec` sin una revisión.
 | `2026-11-06-lattice-cell-contracts` | 1 | `lattice-spec`, `surface-lattice` | auditoría + specs de geometría | archivado |
 | `2026-11-06-organic-struts` | 2 | `organic-struts`, `surface-lattice`, `printability-checks` | Fase 1 | implementado; pendiente archivar |
 | `2026-11-06-export-integrity` | 0.5 | `export-integrity` | 3MF + Manifold | archivado |
-| `2026-11-06-lattice-refinement` | 3 | `lattice-refinement` | Fases 1–2 + sampling | especificado |
+| `2026-11-06-lattice-refinement` | 3 | `lattice-refinement` | Fases 1–2 + sampling | archivado |
 | `2026-11-06-manufacturing-profile` | 5 | `manufacturing-profile` | Fases 1, 3 + fabricación | archivado |
 | `2026-11-06-fabrication-preview` | 4 | `fabrication-preview` | `RenderScene` + malla preparada | archivado |
 

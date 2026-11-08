@@ -411,6 +411,8 @@ function buildLatticeCandidate(layer, index, prepare) {
     envelope: prepare.envelope,
     radiusProfile: prepare.radiusProfile,
     taper: prepare.taper,
+    blendBudget: prepare.blendBudget,
+    blendEdgeLength: prepare.blendEdgeLength,
     radiusAt,
     openings,
     minOpeningWidth: Number(params.minOpeningWidth ?? 2),
@@ -480,6 +482,10 @@ function normalizePreparation(raw) {
     envelope: raw.envelope === 'outer' ? 'outer' : 'centerline',
     radiusProfile: raw.radiusProfile === 'taper' ? 'taper' : 'constant',
     taper: Number.isFinite(Number(raw.taper)) ? Math.max(0.25, Math.min(1, Number(raw.taper))) : 0.85,
+    blendBudget: Number.isFinite(Number(raw.blendBudget)) ? Math.max(0, Math.floor(Number(raw.blendBudget))) : 24,
+    blendEdgeLength: Number.isFinite(Number(raw.blendEdgeLength)) && Number(raw.blendEdgeLength) > 0
+      ? Number(raw.blendEdgeLength)
+      : null,
     manufacturing: sanitizeManufacturingProfile(raw.manufacturing),
     quality: raw.quality,
   };

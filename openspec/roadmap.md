@@ -550,9 +550,9 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 | Change | Scope | Status |
 |---|---|---|
 | `2026-11-06-lattice-cell-contracts` | Phase 1: spec, network, distribution, openings | archived (2026-11-08) |
-| `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; pending archive |
+| `2026-11-06-organic-struts` | Phase 2: curves, radius, joints, envelope, finish | implemented; 3 advanced tasks pending |
 | `2026-11-06-export-integrity` | 3MF triangles + trust lifecycle | archived (2026-11-08) |
-| `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | implemented core; SDF/benchmarks pending |
+| `2026-11-06-lattice-refinement` | Phase 3: adaptive refinement, gauge, budgets | archived (2026-11-08) |
 | `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | archived (2026-11-08) |
 | `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | archived (2026-11-08) |
 | `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | archived (2026-11-08) |
@@ -563,10 +563,10 @@ p5 as the technical default. SSAO, material/light controls, the software-WebGL
 benchmark and a Product PNG export are in place. A hardware-GPU benchmark and a
 stable CI screenshot policy remain pending.
 
-The refinement core is now **implemented**: adaptive chord sampling, surface
-deviation reporting, capsule-sampled opening checks, refinement provenance and
-build/gauge timing. The local SDF joint gate, full 15/20/25 lattice benchmark and
-visual golden evidence remain pending.
+The refinement core is now **implemented and archived**: adaptive chord sampling,
+surface deviation, capsule-sampled opening checks, refinement provenance,
+15/20/25 benchmark, visual goldens and the local SDF joint decision. `blend` is
+an explicit budgeted SDF option; `rounded` remains the default.
 
 The manufacturing profile is now **implemented** as an evidence report:
 serializable FDM/Resin/Custom minima, measured/declared/estimated/unavailable
