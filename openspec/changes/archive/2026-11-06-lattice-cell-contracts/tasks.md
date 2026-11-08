@@ -23,7 +23,7 @@
 ## 4. Integration
 
 - [x] 4.1 Make `surface-lattice` use the new builder.
-- [ ] 4.2 Cache by spec hash; avoid double work.
+- [x] 4.2 Cache by spec hash; avoid double work.
 - [x] 4.3 Make Fabricate consume the same network.
 - [x] 4.4 Make perforation consume the same seeds/cells.
 - [x] 4.5 Migrate `Lattice Vase 200`; keep other presets stable.
@@ -31,9 +31,9 @@
 ## 5. Acceptance
 
 - [x] 5.1 Unit tests for spec, power diagram, CV, openings, determinism, IDs.
-- [ ] 5.2 Regression for 15/20/25 mm and STL/3MF.
+- [x] 5.2 Regression for 15/20/25 mm and STL/3MF.
 - [x] 5.3 E2E preview and Fabricate.
-- [ ] 5.4 Benchmark CV, target-size tolerance, time and memory on real presets.
+- [x] 5.4 Benchmark CV, target-size tolerance, time and memory on real presets.
 - [x] 5.5 Document approximation limits, metrics and migration.
 - [x] 5.6 Run full gates.
 

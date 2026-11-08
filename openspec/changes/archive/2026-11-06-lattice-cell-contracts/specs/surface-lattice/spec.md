@@ -49,7 +49,7 @@ aspect, seed, strut diameter, minimum opening width, rim, floor and height.
 - **THEN** the cell distribution changes in a controlled way
 - **AND** no degenerate cells are emitted
 
-#### Scenario: Uniformity
+#### Scenario: Uniform cells
 
 - **WHEN** the network is generated on a profile whose radius varies
 - **THEN** cell areas are measured on the surface

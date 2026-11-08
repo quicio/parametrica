@@ -12,6 +12,8 @@ import { evaluateDocument } from '../src/core/engine.js';
 import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
 import { buildFabricationReport } from '../src/application/fabricationSource.js';
 import { initManifold } from '../src/geometry/manifoldEngine.js';
+import { exportBinarySTL } from '../src/export/stl.js';
+import { export3MF } from '../src/export/3mf.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 await initManifold();
@@ -28,10 +30,20 @@ for (const preset of ['Lattice Vase 200', 'Organic Lattice Vase 200']) {
       units: doc.view.units,
       preparation: doc.view.fabrication,
     });
+    let stlTriangles = null;
+    let mfTriangles = null;
+    if (report.exportable && report.source?.geometry) {
+      stlTriangles = exportBinarySTL(report.source.geometry, { units: doc.view.units }).triangles;
+      mfTriangles = export3MF([report.source.geometry], { units: doc.view.units }).triangles;
+    }
     results.push({
       preset,
       cellSize,
       exportable: report.exportable,
+      stlTriangles,
+      mfTriangles,
+      heapMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      cv: evaluation.curves?.[0]?.meta?.lattice?.cellAreaCv ?? null,
       buildMs: report.lattice?.buildMs ?? null,
       gaugeMs: report.lattice?.gaugeMs ?? null,
       triangles: report.triangles ?? 0,

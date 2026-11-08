@@ -982,12 +982,12 @@ paralelo, pero no debe modificar `lattice-spec` sin una revisión.
 
 | Cambio | Fase | Capabilities | Depende de | Estado |
 |---|---|---|---|---|
-| `2026-11-06-lattice-cell-contracts` | 1 | `lattice-spec`, `surface-lattice` | auditoría + specs de geometría | implementado; pendiente archivar |
+| `2026-11-06-lattice-cell-contracts` | 1 | `lattice-spec`, `surface-lattice` | auditoría + specs de geometría | archivado |
 | `2026-11-06-organic-struts` | 2 | `organic-struts`, `surface-lattice`, `printability-checks` | Fase 1 | implementado; pendiente archivar |
-| `2026-11-06-export-integrity` | 0.5 | `export-integrity` | 3MF + Manifold | especificado |
+| `2026-11-06-export-integrity` | 0.5 | `export-integrity` | 3MF + Manifold | archivado |
 | `2026-11-06-lattice-refinement` | 3 | `lattice-refinement` | Fases 1–2 + sampling | especificado |
-| `2026-11-06-manufacturing-profile` | 5 | `manufacturing-profile` | Fases 1, 3 + fabricación | especificado |
-| `2026-11-06-fabrication-preview` | 4 | `fabrication-preview` | `RenderScene` + malla preparada | especificado |
+| `2026-11-06-manufacturing-profile` | 5 | `manufacturing-profile` | Fases 1, 3 + fabricación | archivado |
+| `2026-11-06-fabrication-preview` | 4 | `fabrication-preview` | `RenderScene` + malla preparada | archivado |
 
 La Fase 4 (apariencia/PBR) está **implementada como primera slice** en
 `2026-11-06-fabrication-preview`: backend WebGL/PBR opcional detrás de

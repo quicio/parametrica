@@ -11,11 +11,13 @@ import { TYPE } from '../core/schema.js';
 import { compileOrThrow, makeScope } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
 import { buildRevolveLattice } from '../geometry/latticeNetwork.js';
-import { normalizeLatticeSpec } from '../geometry/latticeSpec.js';
+import { latticeSpecHash, normalizeLatticeSpec } from '../geometry/latticeSpec.js';
 import { cameraFrom } from '../render/camera3d.js';
 import { projectWorldCurves } from '../view/projection.js';
 
 const DEFAULT_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';
+const NETWORK_CACHE = new Map();
+const NETWORK_CACHE_LIMIT = 8;
 
 Generators.register({
   id: 'surface-lattice',
@@ -159,13 +161,21 @@ Generators.register({
       strutDiameter: params.strut,
       minOpeningWidth: params.minOpeningWidth,
     });
-    const network = buildRevolveLattice({
-      spec,
-      radiusAt,
-      densityAt,
-      densityError,
-      samples: params.samples,
-    });
+    const cacheKey = `${latticeSpecHash(spec)}:${Math.max(2, Math.round(Number(params.samples) || 6))}:${ctx.layerIndex ?? 0}`;
+    let network = NETWORK_CACHE.get(cacheKey);
+    if (!network) {
+      network = buildRevolveLattice({
+        spec,
+        radiusAt,
+        densityAt,
+        densityError,
+        samples: params.samples,
+      });
+      if (NETWORK_CACHE.size >= NETWORK_CACHE_LIMIT) {
+        NETWORK_CACHE.delete(NETWORK_CACHE.keys().next().value);
+      }
+      NETWORK_CACHE.set(cacheKey, network);
+    }
     const height = Number(params.height) || 200;
     const latticeOpenings = network.cells
       .filter((cell) => !cell.boundary && !cell.invalidOpening && cell.openingCenter)
