@@ -362,3 +362,26 @@ test('camera distance guard avoids radial spark artifacts near the camera', asyn
   });
   expect(healedFov).toBe(10);
 });
+
+test('200% zoom keeps the stage and rail inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 720, height: 450 });
+  await boot(page);
+  await page.waitForTimeout(350);
+  const metrics = await page.evaluate(() => {
+    const ui = document.getElementById('ui').getBoundingClientRect();
+    const canvas = document.getElementById('canvas-container').getBoundingClientRect();
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+      uiBottom: ui.bottom,
+      uiHeight: ui.height,
+      canvasHeight: canvas.height,
+      modeBarHeight: document.querySelector('.panel-modes').getBoundingClientRect().height,
+    };
+  });
+  expect(metrics.scrollWidth).toBe(metrics.clientWidth);
+  expect(metrics.uiBottom).toBeLessThanOrEqual(450.5);
+  expect(metrics.uiHeight).toBeGreaterThan(0);
+  expect(metrics.canvasHeight).toBeGreaterThan(0);
+  expect(metrics.modeBarHeight).toBeLessThan(50);
+});

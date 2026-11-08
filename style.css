@@ -4654,3 +4654,55 @@ input[type="range"] {
 .panel-chain-arrow {
   font-size: 11px;
 }
+
+/* ——— Narrow and 200% zoom: fit the stage, scroll the rail ——— */
+
+@media (max-width: 900px) {
+  #stage {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #canvas-container {
+    flex: 0 0 45vh;
+    height: 45vh;
+    min-height: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  #ui {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    border-left: none;
+  }
+}
+
+/* ——— Short viewports / 200% zoom ——— */
+
+@media (max-height: 520px) {
+  #masthead {
+    top: 12px;
+    left: 14px;
+  }
+
+  #masthead h1 { font-size: 16px; }
+
+  #masthead .subtitle,
+  #masthead .doctrine,
+  #telemetry {
+    display: none;
+  }
+
+  .parametrics {
+    top: 10px;
+    right: 10px;
+  }
+
+  .parametrics-body {
+    width: 230px;
+    max-height: 34vh;
+  }
+}
