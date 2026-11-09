@@ -25,6 +25,7 @@ npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
 npm run typecheck    # tsc --noEmit (incremental TypeScript)
+npm run arch:check   # dependency-cruiser layer rules + baseline
 npm test             # node-only verification suite via tsx (3,142 checks: 2,222 lab + 920 domains)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (168 scenarios: 167 pass, 1 skip)
@@ -284,7 +285,9 @@ migration advances.
 
 ESLint runs with a flat config (`eslint.config.js`). `npm run lint` checks
 `src`, `test`, `e2e` and the config files; CI runs it before the unit suite.
-`npm run check` runs lint, the Node suite and the production build.
+`npm run check` runs lint, the Node suite, the production build, the lazy-chunk
+guard, the spec-purpose check, the version/changelog gate, `tsc --noEmit` and
+the dependency-cruiser layer gate.
 
 ### Build
 

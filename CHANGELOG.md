@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.11] - 2026-11-09
+
+### Added
+
+- `dependency-cruiser` with domain, core, application, adapter, generator,
+  export and cycle rules.
+- Empty known-violations baseline and `npm run arch:check`.
+- Architecture gate inside `npm run check`.
+
+### Changed
+
+- Pure render-mode helpers moved to `domain/modeToggles.js`; the UI path is a
+  compatibility re-export.
+- No app behavior or export output changed.
+
 ## [0.2.10] - 2026-11-09
 
 ### Added

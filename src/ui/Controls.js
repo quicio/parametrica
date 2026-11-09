@@ -10,7 +10,7 @@
 import GUI from 'lil-gui';
 import { Generators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
-import { normalizeModes } from './widgets/modeToggles.js';
+import { normalizeModes } from '../domain/modeToggles.js';
 import { PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { lookPresetMatchesView } from '../render/lookPresets.js';

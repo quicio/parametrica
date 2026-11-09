@@ -830,8 +830,9 @@ projection is disabled for 2D generators and falls back to the camera view.
 
 `npm run lint` runs ESLint over `src`, `test`, `e2e` and config files.
 `npm run check` combines lint, the Node suite, the production build, the
-lazy-chunk guard and the spec-purpose check. CI runs `npm run check` before the
-Playwright suite.
+lazy-chunk guard, the spec-purpose check, `tsc --noEmit` and the
+dependency-cruiser layer gate. CI runs `npm run check` before the Playwright
+suite. The dependency baseline starts empty and must stay empty.
 
 ### Adding tests
 
