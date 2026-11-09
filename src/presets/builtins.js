@@ -101,6 +101,100 @@ function vaseSurface(profile, heightExpression, name) {
   });
 }
 
+function mmFabricationView(fabrication) {
+  return fabricateView({
+    units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
+    fabrication,
+  });
+}
+
+const HOLLOW_FABRICATION = Object.freeze({
+  format: 'stl',
+  quality: 'standard',
+  scope: 'composition',
+  boolean: 'difference',
+  csgStrategy: 'manifold',
+  repair: true,
+  weld: true,
+  cap: true,
+  capStrategy: 'auto',
+  tolerance: 1e-4,
+  maxHoleEdges: 512,
+});
+
+const SOLID_FABRICATION = Object.freeze({
+  format: 'stl',
+  quality: 'standard',
+  scope: 'single',
+  boolean: 'none',
+  csgStrategy: 'manifold',
+  repair: true,
+  weld: true,
+  cap: true,
+  capStrategy: 'auto',
+  tolerance: 1e-4,
+  maxHoleEdges: 512,
+});
+
+/** Hollow object of revolution with a flat floor and an open mouth. */
+function hollowRevolved(name, {
+  profile,
+  height,
+  wall,
+  floor,
+  innerExtra = 4,
+  samplesU = 96,
+  samplesV = 64,
+}) {
+  const doc = createDocument('parametric-surface', {
+    name,
+    generator: {
+      params: {
+        exprX: `(${profile})*cos(u)`,
+        exprY: `(${profile})*sin(u)`,
+        exprZ: `${height}*v`,
+        u0: 0, u1: 2 * PI,
+        v0: 0, v1: 1,
+        samplesU, samplesV,
+        closedU: true, closedV: false,
+        fit: 340,
+      },
+    },
+    view: mmFabricationView({ ...HOLLOW_FABRICATION }),
+  });
+  doc.layers[0].name = 'Outer shell';
+  const inner = vaseSurface(`${profile} - ${wall}`, `${floor} + ${height + innerExtra}*v`, 'Inner shell');
+  inner.style = doc.layers[0].style;
+  doc.layers.push(inner);
+  doc.activeLayer = 0;
+  return doc;
+}
+
+/** Closed solid of revolution, capped at both ends. */
+function solidRevolved(name, {
+  profile,
+  z = '200*v',
+  samplesU = 96,
+  samplesV = 64,
+}) {
+  return createDocument('parametric-surface', {
+    name,
+    generator: {
+      params: {
+        exprX: `(${profile})*cos(u)`,
+        exprY: `(${profile})*sin(u)`,
+        exprZ: z,
+        u0: 0, u1: 2 * PI,
+        v0: 0, v1: 1,
+        samplesU, samplesV,
+        closedU: true, closedV: false,
+        fit: 340,
+      },
+    },
+    view: mmFabricationView({ ...SOLID_FABRICATION }),
+  });
+}
+
 function addTorusInstance(doc, { name, dz = 0, dx = 0, dy = 0 }) {
   const source = doc.layers[0];
   const layer = createInstanceLayer(source.id, {
@@ -440,98 +534,64 @@ export const BUILT_IN_PRESETS = {
     }),
   }),
 
-  'SDF Enneper': () => createDocument('parametric-surface', {
-    name: 'SDF Enneper',
+  'Solid Vase 200': () => hollowRevolved('Solid Vase 200', {
+    profile: VASE_PROFILE,
+    height: 200,
+    wall: 2.5,
+    floor: 3,
+    innerExtra: 7,
+  }),
+
+  'Pencil Cup 100': () => hollowRevolved('Pencil Cup 100', {
+    profile: '32 - 4*v + 2*sin(pi*v)',
+    height: 100,
+    wall: 3,
+    floor: 4,
+  }),
+
+  'Planter 120': () => hollowRevolved('Planter 120', {
+    profile: '55 - 14*v + 2*sin(pi*v)',
+    height: 120,
+    wall: 4,
+    floor: 5,
+  }),
+
+  'Bud Vase 160': () => hollowRevolved('Bud Vase 160', {
+    profile: '18 + 14*sin(pi*v) - 7*exp(-((v-0.72)/0.12)^2)',
+    height: 160,
+    wall: 2.5,
+    floor: 3,
+  }),
+
+  'Napkin Ring 50': () => hollowRevolved('Napkin Ring 50', {
+    profile: '24',
+    height: 30,
+    wall: 3,
+    floor: -2,
+  }),
+
+  'Coaster 90': () => solidRevolved('Coaster 90', {
+    profile: '45',
+    z: '6*v',
+    samplesV: 16,
+  }),
+
+  'Twisted Totem 220': () => createDocument('parametric-surface', {
+    name: 'Twisted Totem 220',
     generator: {
       params: {
-        exprX: '0.55*(u - u^3/3 + u*v^2)',
-        exprY: '0.55*(v - v^3/3 + v*u^2)',
-        exprZ: '0.55*(u^2 - v^2)',
-        u0: -1.8, u1: 1.8,
-        v0: -1.8, v1: 1.8,
-        samplesU: 36, samplesV: 36,
-        closedU: false, closedV: false,
+        exprX: '(26 + 6*cos(5*u + 3*v))*cos(u)',
+        exprY: '(26 + 6*cos(5*u + 3*v))*sin(u)',
+        exprZ: '220*v',
+        u0: 0, u1: 2 * PI,
+        v0: 0, v1: 1,
+        samplesU: 128, samplesV: 96,
+        closedU: true, closedV: false,
         fit: 340,
       },
     },
-    view: fabricateView({
-      fabrication: {
-        format: 'stl',
-        quality: 'custom',
-        repair: true,
-        capStrategy: 'auto',
-        selfIntersections: 'sdf',
-        remeshResolution: 32,
-      },
-    }),
+    view: mmFabricationView({ ...SOLID_FABRICATION }),
   }),
-
-  'Möbius Challenge': () => createDocument('parametric-surface', {
-    name: 'Möbius Challenge',
-    generator: {
-      params: {
-        exprX: '(1.7 + 0.5*v*cos(u/2))*cos(u)',
-        exprY: '(1.7 + 0.5*v*cos(u/2))*sin(u)',
-        exprZ: '0.5*v*sin(u/2)',
-        u0: 0, u1: 2 * PI,
-        v0: -1, v1: 1,
-        samplesU: 48, samplesV: 14,
-        closedU: true, closedV: false,
-        seamU: 'reverse',
-        fit: 330,
-      },
-    },
-    view: fabricateView({
-      fabrication: {
-        format: 'stl',
-        quality: 'standard',
-        repair: true,
-        capStrategy: 'auto',
-        topology: 'split',
-        nonOrientable: 'cut',
-      },
-    }),
-  }),
-
-  'Solid Vase 200': () => {
-    const doc = createDocument('parametric-surface', {
-      name: 'Solid Vase 200',
-      generator: {
-        params: {
-          exprX: `(${VASE_PROFILE})*cos(u)`,
-          exprY: `(${VASE_PROFILE})*sin(u)`,
-          exprZ: '200*v',
-          u0: 0, u1: 2 * PI,
-          v0: 0, v1: 1,
-          samplesU: 96, samplesV: 64,
-          closedU: true, closedV: false,
-          fit: 340,
-        },
-      },
-      view: fabricateView({
-        units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
-        fabrication: {
-          format: 'stl',
-          quality: 'standard',
-          scope: 'composition',
-          boolean: 'difference',
-          csgStrategy: 'manifold',
-          repair: true,
-          weld: true,
-          cap: true,
-          capStrategy: 'auto',
-          tolerance: 1e-4,
-          maxHoleEdges: 512,
-        },
-      }),
-    });
-    doc.layers[0].name = 'Outer shell';
-    const inner = vaseSurface(`${VASE_PROFILE} - 2.5`, '3 + 207*v', 'Inner shell');
-    inner.style = doc.layers[0].style;
-    doc.layers.push(inner);
-    doc.activeLayer = 0;
-    return doc;
-  },
 
   'Lattice Vase 200': () =>
     createDocument('surface-lattice', {

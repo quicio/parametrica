@@ -7,10 +7,10 @@ test('preset library groups, searches and applies a surface', async ({ page }) =
 
   const presets = await openSection(page, 'Presets');
   await expect(presets.locator('.preset-chip', { hasText: 'Surfaces' })).toBeVisible();
-  await expect(presets.locator('.preset-status')).toContainText('52 of 52 presets');
+  await expect(presets.locator('.preset-status')).toContainText('56 of 56 presets');
 
   await presets.locator('.preset-chip', { hasText: 'Surfaces' }).click();
-  await expect(presets.locator('.preset-status')).toContainText('9 of 52 presets');
+  await expect(presets.locator('.preset-status')).toContainText('9 of 56 presets');
   await expect(presets.locator('.preset-item')).toHaveCount(9);
   await expect(presets.locator('.preset-item', { hasText: 'Catenoid' }))
     .toContainText(/minimal surface of revolution/i);
@@ -32,6 +32,31 @@ test('preset library groups, searches and applies a surface', async ({ page }) =
 
   const reopened = await openSection(page, 'Presets');
   await expect(reopened.locator('.preset-item.active', { hasText: 'Seashell' })).toBeVisible();
+});
+
+test('fabricate category lists print-ready objects and drops the challenges', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));
+
+  const presets = await openSection(page, 'Presets');
+  await presets.locator('.preset-chip', { hasText: 'Fabricate' }).click();
+  await expect(presets.locator('.preset-status')).toContainText('15 of 56 presets');
+
+  for (const name of ['Pencil Cup 100', 'Planter 120', 'Napkin Ring 50', 'Coaster 90', 'Bud Vase 160', 'Twisted Totem 220']) {
+    await expect(presets.locator('.preset-item', { hasText: name })).toBeVisible();
+  }
+  await expect(presets.locator('.preset-item', { hasText: 'SDF Enneper' })).toHaveCount(0);
+  await expect(presets.locator('.preset-item', { hasText: 'Möbius Challenge' })).toHaveCount(0);
+
+  await presets.locator('.preset-apply', { hasText: 'Pencil Cup 100' }).click();
+  await page.waitForTimeout(400);
+  const state = await page.evaluate(() => ({
+    name: window.__parametrica.document.name,
+    layers: window.__parametrica.document.layers.length,
+    units: window.__parametrica.document.view.units.world,
+    scale: window.__parametrica.document.view.units.mmPerWorldUnit,
+  }));
+  expect(state).toEqual({ name: 'Pencil Cup 100', layers: 2, units: 'mm', scale: 1 });
 });
 
 test('preset previews render for built-ins and saved presets', async ({ page }) => {
@@ -75,7 +100,7 @@ test('favorites persist and starring does not apply the preset', async ({ page }
 
   await presets.locator('.preset-chip', { hasText: 'Favorites' }).click();
   await expect(presets.locator('.preset-item')).toHaveCount(1);
-  await expect(presets.locator('.preset-status')).toContainText('1 of 52 presets · Favorites');
+  await expect(presets.locator('.preset-status')).toContainText('1 of 56 presets · Favorites');
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));

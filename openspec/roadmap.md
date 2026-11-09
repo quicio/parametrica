@@ -574,6 +574,12 @@ labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
 Wall thickness remains correctly `unavailable` until a real estimator exists;
 external slicer verification remains a manual record.
 
+### Fabricate library review (archived)
+
+The Fabricate category now contains only exportable solids: functional objects,
+decorative/abstract pieces and technical torus/boolean examples. SDF Enneper and
+Möbius Challenge were removed.
+
 ### Post-lattice backlog (archived)
 
 The lattice program is archived. The post-lattice slices are implemented,

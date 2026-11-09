@@ -12,7 +12,7 @@ export const PRESET_CATEGORIES = [
   { id: 'attractors', label: 'Attractors', hint: 'Strange attractors' },
   { id: 'space', label: '3D Curves', hint: 'Projected spatial curves' },
   { id: 'surfaces', label: 'Surfaces', hint: 'U/V parametric surfaces' },
-  { id: 'fabricate', label: 'Fabricate', hint: 'Solids, repairs, booleans and multi-body examples' },
+  { id: 'fabricate', label: 'Fabricate', hint: 'Functional, decorative and technical solids' },
   { id: 'compositions', label: 'Compositions', hint: 'Layered and instanced forms' },
   { id: 'helix', label: 'Helix Lab', hint: 'Helix variations' },
   { id: 'legacy', label: 'Legacy', hint: 'Classical and migrated figures' },
@@ -218,16 +218,6 @@ export const PRESET_META = {
     description: 'Open catenoid prepared with automatic caps for STL export.',
     tags: ['fabricate', 'repair', 'cap', 'catenoid'],
   },
-  'SDF Enneper': {
-    category: 'fabricate',
-    description: 'Self-intersecting Enneper surface repaired with Manifold SDF.',
-    tags: ['fabricate', 'self-intersection', 'sdf', 'repair'],
-  },
-  'Möbius Challenge': {
-    category: 'fabricate',
-    description: 'Non-orientable, open example for exploring repair limits and next-action guidance.',
-    tags: ['fabricate', 'topology', 'non-orientable', 'challenge'],
-  },
   'Solid Vase 200': {
     category: 'fabricate',
     description: 'Hollow vase of revolution: 200 mm tall, 175 mm diameter, 135 mm mouth, 2.5 mm wall.',
@@ -247,6 +237,37 @@ export const PRESET_META = {
     category: 'fabricate',
     description: 'Hollow solid-wall vase with a seeded pattern of 16.5 mm through-holes.',
     tags: ['fabricate', 'vase', 'perforated', 'holes', 'wall', 'openwork'],
+  },
+
+  'Pencil Cup 100': {
+    category: 'fabricate',
+    description: 'Open-top desk cup: 100 mm tall, 65 mm wide, 3 mm wall and a flat base.',
+    tags: ['fabricate', 'functional', 'cup', 'desk', 'hollow'],
+  },
+  'Planter 120': {
+    category: 'fabricate',
+    description: 'Tapered plant pot: 120 mm tall, 110 mm base, 4 mm wall and a flat foot.',
+    tags: ['fabricate', 'functional', 'planter', 'pot', 'hollow'],
+  },
+  'Bud Vase 160': {
+    category: 'fabricate',
+    description: 'Slim bud vase: 160 mm tall, a soft waist, 2.5 mm wall and a stable base.',
+    tags: ['fabricate', 'decorative', 'vase', 'bud', 'hollow'],
+  },
+  'Napkin Ring 50': {
+    category: 'fabricate',
+    description: 'Through-hole napkin ring: 48 mm wide, 30 mm tall, 3 mm wall.',
+    tags: ['fabricate', 'functional', 'table', 'ring', 'hollow'],
+  },
+  'Coaster 90': {
+    category: 'fabricate',
+    description: 'Solid 90 mm coaster with a 6 mm profile and a flat face.',
+    tags: ['fabricate', 'functional', 'coaster', 'table', 'solid'],
+  },
+  'Twisted Totem 220': {
+    category: 'fabricate',
+    description: 'Abstract five-lobed totem: 220 mm tall, solid, with a flat base.',
+    tags: ['fabricate', 'decorative', 'abstract', 'totem', 'solid'],
   },
 
   /* ——— Compositions ——— */

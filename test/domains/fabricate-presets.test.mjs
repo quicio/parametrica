@@ -18,8 +18,13 @@ const PRESETS = [
   'Boolean Union',
   'Boolean Difference',
   'Cap Catenoid',
-  'SDF Enneper',
   'Solid Vase 200',
+  'Pencil Cup 100',
+  'Planter 120',
+  'Bud Vase 160',
+  'Napkin Ring 50',
+  'Coaster 90',
+  'Twisted Totem 220',
   'Lattice Vase 200',
   'Organic Lattice Vase 200',
   'Perforated Vase 200',
@@ -71,14 +76,6 @@ export async function run(assert) {
   assert(union.boolean?.stats?.strategy === 'manifold', 'Boolean Union uses Manifold');
   assert(union.bodies === 1, 'Boolean Union produces one body');
 
-  const sdf = buildFabricationReport({
-    evaluation: evaluateDocument(BUILT_IN_PRESETS['SDF Enneper'](), { time: 0 }),
-    layerIndex: 0,
-    units: BUILT_IN_PRESETS['SDF Enneper']().view.units,
-    preparation: BUILT_IN_PRESETS['SDF Enneper']().view.fabrication,
-  });
-  assert(sdf.repair?.selfIntersectionStrategy === 'sdf', 'SDF Enneper reports the SDF strategy');
-
   const vaseDoc = BUILT_IN_PRESETS['Solid Vase 200']();
   const vaseEvaluation = evaluateDocument(vaseDoc, { time: 0 });
   const vaseReport = buildFabricationReport({
@@ -113,6 +110,32 @@ export async function run(assert) {
   const mouthRow = [...rows.entries()].sort((a, b) => Number(b[0]) - Number(a[0]))[0][1];
   const mouthDiameter = mouthRow.max + mouthRow.min;
   assert(Math.abs(mouthDiameter - 135) < 3, `Solid Vase 200 mouth is about 135 mm (got ${mouthDiameter.toFixed(1)})`);
+
+  const expectations = {
+    'Pencil Cup 100': { depth: 100, width: 65 },
+    'Planter 120': { depth: 120, width: 110 },
+    'Bud Vase 160': { depth: 160, width: 64 },
+    'Napkin Ring 50': { depth: 30, width: 48 },
+    'Coaster 90': { depth: 6, width: 90 },
+    'Twisted Totem 220': { depth: 220, width: 64 },
+  };
+  for (const [name, expected] of Object.entries(expectations)) {
+    const report = reports.get(name);
+    assert(Math.abs(report.bbox.depth - expected.depth) < 1, `${name} is ${expected.depth} mm tall`);
+    assert(Math.abs(report.bbox.width - expected.width) < 2, `${name} is about ${expected.width} mm wide`);
+    assert(report.volume > 1000, `${name} has a meaningful solid volume`);
+    assert(report.printability?.status === 'ok', `${name} passes the printability probe`);
+    assert(report.printability?.bedContactAreaMm2 > 0, `${name} has bed contact`);
+    assert((report.printability?.overhangRatio ?? 1) < 0.2, `${name} stays under the overhang warning threshold`);
+  }
+  assert(BUILT_IN_PRESETS['Pencil Cup 100']().layers.length === 2, 'Pencil Cup 100 is a hollow shell');
+  assert(BUILT_IN_PRESETS['Planter 120']().layers.length === 2, 'Planter 120 is a hollow shell');
+  assert(BUILT_IN_PRESETS['Bud Vase 160']().layers.length === 2, 'Bud Vase 160 is a hollow shell');
+  assert(BUILT_IN_PRESETS['Napkin Ring 50']().layers.length === 2, 'Napkin Ring 50 is a hollow shell');
+  assert(BUILT_IN_PRESETS['Coaster 90']().layers.length === 1, 'Coaster 90 is one solid body');
+  assert(BUILT_IN_PRESETS['Twisted Totem 220']().layers.length === 1, 'Twisted Totem 220 is one solid body');
+  assert(!BUILT_IN_PRESETS['SDF Enneper'], 'SDF Enneper is removed from the fabricable library');
+  assert(!BUILT_IN_PRESETS['Möbius Challenge'], 'Möbius Challenge is removed from the fabricable library');
 
   const latticeDoc = BUILT_IN_PRESETS['Lattice Vase 200']();
   const latticeEvaluation = evaluateDocument(latticeDoc, { time: 0 });
@@ -170,13 +193,4 @@ export async function run(assert) {
   });
   assert(perforatedStl.triangles === perforatedReport.triangles, 'Perforated Vase 200 exports binary STL');
 
-  const challenge = BUILT_IN_PRESETS['Möbius Challenge']();
-  const challengeReport = buildFabricationReport({
-    evaluation: evaluateDocument(challenge, { time: 0 }),
-    layerIndex: 0,
-    units: challenge.view.units,
-    preparation: challenge.view.fabrication,
-  });
-  assert(challengeReport.exportable === false, 'Möbius Challenge remains an explicit repair challenge');
-  assert(Boolean(challengeReport.reason), 'Möbius Challenge explains why it is not fabricable');
 }
