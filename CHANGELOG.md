@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.13] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the first domain slice: units, overlays, cap
+  strategies, scene contracts, pass style and mode helpers.
+- Explicit `.ts` imports with `allowImportingTsExtensions`.
+- Boundary scanning for `.ts` domain modules.
+
+### Changed
+
+- Old `.js` domain paths remain compatibility re-exports.
+- No runtime, render or export behavior changed.
+
 ## [0.2.12] - 2026-11-09
 
 ### Added

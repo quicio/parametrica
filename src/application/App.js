@@ -34,7 +34,7 @@ import { artboardPointFromCanvas } from '../domain/interaction/ray.js';
 import { pickSurface } from '../domain/interaction/surfacePicker.js';
 import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../domain/lookPresets.js';
 import { applyUserLookToView } from '../domain/lookPresets.js';
-import { normalizeModes } from '../domain/modeToggles.js';
+import { normalizeModes } from '../domain/modeToggles.ts';
 
 export class App {
   constructor({ canvasContainer, telemetryEl, services, adapters }) {

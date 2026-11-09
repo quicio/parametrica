@@ -5,7 +5,7 @@
  * inflection points, sample points, arc-length ruler, bounding box.
  */
 
-export { OVERLAYS } from '../domain/overlays.js';
+export { OVERLAYS } from '../domain/overlays.ts';
 
 export function drawOverlays(p, { curves, analysis, bbox, view }) {
   const on = view.overlays ?? {};

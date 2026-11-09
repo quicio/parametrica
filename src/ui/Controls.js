@@ -10,7 +10,7 @@
 import GUI from 'lil-gui';
 import { Generators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
-import { normalizeModes } from '../domain/modeToggles.js';
+import { normalizeModes } from '../domain/modeToggles.ts';
 import { PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { lookPresetMatchesView } from '../domain/lookPresets.js';
@@ -23,7 +23,7 @@ import {
   PHYSICAL_UNIT_SYSTEMS,
   formatPhysicalLength,
   millimetresPerUnit,
-} from '../domain/units.js';
+} from '../domain/units.ts';
 import { buildFabricationReport } from '../application/fabricationSource.js';
 import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.js';
 import { manifoldSimplify } from '../geometry/manifoldEngine.js';

@@ -6,7 +6,7 @@
  * never upgrades a heuristic into a measured value.
  */
 
-import { millimetresPerUnit } from './units.js';
+import { millimetresPerUnit } from './units.ts';
 
 export const MANUFACTURING_PROCESSES = Object.freeze(['fdm', 'resin', 'custom']);
 export const MANUFACTURING_GATING = Object.freeze(['warn', 'block']);

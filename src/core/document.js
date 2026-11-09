@@ -11,15 +11,15 @@
 
 import { Generators, Operators } from './registry.js';
 import { sanitizeParams } from './schema.js';
-import { OVERLAYS } from '../domain/overlays.js';
+import { OVERLAYS } from '../domain/overlays.ts';
 import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
 import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
-import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from '../domain/units.js';
+import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from '../domain/units.ts';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
-import { sanitizePassStyle } from '../domain/passStyle.js';
-import { CAP_STRATEGIES } from '../domain/fabrication.js';
+import { sanitizePassStyle } from '../domain/passStyle.ts';
+import { CAP_STRATEGIES } from '../domain/fabrication.ts';
 import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
 
 export const DOCUMENT_VERSION = 3;

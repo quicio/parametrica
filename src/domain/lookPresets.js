@@ -5,7 +5,7 @@
  * guides. They never touch geometry, style, units, camera or fabrication.
  */
 
-import { OVERLAYS } from '../domain/overlays.js';
+import { OVERLAYS } from '../domain/overlays.ts';
 
 export const LOOK_PRESETS = Object.freeze([
   {

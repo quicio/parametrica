@@ -40,7 +40,7 @@ function filesUnder(path) {
   for (const name of readdirSync(absolute)) {
     const child = join(absolute, name);
     if (statSync(child).isDirectory()) out.push(...filesUnder(relative(root, child)));
-    else if (name.endsWith('.js')) out.push(relative(root, child));
+    else if (name.endsWith('.js') || name.endsWith('.ts')) out.push(relative(root, child));
   }
   return out;
 }
@@ -175,9 +175,9 @@ export async function run(assert) {
   }
   assert(!read('src/ui/sections/keepSections.js').includes('controls.app.'), 'keep sections use narrow ports');
 
-  assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
-  assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');
-  assert(read('src/viz/overlays.js').includes('../domain/overlays.js'), 'viz/overlays keeps a domain re-export');
+  assert(read('src/core/units.js').includes('../domain/units.ts'), 'core/units keeps a domain re-export');
+  assert(read('src/render/passStyle.js').includes('../domain/passStyle.ts'), 'render/passStyle keeps a domain re-export');
+  assert(read('src/viz/overlays.js').includes('../domain/overlays.ts'), 'viz/overlays keeps a domain re-export');
   assert(read('src/geometry/manufacturingProfile.js').includes('../domain/manufacturingProfile.js'), 'geometry/manufacturingProfile keeps a domain re-export');
-  assert(read('src/geometry/repair.js').includes('../domain/fabrication.js'), 'geometry/repair imports domain cap strategies');
+  assert(read('src/geometry/repair.js').includes('../domain/fabrication.ts'), 'geometry/repair imports domain cap strategies');
 }

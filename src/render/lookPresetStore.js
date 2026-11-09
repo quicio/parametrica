@@ -5,7 +5,7 @@
  * artboard and fabrication state are never part of the record.
  */
 
-import { OVERLAYS } from '../domain/overlays.js';
+import { OVERLAYS } from '../domain/overlays.ts';
 
 export { applyUserLookToView } from '../domain/lookPresets.js';
 

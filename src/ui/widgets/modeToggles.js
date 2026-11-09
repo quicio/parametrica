@@ -2,4 +2,4 @@
  * ui/widgets/modeToggles.js — compatibility export for the domain helpers.
  */
 
-export * from '../../domain/modeToggles.js';
+export * from '../../domain/modeToggles.ts';

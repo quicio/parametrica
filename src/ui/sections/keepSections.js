@@ -7,10 +7,10 @@
 
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../../core/fillGradient.js';
 import { RenderPasses } from '../../core/registry.js';
-import { normalizeModes, toggleMode } from '../../domain/modeToggles.js';
+import { normalizeModes, toggleMode } from '../../domain/modeToggles.ts';
 import { applyHardBounds } from '../params/ParamRegistry.js';
 import { PASS_APPEARANCE, passSupports } from '../../render/passStyle.js';
-import { OVERLAYS } from '../../domain/overlays.js';
+import { OVERLAYS } from '../../domain/overlays.ts';
 import { ImagePanel } from '../widgets/ImagePanel.js';
 import { TimelinePanel } from '../widgets/TimelinePanel.js';
 import { LabPanel } from '../widgets/LabPanel.js';

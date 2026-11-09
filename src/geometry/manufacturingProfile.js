@@ -1,7 +1,2 @@
-/**
- * geometry/manufacturingProfile.js — compatibility export for the domain module.
- *
- * New inner code should import `domain/manufacturingProfile.js` directly.
- */
-
+/** geometry/manufacturingProfile.js — compatibility export for the domain module. */
 export * from '../domain/manufacturingProfile.js';

@@ -12,9 +12,9 @@ import { validateMesh } from './validate.js';
 import { clearManifoldGuarantee } from './trust.js';
 import { repairTopology } from './topologyRepair.js';
 import { orient2dSign, pointInTriangle2D as robustPointInTriangle2D } from './robustPredicates.js';
-import { CAP_STRATEGIES } from '../domain/fabrication.js';
+import { CAP_STRATEGIES } from '../domain/fabrication.ts';
 
-export { CAP_STRATEGIES } from '../domain/fabrication.js';
+export { CAP_STRATEGIES } from '../domain/fabrication.ts';
 
 export const DEFAULT_REPAIR_TOLERANCE = 1e-4;
 export const DEFAULT_CAP_STRATEGY = 'auto';
