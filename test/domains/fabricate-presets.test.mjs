@@ -11,6 +11,7 @@ import { buildFabricationReport } from '../../src/application/fabricationSource.
 import { initManifold } from '../../src/geometry/manifoldEngine.js';
 import { project3D } from '../../src/view/camera.js';
 import { exportBinarySTL } from '../../src/export/stl.js';
+import { buildRenderScene } from '../../src/application/renderSceneBuilder.js';
 
 const PRESETS = [
   'Solid Torus',
@@ -25,6 +26,13 @@ const PRESETS = [
   'Napkin Ring 50',
   'Coaster 90',
   'Twisted Totem 220',
+  'Lampshade 180',
+  'Candle Holder 80',
+  'Soap Dish 120',
+  'Desk Tray 160',
+  'Napkin Holder 140',
+  'Wall Planter 120',
+  'Wall Hook 70',
   'Lattice Vase 200',
   'Organic Lattice Vase 200',
   'Perforated Vase 200',
@@ -118,6 +126,13 @@ export async function run(assert) {
     'Napkin Ring 50': { depth: 30, width: 48 },
     'Coaster 90': { depth: 6, width: 90 },
     'Twisted Totem 220': { depth: 220, width: 64 },
+    'Lampshade 180': { depth: 180, width: 170 },
+    'Candle Holder 80': { depth: 80, width: 60 },
+    'Soap Dish 120': { depth: 18, width: 120 },
+    'Desk Tray 160': { depth: 25, width: 160 },
+    'Napkin Holder 140': { depth: 60, width: 140 },
+    'Wall Planter 120': { depth: 120, width: 140 },
+    'Wall Hook 70': { depth: 70, width: 44 },
   };
   for (const [name, expected] of Object.entries(expectations)) {
     const report = reports.get(name);
@@ -134,6 +149,27 @@ export async function run(assert) {
   assert(BUILT_IN_PRESETS['Napkin Ring 50']().layers.length === 2, 'Napkin Ring 50 is a hollow shell');
   assert(BUILT_IN_PRESETS['Coaster 90']().layers.length === 1, 'Coaster 90 is one solid body');
   assert(BUILT_IN_PRESETS['Twisted Totem 220']().layers.length === 1, 'Twisted Totem 220 is one solid body');
+
+  const cutterExpectations = {
+    'Lampshade 180': 0,
+    'Candle Holder 80': 2,
+    'Soap Dish 120': 3,
+    'Desk Tray 160': 1,
+    'Napkin Holder 140': 2,
+    'Wall Planter 120': 3,
+    'Wall Hook 70': 2,
+  };
+  for (const [name, cutters] of Object.entries(cutterExpectations)) {
+    const doc = BUILT_IN_PRESETS[name]();
+    assert(doc.layers.filter((layer) => layer.fabricationRole === 'cutter').length === cutters,
+      `${name} keeps ${cutters} cutter layer(s)`);
+    const evaluation = evaluateDocument(doc, { time: 0 });
+    const scene = buildRenderScene({ evaluation, document: doc, view: doc.view });
+    assert(scene.layers.length === doc.layers.length - cutters,
+      `${name} hides cutter layers from the technical render scene`);
+    assert(scene.layers.every((layer) => layer.fabricationRole !== 'cutter'),
+      `${name} never renders a cutter as authored geometry`);
+  }
   assert(!BUILT_IN_PRESETS['SDF Enneper'], 'SDF Enneper is removed from the fabricable library');
   assert(!BUILT_IN_PRESETS['Möbius Challenge'], 'Möbius Challenge is removed from the fabricable library');
 

@@ -708,7 +708,7 @@ export class Controls {
     this.renderFabricate(report);
   }
 
-  /** Mirror the prepared lattice solid into the canvas when Solid preview is on. */
+  /** Mirror any prepared solid into the canvas when Solid preview is on. */
   syncLatticePreview(report = this.fabricationReport) {
     const doc = this.app.document;
     const preparation = doc.view?.fabrication ?? {};
@@ -717,10 +717,11 @@ export class Controls {
     const isLattice = activeLayer?.generator?.id === 'surface-lattice'
       || (preparation.lattice === true && isCutout);
     const mesh = report?.source?.geometry ?? null;
+    const latticeReady = Boolean(report?.lattice?.struts || report?.lattice?.holes);
+    const solidReady = Boolean(report?.source) && report?.exportable !== false;
     const show = this.mode === 'fabricate'
       && preparation.latticePreview !== 'network'
-      && isLattice
-      && Boolean(report?.lattice?.struts || report?.lattice?.holes)
+      && (isLattice ? latticeReady : solidReady)
       && Boolean(mesh);
     let previewMesh = mesh;
     if (show && mesh.faces.length > 60_000) {
@@ -735,7 +736,10 @@ export class Controls {
         }
       }
     }
-    this.app.setFabricationPreview(show ? { mesh: previewMesh, layerId: activeLayer.id } : null);
+    const previewLayer = (doc.layers ?? []).find((layer) => (
+      layer.visible !== false && layer.fabricationRole !== 'cutter'
+    )) ?? activeLayer;
+    this.app.setFabricationPreview(show ? { mesh: previewMesh, layerId: previewLayer?.id ?? null } : null);
     if (this.fabricateEls?.latticePreview) {
       this.fabricateEls.latticePreview.disabled = !isLattice;
     }

@@ -270,6 +270,42 @@ export const PRESET_META = {
     tags: ['fabricate', 'decorative', 'abstract', 'totem', 'solid'],
   },
 
+  'Lampshade 180': {
+    category: 'fabricate',
+    description: 'Open tapered lampshade: 180 mm tall, 170 mm base, 2 mm wall and annular caps.',
+    tags: ['fabricate', 'decorative', 'lampshade', 'shell', 'open'],
+  },
+  'Candle Holder 80': {
+    category: 'fabricate',
+    description: 'Stepped candle holder: 80 mm tall, tea-light recess and a deeper taper-candle hole.',
+    tags: ['fabricate', 'functional', 'candle', 'holder', 'blind-hole'],
+  },
+  'Soap Dish 120': {
+    category: 'fabricate',
+    description: 'Rounded soap dish: 120 × 80 mm, 4 mm wall and three through-slots for drainage.',
+    tags: ['fabricate', 'functional', 'soap', 'dish', 'slots'],
+  },
+  'Desk Tray 160': {
+    category: 'fabricate',
+    description: 'Rounded desk tray: 160 × 90 × 25 mm with a cable pass-through notch.',
+    tags: ['fabricate', 'functional', 'tray', 'desk', 'cable'],
+  },
+  'Napkin Holder 140': {
+    category: 'fabricate',
+    description: 'Slotted napkin holder: 140 × 70 × 60 mm with open front and back windows.',
+    tags: ['fabricate', 'functional', 'napkin', 'holder', 'slots'],
+  },
+  'Wall Planter 120': {
+    category: 'fabricate',
+    description: 'Wall-hung planter: 140 × 70 × 120 mm, keyhole mount and bottom drain.',
+    tags: ['fabricate', 'functional', 'planter', 'wall', 'keyhole'],
+  },
+  'Wall Hook 70': {
+    category: 'fabricate',
+    description: 'Flanged wall hook: 70 mm projection with two countersunk screw holes.',
+    tags: ['fabricate', 'functional', 'hook', 'wall', 'screw'],
+  },
+
   /* ——— Compositions ——— */
   'Vortex Stack': {
     category: 'compositions',

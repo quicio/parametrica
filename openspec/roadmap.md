@@ -574,6 +574,12 @@ labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
 Wall thickness remains correctly `unavailable` until a real estimator exists;
 external slicer verification remains a manual record.
 
+### Fabricate object primitives and wave 2 (archived)
+
+Rounded superellipse shells, cutter layers, open annular shells and stepped
+solids unlocked seven new functional/decorative objects. Product preview now
+works for any prepared solid, not only lattice bodies.
+
 ### Fabricate library review (archived)
 
 The Fabricate category now contains only exportable solids: functional objects,

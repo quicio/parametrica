@@ -20,6 +20,13 @@ fabrication controls without manual setup.
 | **Coaster 90** | Functional | 90 mm solid disc, 6 mm profile |
 | **Bud Vase 160** | Decorative | 160 mm tall slim vase, soft waist, 2.5 mm wall |
 | **Twisted Totem 220** | Abstract | 220 mm solid, five-lobed twisted profile, flat base |
+| **Lampshade 180** | Decorative | Open annular shell, 180 mm tall, 170 mm base, 2 mm wall |
+| **Candle Holder 80** | Functional | Tea-light recess plus deeper taper-candle hole |
+| **Soap Dish 120** | Functional | Rounded 120 × 80 × 18 mm shell with three drain slots |
+| **Desk Tray 160** | Functional | Rounded 160 × 90 × 25 mm tray with cable notch |
+| **Napkin Holder 140** | Functional | 140 × 70 × 60 mm shell with open front/back windows |
+| **Wall Planter 120** | Functional | 140 × 70 × 120 mm wall planter with keyhole and drain |
+| **Wall Hook 70** | Functional | 70 mm flanged peg with two screw holes |
 
 SDF Enneper and Möbius Challenge were removed: the former is a thin repair demo
 and the latter is intentionally non-exportable. The remaining technical solids
@@ -50,6 +57,13 @@ supports; the report surfaces that instead of hiding it.
 | Coaster 90 | exportable | 6,357 mm² | 0% | Ready |
 | Bud Vase 160 | exportable | 1,017 mm² | 0% | Ready |
 | Twisted Totem 220 | exportable | 2,178 mm² | 0% | Ready |
+| Lampshade 180 | exportable | 1,317 mm² | 0% | Ready |
+| Candle Holder 80 | exportable | 2,825 mm² | 0% | Ready |
+| Soap Dish 120 | exportable | 7,768 mm² | 0% | Ready |
+| Desk Tray 160 | exportable | 13,345 mm² | 0% | Ready |
+| Napkin Holder 140 | exportable | 9,309 mm² | 1% | Ready |
+| Wall Planter 120 | exportable | 9,032 mm² | 0% | Ready |
+| Wall Hook 70 | exportable | 1,519 mm² | 0% | Ready |
 
 The torus/boolean family has no flat bed face. They remain as closed technical
 examples because they are useful for booleans and 3MF multi-body export, and
@@ -78,25 +92,37 @@ Every example sets:
   body with a flat floor and bed contact.
 - **Coaster 90 / Twisted Totem 220**: one capped solid surface with a flat base.
 
+## Construction primitives
+
+The object wave shares three preset-level primitives:
+
+- **Rounded shell**: superellipse outer/inner cross-sections, a solid floor and
+  an open top.
+- **Cutter layers**: closed surfaces marked `fabricationRole: "cutter"`. They
+  participate in the Manifold difference but are excluded from the technical
+  canvas and SVG export.
+- **Open and stepped solids**: annular shells with end caps, and solids of
+  revolution with blind-hole or screw-hole cutters.
+
+All new objects use one Manifold difference per body. `Lampshade 180` is the
+only through-centre shell; the rest have a solid floor.
+
+## Product preview
+
+Product preview is available for every exportable prepared solid, not only
+lattice bodies. The renderer selection is enabled once Fabricate reports
+`READY` in the 3D view.
+
 ## Next object candidates
 
-These are proposed, not yet implemented. They need a small fabrication feature
-or a new generator path before they can join the category.
+These remain proposed; they need capabilities beyond one difference operation.
 
 | Candidate | Type | Why it is not in yet |
 |---|---|---|
-| **Lampshade 180** | Decorative | Needs a thin open-ended shell with annular caps, not a closed solid. |
-| **Soap Dish 120** | Functional | Needs an off-axis bowl and drainage slots; current revolve helper is axisymmetric. |
-| **Candle Holder 80** | Functional | Easy once a stepped blind hole is available without a through-cut. |
-| **Modular Planter Tile** | Functional | Needs a flat-backed wall planter and a mounting key/boolean. |
-| **Desk Tray** | Functional | Needs a rounded rectangular shell and compartment booleans; not a surface of revolution. |
-| **Wall Hook** | Functional | Needs a load-bearing bracket and a screw-counterbore operation. |
-| **Napkin Holder** | Functional | A slotted box; needs rectangular wall construction rather than revolve. |
-| **Lampshade Ring Set** | Decorative | Same open-shell limitation as Lampshade 180. |
-
-The next practical step is a **rectangular shell helper**: outer box minus inner
-box with optional through-slots. That unlocks trays, holders, wall planters and
-a proper soap dish without changing the fabrication contracts.
+| **Modular Planter Tile** | Functional | Needs an interlocking tile/key; `Wall Planter 120` covers the wall-hung case. |
+| **Lampshade Ring Set** | Decorative | Needs nested open shells with separate annular caps. |
+| **Folding Wall Hook** | Functional | Needs a two-part hinge or sequential union-then-difference recipe. |
+| **Stackable Desk Tray** | Functional | Needs a registration lip and a compound boolean recipe. |
 
 ## Lattice example
 

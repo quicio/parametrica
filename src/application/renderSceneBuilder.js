@@ -236,7 +236,9 @@ function worldBoundsOfMeshes(meshes) {
 function sourceGroups(evaluation, doc, view) {
   if (Array.isArray(evaluation.layers) && evaluation.layers.length) {
     return evaluation.layers.filter((layer) => (
-      layer.visible !== false && (
+      layer.visible !== false
+      && layer.fabricationRole !== 'cutter'
+      && (
         (layer.curves?.length ?? 0) > 0
         || (layer.meshes?.length ?? 0) > 0
         || (layer.geometry?.length ?? 0) > 0

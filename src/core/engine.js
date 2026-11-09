@@ -815,6 +815,7 @@ function buildLayerResult(layer, index, evaluation, layerErrors, {
     colorMetric: layer.colorMetric ?? null,
     style: layer.style,
     ...(layer.trace ? { trace: layer.trace } : {}),
+    ...(layer.fabricationRole === 'cutter' ? { fabricationRole: 'cutter' } : {}),
     generator: layer.generator ?? null,
     renderGenerator: sourceLayer?.generator ?? layer.generator ?? null,
     operators: layer.operators,

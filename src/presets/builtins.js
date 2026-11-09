@@ -5,7 +5,18 @@
  * operator stack. They are families to explore, not logos to admire.
  */
 
-import { createDocument, createLayer, createInstanceLayer } from '../core/document.js';
+import { createDocument, createInstanceLayer } from '../core/document.js';
+import {
+  addCutter,
+  cutterBox,
+  cutterCylinderY,
+  cutterCylinderZ,
+  hollowRevolved,
+  hollowRounded,
+  mmView,
+  SOLID_FABRICATION,
+  solidRevolved,
+} from './objectBuilders.js';
 
 const PI = Math.PI;
 
@@ -82,118 +93,6 @@ function fabricateTorus(name, params = {}, view = {}) {
 }
 
 const VASE_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';
-
-function vaseSurface(profile, heightExpression, name) {
-  return createLayer('parametric-surface', {
-    name,
-    generator: {
-      params: {
-        exprX: `(${profile})*cos(u)`,
-        exprY: `(${profile})*sin(u)`,
-        exprZ: heightExpression,
-        u0: 0, u1: 2 * PI,
-        v0: 0, v1: 1,
-        samplesU: 96, samplesV: 64,
-        closedU: true, closedV: false,
-        fit: 340,
-      },
-    },
-  });
-}
-
-function mmFabricationView(fabrication) {
-  return fabricateView({
-    units: { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null },
-    fabrication,
-  });
-}
-
-const HOLLOW_FABRICATION = Object.freeze({
-  format: 'stl',
-  quality: 'standard',
-  scope: 'composition',
-  boolean: 'difference',
-  csgStrategy: 'manifold',
-  repair: true,
-  weld: true,
-  cap: true,
-  capStrategy: 'auto',
-  tolerance: 1e-4,
-  maxHoleEdges: 512,
-});
-
-const SOLID_FABRICATION = Object.freeze({
-  format: 'stl',
-  quality: 'standard',
-  scope: 'single',
-  boolean: 'none',
-  csgStrategy: 'manifold',
-  repair: true,
-  weld: true,
-  cap: true,
-  capStrategy: 'auto',
-  tolerance: 1e-4,
-  maxHoleEdges: 512,
-});
-
-/** Hollow object of revolution with a flat floor and an open mouth. */
-function hollowRevolved(name, {
-  profile,
-  height,
-  wall,
-  floor,
-  innerExtra = 4,
-  samplesU = 96,
-  samplesV = 64,
-}) {
-  const doc = createDocument('parametric-surface', {
-    name,
-    generator: {
-      params: {
-        exprX: `(${profile})*cos(u)`,
-        exprY: `(${profile})*sin(u)`,
-        exprZ: `${height}*v`,
-        u0: 0, u1: 2 * PI,
-        v0: 0, v1: 1,
-        samplesU, samplesV,
-        closedU: true, closedV: false,
-        fit: 340,
-      },
-    },
-    view: mmFabricationView({ ...HOLLOW_FABRICATION }),
-  });
-  doc.layers[0].name = 'Outer shell';
-  const inner = vaseSurface(`${profile} - ${wall}`, `${floor} + ${height + innerExtra}*v`, 'Inner shell');
-  inner.style = doc.layers[0].style;
-  doc.layers.push(inner);
-  doc.activeLayer = 0;
-  return doc;
-}
-
-/** Closed solid of revolution, capped at both ends. */
-function solidRevolved(name, {
-  profile,
-  z = '200*v',
-  samplesU = 96,
-  samplesV = 64,
-}) {
-  return createDocument('parametric-surface', {
-    name,
-    generator: {
-      params: {
-        exprX: `(${profile})*cos(u)`,
-        exprY: `(${profile})*sin(u)`,
-        exprZ: z,
-        u0: 0, u1: 2 * PI,
-        v0: 0, v1: 1,
-        samplesU, samplesV,
-        closedU: true, closedV: false,
-        fit: 340,
-      },
-    },
-    view: mmFabricationView({ ...SOLID_FABRICATION }),
-  });
-}
 
 function addTorusInstance(doc, { name, dz = 0, dx = 0, dy = 0 }) {
   const source = doc.layers[0];
@@ -590,8 +489,151 @@ export const BUILT_IN_PRESETS = {
         fit: 340,
       },
     },
-    view: mmFabricationView({ ...SOLID_FABRICATION }),
+    view: mmView({ ...SOLID_FABRICATION }),
   }),
+
+  'Lampshade 180': () => hollowRevolved('Lampshade 180', {
+    profile: '85 - 30*v + 2*sin(pi*v)',
+    height: 180,
+    wall: 2,
+    floor: -4,
+    innerExtra: 8,
+    samplesV: 48,
+  }),
+
+  'Candle Holder 80': () => {
+    const doc = solidRevolved('Candle Holder 80', {
+      profile: '30 - 6*v + 2*sin(pi*v)',
+      z: '80*v',
+    });
+    addCutter(doc, cutterCylinderZ('Cutter · tea light', {
+      radius: 19.5,
+      z0: 58,
+      z1: 84,
+    }));
+    addCutter(doc, cutterCylinderZ('Cutter · taper candle', {
+      radius: 10,
+      z0: 38,
+      z1: 60,
+    }));
+    return doc;
+  },
+
+  'Soap Dish 120': () => {
+    const doc = hollowRounded('Soap Dish 120', {
+      width: 120,
+      depth: 80,
+      height: 18,
+      wall: 4,
+      floor: 4,
+      exponent: 3,
+    });
+    [-32, 0, 32].forEach((x, index) => {
+      addCutter(doc, cutterBox(`Cutter · drain slot ${index + 1}`, {
+        width: 6,
+        depth: 40,
+        height: 12,
+        x,
+        z: -2,
+      }));
+    });
+    return doc;
+  },
+
+  'Desk Tray 160': () => {
+    const doc = hollowRounded('Desk Tray 160', {
+      width: 160,
+      depth: 90,
+      height: 25,
+      wall: 3,
+      floor: 4,
+      exponent: 4,
+    });
+    addCutter(doc, cutterBox('Cutter · cable notch', {
+      width: 18,
+      depth: 24,
+      height: 30,
+      x: 72,
+      z: 8,
+    }));
+    return doc;
+  },
+
+  'Napkin Holder 140': () => {
+    const doc = hollowRounded('Napkin Holder 140', {
+      width: 140,
+      depth: 70,
+      height: 60,
+      wall: 4,
+      floor: 4,
+      exponent: 5,
+    });
+    addCutter(doc, cutterBox('Cutter · front slot', {
+      width: 90,
+      depth: 20,
+      height: 30,
+      y: 35,
+      z: 20,
+    }));
+    addCutter(doc, cutterBox('Cutter · back slot', {
+      width: 90,
+      depth: 20,
+      height: 30,
+      y: -35,
+      z: 20,
+    }));
+    return doc;
+  },
+
+  'Wall Planter 120': () => {
+    const doc = hollowRounded('Wall Planter 120', {
+      width: 140,
+      depth: 70,
+      height: 120,
+      wall: 4,
+      floor: 4,
+      exponent: 4,
+    });
+    addCutter(doc, cutterCylinderY('Cutter · keyhole circle', {
+      radius: 4.5,
+      z: 85,
+      y0: -40,
+      y1: -28,
+    }));
+    addCutter(doc, cutterBox('Cutter · keyhole slot', {
+      width: 5,
+      depth: 20,
+      height: 22,
+      y: -34,
+      z: 85,
+    }));
+    addCutter(doc, cutterCylinderZ('Cutter · drain', {
+      radius: 4,
+      z0: -2,
+      z1: 6,
+    }));
+    return doc;
+  },
+
+  'Wall Hook 70': () => {
+    const doc = solidRevolved('Wall Hook 70', {
+      profile: '22 - 13*clamp((v-0.10)/0.05,0,1) - 3*v',
+      z: '70*v',
+    });
+    addCutter(doc, cutterCylinderZ('Cutter · screw left', {
+      radius: 2.2,
+      x: -12,
+      z0: -2,
+      z1: 12,
+    }));
+    addCutter(doc, cutterCylinderZ('Cutter · screw right', {
+      radius: 2.2,
+      x: 12,
+      z0: -2,
+      z1: 12,
+    }));
+    return doc;
+  },
 
   'Lattice Vase 200': () =>
     createDocument('surface-lattice', {

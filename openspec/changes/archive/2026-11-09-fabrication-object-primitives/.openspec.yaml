@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-09
+goal: Define reusable preset construction primitives for rounded shells, cutter layers and open or stepped solids.

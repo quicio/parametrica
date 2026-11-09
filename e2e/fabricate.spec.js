@@ -228,6 +228,75 @@ test('perforated preset subtracts seeded holes and reuses the solid preview', as
   expect(built.bytes).toBeGreaterThan(84);
 });
 
+test('product preview renders a prepared solid object preset', async ({ page }) => {
+  test.setTimeout(90_000);
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Pencil Cup 100'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  await expect(fabricate.locator('.fabricate-status')).toContainText('READY', { timeout: 30_000 });
+  const renderer = fabricate.locator('.fabricate-product-renderer');
+  await expect(renderer).toBeEnabled();
+  await renderer.selectOption('webgl');
+  await page.waitForFunction(() => Boolean(window.__parametrica.productPreview?.ready), null, { timeout: 15_000 });
+  await page.waitForTimeout(400);
+
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      backend: app.document.view.preview.backend,
+      ready: Boolean(app.productPreview?.ready),
+      active: Boolean(app.productPreviewActive),
+      productMesh: Boolean(app.fabricationPreview?.mesh),
+      p5Hidden: app.renderer?.p?.canvas?.style?.visibility === 'hidden',
+    };
+  });
+  expect(state).toEqual({ backend: 'webgl', ready: true, active: true, productMesh: true, p5Hidden: true });
+
+  await renderer.selectOption('p5');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__parametrica.productPreviewActive)).toBe(false);
+});
+
+test('product preview uses the cut body for a cutter-based object', async ({ page }) => {
+  test.setTimeout(90_000);
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Candle Holder 80'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  await expect(fabricate.locator('.fabricate-status')).toContainText('READY', { timeout: 30_000 });
+  const renderer = fabricate.locator('.fabricate-product-renderer');
+  await expect(renderer).toBeEnabled();
+  await renderer.selectOption('webgl');
+  await page.waitForFunction(() => Boolean(window.__parametrica.productPreview?.ready), null, { timeout: 15_000 });
+  await page.waitForTimeout(300);
+
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    const doc = app.document;
+    const scene = app.renderer.lastScene;
+    return {
+      backend: doc.view.preview.backend,
+      active: Boolean(app.productPreviewActive),
+      cutters: doc.layers.filter((layer) => layer.fabricationRole === 'cutter').length,
+      sceneLayers: scene?.layers?.length ?? null,
+      docLayers: doc.layers.length,
+      previewMesh: Boolean(app.fabricationPreview?.mesh),
+    };
+  });
+  expect(state.backend).toBe('webgl');
+  expect(state.active).toBe(true);
+  expect(state.cutters).toBe(2);
+  expect(state.docLayers).toBe(3);
+  expect(state.sceneLayers).toBe(1);
+  expect(state.previewMesh).toBe(true);
+
+  await renderer.selectOption('p5');
+  await page.waitForTimeout(300);
+});
+
 test('product preview renders the prepared lattice with a finish and returns to technical', async ({ page }) => {
   test.setTimeout(90_000);
   await boot(page);

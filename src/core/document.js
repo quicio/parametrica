@@ -416,6 +416,7 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
     operators: sanitizeOperators(overrides.operators ?? []),
     style: sanitizeStyle(overrides.style, overrides.strokeWeight ?? DEFAULT_STYLE.stroke.width),
     ...(trace ? { trace } : {}),
+    ...(overrides.fabricationRole === 'cutter' ? { fabricationRole: 'cutter' } : {}),
   };
 }
 
@@ -580,6 +581,7 @@ function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
     operators: sanitizeOperators(source.operators),
     style: sanitizeStyle(source.style ?? fallbackStyle, fallbackStyle?.stroke?.width),
     ...(trace ? { trace } : {}),
+    ...(source.fabricationRole === 'cutter' ? { fabricationRole: 'cutter' } : {}),
   };
 }
 
