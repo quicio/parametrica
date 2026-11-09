@@ -12,6 +12,8 @@ import { Generators, RenderPasses } from '../../core/registry.js';
 import { supportsSpatial } from '../../core/capabilities.js';
 import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.js';
+import { drawEvenOddFill } from '../fill.js';
+import { traceFillGroups, withoutTraceFill } from '../traceFill.js';
 import {
   buildViewportDescriptor,
   coordinateUnitInfo,
@@ -508,15 +510,26 @@ export class P5Adapter extends Renderer {
     analysisByLayer = null,
     combinedAnalysis = null,
   }) {
+    // Image traces keep holes in separate layers; paint each trace group as
+    // one even-odd path before any strokes so the hole stays transparent.
+    for (const fillGroup of traceFillGroups(scene.layers)) {
+      p.push();
+      p.blendMode(blendModeConstant(p, fillGroup.layers[0]?.style?.blend ?? view.style?.blend));
+      drawEvenOddFill(p, fillGroup.curves, fillGroup.fill, fillGroup.bbox);
+      p.pop();
+      p.blendMode(p.BLEND);
+    }
+
     for (const group of scene.layers) {
       const layerModes = Array.isArray(group.modes) && group.modes.length ? group.modes : modes;
+      const layerStyle = withoutTraceFill(group.style ?? view.style, group.trace);
       const layerAnalysisNeeded = needsLayerAnalysis({ ...view, modes: layerModes });
       const layerData = {
         curves: group.curves,
         bbox: group.bbox,
         view: {
           ...view,
-          style: group.style ?? view.style,
+          style: layerStyle,
           colorMetric: group.colorMetric ?? view.colorMetric,
         },
         document: doc,
@@ -539,7 +552,7 @@ export class P5Adapter extends Renderer {
           try {
             const passView = {
               ...layerData.view,
-              style: resolvePassStyle(modeId, view, group.style ?? view.style),
+              style: resolvePassStyle(modeId, view, layerStyle),
             };
             RenderPasses.get(modeId).draw(p, { ...layerData, view: passView });
           } catch (e) {

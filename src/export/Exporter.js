@@ -18,6 +18,7 @@ import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
 import { export3MF, THREE_MF_MIME_TYPE } from './3mf.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
 import { resolvePassStyle } from '../render/passStyle.js';
+import { traceFillGroups, withoutTraceFill } from '../render/traceFill.js';
 
 /**
  * Active features the SVG builder does not represent as vector primitives.
@@ -87,19 +88,31 @@ export class Exporter {
 
     const layerMarkup = [];
     const allCurves = source.flatMap((layer) => layer.curves ?? []);
+    const traceMarkup = [];
+    traceFillGroups(source).forEach((group, index) => {
+      const ctx = new SvgContext(width, height, `svg-trace-${index}`);
+      ctx.fillContours(group.curves, group.fill, group.bbox);
+      const markup = ctx.toMarkup('    ');
+      if (markup) {
+        traceMarkup.push(
+          `  <g class="svg-trace-fill" data-trace="${escapeAttr(group.group)}" fill-rule="evenodd">\n${markup}\n  </g>`,
+        );
+      }
+    });
     for (let index = 0; index < source.length; index++) {
       const layer = source[index];
       const layerCurves = layer.curves ?? [];
       const meshes = layer.renderMeshes ?? layer.meshes ?? [];
       if (!layerCurves.length && !meshes.length) continue;
       const style = layer.style ?? fallbackStyle;
+      const layerStyle = withoutTraceFill(style, layer.trace);
       const layerModes = Array.isArray(layer.modes) && layer.modes.length ? layer.modes : modes;
       const layerData = {
         curves: layerCurves,
         bbox: layer.bbox ?? bboxAll(layerCurves),
         meshes,
         analysis: analyzeAll(layerCurves),
-        view: { ...view, style, colorMetric: layer.colorMetric ?? view.colorMetric },
+        view: { ...view, style: layerStyle, colorMetric: layer.colorMetric ?? view.colorMetric },
         document,
         time,
       };
@@ -114,7 +127,7 @@ export class Exporter {
         try {
           const passView = {
             ...layerData.view,
-            style: resolvePassStyle(mode, view, style),
+            style: resolvePassStyle(mode, view, layerStyle),
           };
           RenderPasses.get(mode).draw(ctx, { ...layerData, view: passView });
         } catch {
@@ -125,7 +138,8 @@ export class Exporter {
         if (markup) {
           const opacity = Number(view.passOpacity?.[mode]);
           const opacityAttr = Number.isFinite(opacity) && opacity < 1 ? ` opacity="${fmt(opacity)}"` : '';
-          passes.push(`    <g class="svg-pass" data-pass="${escapeAttr(mode)}"${opacityAttr}>\n${markup}\n    </g>`);
+          const evenOdd = mode === 'stroke' && style.fill?.enabled ? ' fill-rule="evenodd"' : '';
+          passes.push(`    <g class="svg-pass" data-pass="${escapeAttr(mode)}"${opacityAttr}${evenOdd}>\n${markup}\n    </g>`);
         }
       }
       if (!passes.length) continue;
@@ -154,7 +168,7 @@ export class Exporter {
       }
     }
 
-    const body = [...layerMarkup, overlayMarkup].filter(Boolean).join('\n');
+    const body = [...traceMarkup, ...layerMarkup, overlayMarkup].filter(Boolean).join('\n');
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
       meta +

@@ -80,6 +80,43 @@ export class SvgContext {
     return this;
   }
 
+  /**
+   * Emit every closed contour as subpaths of one path with the even-odd rule.
+   * This is what makes a traced ring a ring in SVG instead of a solid disc.
+   */
+  fillContours(curves, fill, bbox) {
+    if (!fill?.enabled || !Array.isArray(curves) || !curves.length) {
+      this.noFill();
+      return false;
+    }
+    if (fill.gradient?.enabled) {
+      this.fillGradient(fill.gradient, bbox, fill.opacity ?? 1);
+    } else {
+      this.fillStyle = {
+        color: fill.color ?? '#ffffff',
+        opacity: clamp01(fill.opacity),
+      };
+    }
+    const parts = [];
+    for (const curve of curves) {
+      const points = curve?.points ?? [];
+      if (points.length < 2) continue;
+      let d = `M ${fmt(points[0].x)} ${fmt(points[0].y)}`;
+      for (let i = 1; i < points.length; i++) {
+        d += ` L ${fmt(points[i].x)} ${fmt(points[i].y)}`;
+      }
+      parts.push(`${d} Z`);
+    }
+    if (!parts.length) return false;
+    const style = { ...this.snapshot(), strokeStyle: null };
+    this.elements.push(element('path', {
+      d: parts.join(' '),
+      'fill-rule': 'evenodd',
+      ...this.paintAttrs(style),
+    }));
+    return true;
+  }
+
   /** Fill with a resolved linear/radial gradient, emitted as SVG defs. */
   fillGradient(gradient, bbox, opacity = 1) {
     const spec = resolveFillGradient(gradient, bbox);

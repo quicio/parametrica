@@ -30,6 +30,8 @@ import { run as fabricationPreview } from './fabrication-preview.test.mjs';
 import { run as exportIntegrity } from './export-integrity.test.mjs';
 import { run as manufacturingProfile } from './manufacturing-profile.test.mjs';
 import { run as quadSvgExport } from './quad-svg-export.test.mjs';
+import { run as persistence } from './persistence.test.mjs';
+import { run as imageEvenOdd } from './image-evenodd.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -67,6 +69,8 @@ await fabricationPreview(assert);
 await exportIntegrity(assert);
 await manufacturingProfile(assert);
 await quadSvgExport(assert);
+await persistence(assert);
+await imageEvenOdd(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

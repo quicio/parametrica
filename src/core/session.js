@@ -8,6 +8,7 @@
  */
 
 import { sanitizeDocument } from './document.js';
+import { PersistenceRepository } from './persistence.js';
 
 export const SESSION_VERSION = 1;
 export const SESSION_STORAGE_KEY = 'parametrica.session.v1';
@@ -15,10 +16,12 @@ export const SESSION_STORAGE_KEY = 'parametrica.session.v1';
 export class SessionStore {
   constructor({
     storage = globalThis.localStorage ?? null,
+    repository = null,
     now = () => Date.now(),
     delay = 800,
   } = {}) {
-    this.storage = storage;
+    this.repository = repository ?? new PersistenceRepository(storage);
+    this.storage = this.repository.storage;
     this.now = now;
     this.delay = Math.max(0, Number(delay) || 0);
     this.timer = null;
@@ -27,7 +30,7 @@ export class SessionStore {
 
   /** Debounced save. Safe to call from every document commit. */
   schedule(document) {
-    if (!this.storage || !document) return false;
+    if (!this.repository.storage || !document) return false;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
@@ -44,19 +47,20 @@ export class SessionStore {
   }
 
   save(document) {
-    if (!this.storage || !document) return false;
+    if (!this.repository.storage || !document) return false;
     this.lastError = null;
     try {
       const clean = sanitizeDocument(structuredClone(document));
       if (!clean) throw new Error('Invalid document');
       // Restoring should never start playback on its own.
       clean.animation.playing = false;
-      this.storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+      const ok = this.repository.write(SESSION_STORAGE_KEY, {
         version: SESSION_VERSION,
         savedAt: this.now(),
         document: clean,
-      }));
-      return true;
+      });
+      if (!ok) this.lastError = this.repository.lastError ?? 'session storage unavailable';
+      return ok;
     } catch (error) {
       this.lastError = error.message;
       return false;
@@ -68,36 +72,29 @@ export class SessionStore {
    * @returns {{savedAt:number, document:object}|null}
    */
   load() {
-    if (!this.storage) return null;
+    if (!this.repository.storage) return null;
     this.lastError = null;
-    try {
-      const raw = this.storage.getItem(SESSION_STORAGE_KEY);
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      if (!data || data.version !== SESSION_VERSION) return null;
-      const document = sanitizeDocument(data.document);
-      if (!document) return null;
-      const savedAt = Number(data.savedAt);
-      return {
-        savedAt: Number.isFinite(savedAt) ? savedAt : this.now(),
-        document,
-      };
-    } catch (error) {
-      this.lastError = error.message;
+    const data = this.repository.read(SESSION_STORAGE_KEY);
+    if (data === null) {
+      this.lastError = this.repository.lastError;
       return null;
     }
+    if (!data || data.version !== SESSION_VERSION) return null;
+    const document = sanitizeDocument(data.document);
+    if (!document) return null;
+    const savedAt = Number(data.savedAt);
+    return {
+      savedAt: Number.isFinite(savedAt) ? savedAt : this.now(),
+      document,
+    };
   }
 
   clear() {
     clearTimeout(this.timer);
     this.timer = null;
     this.lastError = null;
-    try {
-      this.storage?.removeItem(SESSION_STORAGE_KEY);
-      return true;
-    } catch (error) {
-      this.lastError = error.message;
-      return false;
-    }
+    const ok = this.repository.remove(SESSION_STORAGE_KEY);
+    if (!ok) this.lastError = this.repository.lastError ?? 'session storage unavailable';
+    return ok;
   }
 }

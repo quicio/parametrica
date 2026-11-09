@@ -739,6 +739,12 @@ export function buildPresetsSection(controls) {
       save: () => {
         try {
           const name = controls.app.presets.save(controls.presetState.name, controls.app.document);
+          if (controls.app.presets.lastError) {
+            controls.app.notify?.(
+              `Preset saved in memory; storage failed: ${controls.app.presets.lastError}`,
+              'error',
+            );
+          }
           controls.presetState.name = name;
           controls.presetState.selected = name;
           controls.rebuildPresetsSection();
@@ -751,6 +757,12 @@ export function buildPresetsSection(controls) {
     controls.presetsGui.add({
       remove: () => {
         if (controls.app.presets.delete(controls.presetState.selected)) {
+          if (controls.app.presets.lastError) {
+            controls.app.notify?.(
+              `Preset removed in memory; storage failed: ${controls.app.presets.lastError}`,
+              'error',
+            );
+          }
           controls.presetState.selected = '';
           controls.rebuildPresetsSection();
           controls.presetPanel?.focusFilter?.();

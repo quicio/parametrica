@@ -583,10 +583,10 @@ all implemented:
 |---|---|---|
 | `2026-11-08-ui-hardening` | 200% zoom, responsive, keyboard, reduced motion | implemented core; manual accessibility pending |
 | `2026-11-08-preview-performance` | PBR benchmarks, lazy guard, visual evidence | implemented evidence; hardware benchmark pending |
-| `2026-11-08-surface-performance` | dense picking/seams/playback benchmark | benchmark implemented; degradation pending |
-| `2026-11-08-image-evenodd` | even-odd fill and contour nesting | specified |
-| `2026-11-08-quad-svg-export` | Quad layout in SVG/plotter | specified |
-| `2026-11-08-persistence-consolidation` | session/notebook/preset storage model | decision pending |
+| `2026-11-08-surface-performance` | dense picking/seams/playback benchmark | archived |
+| `2026-11-08-image-evenodd` | even-odd fill and contour nesting | archived |
+| `2026-11-08-quad-svg-export` | Quad layout in SVG/plotter | archived |
+| `2026-11-08-persistence-consolidation` | session/notebook/preset storage model | archived |
 
 ## 5.1 Specification status
 

@@ -368,24 +368,22 @@ function renderLayer(group, {
   projection,
   space,
 }) {
-  return {
-    transform,
+  const entry = createRenderLayer({
+    id: group.id,
+    name: group.name,
+    style: group.style ?? null,
+    modes: group.modes ?? null,
+    colorMetric: group.colorMetric ?? null,
+    curves,
+    meshes,
+    renderMeshes: meshes,
+    bbox: curves.length ? bboxAll(curves) : (meshBBox(meshes) ?? group.bbox ?? null),
+    appliedProjection: projection,
     space,
-    entry: createRenderLayer({
-      id: group.id,
-      name: group.name,
-      style: group.style ?? null,
-      modes: group.modes ?? null,
-      colorMetric: group.colorMetric ?? null,
-      curves,
-      meshes,
-      renderMeshes: meshes,
-      bbox: curves.length ? bboxAll(curves) : (meshBBox(meshes) ?? group.bbox ?? null),
-      appliedProjection: projection,
-      space,
-      transform,
-    }),
-  };
+    transform,
+  });
+  if (group.trace) entry.trace = group.trace;
+  return { transform, space, entry };
 }
 
 function resolveSceneFit(view, doc, spatialGroups) {

@@ -12,6 +12,7 @@ import { BUILT_IN_PRESETS } from './builtins.js';
 import { CATEGORY_USER, PRESET_CATEGORIES, presetInfo } from './catalog.js';
 import { PREVIEW_MAX_CHARS, previewKey } from './preview.js';
 import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.js';
+import { PersistenceRepository } from '../core/persistence.js';
 
 const STORAGE_KEY = 'parametrica.presets.v0';
 export const META_STORAGE_KEY = 'parametrica.presets.meta.v1';
@@ -39,9 +40,12 @@ export class PresetManager {
   #previews = new Map();
   #largePreviews = new Map();
   lastMetaError = null;
+  lastError = null;
+  lastQuotaError = null;
 
   constructor(storage = globalThis.localStorage ?? null, options = {}) {
-    this.storage = storage ?? null;
+    this.repository = options.repository ?? new PersistenceRepository(storage);
+    this.storage = this.repository.storage;
     this.renderPreview = typeof options.renderPreview === 'function'
       ? options.renderPreview
       : null;
@@ -241,33 +245,37 @@ export class PresetManager {
 
   #load() {
     try {
-      const raw = this.storage?.getItem(STORAGE_KEY);
-      if (!raw) return {};
+      const raw = this.repository.read(STORAGE_KEY);
+      if (!raw) {
+        this.lastError = this.repository.lastError;
+        return {};
+      }
       const out = {};
-      for (const [name, doc] of Object.entries(JSON.parse(raw))) {
+      for (const [name, doc] of Object.entries(raw)) {
         const clean = sanitizeDocument(doc);
         if (clean) out[name] = { ...clean, name };
       }
       return out;
-    } catch {
+    } catch (error) {
+      this.lastError = error?.message ?? String(error);
       return {};
     }
   }
 
   #persist() {
-    try {
-      this.storage?.setItem(STORAGE_KEY, JSON.stringify(this.user));
-    } catch {
-      /* storage unavailable — session-local presets */
-    }
+    const ok = this.repository.write(STORAGE_KEY, this.user);
+    this.lastError = ok ? null : this.repository.lastError ?? 'preset storage unavailable';
+    this.lastQuotaError = ok ? null : this.repository.lastQuotaError;
   }
 
   #loadMeta() {
     try {
-      const raw = this.storage?.getItem(META_STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (!data || typeof data !== 'object') return;
+      const data = this.repository.read(META_STORAGE_KEY);
+      if (!data) {
+        this.lastMetaError = this.repository.lastError;
+        return;
+      }
+      if (typeof data !== 'object') return;
       const known = new Set(this.names());
       this.#favorites = new Set(
         (Array.isArray(data.favorites) ? data.favorites : [])
@@ -310,8 +318,10 @@ export class PresetManager {
         recent: this.#recent,
         previews,
       };
-      this.storage?.setItem(META_STORAGE_KEY, JSON.stringify(payload));
-      this.lastMetaError = null;
+      const ok = this.repository.write(META_STORAGE_KEY, payload);
+      this.lastMetaError = ok
+        ? null
+        : this.repository.lastError ?? 'preset metadata storage unavailable';
     } catch (error) {
       this.lastMetaError = error?.message ?? 'preset metadata storage unavailable';
     }

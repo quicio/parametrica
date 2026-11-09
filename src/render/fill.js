@@ -42,6 +42,43 @@ export function applyFill(p, fill, bbox, alpha = 1) {
 }
 
 /**
+ * Fill closed contours as one even-odd path. Canvas and SVG must agree, so
+ * both receive every contour in the same path instead of filling each
+ * separately (which would paint over holes).
+ */
+export function drawEvenOddFill(p, curves, fill, bbox) {
+  if (!fill?.enabled) return false;
+  const closed = (Array.isArray(curves) ? curves : [])
+    .filter((curve) => curve?.closed
+      && Array.isArray(curve.points)
+      && curve.points.length >= 2
+      && curve.points[0]?.depthAlpha == null);
+  if (!closed.length) return false;
+
+  if (typeof p.fillContours === 'function') {
+    p.fillContours(closed, fill, bbox);
+    return true;
+  }
+
+  const context = p.drawingContext;
+  if (!context || typeof context.beginPath !== 'function' || typeof context.fill !== 'function') {
+    return false;
+  }
+  applyFill(p, fill, bbox);
+  context.beginPath();
+  for (const curve of closed) {
+    const points = curve.points;
+    context.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      context.lineTo(points[i].x, points[i].y);
+    }
+    context.closePath();
+  }
+  context.fill('evenodd');
+  return true;
+}
+
+/**
  * Depth multiplier for gradient Surface Fill. Canvas gradients already carry
  * fill opacity in their stops; SVG stores it in the paint and multiplies here.
  */

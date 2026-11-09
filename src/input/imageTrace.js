@@ -120,7 +120,7 @@ export function traceImageContours(imageData, options = {}) {
       padded.height,
       options,
     );
-    if (result) contours.push(result);
+    if (result) contours.push({ ...result, hole: false });
   }
   let holes = 0;
   if (options.includeHoles !== false) {
@@ -146,6 +146,7 @@ export function traceImageContours(imageData, options = {}) {
     }
   }
   if (!contours.length) return { ok: false, reason: 'No connected contour was found.' };
+  annotateNesting(contours);
   return {
     ok: true,
     threshold,
@@ -157,6 +158,76 @@ export function traceImageContours(imageData, options = {}) {
     count: contours.length,
     holeCount: holes,
   };
+}
+
+/**
+ * Record nesting depth and the immediate parent for every contour.
+ * Even-odd filling alternates by depth, so a ring is depth 0 + 1 and an
+ * island inside its hole is depth 2.
+ */
+function annotateNesting(contours) {
+  const boxes = contours.map((entry) => boundsOf(entry.contourPx));
+  contours.forEach((entry, index) => {
+    const box = boxes[index];
+    const point = entry.contourPx?.[0] ?? null;
+    let depth = 0;
+    let parent = null;
+    let parentArea = Infinity;
+    contours.forEach((other, otherIndex) => {
+      if (otherIndex === index || !point) return;
+      if (!containsBox(boxes[otherIndex], box)) return;
+      if (!pointInPolygon(point, other.contourPx)) return;
+      depth += 1;
+      const area = Math.abs(polygonArea(other.contourPx));
+      if (area < parentArea) {
+        parentArea = area;
+        parent = otherIndex;
+      }
+    });
+    entry.depth = depth;
+    entry.parent = parent;
+    entry.bbox = box;
+  });
+}
+
+function boundsOf(points) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of points ?? []) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function containsBox(outer, inner) {
+  return outer.minX <= inner.minX && outer.minY <= inner.minY
+    && outer.maxX >= inner.maxX && outer.maxY >= inner.maxY;
+}
+
+function pointInPolygon(point, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i];
+    const b = polygon[j];
+    if (!a || !b) continue;
+    const intersects = (a.y > point.y) !== (b.y > point.y)
+      && point.x < ((b.x - a.x) * (point.y - a.y)) / ((b.y - a.y) || EPS) + a.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function polygonArea(points) {
+  let area = 0;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    area += (points[j].x + points[i].x) * (points[j].y - points[i].y);
+  }
+  return area / 2;
 }
 
 function touchesBorder(labels, label, width, height) {
@@ -205,14 +276,22 @@ export function buildFourierDocuments(result, { name = 'Traced contour', size = 
     samples,
     size,
   });
+  const group = `trace-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceOf = (entry) => ({
+    group,
+    hole: Boolean(entry.hole),
+    depth: Math.max(0, Math.floor(Number(entry.depth) || 0)),
+  });
   const first = createDocument('fourier', {
     name,
     generator: { params: params(entries[0]) },
+    trace: traceOf(entries[0]),
   });
   for (let index = 1; index < entries.length; index++) {
     first.layers.push(createLayer('fourier', {
       name: entries[index].hole ? `${name} hole ${index + 1}` : `${name} ${index + 1}`,
       generator: { params: params(entries[index]) },
+      trace: traceOf(entries[index]),
     }));
   }
   first.activeLayer = 0;

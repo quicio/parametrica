@@ -3,7 +3,7 @@
  */
 
 import { RenderPasses } from '../../core/registry.js';
-import { applyFill } from '../fill.js';
+import { drawEvenOddFill } from '../fill.js';
 
 export function traceCurve(p, curve, rgb = [255, 255, 255], baseAlpha = 255) {
   // Two paths: if the curve carries per-point depth, draw segment-by-segment
@@ -50,15 +50,15 @@ RenderPasses.register({
     p.strokeCap(capConstant(p, stroke.cap));
     p.strokeJoin(joinConstant(p, stroke.join));
 
+    // One even-odd path for every closed contour in the layer. Holes are
+    // transparent instead of being painted over by the outer contour.
+    drawEvenOddFill(p, curves, fill, bbox);
+
     for (const c of curves) {
       const hasDepth = c.points[0]?.depthAlpha != null;
       p.strokeWeight(width);
       if (!hasDepth) p.stroke(rgb[0], rgb[1], rgb[2], alpha);
-      if (fill.enabled && c.closed && !hasDepth) {
-        applyFill(p, fill, bbox);
-      } else {
-        p.noFill();
-      }
+      p.noFill();
       traceCurve(p, c, rgb, alpha);
     }
   },

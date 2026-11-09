@@ -25,7 +25,9 @@ import { evaluateDocument } from '../core/engine.js';
 import { schemaDefaults } from '../core/schema.js';
 import { History } from '../core/history.js';
 import { SessionStore } from '../core/session.js';
-import { Notebook } from '../lab/notebook.js';
+import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
+import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.js';
+import { LocalNotebookRepository } from '../lab/notebookRepository.js';
 import { NotebookWorkspace } from '../lab/workspace.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
@@ -54,8 +56,11 @@ import { normalizeModes } from '../ui/widgets/modeToggles.js';
 export class App {
   constructor({ canvasContainer, uiContainer, telemetryEl }) {
     this.telemetryEl = telemetryEl;
+    this.persistence = createPersistenceRepository(globalThis.localStorage ?? null);
+    this.storageMigration = migrateLocalStorage(globalThis.localStorage ?? null);
     this.presets = new PresetManager(globalThis.localStorage ?? null, {
       renderPreview: renderPresetPreview,
+      repository: this.persistence,
     });
     this.mutator = new MutationEngine();
     this.lookStore = new LookPresetStore(globalThis.localStorage ?? null, {
@@ -67,7 +72,7 @@ export class App {
 
     // Restore the last document before history, evaluation or UI creation so
     // the first paint already shows the generator/view the user left.
-    this.session = new SessionStore();
+    this.session = new SessionStore({ repository: this.persistence });
     const lastSession = this.session.load();
     this.autoRestoredSession = Boolean(lastSession?.document);
     if (lastSession?.document) this.document = lastSession.document;
@@ -96,7 +101,18 @@ export class App {
     this.noticeEl.setAttribute('aria-live', 'polite');
     document.body.appendChild(this.noticeEl);
 
-    this.notebook = new Notebook();
+    if (this.storageMigration?.errors?.length) {
+      this.notify(`Storage migration: ${this.storageMigration.errors[0]}`, 'error');
+    }
+
+    this.notebook = new Notebook({
+      storage: globalThis.localStorage ?? null,
+      repository: new LocalNotebookRepository(
+        globalThis.localStorage ?? null,
+        NOTEBOOK_STORAGE_KEY,
+        this.persistence,
+      ),
+    });
     this.notebookWorkspace = new NotebookWorkspace(this.notebook);
     if (this.notebook.lastError) {
       this.notify(`Notebook storage: ${this.notebook.lastError}`, 'error');

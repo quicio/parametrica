@@ -51,6 +51,7 @@ export class Notebook {
     this.lastError = null;
     try {
       const raw = this.repository.load();
+      if (this.repository.lastError) throw new Error(this.repository.lastError);
       if (!raw) return this.items;
       const data = migrateNotebook(raw);
       const list = data.checkpoints;
@@ -101,7 +102,9 @@ export class Notebook {
   persist() {
     this.lastError = null;
     try {
-      return this.repository.save(this.toJSON()) !== false;
+      const ok = this.repository.save(this.toJSON());
+      if (ok === false) this.lastError = this.repository.lastError ?? 'notebook storage unavailable';
+      return ok !== false;
     } catch (error) {
       this.lastError = error.message;
       return false;

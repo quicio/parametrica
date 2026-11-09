@@ -5,27 +5,32 @@
  * and out. A future IndexedDB or remote implementation can plug in here.
  */
 
+import { PersistenceRepository } from '../core/persistence.js';
+
 export class LocalNotebookRepository {
-  constructor(storage = globalThis.localStorage ?? null, key = 'parametrica.notebook.v1') {
-    this.storage = storage;
+  constructor(storage = globalThis.localStorage ?? null, key = 'parametrica.notebook.v1', repository = null) {
+    this.repository = repository ?? new PersistenceRepository(storage);
+    this.storage = this.repository.storage;
     this.key = key;
+    this.lastError = null;
   }
 
   load() {
-    if (!this.storage) return null;
-    const raw = this.storage.getItem(this.key);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    this.lastError = null;
+    const snapshot = this.repository.read(this.key);
+    this.lastError = this.repository.lastError;
+    return snapshot;
   }
 
   save(snapshot) {
-    if (!this.storage) return false;
-    this.storage.setItem(this.key, JSON.stringify(snapshot));
-    return true;
+    this.lastError = null;
+    const ok = this.repository.write(this.key, snapshot);
+    if (!ok) this.lastError = this.repository.lastError ?? 'notebook storage unavailable';
+    return ok;
   }
 
   clear() {
-    this.storage?.removeItem(this.key);
+    this.repository.remove(this.key);
   }
 }
 

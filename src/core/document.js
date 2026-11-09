@@ -396,6 +396,7 @@ function reserveLayerCounter(layers) {
 export function createLayer(generatorId = 'parametric', overrides = {}) {
   const generator = Generators.get(generatorId);
   layerCounter++;
+  const trace = sanitizeTrace(overrides.trace);
   return {
     type: 'generator',
     id: typeof overrides.id === 'string' && overrides.id ? overrides.id : `layer-${layerCounter}`,
@@ -414,12 +415,14 @@ export function createLayer(generatorId = 'parametric', overrides = {}) {
     },
     operators: sanitizeOperators(overrides.operators ?? []),
     style: sanitizeStyle(overrides.style, overrides.strokeWeight ?? DEFAULT_STYLE.stroke.width),
+    ...(trace ? { trace } : {}),
   };
 }
 
 /** Fresh instance layer referencing one generator layer. */
 export function createInstanceLayer(sourceLayerId, overrides = {}) {
   layerCounter++;
+  const trace = sanitizeTrace(overrides.trace);
   const id = typeof overrides.id === 'string' && overrides.id
     ? overrides.id
     : `layer-${layerCounter}`;
@@ -440,6 +443,7 @@ export function createInstanceLayer(sourceLayerId, overrides = {}) {
     generator: null,
     operators: sanitizeOperators(overrides.operators ?? []),
     style: sanitizeStyle(overrides.style, overrides.strokeWeight ?? DEFAULT_STYLE.stroke.width),
+    ...(trace ? { trace } : {}),
   };
 }
 
@@ -515,11 +519,23 @@ function normalizeLayerIds(layers) {
   return layers;
 }
 
+function sanitizeTrace(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const group = typeof raw.group === 'string' ? raw.group.trim().slice(0, 64) : '';
+  if (!group) return null;
+  return {
+    group,
+    hole: Boolean(raw.hole),
+    depth: Math.max(0, Math.min(32, Math.floor(Number(raw.depth) || 0))),
+  };
+}
+
 function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const instance = source.type === 'instance' || Boolean(source.source?.layerId);
   if (instance) {
     const sourceLayerId = typeof source.source?.layerId === 'string' ? source.source.layerId : '';
+    const trace = sanitizeTrace(source.trace);
     return {
       type: 'instance',
       id: typeof source.id === 'string' && source.id ? source.id : `layer-${index + 1}`,
@@ -537,10 +553,12 @@ function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
       generator: null,
       operators: sanitizeOperators(source.operators),
       style: sanitizeStyle(source.style ?? fallbackStyle, fallbackStyle?.stroke?.width),
+      ...(trace ? { trace } : {}),
     };
   }
   const generatorId = Generators.has(source.generator?.id) ? source.generator.id : 'parametric';
   const generator = Generators.get(generatorId);
+  const trace = sanitizeTrace(source.trace);
   return {
     type: 'generator',
     id: typeof source.id === 'string' && source.id ? source.id : `layer-${index + 1}`,
@@ -561,6 +579,7 @@ function sanitizeLayer(raw, index, fallbackStyle, fallbackSeed = 1) {
     },
     operators: sanitizeOperators(source.operators),
     style: sanitizeStyle(source.style ?? fallbackStyle, fallbackStyle?.stroke?.width),
+    ...(trace ? { trace } : {}),
   };
 }
 
@@ -593,6 +612,7 @@ export function createDocument(generatorId = 'parametric', overrides = {}) {
     generator: overrides.generator,
     operators: overrides.operators,
     style,
+    trace: overrides.trace,
   });
   layer.style = style;
   const document = {
