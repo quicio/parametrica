@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.8] - 2026-11-09
+
+### Added
+
+- `FABRICATION_PORT` and `createFabricationPort` as the first narrow UI port.
+- Boundary checks proving the Fabricate panel no longer reads `controls.app`.
+
+### Changed
+
+- `Controls` receives the fabrication port from composition.
+- The Fabricate section uses `controls.fabrication`.
+- No fabrication behavior or output changed.
+
 ## [0.2.7] - 2026-11-09
 
 ### Added

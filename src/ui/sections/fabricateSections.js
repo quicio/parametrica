@@ -76,27 +76,27 @@ export function buildFabricateSection(controls) {
     scaleInput.step = '0.01';
     scaleInput.placeholder = 'mm per world unit';
     unitSelect.addEventListener('change', () => {
-      const units = controls.app.document.view.units;
+      const units = controls.fabrication.document.view.units;
       units.world = unitSelect.value;
       if (units.world === 'unitless') units.mmPerWorldUnit = null;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     scaleInput.addEventListener('change', () => {
-      const units = controls.app.document.view.units;
+      const units = controls.fabrication.document.view.units;
       const factor = Number(scaleInput.value);
       units.mmPerWorldUnit = Number.isFinite(factor) && factor > 0 ? factor : null;
       units.world = units.mmPerWorldUnit === null
         ? 'unitless'
         : (units.world === 'unitless' ? 'mm' : units.world);
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     scaleWrap.append(unitSelect, scaleInput);
     scaleRow.append(scaleLabel, scaleWrap);
     outputGroup.appendChild(scaleRow);
 
-    const fabrication = controls.app.document.view.fabrication;
+    const fabrication = controls.fabrication.document.view.fabrication;
     const scopeRow = document.createElement('div');
     scopeRow.className = 'fabricate-row';
     const scopeLabel = document.createElement('span');
@@ -144,7 +144,7 @@ export function buildFabricateSection(controls) {
     previewRow.append(previewLabel, previewSelect);
     sourceGroup.appendChild(previewRow);
 
-    const previewSettings = controls.app.document.view.preview;
+    const previewSettings = controls.fabrication.document.view.preview;
     const rendererRow = document.createElement('div');
     rendererRow.className = 'fabricate-row';
     const rendererLabel = document.createElement('span');
@@ -161,7 +161,7 @@ export function buildFabricateSection(controls) {
     rendererSelect.value = previewSettings.backend === 'webgl' ? 'webgl' : 'p5';
     rendererSelect.title = 'Technical uses p5; Product uses the optional WebGL/PBR preview of the prepared body.';
     rendererSelect.addEventListener('change', () => {
-      void controls.app.setProductPreviewEnabled?.(rendererSelect.value === 'webgl');
+      void controls.fabrication.setProductPreviewEnabled?.(rendererSelect.value === 'webgl');
       controls.refreshFabricate();
     });
     rendererRow.append(rendererLabel, rendererSelect);
@@ -183,9 +183,9 @@ export function buildFabricateSection(controls) {
     materialSelect.value = previewSettings.material ?? 'ceramic';
     materialSelect.title = 'Presentation material. It does not affect geometry or export.';
     materialSelect.addEventListener('change', () => {
-      controls.app.document.view.preview.material = materialSelect.value;
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.document.view.preview.material = materialSelect.value;
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     materialRow.append(materialLabel, materialSelect);
@@ -207,9 +207,9 @@ export function buildFabricateSection(controls) {
     previewQualitySelect.value = previewSettings.quality ?? 'standard';
     previewQualitySelect.title = 'Shadow map, pixel ratio and preview cost. This is separate from geometric finish quality.';
     previewQualitySelect.addEventListener('change', () => {
-      controls.app.document.view.preview.quality = previewQualitySelect.value;
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.document.view.preview.quality = previewQualitySelect.value;
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     previewQualityRow.append(previewQualityLabel, previewQualitySelect);
@@ -226,10 +226,10 @@ export function buildFabricateSection(controls) {
     shadowInput.checked = previewSettings.shadow !== false;
     shadowInput.title = 'Directional shadows and contact shadow in Product preview.';
     shadowInput.addEventListener('change', () => {
-      controls.app.document.view.preview.shadow = shadowInput.checked;
-      controls.app.document.view.preview.contactShadow = shadowInput.checked;
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.document.view.preview.shadow = shadowInput.checked;
+      controls.fabrication.document.view.preview.contactShadow = shadowInput.checked;
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     shadowRow.append(shadowLabel, shadowInput);
@@ -251,9 +251,9 @@ export function buildFabricateSection(controls) {
     lightingSelect.value = previewSettings.lighting ?? 'studio';
     lightingSelect.title = 'Presentation light rig. It does not affect geometry or export.';
     lightingSelect.addEventListener('change', () => {
-      controls.app.document.view.preview.lighting = lightingSelect.value;
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.document.view.preview.lighting = lightingSelect.value;
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     lightingRow.append(lightingLabel, lightingSelect);
@@ -270,9 +270,9 @@ export function buildFabricateSection(controls) {
     aoInput.checked = previewSettings.ao === true;
     aoInput.title = 'Screen-space ambient occlusion. Expensive on dense lattices.';
     aoInput.addEventListener('change', () => {
-      controls.app.document.view.preview.ao = aoInput.checked;
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.document.view.preview.ao = aoInput.checked;
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     aoRow.append(aoLabel, aoInput);
@@ -289,7 +289,7 @@ export function buildFabricateSection(controls) {
     resetButton.textContent = 'RESET';
     resetButton.title = 'Reset material, lighting, shadows, AO and preview detail.';
     resetButton.addEventListener('click', () => {
-      Object.assign(controls.app.document.view.preview, {
+      Object.assign(controls.fabrication.document.view.preview, {
         backend: 'webgl',
         material: 'ceramic',
         quality: 'standard',
@@ -300,8 +300,8 @@ export function buildFabricateSection(controls) {
         ao: false,
         lighting: 'studio',
       });
-      controls.app.syncProductPreview?.();
-      controls.app.scheduleSessionSave?.();
+      controls.fabrication.syncProductPreview?.();
+      controls.fabrication.scheduleSessionSave?.();
       controls.refreshFabricate();
     });
     resetRow.append(resetLabel, resetButton);
@@ -325,7 +325,7 @@ export function buildFabricateSection(controls) {
       select.title = title;
       select.addEventListener('change', () => {
         fabrication[key] = select.value;
-        controls.app.rebuild();
+        controls.fabrication.rebuild();
         controls.refreshFabricate();
       });
       row.append(name, select);
@@ -373,7 +373,7 @@ export function buildFabricateSection(controls) {
       if (!Number.isFinite(value)) return;
       fabrication.taper = Math.max(0.25, Math.min(1, value));
       taperInput.value = String(fabrication.taper);
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     taperRow.append(taperLabel, taperInput);
@@ -401,14 +401,14 @@ export function buildFabricateSection(controls) {
     booleanSelect.title = 'Combine selected bodies; difference subtracts later bodies from the first.';
     booleanSelect.addEventListener('change', () => {
       fabrication.boolean = booleanSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     scopeSelect.addEventListener('change', () => {
       fabrication.scope = scopeSelect.value;
       if (fabrication.scope === 'single') fabrication.boolean = 'none';
       booleanSelect.value = fabrication.boolean ?? 'none';
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     const csgSelect = document.createElement('select');
@@ -428,7 +428,7 @@ export function buildFabricateSection(controls) {
     csgSelect.title = 'Auto uses BSP for well-conditioned solids and remesh when BSP fails.';
     csgSelect.addEventListener('change', () => {
       fabrication.csgStrategy = csgSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     booleanRow.append(booleanLabel, booleanSelect, csgSelect);
@@ -451,7 +451,7 @@ export function buildFabricateSection(controls) {
     formatSelect.title = 'STL writes one anonymous mesh; 3MF preserves one object per validated body.';
     formatSelect.addEventListener('change', () => {
       fabrication.format = formatSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     formatRow.append(formatLabel, formatSelect);
@@ -481,7 +481,7 @@ export function buildFabricateSection(controls) {
       if (qualitySelect.value !== 'custom') {
         fabrication.remeshResolution = { draft: 32, standard: 64, high: 128 }[qualitySelect.value];
       }
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     qualityRow.append(qualityLabel, qualitySelect);
@@ -509,7 +509,7 @@ export function buildFabricateSection(controls) {
     const weld = makePrepToggle('fabricate-weld', 'Weld', Boolean(fabrication.weld));
     const cap = makePrepToggle('fabricate-cap', 'Cap', Boolean(fabrication.cap));
     const syncPreparation = () => {
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     };
     weld.input.addEventListener('change', () => {
@@ -588,22 +588,22 @@ export function buildFabricateSection(controls) {
     nonOrientableSelect.title = 'How to handle non-orientable orientation conflicts.';
     repairInput.addEventListener('change', () => {
       fabrication.repair = repairInput.checked;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     strategySelect.addEventListener('change', () => {
       fabrication.capStrategy = strategySelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     topologySelect.addEventListener('change', () => {
       fabrication.topology = topologySelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     nonOrientableSelect.addEventListener('change', () => {
       fabrication.nonOrientable = nonOrientableSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     const selfSelect = document.createElement('select');
@@ -631,7 +631,7 @@ export function buildFabricateSection(controls) {
     remeshInput.title = 'SDF grid / remesh resolution.';
     selfSelect.addEventListener('change', () => {
       fabrication.selfIntersections = selfSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     remeshInput.addEventListener('change', () => {
@@ -640,7 +640,7 @@ export function buildFabricateSection(controls) {
       fabrication.remeshResolution = Math.max(16, Math.min(192, Math.floor(value)));
       fabrication.quality = 'custom';
       remeshInput.value = String(fabrication.remeshResolution);
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     repairWrap.append(repairToggle, strategySelect, topologySelect, nonOrientableSelect, selfSelect, remeshInput);
@@ -694,7 +694,7 @@ export function buildFabricateSection(controls) {
     manufacturingSelect.addEventListener('change', () => {
       fabrication.manufacturing = manufacturingPreset(manufacturingSelect.value);
       syncManufacturingInputs();
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     manufacturingRow.append(manufacturingLabel, manufacturingSelect);
@@ -717,7 +717,7 @@ export function buildFabricateSection(controls) {
     gatingSelect.title = 'Warnings do not block by default. Block mode stops failing manufacturing checks.';
     gatingSelect.addEventListener('change', () => {
       fabrication.manufacturing.gating = gatingSelect.value;
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     gatingRow.append(gatingLabel, gatingSelect);
@@ -742,7 +742,7 @@ export function buildFabricateSection(controls) {
           [key]: Number(input.value),
         });
         input.value = String(fabrication.manufacturing[key] ?? '');
-        controls.app.rebuild();
+        controls.fabrication.rebuild();
         controls.refreshFabricate();
       });
       row.append(name, input);
@@ -773,7 +773,7 @@ export function buildFabricateSection(controls) {
           slicer: slicerInput.value,
         },
       });
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     slicerRow.append(slicerLabel, slicerInput);
@@ -805,7 +805,7 @@ export function buildFabricateSection(controls) {
           result: verificationSelect.value,
         },
       });
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     verificationRow.append(verificationLabel, verificationSelect);
@@ -830,7 +830,7 @@ export function buildFabricateSection(controls) {
           notes: notesInput.value,
         },
       });
-      controls.app.rebuild();
+      controls.fabrication.rebuild();
       controls.refreshFabricate();
     });
     notesRow.append(notesLabel, notesInput);
@@ -882,7 +882,7 @@ export function buildFabricateSection(controls) {
     productExportButton.textContent = 'EXPORT PRODUCT PNG';
     productExportButton.hidden = true;
     productExportButton.addEventListener('click', () => {
-      controls.app.exporter.exportProductPreviewPNG?.();
+      controls.fabrication.exporter.exportProductPreviewPNG?.();
       controls.refreshFabricate();
     });
 
@@ -891,8 +891,8 @@ export function buildFabricateSection(controls) {
     exportButton.className = 'lab-button fabricate-export';
     exportButton.textContent = 'EXPORT STL';
     exportButton.addEventListener('click', () => {
-      if (fabrication.format === '3mf') controls.app.exporter.export3MF();
-      else controls.app.exporter.exportSTL();
+      if (fabrication.format === '3mf') controls.fabrication.exporter.export3MF();
+      else controls.fabrication.exporter.exportSTL();
       controls.refreshFabricate();
     });
 

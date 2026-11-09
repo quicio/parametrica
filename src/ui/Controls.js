@@ -73,9 +73,10 @@ const MODE_PRIMARY = {
 };
 
 export class Controls {
-  /** @param {object} app  @param {HTMLElement} container */
-  constructor(app, container) {
+  /** @param {object} app  @param {HTMLElement} container  @param {object} ports */
+  constructor(app, container, ports = {}) {
     this.app = app;
+    this.fabrication = ports.fabrication ?? app;
     this.container = container;
     this.fabricationReport = null;
     this.fabricationInput = null;

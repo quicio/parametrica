@@ -8,6 +8,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { UI_SURFACE } from '../../src/composition/createUiPort.js';
+import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.js';
 import { join, relative } from 'node:path';
 
 const root = new URL('../../', import.meta.url).pathname;
@@ -101,6 +102,14 @@ export async function run(assert) {
     assert(uiSurface.has(name), `UI port exposes app.${name}`);
   }
   assert(read('src/composition/createApp.js').includes('createUiPort'), 'composition passes the UI port to Controls');
+
+  const fabricationSource = read('src/ui/sections/fabricateSections.js');
+  assert(!fabricationSource.includes('controls.app.'), 'Fabricate panel uses the narrow fabrication port');
+  for (const name of FABRICATION_PORT) {
+    assert(fabricationSource.includes(`controls.fabrication.${name}`) || name === 'document' || name === 'exporter',
+      `Fabricate port member ${name} is the documented surface`);
+  }
+  assert(read('src/composition/createApp.js').includes('createFabricationPort'), 'composition passes the fabrication port');
 
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');

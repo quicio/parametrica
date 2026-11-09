@@ -7,6 +7,7 @@
  */
 
 import { App } from '../application/App.js';
+import { createFabricationPort } from './createFabricationPort.js';
 import { createUiPort } from './createUiPort.js';
 import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
 import { SessionStore } from '../core/session.js';
@@ -84,7 +85,9 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
     createSeamLegend: (app) => new SeamLegend(canvasContainer, app),
     createRenderer: (app) => new P5Adapter(canvasContainer, app),
     createExporter: (app) => new Exporter(createExportPort(app)),
-    createControls: (app) => new Controls(createUiPort(app), uiContainer),
+    createControls: (app) => new Controls(createUiPort(app), uiContainer, {
+      fabrication: createFabricationPort(app),
+    }),
     createStartWithOverlay: (app, options) => new StartWithOverlay(app, options),
   };
 
