@@ -85,6 +85,10 @@ matching scoped command, the craft floor, rendered verification and the
 detector. The policy and its exceptions are recorded in
 [ADR-0002](./openspec/decisions/0002-design-decisions-impeccable.md).
 
+The spec-driven delivery workflow — one vertical slice per OpenSpec change,
+validate → implement → test → archive → version/tag — is recorded in
+[ADR-0003](./openspec/decisions/0003-spec-driven-delivery-workflow.md).
+
 ## Versioning
 
 Parametrica follows **Semantic Versioning** and releases every archived

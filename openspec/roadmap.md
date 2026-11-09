@@ -879,6 +879,12 @@ A slice can start only when:
 - UI/UX changes run through the Impeccable skill before editing.
 - `openspec/decisions/0002-design-decisions-impeccable.md` is the policy.
 
+### Delivery workflow
+
+- One vertical slice = one OpenSpec change.
+- Validate before coding; tests before archive; gates before release.
+- Archive is the acceptance act; ADR-0003 is the policy.
+
 ### Walking skeleton
 
 `lab-observer` must deliver the thinnest end-to-end path:

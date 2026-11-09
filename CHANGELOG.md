@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.2] - 2026-11-09
+
+### Added
+
+- ADR-0003: spec-driven vertical delivery workflow.
+- README, OpenSpec config and roadmap now point at the delivery policy.
+
+### Changed
+
+- The current working method is explicit: one vertical slice per OpenSpec
+  change, validate before coding, test before archive, gates before release.
+
 ## [0.2.1] - 2026-11-09
 
 ### Added

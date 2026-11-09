@@ -27,6 +27,7 @@ Pending decisions are listed in `openspec/roadmap.md` §13.
 
 - [ADR-0001: Code versioning and delivery releases](./0001-code-versioning.md)
 - [ADR-0002: Design decisions pass through Impeccable](./0002-design-decisions-impeccable.md)
+- [ADR-0003: Spec-driven vertical delivery workflow](./0003-spec-driven-delivery-workflow.md)
 
 Every archived delivery must bump `package.json`, update `CHANGELOG.md` and
 create an annotated `vX.Y.Z` tag. `npm run check:version` enforces the version
