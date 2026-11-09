@@ -205,7 +205,7 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `helix` | Generalized circular helix with radial/pitch modulation and torsion | r, p, turns, a, k, φ, θ, b, m, ψ, strands | t ∈ [θ0, θ0+2π·turns] |
 || `parametric-3d` | Projected x/y/z expression curve | exprX/Y/Z, t0, t1, samples | user |
 
-> **Current status (2026-11-09):** 25 generators, 37 operators, 15 render
+> **Current status (2026-11-09, v0.2.0):** 25 generators, 37 operators, 15 render
 > passes and 65 built-in presets. Fabricate includes Manifold CSG, STL/3MF,
 > multi-body and grouped recipes, repair/cap, lattice and perforated bodies,
 > a manufacturing profile and an optional WebGL/PBR Product preview. The
@@ -584,7 +584,7 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 | **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 15 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
 | **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence and GIF export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space, ZIP frame-sequence and GIF export | Source tree + `e2e` |
 
-### What ships in v0.1.0
+### What ships in v0.2.0
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
 including the CodeMirror formula editor, frame-sequence/GIF export, heavy

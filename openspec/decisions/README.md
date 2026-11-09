@@ -22,3 +22,11 @@ Related: openspec/changes/<change>
 ```
 
 Pending decisions are listed in `openspec/roadmap.md` §13.
+
+## Records
+
+- [ADR-0001: Code versioning and delivery releases](./0001-code-versioning.md)
+
+Every archived delivery must bump `package.json`, update `CHANGELOG.md` and
+create an annotated `vX.Y.Z` tag. `npm run check:version` enforces the version
+and changelog match.

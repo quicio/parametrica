@@ -1,7 +1,7 @@
 {
   "name": "parametrica",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "A parametric geometry workbench: discover continuous monoline forms by exploring mathematical equations, harmonics and parameter domains.",
   "scripts": {
@@ -11,13 +11,14 @@
     "test": "node test/lab.smoke.mjs && node test/domains/run.mjs",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "check": "npm run lint && npm test && npm run build && npm run check:bundle && npm run check:specs",
+    "check": "npm run lint && npm test && npm run build && npm run check:bundle && npm run check:specs && npm run check:version",
     "check:bundle": "node scripts/check-preview-bundle.mjs",
     "generate:e2e-session": "node scripts/generate-e2e-session.mjs",
     "pretest:e2e": "npm run generate:e2e-session",
     "check:specs": "node scripts/check-spec-purposes.mjs",
     "bench:instances": "node scripts/bench-instances.mjs",
-    "bench:manifold": "node scripts/bench-manifold.mjs"
+    "bench:manifold": "node scripts/bench-manifold.mjs",
+    "check:version": "node scripts/check-version.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

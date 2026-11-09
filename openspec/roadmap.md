@@ -866,6 +866,13 @@ A slice can start only when:
 - No code without a validated spec.
 - Archive a slice only when it is demoable and tested.
 
+### Release versioning
+
+- Every archived change is a release boundary.
+- `package.json` is authoritative; `CHANGELOG.md` and the `vX.Y.Z` tag must match.
+- `npm run check:version` enforces the changelog/package match.
+- See `openspec/decisions/0001-code-versioning.md`.
+
 ### Walking skeleton
 
 `lab-observer` must deliver the thinnest end-to-end path:

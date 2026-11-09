@@ -15,6 +15,9 @@ import './render/passes/index.js';
 import { App } from './application/App.js';
 import { initManifold } from './geometry/manifoldEngine.js';
 
+const versionEl = document.getElementById('app-version');
+if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`;
+
 const app = new App({
   canvasContainer: document.getElementById('canvas-container'),
   uiContainer: document.getElementById('ui'),

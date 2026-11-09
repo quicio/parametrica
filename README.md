@@ -12,7 +12,7 @@ geometry: it sits closer to *Desmos*, *GeoGebra*, *Processing* or
 *Shadertoy* than to *Illustrator*. No pen tool, no anchor editing —
 mathematics is the only authoring surface.
 
-[**Live demo**](https://quicio.github.io/parametrica/) · [**SPEC.md**](./SPEC.md) (architecture & rationale) · [**Architecture diagram**](#architecture)
+[**Live demo**](https://quicio.github.io/parametrica/) · [**Changelog**](./CHANGELOG.md) · [**SPEC.md**](./SPEC.md) (architecture & rationale) · [**Architecture diagram**](#architecture)
 
 ![hero placeholder](https://placehold.co/1200x600/000000/e30613/png?text=Parametrica)
 
@@ -73,6 +73,21 @@ leaving your machine.
    Distance is the only raster-only omission; use PNG when it is active.
 
 ---
+
+## Versioning
+
+Parametrica follows **Semantic Versioning** and releases every archived
+OpenSpec delivery:
+
+- `package.json` is the authoritative version.
+- The masthead displays it through the Vite `__APP_VERSION__` define.
+- Every delivery updates [`CHANGELOG.md`](./CHANGELOG.md) and creates an
+  annotated `vMAJOR.MINOR.PATCH` tag.
+- `npm run check:version` fails when the package version and the latest
+  changelog entry disagree.
+
+Release policy and the `0.x` bump rules live in
+[`openspec/decisions/0001-code-versioning.md`](./openspec/decisions/0001-code-versioning.md).
 
 ## GitHub Pages
 
@@ -258,7 +273,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 ---
 
-## What ships in v0.1.0
+## What ships in v0.2.0
 
 - **25 generators** registered and tested (parametric, polar, custom,
   lissajous, rose, superformula, fourier, trochoids (hypo/epi/spirograph),
