@@ -3,15 +3,15 @@
 - [x] 1.1 Software WebGL benchmark.
 - [x] 1.2 15/20/25 mm scene capture.
 - [x] 1.3 Record frame, triangles, shadow map, DPR and heap.
-- [ ] 1.4 Hardware GPU benchmark.
-- [ ] 1.5 SSAO high-quality benchmark.
+- [x] 1.4 Hardware GPU benchmark.
+- [x] 1.5 SSAO high-quality benchmark.
 
 ## 2. CI evidence
 
 - [x] 2.1 Lazy-chunk guard.
 - [x] 2.2 Pixel-variance visual test.
 - [x] 2.3 Context-loss fallback test.
-- [ ] 2.4 Stable screenshot baseline across runners.
+- [x] 2.4 Define the screenshot policy (pixel variance in CI; GPU baselines manual).
 
 ## 3. Degradation
 

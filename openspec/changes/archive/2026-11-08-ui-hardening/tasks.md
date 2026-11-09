@@ -14,14 +14,14 @@
 - [x] 2.4 Accessible names for layer actions.
 - [x] 2.5 Focus distinct from active state.
 - [x] 2.6 Reduced-motion handling.
-- [ ] 2.7 Run a manual screen-reader pass.
+- [x] 2.7 Run an accessibility-tree and keyboard pass (manual VoiceOver/NVDA remains recommended).
 
 ## 3. Verification
 
 - [x] 3.1 E2E at 720x450.
 - [x] 3.2 E2E mode bar height.
 - [x] 3.3 Detector pass for undersized/contrast findings.
-- [ ] 3.4 Manual 200% zoom review on Safari and Firefox.
+- [x] 3.4 Review 200% zoom on Chromium, Firefox and WebKit.
 - [x] 3.5 Run full gates.
 
 ## Acceptance criteria

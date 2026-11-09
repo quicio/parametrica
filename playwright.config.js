@@ -10,6 +10,9 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: 'retain-on-failure',
     storageState: './e2e/session-state.json',
+    launchOptions: process.env.BENCH_GPU === '1'
+      ? { args: ['--use-angle=metal', '--enable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit'] }
+      : undefined,
   },
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',

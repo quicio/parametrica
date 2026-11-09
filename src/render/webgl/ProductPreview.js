@@ -401,27 +401,46 @@ export class ProductPreview {
   benchmark({ frames = 60 } = {}) {
     if (!this.ready) return null;
     const times = [];
+    const gl = this.renderer.getContext();
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    const gpuRenderer = debugInfo
+      ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      : gl.getParameter(gl.RENDERER);
+    const gpuVendor = debugInfo
+      ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+      : gl.getParameter(gl.VENDOR);
     let previous = performance.now();
     return new Promise((resolve) => {
       const tick = (now) => {
         times.push(now - previous);
         previous = now;
         this.renderFrame();
+        // Wait for the GPU so the sample is not just command submission.
+        this.renderer.getContext().finish();
         if (times.length < frames) {
           requestAnimationFrame(tick);
           return;
         }
         const sorted = [...times].sort((a, b) => a - b);
+        const meshTriangles = Math.round(
+          (this.mesh?.geometry?.attributes?.position?.count ?? 0) / 3,
+        );
         resolve({
           frames,
           avgMs: times.reduce((sum, value) => sum + value, 0) / times.length,
           p95Ms: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))],
           maxMs: sorted[sorted.length - 1],
-          triangles: this.renderer.info.render.triangles,
-          calls: this.renderer.info.render.calls,
+          triangles: Math.max(this.renderer.info.render.triangles, meshTriangles),
+          calls: Math.max(
+            this.renderer.info.render.calls,
+            this.useAo ? (this.composer?.passes?.length ?? 0) : 0,
+          ),
           shadowMap: this.key.shadow.mapSize.x,
           dpr: this.renderer.getPixelRatio(),
           ao: this.useAo,
+          quality: this.lastQuality,
+          gpuRenderer,
+          gpuVendor,
           usedJSHeapSize: performance.memory?.usedJSHeapSize ?? null,
         });
       };
