@@ -24,7 +24,8 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (3,142 checks: 2,222 lab + 920 domains)
+npm run typecheck    # tsc --noEmit (incremental TypeScript)
+npm test             # node-only verification suite via tsx (3,142 checks: 2,222 lab + 920 domains)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (168 scenarios: 167 pass, 1 skip)
 npm run build        # production bundle in dist/
@@ -150,6 +151,14 @@ Read **[SPEC.md](./SPEC.md)** for the full design rationale, principles
 (G1–G7), pipeline contract, data types, milestone status, and acceptance
 criteria. The spec is the source of truth; the code is its realization.
 
+Architecture direction is recorded in
+[ADR-0004](./openspec/decisions/0004-clean-architecture-boundaries.md)
+(dependency rule and layers),
+[ADR-0005](./openspec/decisions/0005-incremental-typescript.md)
+(incremental TypeScript) and
+[ADR-0006](./openspec/decisions/0006-architecture-type-gates.md)
+(typecheck + dependency gates).
+
 ### Pipeline
 
 ```
@@ -267,7 +276,9 @@ modes, parametric surfaces, lattice refinement, fabrication profiles, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
 `npm run test:e2e` runs **168 Playwright scenarios** (167 pass, 1 conditional
-skip) against a Vite server started by Playwright itself.
+skip) against a Vite server started by Playwright itself. The Node suites run
+through `tsx`, so they can import `.ts` modules as the incremental TypeScript
+migration advances.
 
 ### Linting
 

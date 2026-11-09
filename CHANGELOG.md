@@ -7,6 +7,29 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.3] - 2026-11-09
+
+### Added
+
+- ADR-0004: Clean Architecture target layers, dependency rule, ports and
+  composition root.
+- ADR-0005: incremental TypeScript migration with `tsconfig`, `tsx`, strict
+  domain-first phases and behavior-parity rules.
+- ADR-0006: `tsc --noEmit` and dependency-cruiser gates with a shrinking
+  baseline.
+- Clean Architecture review findings: 186 files, ~41,500 lines and the direct
+  outward edges in `document.js`, `engine.js`, `App.js`, `Exporter` and the UI.
+- Architecture modernization phases in the roadmap.
+- Phase 0 TypeScript foundation: `typescript`, `tsx`, `tsconfig.json`,
+  `src/vite-env.d.ts`, `npm run typecheck` and the `tsx` Node test loader.
+
+### Changed
+
+- README and OpenSpec conventions point at the architecture ADRs.
+- The working method now names the boundary, type and enforcement sequence.
+- `npm run check` includes `tsc --noEmit`; `npm test` runs the existing suites
+  through `tsx` so future `.ts` modules import cleanly.
+
 ## [0.2.2] - 2026-11-09
 
 ### Added

@@ -885,6 +885,19 @@ A slice can start only when:
 - Validate before coding; tests before archive; gates before release.
 - Archive is the acceptance act; ADR-0003 is the policy.
 
+### Architecture modernization (proposed)
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | `tsconfig`, `tsx`, `typecheck` and declaration foundation | proposed |
+| A | Extract domain boundaries and ports without behavior change | proposed |
+| B | Split composition root and adapters; thin UI | proposed |
+| C | Convert domain, then application, then adapters to TypeScript | proposed |
+| D | Empty dependency baseline; `allowJs: false`; strict gates | proposed |
+
+ADRs: `0004-clean-architecture-boundaries.md`, `0005-incremental-typescript.md`,
+`0006-architecture-type-gates.md`.
+
 ### Walking skeleton
 
 `lab-observer` must deliver the thinnest end-to-end path:
