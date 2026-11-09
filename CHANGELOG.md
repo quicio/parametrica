@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.6] - 2026-11-09
+
+### Added
+
+- Explicit export port for document, evaluation, renderer, fabrication,
+  Product preview, notification, time and preset serialization.
+- Boundary checks ensuring the exporter never reaches into `App`.
+
+### Changed
+
+- `Exporter` now consumes only the injected port; composition creates it.
+- Unit fixtures keep their legacy plain shape through a normalizer.
+- No SVG, PNG, GIF, STL, 3MF or JSON output changed.
+
 ## [0.2.5] - 2026-11-09
 
 ### Added

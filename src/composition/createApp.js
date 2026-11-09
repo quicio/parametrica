@@ -61,13 +61,28 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
   });
   services.notebookWorkspace = new NotebookWorkspace(services.notebook);
 
+  const createExportPort = (app) => ({
+    getDocument: () => app.document,
+    getEvaluation: () => app.evaluation,
+    rendererSize: () => app.renderer.size(),
+    artboardDataURL: () => app.renderer.artboardDataURL(),
+    saveCanvas: (name) => app.renderer.p.saveCanvas(name, 'png'),
+    renderNow: () => app.renderer.renderNow(),
+    artboardImageData: (maxSize) => app.renderer.artboardImageData(maxSize),
+    getFabricationReport: () => app.controls?.fabricationReport ?? null,
+    productPreviewCapture: () => app.productPreview?.capture?.() ?? null,
+    notify: (message, kind) => app.notify(message, kind),
+    setTime: (time) => app.setTime(time),
+    serializeDocument: (name, doc) => app.presets.serialize(name, doc),
+  });
+
   const adapters = {
     createParametricOverlay: (app) => new ParametricOverlay(canvasContainer, app),
     createUVDomainInset: (app) => new UVDomainInset(canvasContainer, app),
     createSurfaceInspector: (app) => new SurfaceInspector(canvasContainer, app),
     createSeamLegend: (app) => new SeamLegend(canvasContainer, app),
     createRenderer: (app) => new P5Adapter(canvasContainer, app),
-    createExporter: (app) => new Exporter(app),
+    createExporter: (app) => new Exporter(createExportPort(app)),
     createControls: (app) => new Controls(app, uiContainer),
     createStartWithOverlay: (app, options) => new StartWithOverlay(app, options),
   };

@@ -83,6 +83,12 @@ export async function run(assert) {
   assert(read('src/composition/createApp.js').includes('new Exporter'), 'composition creates the exporter');
   assert(read('src/main.js').includes("from './composition/createApp.js'"), 'main boots through the composition root');
 
+  const exporterSource = read('src/export/Exporter.js');
+  assert(!exporterSource.includes('this.app'), 'Exporter never reaches into the App instance');
+  assert(!importsOf(exporterSource).some((spec) => spec.includes('application/App')), 'Exporter does not import App');
+  assert(exporterSource.includes('this.port'), 'Exporter uses the injected export port');
+  assert(read('src/composition/createApp.js').includes('createExportPort'), 'composition creates the export port');
+
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');
   assert(read('src/viz/overlays.js').includes('../domain/overlays.js'), 'viz/overlays keeps a domain re-export');

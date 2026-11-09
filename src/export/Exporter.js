@@ -46,8 +46,11 @@ export function unsupportedSvgFeatures(view = {}, layers = null) {
 }
 
 export class Exporter {
-  constructor(app) {
-    this.app = app;
+  /**
+   * @param {object} port explicit export port; the adapter never receives App
+   */
+  constructor(port) {
+    this.port = normalizeExportPort(port);
   }
 
   /* ——— Pure builder (DOM-free, unit-testable) ——— */
@@ -184,13 +187,13 @@ export class Exporter {
 
   /** Build SVG for the current evaluation without touching download state. */
   buildSVGFromCurrent() {
-    const doc = this.app.document;
+    const doc = this.port.getDocument();
     const artboard = doc.view.artboard;
-    const w = artboard?.width ?? this.app.renderer.size().w;
-    const h = artboard?.height ?? this.app.renderer.size().h;
+    const w = artboard?.width ?? this.port.rendererSize().w;
+    const h = artboard?.height ?? this.port.rendererSize().h;
     if (doc.view.layout === 'quad') return this.buildQuadSVGFromCurrent();
     const scene = buildRenderScene({
-      evaluation: this.app.evaluation,
+      evaluation: this.port.getEvaluation(),
       document: doc,
       view: doc.view,
     });
@@ -207,8 +210,8 @@ export class Exporter {
   buildQuadSVGFromCurrent() {
     return this.buildQuadExport((view, projection, prefix, onUnsupported) => {
       const scene = buildRenderScene({
-        evaluation: this.app.evaluation,
-        document: this.app.document,
+        evaluation: this.port.getEvaluation(),
+        document: this.port.getDocument(),
         view,
         projectionOverride: projection,
       });
@@ -217,22 +220,22 @@ export class Exporter {
         svg: Exporter.buildSVG(
           scene.layers.flatMap((layer) => layer.curves),
           view,
-          { w: this.app.document.view.artboard.width, h: this.app.document.view.artboard.height },
+          { w: this.port.getDocument().view.artboard.width, h: this.port.getDocument().view.artboard.height },
           null,
           scene.layers,
-          { time: this.app.document.animation.time, prefix, onUnsupported },
+          { time: this.port.getDocument().animation.time, prefix, onUnsupported },
         ),
       };
     }, true);
   }
 
   buildPlotterSVGFromCurrent() {
-    const doc = this.app.document;
+    const doc = this.port.getDocument();
     const artboard = doc.view.artboard;
-    const w = artboard?.width ?? this.app.renderer.size().w;
-    const h = artboard?.height ?? this.app.renderer.size().h;
+    const w = artboard?.width ?? this.port.rendererSize().w;
+    const h = artboard?.height ?? this.port.rendererSize().h;
     if (doc.view.layout !== 'quad') {
-      const scene = buildRenderScene({ evaluation: this.app.evaluation, document: doc, view: doc.view });
+      const scene = buildRenderScene({ evaluation: this.port.getEvaluation(), document: doc, view: doc.view });
       return {
         svg: Exporter.buildPlotterSVG(
           scene.layers.flatMap((layer) => layer.curves),
@@ -245,7 +248,7 @@ export class Exporter {
       };
     }
     return this.buildQuadExport((view, projection, _prefix, _onUnsupported) => {
-      const scene = buildRenderScene({ evaluation: this.app.evaluation, document: doc, view, projectionOverride: projection });
+      const scene = buildRenderScene({ evaluation: this.port.getEvaluation(), document: doc, view, projectionOverride: projection });
       return {
         scene,
         svg: Exporter.buildPlotterSVG(
@@ -260,10 +263,10 @@ export class Exporter {
   }
 
   buildQuadExport(buildPanel, includeBackground) {
-    const doc = this.app.document;
+    const doc = this.port.getDocument();
     const artboard = doc.view.artboard;
-    const width = artboard?.width ?? this.app.renderer.size().w;
-    const height = artboard?.height ?? this.app.renderer.size().h;
+    const width = artboard?.width ?? this.port.rendererSize().w;
+    const height = artboard?.height ?? this.port.rendererSize().h;
     const gap = Math.max(6, Math.round(Math.min(width, height) * 0.018));
     const panelWidth = Math.max(1, (width - gap * 3) / 2);
     const panelHeight = Math.max(1, (height - gap * 3) / 2);
@@ -357,9 +360,9 @@ export class Exporter {
   }
 
   buildSTLFromCurrent() {
-    const doc = this.app.document;
-    const report = this.app.controls?.fabricationReport ?? buildFabricationReport({
-      evaluation: this.app.evaluation,
+    const doc = this.port.getDocument();
+    const report = this.port.getFabricationReport() ?? buildFabricationReport({
+      evaluation: this.port.getEvaluation(),
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
       preparation: doc.view?.fabrication ?? null,
@@ -374,9 +377,9 @@ export class Exporter {
   }
 
   build3MFFromCurrent() {
-    const doc = this.app.document;
-    const report = this.app.controls?.fabricationReport ?? buildFabricationReport({
-      evaluation: this.app.evaluation,
+    const doc = this.port.getDocument();
+    const report = this.port.getFabricationReport() ?? buildFabricationReport({
+      evaluation: this.port.getEvaluation(),
       layerIndex: doc.activeLayer ?? 0,
       units: doc.view?.units ?? null,
       preparation: doc.view?.fabrication ?? null,
@@ -397,10 +400,10 @@ export class Exporter {
     try {
       const result = this.buildSTLFromCurrent();
       downloadBytes(`parametrica-${timestamp()}.stl`, result.data, STL_MIME_TYPE);
-      this.app.notify?.(`Exported STL · ${result.triangles} triangles · ${result.unit}`);
+      this.port.notify?.(`Exported STL · ${result.triangles} triangles · ${result.unit}`);
       return result;
     } catch (error) {
-      this.app.notify?.(error.message, 'error');
+      this.port.notify?.(error.message, 'error');
       return null;
     }
   }
@@ -409,10 +412,10 @@ export class Exporter {
     try {
       const result = this.build3MFFromCurrent();
       downloadBytes(`parametrica-${timestamp()}.3mf`, result.data, THREE_MF_MIME_TYPE);
-      this.app.notify?.(`Exported 3MF · ${result.objects} objects · ${result.triangles} triangles · ${result.unit}`);
+      this.port.notify?.(`Exported 3MF · ${result.objects} objects · ${result.triangles} triangles · ${result.unit}`);
       return result;
     } catch (error) {
-      this.app.notify?.(error.message, 'error');
+      this.port.notify?.(error.message, 'error');
       return null;
     }
   }
@@ -425,7 +428,7 @@ export class Exporter {
   exportSVG() {
     const { svg, omitted } = this.buildSVGFromCurrent();
     if (omitted.length) {
-      this.app.notify?.(
+      this.port.notify?.(
         `SVG omits: ${omitted.join(', ')}. Use PNG for full fidelity.`,
         'info',
       );
@@ -434,9 +437,9 @@ export class Exporter {
   }
 
   exportPNG() {
-    const dataUrl = this.app.renderer.artboardDataURL();
+    const dataUrl = this.port.artboardDataURL();
     if (!dataUrl) {
-      this.app.renderer.p.saveCanvas(`parametrica-${timestamp()}`, 'png');
+      this.port.saveCanvas(`parametrica-${timestamp()}`);
       return;
     }
     downloadDataURL(`parametrica-${timestamp()}.png`, dataUrl);
@@ -447,12 +450,12 @@ export class Exporter {
    * This is not a printability proof and does not alter geometry or reports.
    */
   exportProductPreviewPNG() {
-    const dataUrl = this.app.productPreview?.capture?.();
+    const dataUrl = this.port.productPreviewCapture();
     if (!dataUrl || !String(dataUrl).startsWith('data:image/png')) {
-      this.app.notify?.('Switch to Product preview before exporting a product PNG.', 'error');
+      this.port.notify?.('Switch to Product preview before exporting a product PNG.', 'error');
       return null;
     }
-    const name = slug(this.app.document?.name) || 'parametrica';
+    const name = slug(this.port.getDocument()?.name) || 'parametrica';
     downloadDataURL(`${name}-product-${timestamp()}.png`, dataUrl);
     return dataUrl;
   }
@@ -463,28 +466,27 @@ export class Exporter {
    * playback state are restored even when rendering fails.
    */
   async exportGIF({
-    duration = this.app.document.animation?.timeline?.duration ?? 6,
+    duration = this.port.getDocument().animation?.timeline?.duration ?? 6,
     fps = 12,
     maxSize = 360,
-    loop = this.app.document.animation?.timeline?.loop ?? true,
+    loop = this.port.getDocument().animation?.timeline?.loop ?? true,
     onProgress = null,
   } = {}) {
     const { gifFrameTimes, encodeGIF } = await import('./gif.js');
     const times = gifFrameTimes(duration, fps);
-    const renderer = this.app.renderer;
-    if (!renderer?.renderNow || !renderer?.artboardImageData) {
+    if (typeof this.port.renderNow !== 'function' || typeof this.port.artboardImageData !== 'function') {
       throw new Error('Renderer is not ready');
     }
-    const animation = this.app.document.animation;
+    const animation = this.port.getDocument().animation;
     const oldTime = animation.time;
     const oldPlaying = animation.playing;
     const frames = [];
     try {
       animation.playing = false;
       for (let index = 0; index < times.length; index++) {
-        this.app.setTime(times[index]);
-        renderer.renderNow();
-        const frame = renderer.artboardImageData(maxSize);
+        this.port.setTime(times[index]);
+        this.port.renderNow();
+        const frame = this.port.artboardImageData(maxSize);
         if (!frame) throw new Error(`frame ${index + 1} could not be captured`);
         frames.push(frame);
         onProgress?.({ frame: index + 1, total: times.length });
@@ -501,20 +503,20 @@ export class Exporter {
       };
     } finally {
       animation.playing = oldPlaying;
-      this.app.setTime(oldTime);
+      this.port.setTime(oldTime);
     }
   }
 
   exportJSON() {
     downloadFile(
       `parametrica-${timestamp()}.json`,
-      this.app.presets.serialize(this.app.document.name, this.app.document),
+      this.port.serializeDocument(this.port.getDocument().name, this.port.getDocument()),
       'application/json',
     );
   }
 
   async copyJSON() {
-    const json = this.app.presets.serialize(this.app.document.name, this.app.document);
+    const json = this.port.serializeDocument(this.port.getDocument().name, this.port.getDocument());
     try {
       await navigator.clipboard.writeText(json);
       return true;
@@ -522,6 +524,33 @@ export class Exporter {
       return false;
     }
   }
+}
+
+/**
+ * Accept the explicit export port used by composition and the legacy plain
+ * context used by unit fixtures. The App instance is never accepted.
+ */
+function normalizeExportPort(input) {
+  if (input && typeof input.getDocument === 'function') return input;
+  const renderer = input?.renderer ?? null;
+  return {
+    getDocument: () => input?.document ?? null,
+    getEvaluation: () => input?.evaluation ?? null,
+    rendererSize: () => renderer?.size?.() ?? {
+      w: input?.document?.view?.artboard?.width ?? 0,
+      h: input?.document?.view?.artboard?.height ?? 0,
+    },
+    artboardDataURL: () => renderer?.artboardDataURL?.() ?? null,
+    saveCanvas: (name) => renderer?.p?.saveCanvas?.(name, 'png'),
+    renderNow: () => renderer?.renderNow?.(),
+    artboardImageData: (maxSize) => renderer?.artboardImageData?.(maxSize) ?? null,
+    getFabricationReport: () => input?.fabricationReport ?? null,
+    productPreviewCapture: () => input?.productPreview?.capture?.() ?? null,
+    notify: (message, kind) => input?.notify?.(message, kind),
+    setTime: (time) => input?.setTime?.(time),
+    serializeDocument: (name, doc) => input?.presets?.serialize?.(name, doc)
+      ?? JSON.stringify({ name, ...doc }),
+  };
 }
 
 const fmt = (n) => Number(Number(n).toFixed(2));
