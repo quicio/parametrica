@@ -21,7 +21,7 @@ const AUTO_DELAY = 700;
 export class AdvisorPanel {
   constructor(app, { render = null } = {}) {
     this.app = app;
-    this.renderPort = render ?? app.renderer;
+    this.renderPort = render;
     this.response = null;
     this.previousId = '';
     this.analyzing = false;

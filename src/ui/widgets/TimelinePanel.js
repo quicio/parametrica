@@ -20,7 +20,7 @@ import { zipStore } from '../../export/zip.js';
 export class TimelinePanel {
   constructor(app, { render = null } = {}) {
     this.app = app;
-    this.render = render ?? app.renderer;
+    this.render = render;
     this.refs = numericParameterRefs(app.document);
     this.selectedTrack = null;
     this.recording = false;

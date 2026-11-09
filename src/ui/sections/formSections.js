@@ -24,22 +24,22 @@ import {
 
 export function buildLayersSection(controls) {
     const body = controls.section('Layers', { id: 'layers', mode: 'form' });
-    const layers = controls.app.document.layers ?? [];
+    const layers = controls.formPort.document.layers ?? [];
     const bar = document.createElement('div');
     bar.className = 'layers-bar';
     const newDocument = document.createElement('button');
     newDocument.className = 'layer-add layer-new-document';
     newDocument.textContent = '+ NEW DOCUMENT';
-    newDocument.addEventListener('click', () => controls.app.newDocument());
+    newDocument.addEventListener('click', () => controls.formPort.newDocument());
     bar.appendChild(newDocument);
     const add = document.createElement('button');
     add.className = 'layer-add layer-add-generator';
     add.textContent = '+ ADD LAYER';
     add.title = 'Add a new layer';
-    add.addEventListener('click', () => controls.app.addLayer('parametric'));
+    add.addEventListener('click', () => controls.formPort.addLayer('parametric'));
     bar.appendChild(add);
 
-    const candidates = instanceSourceCandidates(controls.app.document).filter(({ layer }) => (
+    const candidates = instanceSourceCandidates(controls.formPort.document).filter(({ layer }) => (
       Generators.has(layer.generator?.id)
       && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
     ));
@@ -55,18 +55,18 @@ export function buildLayersSection(controls) {
     const addInstance = document.createElement('button');
     addInstance.className = 'layer-add layer-add-instance';
     addInstance.textContent = '+ INSTANCE';
-    const instances = countInstanceLayers(controls.app.document);
-    const canAdd = canAddInstanceLayer(controls.app.document);
+    const instances = countInstanceLayers(controls.formPort.document);
+    const canAdd = canAddInstanceLayer(controls.formPort.document);
     addInstance.disabled = !canAdd || !candidates.length;
     addInstance.title = !candidates.length
       ? 'Add a Surface generator layer first'
       : instances >= MAX_INSTANCE_LAYERS
         ? `Instance limit reached (${MAX_INSTANCE_LAYERS})`
-        : controls.app.document.layers.length >= MAX_LAYERS
+        : controls.formPort.document.layers.length >= MAX_LAYERS
           ? `Layer limit reached (${MAX_LAYERS})`
           : 'Add an instance of the selected generator layer';
     addInstance.addEventListener('click', () => {
-      controls.app.addInstanceLayer(sourceSelect.value);
+      controls.formPort.addInstanceLayer(sourceSelect.value);
     });
     if (candidates.length) bar.append(sourceSelect);
     bar.appendChild(addInstance);
@@ -83,10 +83,10 @@ export function buildLayersSection(controls) {
       const row = document.createElement('div');
       row.className = 'layer-row';
       row.setAttribute('role', 'button');
-      row.tabIndex = index === controls.app.document.activeLayer ? 0 : -1;
+      row.tabIndex = index === controls.formPort.document.activeLayer ? 0 : -1;
       row.setAttribute('aria-label', `Select layer ${layer.name}`);
-      if (index === controls.app.document.activeLayer) row.setAttribute('aria-current', 'true');
-      row.classList.toggle('active', index === controls.app.document.activeLayer);
+      if (index === controls.formPort.document.activeLayer) row.setAttribute('aria-current', 'true');
+      row.classList.toggle('active', index === controls.formPort.document.activeLayer);
       row.classList.toggle('hidden', layer.visible === false);
       row.classList.toggle('locked', Boolean(layer.locked));
 
@@ -98,7 +98,7 @@ export function buildLayersSection(controls) {
       visibility.addEventListener('click', (event) => {
         event.stopPropagation();
         const next = layer.visible === false;
-        controls.app.setLayerVisible(index, next);
+        controls.formPort.setLayerVisible(index, next);
         visibility.textContent = next ? '●' : '○';
         row.classList.toggle('hidden', !next);
       });
@@ -111,7 +111,7 @@ export function buildLayersSection(controls) {
       lock.addEventListener('click', (event) => {
         event.stopPropagation();
         const next = !layer.locked;
-        controls.app.setLayerLocked(index, next);
+        controls.formPort.setLayerLocked(index, next);
       });
 
       const name = document.createElement('span');
@@ -126,7 +126,7 @@ export function buildLayersSection(controls) {
         badge.textContent = 'INSTANCE';
         row.classList.add('instance');
       }
-      const source = isInstance ? sourceLayerFor(controls.app.document, layer) : null;
+      const source = isInstance ? sourceLayerFor(controls.formPort.document, layer) : null;
       const sourceLabel = isInstance ? document.createElement('span') : null;
       if (sourceLabel) {
         sourceLabel.className = 'layer-source-label';
@@ -140,15 +140,15 @@ export function buildLayersSection(controls) {
       }
 
       const rename = layerButton('✎', 'Rename layer', () => controls.renameLayerPrompt(index));
-      const up = layerButton('↑', 'Move layer up', () => controls.app.moveLayer(index, -1), index === 0);
-      const down = layerButton('↓', 'Move layer down', () => controls.app.moveLayer(index, 1), index === layers.length - 1);
-      const duplicate = layerButton('⧉', 'Duplicate layer', () => controls.app.duplicateLayer(index));
-      const remove = layerButton('×', 'Remove layer', () => controls.app.removeLayer(index), layers.length <= 1);
+      const up = layerButton('↑', 'Move layer up', () => controls.formPort.moveLayer(index, -1), index === 0);
+      const down = layerButton('↓', 'Move layer down', () => controls.formPort.moveLayer(index, 1), index === layers.length - 1);
+      const duplicate = layerButton('⧉', 'Duplicate layer', () => controls.formPort.duplicateLayer(index));
+      const remove = layerButton('×', 'Remove layer', () => controls.formPort.removeLayer(index), layers.length <= 1);
 
       if (badge) row.append(visibility, lock, badge, nameWrap, rename, up, down, duplicate, remove);
       else row.append(visibility, lock, name, rename, up, down, duplicate, remove);
       const selectRow = () => {
-        if (index !== controls.app.document.activeLayer) controls.app.setActiveLayer(index);
+        if (index !== controls.formPort.document.activeLayer) controls.formPort.setActiveLayer(index);
       };
       row.addEventListener('click', selectRow);
       row.addEventListener('keydown', (event) => {
@@ -162,11 +162,11 @@ export function buildLayersSection(controls) {
 }
 
 export function buildInstanceSection(controls) {
-    const layer = controls.app.activeLayer;
+    const layer = controls.formPort.activeLayer;
     if (!isInstanceLayer(layer)) return;
     const body = controls.section('Instance', { id: 'instance', mode: 'form' });
-    const source = sourceLayerFor(controls.app.document, layer);
-    const generator = sourceGeneratorFor(controls.app.document, layer);
+    const source = sourceLayerFor(controls.formPort.document, layer);
+    const generator = sourceGeneratorFor(controls.formPort.document, layer);
     body.appendChild(controls.panelHint(
       'Active instance · source parameters are read-only · transforms apply before tessellation.',
     ));
@@ -187,7 +187,7 @@ export function buildInstanceSection(controls) {
       return el;
     };
 
-    const candidates = instanceSourceCandidates(controls.app.document).filter(({ layer }) => (
+    const candidates = instanceSourceCandidates(controls.formPort.document).filter(({ layer }) => (
       Generators.has(layer.generator?.id)
       && Generators.get(layer.generator.id).capabilities?.geometryKind === 'surface'
     ));
@@ -202,7 +202,7 @@ export function buildInstanceSection(controls) {
     if (source?.id) sourceSelect.value = source.id;
     sourceSelect.disabled = Boolean(layer.locked) || !candidates.length;
     sourceSelect.addEventListener('change', () => {
-      controls.app.setInstanceSource(controls.app.document.activeLayer, sourceSelect.value);
+      controls.formPort.setInstanceSource(controls.formPort.document.activeLayer, sourceSelect.value);
     });
     row('Source', sourceSelect);
 
@@ -212,8 +212,8 @@ export function buildInstanceSection(controls) {
     selectSource.textContent = 'SELECT SOURCE LAYER';
     selectSource.disabled = !source;
     selectSource.addEventListener('click', () => {
-      const index = controls.app.document.layers.findIndex((entry) => entry.id === source?.id);
-      if (index >= 0) controls.app.setActiveLayer(index);
+      const index = controls.formPort.document.layers.findIndex((entry) => entry.id === source?.id);
+      if (index >= 0) controls.formPort.setActiveLayer(index);
     });
     grid.appendChild(selectSource);
 
@@ -244,22 +244,22 @@ export function buildInstanceSection(controls) {
 }
 
 export function buildGeneratorSection(controls) {
-    if (controls.app.activeLayerIsInstance()) return;
+    if (controls.formPort.activeLayerIsInstance()) return;
     const gui = controls.makeGui(controls.section('Generator', { id: 'generator', mode: 'form' }));
     const options = {};
     for (const def of Generators.list()) options[def.name] = def.id;
-    const proxy = { id: controls.app.document.generator.id };
+    const proxy = { id: controls.formPort.document.generator.id };
     const control = gui.add(proxy, 'id', options)
       .name('Mathematical Model')
-      .onChange((id) => controls.app.setGenerator(id));
-    if (controls.app.activeLayerLocked) control.disable();
+      .onChange((id) => controls.formPort.setGenerator(id));
+    if (controls.formPort.activeLayerLocked) control.disable();
 }
 
 export function buildParamsSection(controls) {
-    if (controls.app.activeLayerIsInstance()) return;
+    if (controls.formPort.activeLayerIsInstance()) return;
     const body = controls.section('Parameters', { id: 'parameters', mode: 'form' });
-    const gen = Generators.get(controls.app.document.generator.id);
-    const stage = controls.app.document.generator;
+    const gen = Generators.get(controls.formPort.document.generator.id);
+    const stage = controls.formPort.document.generator;
     const plain = Object.entries(gen.params).filter(([, schema]) =>
       [TYPE.NUMBER, TYPE.BOOLEAN, TYPE.SELECT].includes(schema.type));
     if (!plain.length) return;
@@ -276,7 +276,7 @@ export function buildParamsSection(controls) {
 
     if (essential.length) {
       const essentialGui = controls.makeGui(body);
-      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => controls.app.rebuild(), { disabled: controls.app.activeLayerLocked });
+      bindStageParams(essentialGui, Object.fromEntries(essential), stage, () => controls.formPort.rebuild(), { disabled: controls.formPort.activeLayerLocked });
     }
 
     if (advanced.length) {
@@ -286,7 +286,7 @@ export function buildParamsSection(controls) {
       const wrap = document.createElement('div');
       wrap.className = 'advanced-params';
       const advancedGui = controls.makeGui(wrap);
-      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => controls.app.rebuild(), { disabled: controls.app.activeLayerLocked });
+      bindStageParams(advancedGui, Object.fromEntries(advanced), stage, () => controls.formPort.rebuild(), { disabled: controls.formPort.activeLayerLocked });
       body.append(toggle, wrap);
       controls.advancedToggle = toggle;
 
@@ -309,18 +309,18 @@ export function buildParamsSection(controls) {
     }
 
     const modsGui = controls.makeGui(body);
-    bindStageMods(modsGui, numericSchema, stage, () => controls.app.rebuild(), { disabled: controls.app.activeLayerLocked });
+    bindStageMods(modsGui, numericSchema, stage, () => controls.formPort.rebuild(), { disabled: controls.formPort.activeLayerLocked });
 }
 
 export function buildEquationsSection(controls) {
-    if (controls.app.activeLayerIsInstance()) return;
-    const gen = Generators.get(controls.app.document.generator.id);
+    if (controls.formPort.activeLayerIsInstance()) return;
+    const gen = Generators.get(controls.formPort.document.generator.id);
     const exprEntries = Object.entries(gen.params).filter(([, s]) =>
       [TYPE.EXPRESSION, TYPE.SOURCE].includes(s.type));
     if (!exprEntries.length) return;
 
     const body = controls.section('Equations', { id: 'equations', mode: 'form' });
-    const stage = controls.app.document.generator;
+    const stage = controls.formPort.document.generator;
     for (const [key, s] of exprEntries) {
       const field = new ExpressionField({
         label: s.label ?? key,
@@ -329,35 +329,35 @@ export function buildEquationsSection(controls) {
         get: () => stage.params[key],
         set: (v) => {
           stage.params[key] = v;
-          controls.app.rebuild();
+          controls.formPort.rebuild();
         },
       });
       body.appendChild(field.el);
-      if (controls.app.activeLayerLocked) field.setDisabled(true);
+      if (controls.formPort.activeLayerLocked) field.setDisabled(true);
       controls.expressionFields.set(key, field);
     }
 }
 
 export function buildHarmonicsSection(controls) {
-    if (controls.app.activeLayerIsInstance()) return;
-    const gen = Generators.get(controls.app.document.generator.id);
+    if (controls.formPort.activeLayerIsInstance()) return;
+    const gen = Generators.get(controls.formPort.document.generator.id);
     const hasHarmonics = Object.keys(gen.params).some((k) => k === 'harmonicsX' || k === 'harmonicsY');
     if (!hasHarmonics) return;
     const body = controls.section('Harmonics', { id: 'harmonics', mode: 'form' });
     controls.harmonicsEditor = new HarmonicsEditor({
-      getRows: (axis) => controls.app.document.generator.params[axis] ?? [],
+      getRows: (axis) => controls.formPort.document.generator.params[axis] ?? [],
       onChange: (axis, rows) => {
-        controls.app.document.generator.params[axis] = rows;
-        controls.app.rebuild();
+        controls.formPort.document.generator.params[axis] = rows;
+        controls.formPort.rebuild();
       },
     });
     body.appendChild(controls.harmonicsEditor.el);
-    if (controls.app.activeLayerLocked) controls.harmonicsEditor.setDisabled(true);
+    if (controls.formPort.activeLayerLocked) controls.harmonicsEditor.setDisabled(true);
 }
 
 export function buildOperatorsSection(controls) {
     const body = controls.section('Operators', { id: 'operators', mode: 'form' });
-    controls.operatorStack = new OperatorStack(controls.app);
+    controls.operatorStack = new OperatorStack(controls.formPort);
     body.appendChild(controls.operatorStack.el);
 }
 

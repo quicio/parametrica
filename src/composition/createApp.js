@@ -7,10 +7,16 @@
  */
 
 import { App } from '../application/App.js';
+import { createAdvisorPort } from './createAdvisorPort.js';
 import { createFabricationPort } from './createFabricationPort.js';
+import { createFormPort } from './createFormPort.js';
+import { createIngestPort } from './createIngestPort.js';
 import { createLabPort } from './createLabPort.js';
+import { createKeepPort } from './createKeepPort.js';
+import { createLookPort } from './createLookPort.js';
 import { createNotebookPort } from './createNotebookPort.js';
 import { createPresetPort } from './createPresetPort.js';
+import { createStartWithPort } from './createStartWithPort.js';
 import { createRenderPort } from './createRenderPort.js';
 import { createUiPort } from './createUiPort.js';
 import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
@@ -21,7 +27,7 @@ import { NotebookWorkspace } from '../lab/workspace.js';
 import { MutationEngine } from '../mutation/MutationEngine.js';
 import { PresetManager } from '../presets/PresetManager.js';
 import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.js';
-import { LOOK_PRESETS } from '../render/lookPresets.js';
+import { LOOK_PRESETS } from '../domain/lookPresets.js';
 import { LookPresetStore } from '../render/lookPresetStore.js';
 import { P5Adapter } from '../render/p5/P5Adapter.js';
 import { Exporter } from '../export/Exporter.js';
@@ -55,6 +61,11 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
     notebookWorkspace: null,
     renderPresetPreview,
     startWithPreviewSize: START_WITH_PREVIEW_SIZE,
+    loadProductPreview: async (app) => {
+      if (app.productPreview) return app.productPreview;
+      const { ProductPreview } = await import('../render/webgl/ProductPreview.js');
+      return new ProductPreview(app, canvasContainer);
+    },
   };
 
   services.notebook = new Notebook({
@@ -95,8 +106,13 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
       notebook: createNotebookPort(app),
       preset: createPresetPort(app),
       lab: createLabPort(app),
+      form: createFormPort(app),
+      look: createLookPort(app),
+      keep: createKeepPort(app),
+      ingest: createIngestPort(app),
+      advisor: createAdvisorPort(app),
     }),
-    createStartWithOverlay: (app, options) => new StartWithOverlay(app, options),
+    createStartWithOverlay: (app, options) => new StartWithOverlay(createStartWithPort(app), options),
   };
 
   return new App({

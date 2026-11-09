@@ -30,6 +30,27 @@ module.exports = {
       to: { path: '^src/(ui|composition|workers)/' },
     },
     {
+      name: 'application-no-render',
+      severity: 'error',
+      comment: 'ADR-0004: application uses domain/view policy, not render adapters.',
+      from: { path: '^src/application/' },
+      to: { path: '^src/render/' },
+    },
+    {
+      name: 'application-no-interaction',
+      severity: 'error',
+      comment: 'ADR-0004: pure picking math lives in domain; application does not import interaction adapters.',
+      from: { path: '^src/application/' },
+      to: { path: '^src/interaction/' },
+    },
+    {
+      name: 'ui-no-composition',
+      severity: 'error',
+      comment: 'ADR-0004: only composition selects concrete adapters.',
+      from: { path: '^src/ui/' },
+      to: { path: '^src/(composition/|application/App[.]js$)' },
+    },
+    {
       name: 'adapters-no-composition',
       severity: 'error',
       comment: 'Only composition selects concrete adapters.',

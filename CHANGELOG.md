@@ -7,6 +7,23 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.12] - 2026-11-09
+
+### Added
+
+- Form, Look, Keep, Ingest, Advisor and Start With ports.
+- Domain look presets, render scene contracts, ray math and surface-picker math.
+- Hardened dependency rules: application → render/interaction and UI →
+  composition/App are forbidden.
+
+### Changed
+
+- ProductPreview loading is injected by composition.
+- `UI_SURFACE` now contains only the Controls surface; every panel uses its own
+  port.
+- Old render/interaction paths remain compatibility re-exports.
+- No panel behavior or export output changed.
+
 ## [0.2.11] - 2026-11-09
 
 ### Added

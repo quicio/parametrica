@@ -7,6 +7,8 @@
 
 import { OVERLAYS } from '../domain/overlays.js';
 
+export { applyUserLookToView } from '../domain/lookPresets.js';
+
 export const LOOKS_STORAGE_KEY = 'parametrica.looks.v1';
 export const LOOKS_VERSION = 1;
 const COLOR_METRICS = ['auto', 'height', 'radius', 'curvature', 'arc'];
@@ -107,16 +109,6 @@ export class LookPresetStore {
       return false;
     }
   }
-}
-
-export function applyUserLookToView(view, look) {
-  if (!view || !look) return false;
-  view.modes = [...look.modes];
-  view.overlays = { ...look.overlays };
-  view.colorMetric = look.colorMetric;
-  view.guides = look.guides;
-  view.passOpacity = { ...(look.passOpacity ?? {}) };
-  return true;
 }
 
 function slug(value) {

@@ -13,7 +13,7 @@ import { supportsSpatial } from '../core/capabilities.js';
 import { normalizeModes } from '../domain/modeToggles.js';
 import { PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
-import { lookPresetMatchesView } from '../render/lookPresets.js';
+import { lookPresetMatchesView } from '../domain/lookPresets.js';
 import {
   isInstanceLayer,
   sourceGeneratorFor,
@@ -81,6 +81,11 @@ export class Controls {
     this.notebookPort = ports.notebook ?? app;
     this.presetPort = ports.preset ?? app;
     this.labPort = ports.lab ?? app;
+    this.formPort = ports.form ?? app;
+    this.lookPort = ports.look ?? app;
+    this.keepPort = ports.keep ?? app;
+    this.ingestPort = ports.ingest ?? app;
+    this.advisorPort = ports.advisor ?? app;
     this.container = container;
     this.fabricationReport = null;
     this.fabricationInput = null;

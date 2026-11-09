@@ -5,7 +5,7 @@
  * helpers, registries and App APIs. Sections never import each other.
  */
 
-import { LOOK_PRESETS } from '../../render/lookPresets.js';
+import { LOOK_PRESETS } from '../../domain/lookPresets.js';
 import { supportsSpatial } from '../../core/capabilities.js';
 import { ARTBOARD_PRESETS } from '../../render/palettes.js';
 import {
@@ -37,7 +37,7 @@ export function buildLooksSection(controls) {
       description.textContent = preset.description;
       button.append(name, description);
       button.addEventListener('click', () => {
-        if (controls.app.applyLookPreset(preset.id)) controls.refreshLookPresets();
+        if (controls.lookPort.applyLookPreset(preset.id)) controls.refreshLookPresets();
       });
       grid.appendChild(button);
       controls.lookPresetButtons.set(preset.id, { button, preset });
@@ -48,7 +48,7 @@ export function buildLooksSection(controls) {
     reset.textContent = 'RESET LOOK';
     reset.title = 'Apply the Line preset and clear diagnostic overlays';
     reset.addEventListener('click', () => {
-      if (controls.app.applyLookPreset('line')) controls.refreshLookPresets();
+      if (controls.lookPort.applyLookPreset('line')) controls.refreshLookPresets();
     });
     const userWrap = document.createElement('div');
     userWrap.className = 'user-looks';
@@ -68,12 +68,12 @@ export function buildLooksSection(controls) {
     const save = async () => {
       const name = nameInput.value.trim();
       if (!name) {
-        controls.app.notify('Look name required', 'error');
+        controls.lookPort.notify('Look name required', 'error');
         return;
       }
-      const existing = controls.app.lookStore.findByName(name);
+      const existing = controls.lookPort.lookStore.findByName(name);
       if (existing) {
-        const ok = await controls.app.dialogs.confirm({
+        const ok = await controls.lookPort.dialogs.confirm({
           title: 'Overwrite look?',
           message: `A look named “${name}” already exists.`,
           confirmText: 'Overwrite',
@@ -81,7 +81,7 @@ export function buildLooksSection(controls) {
         });
         if (!ok) return;
       }
-      const result = controls.app.saveUserLook(name);
+      const result = controls.lookPort.saveUserLook(name);
       if (result.ok) nameInput.value = '';
     };
     saveButton.addEventListener('click', () => { void save(); });
@@ -104,7 +104,7 @@ export function buildLooksSection(controls) {
 
 export function buildCameraSection(controls) {
     const body = controls.section('Camera', { id: 'camera', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     const generator = controls.activeGeneratorDefinition();
     const canProject = Boolean(generator && supportsSpatial(generator));
     if (!canProject && view.projection !== '3d') view.projection = '3d';
@@ -122,7 +122,7 @@ export function buildCameraSection(controls) {
     const resetCamera = document.createElement('button');
     resetCamera.className = 'lab-button camera-reset';
     resetCamera.textContent = 'Reset camera';
-    resetCamera.addEventListener('click', () => controls.app.resetCamera());
+    resetCamera.addEventListener('click', () => controls.lookPort.resetCamera());
     const syncReset = () => {
       const available = canProject && view.projection === '3d';
       resetCamera.disabled = !available;
@@ -140,7 +140,7 @@ export function buildCameraSection(controls) {
       })
       .name('Projection')
       .onChange(() => {
-        controls.app.rebuild();
+        controls.lookPort.rebuild();
         syncReset();
       });
     projection.domElement.classList.add('view-projection-row');
@@ -152,17 +152,17 @@ export function buildCameraSection(controls) {
     const layout = gui.add(view, 'layout', {
       Single: 'single',
       Quad: 'quad',
-    }).name('Layout').onChange(() => controls.app.rebuild());
+    }).name('Layout').onChange(() => controls.lookPort.rebuild());
     layout.domElement.title = 'Quad view arranges 3D + XY/XZ/YZ. SVG and plotter exports use the active projection.';
     if (!canProject) layout.disable();
-    gui.add(view, 'guides').name('CAD Guides').onChange(() => controls.app.rebuild());
+    gui.add(view, 'guides').name('CAD Guides').onChange(() => controls.lookPort.rebuild());
     body.appendChild(resetCamera);
     syncReset();
 }
 
 export function buildCanvasSection(controls) {
     const body = controls.section('Canvas', { id: 'canvas', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     const ab = view.artboard;
     const surfaceAvailable = controls.activeLayerHasSurface();
     body.appendChild(controls.panelHint('Global canvas · applied to the whole document.'));
@@ -203,7 +203,7 @@ export function buildCanvasSection(controls) {
       input.addEventListener('input', () => { apply(input.value); rebuild(); });
       return input;
     };
-    const rebuild = () => controls.app.rebuild();
+    const rebuild = () => controls.lookPort.rebuild();
 
     const presetSelect = document.createElement('select');
     presetSelect.className = 'artboard-input';
@@ -258,40 +258,40 @@ export function buildCanvasSection(controls) {
     controls.parametricsToggle = document.createElement('input');
     controls.parametricsToggle.className = 'artboard-check parametrics-toggle-checkbox';
     controls.parametricsToggle.type = 'checkbox';
-    controls.parametricsToggle.checked = controls.app.isParametricsVisible();
+    controls.parametricsToggle.checked = controls.lookPort.isParametricsVisible();
     controls.parametricsToggle.title = 'Show active-layer parametric properties at the canvas edge';
     controls.parametricsToggle.addEventListener('change', () => {
-      controls.app.setParametricsVisible(controls.parametricsToggle.checked);
+      controls.lookPort.setParametricsVisible(controls.parametricsToggle.checked);
     });
     row('Parametrics', controls.parametricsToggle);
 
     controls.uvDomainToggle = document.createElement('input');
     controls.uvDomainToggle.className = 'artboard-check uv-domain-toggle-checkbox';
     controls.uvDomainToggle.type = 'checkbox';
-    controls.uvDomainToggle.checked = controls.app.isUVDomainVisible();
+    controls.uvDomainToggle.checked = controls.lookPort.isUVDomainVisible();
     controls.uvDomainToggle.title = 'Show the active surface UV domain inset. UI-only; never included in exports.';
     controls.uvDomainToggle.addEventListener('change', () => {
-      controls.app.setUVDomainVisible(controls.uvDomainToggle.checked);
+      controls.lookPort.setUVDomainVisible(controls.uvDomainToggle.checked);
     });
     row('UV Domain', controls.uvDomainToggle);
 
     controls.surfaceInspectorToggle = document.createElement('input');
     controls.surfaceInspectorToggle.className = 'artboard-check surface-inspector-toggle-checkbox';
     controls.surfaceInspectorToggle.type = 'checkbox';
-    controls.surfaceInspectorToggle.checked = controls.app.isSurfaceInspectorEnabled();
+    controls.surfaceInspectorToggle.checked = controls.lookPort.isSurfaceInspectorEnabled();
     controls.surfaceInspectorToggle.title = 'Inspect the surface under the cursor in single Canvas.';
     controls.surfaceInspectorToggle.addEventListener('change', () => {
-      controls.app.setSurfaceInspectorEnabled(controls.surfaceInspectorToggle.checked);
+      controls.lookPort.setSurfaceInspectorEnabled(controls.surfaceInspectorToggle.checked);
     });
     row('Inspect', controls.surfaceInspectorToggle);
 
     controls.seamsToggle = document.createElement('input');
     controls.seamsToggle.className = 'artboard-check seams-toggle-checkbox';
     controls.seamsToggle.type = 'checkbox';
-    controls.seamsToggle.checked = controls.app.isSeamsVisible();
+    controls.seamsToggle.checked = controls.lookPort.isSeamsVisible();
     controls.seamsToggle.title = 'Show declared UV domain borders, seams and reverse/twist seams.';
     controls.seamsToggle.addEventListener('change', () => {
-      controls.app.setSeamsVisible(controls.seamsToggle.checked);
+      controls.lookPort.setSeamsVisible(controls.seamsToggle.checked);
     });
     row('Seams', controls.seamsToggle);
 
@@ -321,7 +321,7 @@ export function buildCanvasSection(controls) {
 
 export function buildCoordinatesSection(controls) {
     const body = controls.section('Coordinates', { id: 'coordinates', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     const reference = view.reference;
     const coordinates = view.coordinates;
     const spatialAvailable = controls.activeLayerIsSpatial();
@@ -349,7 +349,7 @@ export function buildCoordinatesSection(controls) {
       input.title = title;
       return input;
     };
-    const rebuild = () => controls.app.rebuild();
+    const rebuild = () => controls.lookPort.rebuild();
 
     const referenceToggle = checkbox(
       'reference-toggle-checkbox',
@@ -482,19 +482,19 @@ export function buildCoordinatesSection(controls) {
     pinButton.addEventListener('click', () => {
       const readout = controls.render?.currentCoordinateReadout?.() ?? null;
       if (!readout) {
-        controls.app.notify('Move over a surface to pin a coordinate', 'error');
+        controls.lookPort.notify('Move over a surface to pin a coordinate', 'error');
         return;
       }
       if (!controls.render?.setCoordinatePin?.(readout)) {
-        controls.app.notify('Coordinate could not be pinned', 'error');
+        controls.lookPort.notify('Coordinate could not be pinned', 'error');
         return;
       }
-      controls.app.rebuild();
+      controls.lookPort.rebuild();
       controls.refreshCoordinatePin();
     });
     releaseButton.addEventListener('click', () => {
       controls.render?.clearCoordinatePin?.();
-      controls.app.rebuild();
+      controls.lookPort.rebuild();
       controls.refreshCoordinatePin();
     });
 
@@ -510,7 +510,7 @@ export function buildCoordinatesSection(controls) {
 
 export function buildUnitsSection(controls) {
     const body = controls.section('Scale', { id: 'units', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     const units = view.units;
     body.appendChild(controls.panelHint(
       'Optional physical scale. Geometry is never rescaled; millimetres are applied only by export consumers.',
@@ -538,7 +538,7 @@ export function buildUnitsSection(controls) {
     warning.className = 'units-warning';
 
     const refresh = () => {
-      const bbox = controls.app.evaluation?.worldBBox ?? controls.app.evaluation?.bbox ?? null;
+      const bbox = controls.lookPort.evaluation?.worldBBox ?? controls.lookPort.evaluation?.bbox ?? null;
       const physical = bboxToMillimetres(bbox, units);
       if (physical) {
         const dimensions = [
@@ -579,7 +579,7 @@ export function buildUnitsSection(controls) {
       el.value = value;
       el.addEventListener('change', () => {
         onChange(el.value);
-        controls.app.rebuild();
+        controls.lookPort.rebuild();
         refresh();
       });
       return el;
@@ -597,7 +597,7 @@ export function buildUnitsSection(controls) {
       el.addEventListener('change', () => {
         const number = Number(el.value);
         onChange(Number.isFinite(number) && number > 0 ? number : null);
-        controls.app.rebuild();
+        controls.lookPort.rebuild();
         refresh();
       });
       return el;

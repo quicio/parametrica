@@ -12,6 +12,12 @@ import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.js
 import { NOTEBOOK_PORT } from '../../src/composition/createNotebookPort.js';
 import { LAB_PORT } from '../../src/composition/createLabPort.js';
 import { PRESET_PORT } from '../../src/composition/createPresetPort.js';
+import { FORM_PORT } from '../../src/composition/createFormPort.js';
+import { LOOK_PORT } from '../../src/composition/createLookPort.js';
+import { KEEP_PORT } from '../../src/composition/createKeepPort.js';
+import { INGEST_PORT } from '../../src/composition/createIngestPort.js';
+import { ADVISOR_PORT } from '../../src/composition/createAdvisorPort.js';
+import { START_WITH_PORT } from '../../src/composition/createStartWithPort.js';
 import { RENDER_PORT } from '../../src/composition/createRenderPort.js';
 import { join, relative } from 'node:path';
 
@@ -96,16 +102,11 @@ export async function run(assert) {
   assert(read('src/composition/createApp.js').includes('createExportPort'), 'composition creates the export port');
 
   const uiSurface = new Set(UI_SURFACE);
-  const usedByUi = new Set();
-  for (const file of filesUnder('src/ui')) {
-    for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
-      usedByUi.add(match[1]);
-    }
+  const controlsSource = read('src/ui/Controls.js');
+  for (const match of controlsSource.matchAll(/this\.app\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+    assert(uiSurface.has(match[1]), `control port exposes app.${match[1]}`);
   }
-  for (const name of usedByUi) {
-    assert(uiSurface.has(name), `UI port exposes app.${name}`);
-  }
-  assert(read('src/composition/createApp.js').includes('createUiPort'), 'composition passes the UI port to Controls');
+  assert(read('src/composition/createApp.js').includes('createUiPort'), 'composition passes the control port to Controls');
 
   const fabricationSource = read('src/ui/sections/fabricateSections.js');
   assert(!fabricationSource.includes('controls.app.'), 'Fabricate panel uses the narrow fabrication port');
@@ -148,6 +149,31 @@ export async function run(assert) {
   assert(read('src/ui/sections/keepSections.js').includes('new LabPanel(controls.labPort'), 'analysis uses the lab port');
   assert(read('src/ui/sections/keepSections.js').includes('new ExplorePanel(controls.labPort'), 'explore uses the lab port');
   assert(read('src/ui/sections/keepSections.js').includes('new EvolutionPanel(controls.labPort'), 'evolution uses the lab port');
+
+  const assertAppPort = (file, port, label) => {
+    for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+      assert(port.includes(match[1]), `${label} exposes app.${match[1]}`);
+    }
+  };
+  const assertControlsPort = (file, portName, port, label) => {
+    const re = new RegExp(`controls\\.${portName}\\.([a-zA-Z_][a-zA-Z0-9_]*)`, 'g');
+    for (const match of read(file).matchAll(re)) {
+      assert(port.includes(match[1]), `${label} exposes ${portName}.${match[1]}`);
+    }
+  };
+  assertAppPort('src/ui/widgets/OperatorStack.js', FORM_PORT, 'form port');
+  assertControlsPort('src/ui/sections/formSections.js', 'formPort', FORM_PORT, 'form sections');
+  assertControlsPort('src/ui/sections/lookSections.js', 'lookPort', LOOK_PORT, 'look sections');
+  assertControlsPort('src/ui/sections/keepSections.js', 'keepPort', KEEP_PORT, 'keep sections');
+  assertControlsPort('src/ui/sections/keepSections.js', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
+  assertAppPort('src/ui/widgets/TimelinePanel.js', KEEP_PORT, 'keep/timeline port');
+  assertAppPort('src/ui/widgets/ImagePanel.js', INGEST_PORT, 'ingest port');
+  assertAppPort('src/ui/widgets/AdvisorPanel.js', ADVISOR_PORT, 'advisor port');
+  assertAppPort('src/ui/StartWithOverlay.js', START_WITH_PORT, 'start-with port');
+  for (const name of ['createFormPort', 'createLookPort', 'createKeepPort', 'createIngestPort', 'createAdvisorPort', 'createStartWithPort']) {
+    assert(read('src/composition/createApp.js').includes(name), `composition passes ${name}`);
+  }
+  assert(!read('src/ui/sections/keepSections.js').includes('controls.app.'), 'keep sections use narrow ports');
 
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');

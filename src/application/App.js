@@ -30,10 +30,10 @@ import { applySuggestionToDocument } from '../ai/offline.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
 import { MIN_CAMERA_FOV } from '../view/cameraController.js';
 import { buildRenderScene } from './renderSceneBuilder.js';
-import { artboardPointFromCanvas } from '../interaction/ray.js';
-import { pickSurface } from '../interaction/surfacePicker.js';
-import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
-import { applyUserLookToView } from '../render/lookPresetStore.js';
+import { artboardPointFromCanvas } from '../domain/interaction/ray.js';
+import { pickSurface } from '../domain/interaction/surfacePicker.js';
+import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../domain/lookPresets.js';
+import { applyUserLookToView } from '../domain/lookPresets.js';
 import { normalizeModes } from '../domain/modeToggles.js';
 
 export class App {
@@ -48,6 +48,7 @@ export class App {
     this.dialogs = services.dialogs;
     this.renderPresetPreview = services.renderPresetPreview;
     this.startWithPreviewSize = services.startWithPreviewSize;
+    this.loadProductPreview = services.loadProductPreview;
     this.adapters = adapters;
     this.document = createDocument('parametric');
     this.canvasContainer = canvasContainer;
@@ -832,9 +833,9 @@ export class App {
       return false;
     }
     if (!this.productPreviewLoading) {
-      this.productPreviewLoading = import('../render/webgl/ProductPreview.js')
-        .then(({ ProductPreview }) => {
-          if (!this.productPreview) this.productPreview = new ProductPreview(this, this.canvasContainer);
+      this.productPreviewLoading = this.loadProductPreview(this)
+        .then((preview) => {
+          if (!this.productPreview) this.productPreview = preview;
           this.productPreview.mount();
           return this.productPreview;
         })

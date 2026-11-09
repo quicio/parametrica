@@ -34,9 +34,9 @@ import {
   drawSeamOverlay,
   drawUnderlay,
 } from './overlays.js';
-import { pickSurface } from '../../interaction/surfacePicker.js';
+import { pickSurface } from '../../domain/interaction/surfacePicker.js';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
-import { artboardPointFromCanvas } from '../../interaction/ray.js';
+import { artboardPointFromCanvas } from '../../domain/interaction/ray.js';
 import { AnimationController } from '../../application/animationController.js';
 
 const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);

@@ -21,10 +21,10 @@ import { EvolutionPanel } from '../widgets/EvolutionPanel.js';
 import { PresetPanel } from '../widgets/PresetPanel.js';
 export function buildStyleSection(controls) {
     const body = controls.section('Style', { id: 'style', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     const st = view.style;
-    const layer = controls.app.activeLayer;
-    const locked = Boolean(controls.app.activeLayerLocked);
+    const layer = controls.lookPort.activeLayer;
+    const locked = Boolean(controls.lookPort.activeLayerLocked);
     const layerName = layer?.name ?? 'current layer';
     body.appendChild(controls.panelHint(`Active layer · ${layerName}`));
     const lockable = (control) => {
@@ -83,7 +83,7 @@ export function buildStyleSection(controls) {
     };
     const rebuild = () => {
       view.strokeWeight = st.stroke.width;
-      controls.app.rebuild();
+      controls.lookPort.rebuild();
     };
 
     row('Stroke', lockable(color(st.stroke.color, (v) => { st.stroke.color = v; })));
@@ -279,7 +279,7 @@ export function buildStyleSection(controls) {
     paletteSelect.addEventListener('change', () => {
       const palette = controls.paletteStore.get(paletteSelect.value);
       if (!palette) return;
-      controls.app.document.view.artboard.background = palette.background;
+      controls.lookPort.document.view.artboard.background = palette.background;
       st.stroke.color = palette.stroke;
       st.fill.color = palette.fill;
       paletteDelete.disabled = locked || !controls.paletteStore.isCustom(palette.id);
@@ -288,15 +288,15 @@ export function buildStyleSection(controls) {
     paletteSave.addEventListener('click', () => {
       try {
         const saved = controls.paletteStore.save(paletteName.value, {
-          background: controls.app.document.view.artboard.background,
+          background: controls.lookPort.document.view.artboard.background,
           stroke: st.stroke.color,
           fill: st.fill.color,
         });
         paletteName.value = '';
         renderPaletteOptions(saved.id);
-        controls.app.notify?.(`Palette “${saved.name}” saved`);
+        controls.lookPort.notify?.(`Palette “${saved.name}” saved`);
       } catch (error) {
-        controls.app.notify?.(`Palette save failed: ${error.message}`, 'error');
+        controls.lookPort.notify?.(`Palette save failed: ${error.message}`, 'error');
       }
     });
     paletteDelete.addEventListener('click', () => {
@@ -304,7 +304,7 @@ export function buildStyleSection(controls) {
       const palette = controls.paletteStore.get(paletteSelect.value);
       controls.paletteStore.delete(paletteSelect.value);
       renderPaletteOptions(controls.paletteStore.entries()[0]?.id);
-      controls.app.notify?.(`Palette “${palette?.name ?? 'custom'}” deleted`);
+      controls.lookPort.notify?.(`Palette “${palette?.name ?? 'custom'}” deleted`);
     });
     renderPaletteOptions();
     row('Palette', paletteWrap);
@@ -344,7 +344,7 @@ export function buildStyleSection(controls) {
           input.disabled = locked;
           input.addEventListener('change', () => {
             layer.modes = toggleMode(layer.modes, def.id, input.checked, RenderPasses.ids());
-            controls.app.rebuild();
+            controls.lookPort.rebuild();
           });
           const text = document.createElement('span');
           text.textContent = def.name;
@@ -360,7 +360,7 @@ export function buildStyleSection(controls) {
           layer.modes = [...view.modes];
         }
         renderModes();
-        controls.app.rebuild();
+        controls.lookPort.rebuild();
       });
 
       row('Render passes', modeWrap);
@@ -392,7 +392,7 @@ export function buildStyleSection(controls) {
 
 export function buildRenderSection(controls) {
     const body = controls.section('Render', { id: 'render', mode: 'look' });
-    const view = controls.app.document.view;
+    const view = controls.lookPort.document.view;
     body.appendChild(controls.panelHint(
       'Global render passes · checkbox enables a pass · opacity only adjusts its strength.',
     ));
@@ -446,13 +446,13 @@ export function buildRenderSection(controls) {
         input.checked = checked;
         input.disabled = !applies;
         input.addEventListener('change', () => {
-          const next = toggleMode(controls.app.document.view.modes, def.id, input.checked, order);
-          controls.app.document.view.modes = next;
+          const next = toggleMode(controls.lookPort.document.view.modes, def.id, input.checked, order);
+          controls.lookPort.document.view.modes = next;
           for (const entry of modeInputs) {
             entry.input.checked = next.includes(entry.id);
             entry.syncState();
           }
-          controls.app.rebuild();
+          controls.lookPort.rebuild();
         });
         const labels = document.createElement('span');
         labels.className = 'mode-toggle-labels';
@@ -488,7 +488,7 @@ export function buildRenderSection(controls) {
             [def.id]: Number(opacity.value),
           };
           percent.textContent = `${Math.round(Number(opacity.value) * 100)}%`;
-          controls.app.rebuild();
+          controls.lookPort.rebuild();
         });
         mix.append(mixLabel, opacity, percent);
 
@@ -519,7 +519,7 @@ export function buildRenderSection(controls) {
                 ...(view.passStyle ?? {}),
                 [def.id]: { ...(view.passStyle?.[def.id] ?? {}), color: colorInput.value },
               };
-              controls.app.rebuild();
+              controls.lookPort.rebuild();
             });
             appearance.append(label, colorInput);
           }
@@ -542,7 +542,7 @@ export function buildRenderSection(controls) {
                 ...(view.passStyle ?? {}),
                 [def.id]: { ...(view.passStyle?.[def.id] ?? {}), width: Math.max(0.1, Math.min(40, width)) },
               };
-              controls.app.rebuild();
+              controls.lookPort.rebuild();
             });
             appearance.append(label, widthInput);
           }
@@ -555,7 +555,7 @@ export function buildRenderSection(controls) {
             const next = { ...(view.passStyle ?? {}) };
             delete next[def.id];
             view.passStyle = next;
-            controls.app.rebuild();
+            controls.lookPort.rebuild();
             controls.refreshRenderModes();
           });
           appearance.appendChild(resetStyle);
@@ -601,7 +601,7 @@ export function buildRenderSection(controls) {
       Radius: 'radius',
       Curvature: 'curvature',
       'Arc length': 'arc',
-    }).name('Gradient metric').onChange(() => controls.app.rebuild());
+    }).name('Gradient metric').onChange(() => controls.lookPort.rebuild());
     controls.buildRampEditor(body);
 }
 
@@ -610,56 +610,56 @@ export function buildOverlaysSection(controls) {
     body.appendChild(controls.panelHint('Global diagnostics · drawn above the active passes.'));
     const gui = controls.makeGui(body);
     for (const o of OVERLAYS) {
-      gui.add(controls.app.document.view.overlays, o.id)
+      gui.add(controls.lookPort.document.view.overlays, o.id)
         .name(o.name)
-        .onChange(() => controls.app.rebuild());
+        .onChange(() => controls.lookPort.rebuild());
     }
 }
 
 export function buildImageSection(controls) {
     const body = controls.section('Image', { id: 'image', mode: 'ingest' });
-    controls.imagePanel = new ImagePanel(controls.app);
+    controls.imagePanel = new ImagePanel(controls.ingestPort);
     body.appendChild(controls.imagePanel.el);
 }
 
 export function buildAnimationSection(controls) {
     const gui = controls.makeGui(controls.section('Animation', { id: 'animation', mode: 'perform' }));
-    const a = controls.app.document.animation;
-    gui.add(a, 'playing').name('Play').onChange(() => controls.app.rebuild());
+    const a = controls.keepPort.document.animation;
+    gui.add(a, 'playing').name('Play').onChange(() => controls.keepPort.rebuild());
     gui.add(a, 'speed', 0.05, 4, 0.05).name('Speed').onChange(() => {});
     const time = gui.add(a, 'time', 0, 12.5664, 0.01)
       .name('Time')
-      .onChange((t) => controls.app.setTime(t))
+      .onChange((t) => controls.keepPort.setTime(t))
       .listen();
     applyHardBounds(time, { snap: false, hardMin: 0, hardMax: 1000000 });
     controls.timeController = time;
     controls.timeBaseMax = 12.5664;
     controls.syncTimeRange(a.time);
-    gui.add({ reset: () => controls.app.resetTime() }, 'reset').name('Reset Time');
+    gui.add({ reset: () => controls.keepPort.resetTime() }, 'reset').name('Reset Time');
 }
 
 export function buildTimelineSection(controls) {
     const body = controls.section('Timeline', { id: 'timeline', mode: 'perform' });
-    controls.timelinePanel = new TimelinePanel(controls.app, { render: controls.render });
+    controls.timelinePanel = new TimelinePanel(controls.keepPort, { render: controls.render });
     body.appendChild(controls.timelinePanel.el);
 }
 
 export function buildMutationSection(controls) {
-    if (controls.app.activeLayerIsInstance()) {
+    if (controls.keepPort.activeLayerIsInstance()) {
       const body = controls.section('Mutation', { id: 'mutation', mode: 'explore' });
       body.appendChild(controls.panelHint('Select a generator layer to use controls tool. Instance layers are read-only.'));
       return;
     }
     const gui = controls.makeGui(controls.section('Mutation', { id: 'mutation', mode: 'explore' }));
-    const btn = gui.add({ mutate: () => controls.app.mutate() }, 'mutate').name('Mutate');
+    const btn = gui.add({ mutate: () => controls.keepPort.mutate() }, 'mutate').name('Mutate');
     btn.domElement.classList.add('gl-accent');
-    gui.add({ undo: () => controls.app.undo() }, 'undo').name('Undo (⌘Z)');
-    gui.add({ redo: () => controls.app.redo() }, 'redo').name('Redo (⇧⌘Z)');
-    gui.add(controls.app.document, 'seed', 0, 999999, 1)
+    gui.add({ undo: () => controls.keepPort.undo() }, 'undo').name('Undo (⌘Z)');
+    gui.add({ redo: () => controls.keepPort.redo() }, 'redo').name('Redo (⇧⌘Z)');
+    gui.add(controls.keepPort.document, 'seed', 0, 999999, 1)
       .name('Seed')
-      .onChange((v) => controls.app.setSeed(v))
+      .onChange((v) => controls.keepPort.setSeed(v))
       .listen();
-    gui.add({ reroll: () => controls.app.rerollSeed() }, 'reroll').name('Reroll Seed');
+    gui.add({ reroll: () => controls.keepPort.rerollSeed() }, 'reroll').name('Reroll Seed');
 }
 
 export function buildAnalysisSection(controls) {
@@ -676,16 +676,16 @@ export function buildNotebookSection(controls) {
 
 export function buildAdvisorSection(controls) {
     const body = controls.section('Advisor', { id: 'advisor', mode: 'explore' });
-    if (controls.app.activeLayerIsInstance()) {
+    if (controls.keepPort.activeLayerIsInstance()) {
       body.appendChild(controls.panelHint('Select a generator layer to use the advisor.'));
       return;
     }
-    controls.advisorPanel = new AdvisorPanel(controls.app, { render: controls.render });
+    controls.advisorPanel = new AdvisorPanel(controls.advisorPort, { render: controls.render });
     body.appendChild(controls.advisorPanel.el);
 }
 
 export function buildExploreSection(controls) {
-    if (controls.app.activeLayerIsInstance()) {
+    if (controls.keepPort.activeLayerIsInstance()) {
       const body = controls.section('Explore', { id: 'explore', mode: 'explore' });
       body.appendChild(controls.panelHint('Select a generator layer to use controls tool. Instance layers are read-only.'));
       return;
@@ -696,7 +696,7 @@ export function buildExploreSection(controls) {
 }
 
 export function buildEvolutionSection(controls) {
-    if (controls.app.activeLayerIsInstance()) {
+    if (controls.keepPort.activeLayerIsInstance()) {
       const body = controls.section('Evolution', { id: 'evolution', mode: 'explore' });
       body.appendChild(controls.panelHint('Select a generator layer to use controls tool. Instance layers are read-only.'));
       return;
@@ -780,7 +780,7 @@ export function buildExportSection(controls) {
       'Vector, raster and document export. Manufacturing export lives in Make.',
     ));
     const gui = controls.makeGui(body);
-    const ex = controls.app.exporter;
+    const ex = controls.keepPort.exporter;
     gui.add({ svg: () => ex.exportSVG() }, 'svg').name('Export SVG');
     gui.add({ plotter: () => ex.exportPlotterSVG() }, 'plotter').name('Export Plotter SVG');
     gui.add({ png: () => ex.exportPNG() }, 'png').name('Export PNG');
@@ -788,8 +788,8 @@ export function buildExportSection(controls) {
     gui.add({
       copy: async () => {
         const ok = await ex.copyJSON();
-        if (!ok) controls.app.notify?.('Clipboard unavailable — use Export JSON', 'error');
-        else controls.app.notify?.('Document copied to clipboard');
+        if (!ok) controls.keepPort.notify?.('Clipboard unavailable — use Export JSON', 'error');
+        else controls.keepPort.notify?.('Document copied to clipboard');
       },
     }, 'copy').name('Copy JSON');
 }

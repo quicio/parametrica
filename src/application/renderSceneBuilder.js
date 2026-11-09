@@ -27,7 +27,7 @@ import {
 import { isMesh } from '../geometry/contracts.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { sanitizeReference } from '../view/spatialReference.js';
-import { createRenderLayer, createRenderScene } from '../render/scene.js';
+import { createRenderLayer, createRenderScene } from '../domain/scene.js';
 
 const SCENE_CACHE = new WeakMap();
 const PREVIEW_IDS = new WeakMap();
