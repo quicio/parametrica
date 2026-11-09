@@ -34,7 +34,7 @@ export async function runFabricationJob(
       ? 'sdf'
       : 'preparing';
   onProgress({ phase, value: 0.15 });
-  const report = buildFabricationReport(input as Parameters<typeof buildFabricationReport>[0]) as Record<string, unknown>;
+  const report = buildFabricationReport(input as Parameters<typeof buildFabricationReport>[0]) as unknown as Record<string, unknown>;
   onProgress({ phase: 'done', value: 1 });
   return report;
 }

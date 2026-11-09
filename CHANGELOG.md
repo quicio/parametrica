@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.18] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the fabrication source resolver and report builder.
+- Typed candidates, grouped recipes, lattice/perforation paths and reports.
+
+### Changed
+
+- `application/fabricationSource.js` remains a compatibility re-export.
+- No fabrication selection, report or output behavior changed.
+
 ## [0.2.17] - 2026-11-09
 
 ### Added

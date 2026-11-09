@@ -24,7 +24,7 @@ import {
   formatPhysicalLength,
   millimetresPerUnit,
 } from '../domain/units.ts';
-import { buildFabricationReport } from '../application/fabricationSource.js';
+import { buildFabricationReport } from '../application/fabricationSource.ts';
 import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.js';
 import { manifoldSimplify } from '../geometry/manifoldEngine.js';
 import { buildLayersSection, buildInstanceSection, buildGeneratorSection, buildParamsSection, buildEquationsSection, buildHarmonicsSection, buildOperatorsSection } from './sections/formSections.js';

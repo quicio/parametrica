@@ -16,7 +16,7 @@ import { SvgContext } from './svgContext.js';
 import { artboardToMillimetres, millimetresPerUnit } from '../domain/units.ts';
 import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
 import { export3MF, THREE_MF_MIME_TYPE } from './3mf.js';
-import { buildFabricationReport } from '../application/fabricationSource.js';
+import { buildFabricationReport } from '../application/fabricationSource.ts';
 import { resolvePassStyle } from '../domain/passStyle.ts';
 import { traceFillGroups, withoutTraceFill } from '../render/traceFill.js';
 

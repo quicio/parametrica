@@ -50,7 +50,7 @@ export class FabricationJobs {
     onProgress = () => {},
     onResult = () => {},
     onError = () => {},
-    syncRunner = (input: unknown) => buildFabricationReport(input as Parameters<typeof buildFabricationReport>[0]) as FabricationReportLike,
+    syncRunner = (input: unknown) => buildFabricationReport(input as Parameters<typeof buildFabricationReport>[0]) as unknown as FabricationReportLike,
     debounceMs = 180,
     useWorker = typeof Worker !== 'undefined',
     workerFactory = null,
