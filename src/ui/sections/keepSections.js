@@ -640,7 +640,7 @@ export function buildAnimationSection(controls) {
 
 export function buildTimelineSection(controls) {
     const body = controls.section('Timeline', { id: 'timeline', mode: 'perform' });
-    controls.timelinePanel = new TimelinePanel(controls.app);
+    controls.timelinePanel = new TimelinePanel(controls.app, { render: controls.render });
     body.appendChild(controls.timelinePanel.el);
 }
 
@@ -670,7 +670,7 @@ export function buildAnalysisSection(controls) {
 
 export function buildNotebookSection(controls) {
     const body = controls.section('Notebook', { id: 'notebook', mode: 'keep' });
-    controls.notebookPanel = new NotebookPanel(controls.app);
+    controls.notebookPanel = new NotebookPanel(controls.notebookPort);
     body.appendChild(controls.notebookPanel.el);
 }
 
@@ -680,7 +680,7 @@ export function buildAdvisorSection(controls) {
       body.appendChild(controls.panelHint('Select a generator layer to use the advisor.'));
       return;
     }
-    controls.advisorPanel = new AdvisorPanel(controls.app);
+    controls.advisorPanel = new AdvisorPanel(controls.app, { render: controls.render });
     body.appendChild(controls.advisorPanel.el);
 }
 

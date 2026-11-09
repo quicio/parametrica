@@ -480,12 +480,12 @@ export function buildCoordinatesSection(controls) {
     pinRow.append(pinButton, releaseButton, pinStatus);
 
     pinButton.addEventListener('click', () => {
-      const readout = controls.app.renderer?.currentCoordinateReadout?.() ?? null;
+      const readout = controls.render?.currentCoordinateReadout?.() ?? null;
       if (!readout) {
         controls.app.notify('Move over a surface to pin a coordinate', 'error');
         return;
       }
-      if (!controls.app.renderer?.setCoordinatePin?.(readout)) {
+      if (!controls.render?.setCoordinatePin?.(readout)) {
         controls.app.notify('Coordinate could not be pinned', 'error');
         return;
       }
@@ -493,7 +493,7 @@ export function buildCoordinatesSection(controls) {
       controls.refreshCoordinatePin();
     });
     releaseButton.addEventListener('click', () => {
-      controls.app.renderer?.clearCoordinatePin?.();
+      controls.render?.clearCoordinatePin?.();
       controls.app.rebuild();
       controls.refreshCoordinatePin();
     });

@@ -9,8 +9,9 @@ import { validatePickResult } from '../interaction/surfacePicker.js';
 const STORAGE_KEY = 'parametrica.surfaceInspector.v1';
 
 export class SurfaceInspector {
-  constructor(container, app) {
+  constructor(container, app, render = null) {
     this.app = app;
+    this.render = render ?? app.renderer;
     this.enabled = loadEnabled();
     this.lastPoint = null;
     this.hovering = false;
@@ -259,7 +260,7 @@ export class SurfaceInspector {
   }
 
   isQuadActive() {
-    const active = this.app.renderer?.quadActive;
+    const active = this.render?.quadActive;
     return active === undefined
       ? this.app.document.view.layout === 'quad'
       : Boolean(active);

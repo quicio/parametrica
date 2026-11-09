@@ -8,6 +8,8 @@
 
 import { App } from '../application/App.js';
 import { createFabricationPort } from './createFabricationPort.js';
+import { createNotebookPort } from './createNotebookPort.js';
+import { createRenderPort } from './createRenderPort.js';
 import { createUiPort } from './createUiPort.js';
 import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
 import { SessionStore } from '../core/session.js';
@@ -81,12 +83,14 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
   const adapters = {
     createParametricOverlay: (app) => new ParametricOverlay(canvasContainer, app),
     createUVDomainInset: (app) => new UVDomainInset(canvasContainer, app),
-    createSurfaceInspector: (app) => new SurfaceInspector(canvasContainer, app),
+    createSurfaceInspector: (app) => new SurfaceInspector(canvasContainer, app, createRenderPort(app)),
     createSeamLegend: (app) => new SeamLegend(canvasContainer, app),
     createRenderer: (app) => new P5Adapter(canvasContainer, app),
     createExporter: (app) => new Exporter(createExportPort(app)),
     createControls: (app) => new Controls(createUiPort(app), uiContainer, {
       fabrication: createFabricationPort(app),
+      render: createRenderPort(app),
+      notebook: createNotebookPort(app),
     }),
     createStartWithOverlay: (app, options) => new StartWithOverlay(app, options),
   };

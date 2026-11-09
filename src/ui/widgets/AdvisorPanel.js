@@ -19,8 +19,9 @@ const SETTINGS_KEY = 'parametrica.ai.settings';
 const AUTO_DELAY = 700;
 
 export class AdvisorPanel {
-  constructor(app) {
+  constructor(app, { render = null } = {}) {
     this.app = app;
+    this.renderPort = render ?? app.renderer;
     this.response = null;
     this.previousId = '';
     this.analyzing = false;
@@ -290,7 +291,7 @@ export class AdvisorPanel {
         : [];
       const provider = this.provider();
       const image = this.imageToggle.input.checked && provider.id !== 'offline'
-        ? this.app.renderer?.thumbnailDataURL?.(160, 30_000) ?? null
+        ? this.renderPort?.thumbnailDataURL?.(160, 30_000) ?? null
         : null;
       this.response = await runAdvisor(provider, {
         current,

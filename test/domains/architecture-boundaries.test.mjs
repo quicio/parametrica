@@ -9,6 +9,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { UI_SURFACE } from '../../src/composition/createUiPort.js';
 import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.js';
+import { NOTEBOOK_PORT } from '../../src/composition/createNotebookPort.js';
+import { RENDER_PORT } from '../../src/composition/createRenderPort.js';
 import { join, relative } from 'node:path';
 
 const root = new URL('../../', import.meta.url).pathname;
@@ -110,6 +112,23 @@ export async function run(assert) {
       `Fabricate port member ${name} is the documented surface`);
   }
   assert(read('src/composition/createApp.js').includes('createFabricationPort'), 'composition passes the fabrication port');
+
+  for (const file of ['src/ui/widgets/TimelinePanel.js', 'src/ui/widgets/AdvisorPanel.js', 'src/ui/SurfaceInspector.js', 'src/ui/sections/lookSections.js']) {
+    const source = read(file);
+    assert(!source.includes('this.app.renderer'), `${file} uses the render port`);
+    assert(!source.includes('controls.app.renderer'), `${file} does not use controls.app.renderer`);
+  }
+  for (const name of RENDER_PORT) {
+    assert(read('src/composition/createRenderPort.js').includes(name), `render port documents ${name}`);
+  }
+
+  const notebookPanel = read('src/ui/widgets/NotebookPanel.js');
+  for (const match of notebookPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+    assert(NOTEBOOK_PORT.includes(match[1]), `notebook port exposes app.${match[1]}`);
+  }
+  assert(read('src/composition/createApp.js').includes('createNotebookPort'), 'composition passes the notebook port');
+  assert(read('src/composition/createApp.js').includes('createRenderPort'), 'composition passes the render port');
+  assert(!notebookPanel.includes('controls.app.'), 'Notebook panel uses the notebook port');
 
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');

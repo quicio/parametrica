@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.9] - 2026-11-09
+
+### Added
+
+- `RENDER_PORT` and `createRenderPort` for frame, coordinate-pin, thumbnail and
+  quad-layout access.
+- `NOTEBOOK_PORT` and `createNotebookPort` for the Notebook panel.
+- Boundary checks for renderer panels and every NotebookPanel application use.
+
+### Changed
+
+- Timeline, Advisor, Look coordinates and Surface Inspector use the render port.
+- NotebookPanel uses the notebook port.
+- No panel behavior or output changed.
+
 ## [0.2.8] - 2026-11-09
 
 ### Added

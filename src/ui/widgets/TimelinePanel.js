@@ -18,8 +18,9 @@ import { numericParameterRefs, pathForRef } from '../../lab/parameters.js';
 import { zipStore } from '../../export/zip.js';
 
 export class TimelinePanel {
-  constructor(app) {
+  constructor(app, { render = null } = {}) {
     this.app = app;
+    this.render = render ?? app.renderer;
     this.refs = numericParameterRefs(app.document);
     this.selectedTrack = null;
     this.recording = false;
@@ -315,7 +316,7 @@ export class TimelinePanel {
     const fps = Number(this.fpsInput?.value) || 24;
     const duration = this.timeline.duration;
     const times = frameTimes(duration, fps);
-    if (!this.app.renderer?.artboardDataURL) {
+    if (!this.render?.artboardDataURL) {
       this.setStatus('Renderer is not ready', true);
       return;
     }
@@ -328,8 +329,8 @@ export class TimelinePanel {
       const manifestFrames = [];
       times.forEach((time, index) => {
         this.app.setTime(time);
-        this.app.renderer.renderNow();
-        const url = this.app.renderer.artboardDataURL();
+        this.render.renderNow();
+        const url = this.render.artboardDataURL();
         if (!url) throw new Error(`frame ${index} could not be captured`);
         const name = `frame-${String(index).padStart(3, '0')}.png`;
         files.push({ name, data: dataUrlBytes(url) });

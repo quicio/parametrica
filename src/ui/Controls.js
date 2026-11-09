@@ -77,6 +77,8 @@ export class Controls {
   constructor(app, container, ports = {}) {
     this.app = app;
     this.fabrication = ports.fabrication ?? app;
+    this.render = ports.render ?? app.renderer;
+    this.notebookPort = ports.notebook ?? app;
     this.container = container;
     this.fabricationReport = null;
     this.fabricationInput = null;
@@ -652,7 +654,7 @@ export class Controls {
 
   refreshCoordinatePin() {
     if (!this.coordinatePinStatus) return;
-    const pin = this.app.renderer?.coordinatePinReadout?.() ?? null;
+    const pin = this.render?.coordinatePinReadout?.() ?? null;
     this.coordinatePinStatus.textContent = pin ? `Pinned · ${pin.text}` : 'No pinned coordinate';
     if (this.coordinatePinRelease) this.coordinatePinRelease.disabled = !pin;
     if (this.coordinatePinButton) {
