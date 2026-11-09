@@ -10,7 +10,7 @@ import { APP_ID } from '../core/document.js';
 import { RenderPasses } from '../core/registry.js';
 import { analyzeAll } from '../analysis/differential.js';
 import { bboxAll } from '../sampling/sampling.js';
-import { buildRenderScene } from '../application/renderSceneBuilder.js';
+import { buildRenderScene } from '../application/renderSceneBuilder.ts';
 import { drawOverlays } from '../viz/overlays.js';
 import { SvgContext } from './svgContext.js';
 import { artboardToMillimetres, millimetresPerUnit } from '../domain/units.ts';

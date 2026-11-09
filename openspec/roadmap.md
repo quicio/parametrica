@@ -892,7 +892,7 @@ A slice can start only when:
 | 0 | `tsconfig`, `tsx`, `typecheck` and declaration foundation | done (0.2.3) |
 | A | Extract domain boundaries and ports without behavior change | done through 0.2.12 |
 | B | Split composition root and adapters; thin UI | done through 0.2.12 |
-| C | Convert domain, then application, then adapters to TypeScript | domain 100% TS (0.2.15); application transport/jobs (0.2.16) |
+| C | Convert domain, then application, then adapters to TypeScript | domain 100% TS (0.2.15); app transport/jobs (0.2.16); scene builder (0.2.17) |
 | D | Empty dependency baseline; `allowJs: false`; strict gates | proposed |
 
 ADRs: `0004-clean-architecture-boundaries.md`, `0005-incremental-typescript.md`,

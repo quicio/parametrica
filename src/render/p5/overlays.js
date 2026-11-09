@@ -7,7 +7,7 @@
  */
 
 import { analyzeAll } from '../../analysis/differential.js';
-import { buildRenderScene } from '../../application/renderSceneBuilder.js';
+import { buildRenderScene } from '../../application/renderSceneBuilder.ts';
 import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.js';
 import { buildSeamOverlay } from '../../interaction/seamOverlay.js';
 import { clamp } from '../../view/cameraController.js';

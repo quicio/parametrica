@@ -29,7 +29,7 @@ import { computeSensitivity } from '../lab/sensitivity.js';
 import { applySuggestionToDocument } from '../ai/offline.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
 import { MIN_CAMERA_FOV } from '../view/cameraController.js';
-import { buildRenderScene } from './renderSceneBuilder.js';
+import { buildRenderScene } from './renderSceneBuilder.ts';
 import { artboardPointFromCanvas } from '../domain/interaction/ray.ts';
 import { pickSurface } from '../domain/interaction/surfacePicker.ts';
 import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../domain/lookPresets.ts';

@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.17] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the application render scene builder.
+- Typed evaluation, document, view, preview, groups and layer results.
+
+### Changed
+
+- `application/renderSceneBuilder.js` remains a compatibility re-export.
+- No framing, projection, preview or cache behavior changed.
+
 ## [0.2.16] - 2026-11-09
 
 ### Added
