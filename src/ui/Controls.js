@@ -79,6 +79,8 @@ export class Controls {
     this.fabrication = ports.fabrication ?? app;
     this.render = ports.render ?? app.renderer;
     this.notebookPort = ports.notebook ?? app;
+    this.presetPort = ports.preset ?? app;
+    this.labPort = ports.lab ?? app;
     this.container = container;
     this.fabricationReport = null;
     this.fabricationInput = null;

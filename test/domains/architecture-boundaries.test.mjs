@@ -10,6 +10,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { UI_SURFACE } from '../../src/composition/createUiPort.js';
 import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.js';
 import { NOTEBOOK_PORT } from '../../src/composition/createNotebookPort.js';
+import { LAB_PORT } from '../../src/composition/createLabPort.js';
+import { PRESET_PORT } from '../../src/composition/createPresetPort.js';
 import { RENDER_PORT } from '../../src/composition/createRenderPort.js';
 import { join, relative } from 'node:path';
 
@@ -129,6 +131,23 @@ export async function run(assert) {
   assert(read('src/composition/createApp.js').includes('createNotebookPort'), 'composition passes the notebook port');
   assert(read('src/composition/createApp.js').includes('createRenderPort'), 'composition passes the render port');
   assert(!notebookPanel.includes('controls.app.'), 'Notebook panel uses the notebook port');
+
+  const presetPanel = read('src/ui/widgets/PresetPanel.js');
+  for (const match of presetPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+    assert(PRESET_PORT.includes(match[1]), `preset port exposes app.${match[1]}`);
+  }
+  assert(read('src/composition/createApp.js').includes('createPresetPort'), 'composition passes the preset port');
+  assert(read('src/ui/sections/keepSections.js').includes('new PresetPanel(controls.presetPort'), 'preset panel uses the preset port');
+
+  for (const file of ['src/ui/widgets/LabPanel.js', 'src/ui/widgets/ExplorePanel.js', 'src/ui/widgets/EvolutionPanel.js']) {
+    for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+      assert(LAB_PORT.includes(match[1]), `lab port exposes app.${match[1]} for ${file}`);
+    }
+  }
+  assert(read('src/composition/createApp.js').includes('createLabPort'), 'composition passes the lab port');
+  assert(read('src/ui/sections/keepSections.js').includes('new LabPanel(controls.labPort'), 'analysis uses the lab port');
+  assert(read('src/ui/sections/keepSections.js').includes('new ExplorePanel(controls.labPort'), 'explore uses the lab port');
+  assert(read('src/ui/sections/keepSections.js').includes('new EvolutionPanel(controls.labPort'), 'evolution uses the lab port');
 
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');

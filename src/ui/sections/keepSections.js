@@ -664,7 +664,7 @@ export function buildMutationSection(controls) {
 
 export function buildAnalysisSection(controls) {
     const body = controls.section('Analysis', { id: 'analysis', mode: 'explore' });
-    controls.labPanel = new LabPanel(controls.app);
+    controls.labPanel = new LabPanel(controls.labPort);
     body.appendChild(controls.labPanel.el);
 }
 
@@ -691,7 +691,7 @@ export function buildExploreSection(controls) {
       return;
     }
     const body = controls.section('Explore', { id: 'explore', mode: 'explore' });
-    controls.explorePanel = new ExplorePanel(controls.app);
+    controls.explorePanel = new ExplorePanel(controls.labPort);
     body.appendChild(controls.explorePanel.el);
 }
 
@@ -702,7 +702,7 @@ export function buildEvolutionSection(controls) {
       return;
     }
     const body = controls.section('Evolution', { id: 'evolution', mode: 'explore' });
-    controls.evolutionPanel = new EvolutionPanel(controls.app);
+    controls.evolutionPanel = new EvolutionPanel(controls.labPort);
     body.appendChild(controls.evolutionPanel.el);
 }
 
@@ -714,7 +714,7 @@ export function buildPresetsSection(controls) {
     controls.presetPanel?.destroy?.();
     body.replaceChildren();
 
-    controls.presetPanel = new PresetPanel(controls.app, controls.presetFilter);
+    controls.presetPanel = new PresetPanel(controls.presetPort, controls.presetFilter);
     body.append(controls.presetPanel.el);
     if (controls.sectionEls.get('presets')?.header.getAttribute('aria-expanded') === 'true') {
       requestAnimationFrame(() => controls.presetPanel?.resume?.());
@@ -727,9 +727,9 @@ export function buildPresetsSection(controls) {
 
     controls.presetsGui = controls.makeGui(body);
 
-    const names = controls.app.presets.names();
-    if (names.includes(controls.app.document.name)) {
-      controls.presetState.selected = controls.app.document.name;
+    const names = controls.presetPort.presets.names();
+    if (names.includes(controls.presetPort.document.name)) {
+      controls.presetState.selected = controls.presetPort.document.name;
     } else if (!controls.presetState.selected && names.length) {
       controls.presetState.selected = names[0];
     }
@@ -738,10 +738,10 @@ export function buildPresetsSection(controls) {
     controls.presetsGui.add({
       save: () => {
         try {
-          const name = controls.app.presets.save(controls.presetState.name, controls.app.document);
-          if (controls.app.presets.lastError) {
-            controls.app.notify?.(
-              `Preset saved in memory; storage failed: ${controls.app.presets.lastError}`,
+          const name = controls.presetPort.presets.save(controls.presetState.name, controls.presetPort.document);
+          if (controls.presetPort.presets.lastError) {
+            controls.presetPort.notify?.(
+              `Preset saved in memory; storage failed: ${controls.presetPort.presets.lastError}`,
               'error',
             );
           }
@@ -750,28 +750,28 @@ export function buildPresetsSection(controls) {
           controls.rebuildPresetsSection();
           controls.sync();
         } catch (err) {
-          controls.app.notify?.(`Preset save failed: ${err.message}`, 'error');
+          controls.presetPort.notify?.(`Preset save failed: ${err.message}`, 'error');
         }
       },
     }, 'save').name('Save Preset');
     controls.presetsGui.add({
       remove: () => {
-        if (controls.app.presets.delete(controls.presetState.selected)) {
-          if (controls.app.presets.lastError) {
-            controls.app.notify?.(
-              `Preset removed in memory; storage failed: ${controls.app.presets.lastError}`,
+        if (controls.presetPort.presets.delete(controls.presetState.selected)) {
+          if (controls.presetPort.presets.lastError) {
+            controls.presetPort.notify?.(
+              `Preset removed in memory; storage failed: ${controls.presetPort.presets.lastError}`,
               'error',
             );
           }
           controls.presetState.selected = '';
           controls.rebuildPresetsSection();
           controls.presetPanel?.focusFilter?.();
-        } else if (controls.app.presets.isBuiltIn(controls.presetState.selected)) {
-          controls.app.notify?.('Built-in presets cannot be deleted', 'error');
+        } else if (controls.presetPort.presets.isBuiltIn(controls.presetState.selected)) {
+          controls.presetPort.notify?.('Built-in presets cannot be deleted', 'error');
         }
       },
     }, 'remove').name('Delete Preset');
-    controls.presetsGui.add({ importJSON: () => controls.app.openImportDialog() }, 'importJSON').name('Import JSON…');
+    controls.presetsGui.add({ importJSON: () => controls.presetPort.openImportDialog() }, 'importJSON').name('Import JSON…');
 }
 
 export function buildExportSection(controls) {

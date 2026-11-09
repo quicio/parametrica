@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.10] - 2026-11-09
+
+### Added
+
+- `PRESET_PORT` and `createPresetPort` for the preset browser and save/delete
+  controls.
+- `LAB_PORT` and `createLabPort` for Analysis, Explore and Evolution.
+- Dynamic boundary checks for every `app.*` use in those panels.
+
+### Changed
+
+- PresetPanel, LabPanel, ExplorePanel and EvolutionPanel receive narrow ports.
+- No panel behavior or output changed.
+
 ## [0.2.9] - 2026-11-09
 
 ### Added

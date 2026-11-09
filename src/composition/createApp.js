@@ -8,7 +8,9 @@
 
 import { App } from '../application/App.js';
 import { createFabricationPort } from './createFabricationPort.js';
+import { createLabPort } from './createLabPort.js';
 import { createNotebookPort } from './createNotebookPort.js';
+import { createPresetPort } from './createPresetPort.js';
 import { createRenderPort } from './createRenderPort.js';
 import { createUiPort } from './createUiPort.js';
 import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
@@ -91,6 +93,8 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
       fabrication: createFabricationPort(app),
       render: createRenderPort(app),
       notebook: createNotebookPort(app),
+      preset: createPresetPort(app),
+      lab: createLabPort(app),
     }),
     createStartWithOverlay: (app, options) => new StartWithOverlay(app, options),
   };
