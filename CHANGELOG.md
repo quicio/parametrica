@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.16] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for animation transport, the fabrication job runner and the
+  fabrication jobs controller.
+- Typed worker messages, progress, reports and runner callbacks.
+
+### Changed
+
+- Old application `.js` paths remain compatibility re-exports.
+- No worker timing, animation or report behavior changed.
+
 ## [0.2.15] - 2026-11-09
 
 ### Added
