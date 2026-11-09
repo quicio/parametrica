@@ -12,7 +12,7 @@ geometry: it sits closer to *Desmos*, *GeoGebra*, *Processing* or
 *Shadertoy* than to *Illustrator*. No pen tool, no anchor editing —
 mathematics is the only authoring surface.
 
-[**Live demo**](#running-it) · [**SPEC.md**](./SPEC.md) (architecture & rationale) · [**Architecture diagram**](#architecture)
+[**Live demo**](https://quicio.github.io/parametrica/) · [**SPEC.md**](./SPEC.md) (architecture & rationale) · [**Architecture diagram**](#architecture)
 
 ![hero placeholder](https://placehold.co/1200x600/000000/e30613/png?text=Parametrica)
 
@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2685 checks)
+npm test             # node-only verification suite (2222 checks)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (152 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (167 tests, starts Vite automatically)
 npm run build        # production bundle in dist/
 ```
 
@@ -73,6 +73,21 @@ leaving your machine.
    Distance is the only raster-only omission; use PNG when it is active.
 
 ---
+
+## GitHub Pages
+
+The live demo is built from `main` by `.github/workflows/pages.yml` and served
+from GitHub Pages:
+
+**https://quicio.github.io/parametrica/**
+
+The workflow runs `npm ci` and `npm run build`, uploads `dist/` and deploys it
+with the official Pages actions. `vite.config.js` uses a relative `base`, so
+the same bundle works at the root or under the `/parametrica/` project path.
+`public/.nojekyll` keeps the static assets untouched.
+
+To enable it in a fork: **Settings → Pages → Build and deployment → Source:
+GitHub Actions**, then push to `main` or run the workflow manually.
 
 ## Architecture
 
@@ -212,7 +227,7 @@ offline and optional LLM advisors, image contour tracing, evolution, helix
 projections, session recovery, panel modes, parametric surfaces, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (152 tests) against a Vite server
+`npm run test:e2e` runs the Playwright suite (167 tests) against a Vite server
 started by Playwright itself.
 
 ### Linting
