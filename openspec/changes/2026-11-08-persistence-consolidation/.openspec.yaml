@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-08
+goal: Decide and specify one persistence model for session, notebook and user presets, with migration and no duplicate document truth.

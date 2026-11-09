@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-08
+goal: Define even-odd filling and contour nesting so image-derived holes and filled regions render and export correctly.

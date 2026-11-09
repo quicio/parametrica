@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-08
+goal: Turn the PBR preview from a working slice into measured, lazy-loaded and gated evidence without adding a second source of geometry.

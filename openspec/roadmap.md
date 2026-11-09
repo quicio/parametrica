@@ -574,6 +574,20 @@ labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
 Wall thickness remains correctly `unavailable` until a real estimator exists;
 external slicer verification remains a manual record.
 
+### Post-lattice backlog (specified)
+
+The lattice program is archived. The next bounded slices are specified but not
+all implemented:
+
+| Change | Scope | Status |
+|---|---|---|
+| `2026-11-08-ui-hardening` | 200% zoom, responsive, keyboard, reduced motion | implemented core; manual accessibility pending |
+| `2026-11-08-preview-performance` | PBR benchmarks, lazy guard, visual evidence | implemented evidence; hardware benchmark pending |
+| `2026-11-08-surface-performance` | dense picking/seams/playback benchmark | benchmark implemented; degradation pending |
+| `2026-11-08-image-evenodd` | even-odd fill and contour nesting | specified |
+| `2026-11-08-quad-svg-export` | Quad layout in SVG/plotter | specified |
+| `2026-11-08-persistence-consolidation` | session/notebook/preset storage model | decision pending |
+
 ## 5.1 Specification status
 
 | Slice | OpenSpec change | Status |
