@@ -84,6 +84,10 @@ export class ProductPreview {
     this.ssao = null;
     this.useAo = false;
     this.aoSize = { w: 1, h: 1 };
+    this.frameTimes = [];
+    this.qualityOverride = null;
+    this.lastQuality = null;
+    this.degraded = false;
 
     this.onPointerDown = (event) => this.handlePointerDown(event);
     this.onPointerMove = (event) => this.handlePointerMove(event);
@@ -235,7 +239,13 @@ export class ProductPreview {
   syncMaterial(spec) {
     const material = MATERIALS[spec?.material] ?? MATERIALS.ceramic;
     this.materialSpec = spec ?? { ...material, material: 'ceramic' };
-    const quality = QUALITY[spec?.quality] ?? QUALITY.standard;
+    if (spec?.quality !== this.lastQuality) {
+      this.lastQuality = spec?.quality;
+      this.qualityOverride = null;
+      this.degraded = false;
+      this.frameTimes = [];
+    }
+    const quality = QUALITY[this.qualityOverride ?? spec?.quality] ?? QUALITY.standard;
     this.material.color.set(material.color);
     this.material.roughness = material.roughness;
     this.material.metalness = material.metalness;
@@ -361,8 +371,26 @@ export class ProductPreview {
     this.pendingFrame = requestAnimationFrame(() => {
       this.pendingFrame = 0;
       if (!this.active || !this.ready) return;
+      const started = performance.now();
       this.renderFrame();
+      this.trackFrame(performance.now() - started);
     });
+  }
+
+  trackFrame(elapsed) {
+    if (!Number.isFinite(elapsed) || elapsed < 0 || this.degraded) return;
+    this.frameTimes.push(elapsed);
+    if (this.frameTimes.length > 20) this.frameTimes.shift();
+    if (this.frameTimes.length < 12) return;
+    const average = this.frameTimes.reduce((sum, value) => sum + value, 0) / this.frameTimes.length;
+    if (average <= 45) return;
+    this.degraded = true;
+    this.qualityOverride = 'draft';
+    this.lastQuality = 'draft';
+    this.frameTimes = [];
+    this.syncMaterial({ ...(this.materialSpec ?? {}), quality: 'draft' });
+    this.resize();
+    this.app.notify?.('Product preview reduced to draft detail to keep interaction responsive.', 'info');
   }
 
   renderFrame() {

@@ -76,6 +76,9 @@ export class P5Adapter extends Renderer {
     this.captureContext = null;
     this.lastScene = null;
     this.quadActive = false;
+    this.frameSamples = [];
+    this.overlayDegraded = false;
+    this.performanceWarned = false;
     this._seamOverlays = new WeakMap();
     this._coordinatePointer = null;
     this._lastCoordinatePointer = null;
@@ -361,6 +364,7 @@ export class P5Adapter extends Renderer {
   }
 
   drawFrame(p) {
+    const frameStarted = performance.now();
     const { app } = this;
     const doc = app.document;
 
@@ -439,8 +443,11 @@ export class P5Adapter extends Renderer {
           combinedAnalysis: needsAnalysis(doc.view) ? evaluation.analysis : undefined,
         });
         if (!this.captureMode) {
-          this.drawSeamOverlay(p, scene, rect);
-          this.drawInspectionOverlay(p, scene, rect);
+          const degradeOverlays = this.overlayDegraded && doc.animation.playing;
+          if (!degradeOverlays) {
+            this.drawSeamOverlay(p, scene, rect);
+            this.drawInspectionOverlay(p, scene, rect);
+          }
           const cursor = this.coordinatePointerArtboardPoint();
           let cursorWorld = null;
           if (cursor && scene && doc.view.coordinates?.cursor) {
@@ -467,6 +474,30 @@ export class P5Adapter extends Renderer {
     }
 
     p.pop();
+    this.trackFrame(frameStarted, doc);
+  }
+
+  trackFrame(started, doc) {
+    if (this.captureMode) return;
+    if (!doc.animation?.playing) {
+      this.frameSamples = [];
+      this.overlayDegraded = false;
+      this.performanceWarned = false;
+      return;
+    }
+    const elapsed = performance.now() - started;
+    if (!Number.isFinite(elapsed) || elapsed < 0) return;
+    this.frameSamples.push(elapsed);
+    if (this.frameSamples.length > 20) this.frameSamples.shift();
+    if (this.frameSamples.length < 12) return;
+    const average = this.frameSamples.reduce((sum, value) => sum + value, 0) / this.frameSamples.length;
+    if (average > 33) {
+      this.overlayDegraded = true;
+      if (!this.performanceWarned) {
+        this.performanceWarned = true;
+        this.app.notify?.('Dense scene: seam and inspection overlays paused during playback.', 'info');
+      }
+    }
   }
 
   drawSceneContent(p, scene, {

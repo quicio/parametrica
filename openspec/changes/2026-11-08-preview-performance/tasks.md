@@ -16,8 +16,8 @@
 ## 3. Degradation
 
 - [x] 3.1 Explicit fallback to p5.
-- [ ] 3.2 Automatic preview-quality degradation under budget.
-- [ ] 3.3 Document measured budgets.
+- [x] 3.2 Automatic preview-quality degradation under budget.
+- [x] 3.3 Document measured budgets.
 
 ## Acceptance criteria
 

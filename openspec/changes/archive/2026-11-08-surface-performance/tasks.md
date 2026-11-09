@@ -9,7 +9,7 @@
 ## 2. Guardrails
 
 - [x] 2.1 Define provisional budgets.
-- [ ] 2.2 Add degradation/reporting.
+- [x] 2.2 Add degradation/reporting.
 - [x] 2.3 Add regression notes.
 
 ## Acceptance criteria

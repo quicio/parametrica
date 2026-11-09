@@ -29,6 +29,7 @@ import { run as fabricatePresets } from './fabricate-presets.test.mjs';
 import { run as fabricationPreview } from './fabrication-preview.test.mjs';
 import { run as exportIntegrity } from './export-integrity.test.mjs';
 import { run as manufacturingProfile } from './manufacturing-profile.test.mjs';
+import { run as quadSvgExport } from './quad-svg-export.test.mjs';
 
 let failures = 0;
 let checks = 0;
@@ -65,6 +66,7 @@ await fabricatePresets(assert);
 await fabricationPreview(assert);
 await exportIntegrity(assert);
 await manufacturingProfile(assert);
+await quadSvgExport(assert);
 
 console.log(`\n${checks - failures}/${checks} domain checks passed`);
 process.exit(failures ? 1 : 0);

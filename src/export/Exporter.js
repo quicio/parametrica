@@ -38,7 +38,6 @@ export function unsupportedSvgFeatures(view = {}, layers = null) {
   const features = [];
   // Vector passes are recorded through the same draw code as the canvas.
   // Signed Distance is raster-only, so it remains an explicit omission.
-  if (view?.layout === 'quad') features.push('Quad view layout (canvas-only)');
   if (modes.has('signed-distance')) features.push('Signed Distance (raster-only)');
   // Blend is represented with CSS mix-blend-mode. It is supported by
   // browsers, but not by every SVG consumer.
@@ -111,7 +110,7 @@ export class Exporter {
           omitted?.('Signed Distance (raster-only)');
           continue;
         }
-        const ctx = new SvgContext(width, height, `svg-${index}-${mode}`);
+        const ctx = new SvgContext(width, height, `${options.prefix ?? 'svg'}-${index}-${mode}`);
         try {
           const passView = {
             ...layerData.view,
@@ -175,6 +174,7 @@ export class Exporter {
     const artboard = doc.view.artboard;
     const w = artboard?.width ?? this.app.renderer.size().w;
     const h = artboard?.height ?? this.app.renderer.size().h;
+    if (doc.view.layout === 'quad') return this.buildQuadSVGFromCurrent();
     const scene = buildRenderScene({
       evaluation: this.app.evaluation,
       document: doc,
@@ -187,6 +187,107 @@ export class Exporter {
       time: doc.animation.time,
       onUnsupported: (name) => omitted.add(name),
     });
+    return { svg, omitted: [...omitted] };
+  }
+
+  buildQuadSVGFromCurrent() {
+    return this.buildQuadExport((view, projection, prefix, onUnsupported) => {
+      const scene = buildRenderScene({
+        evaluation: this.app.evaluation,
+        document: this.app.document,
+        view,
+        projectionOverride: projection,
+      });
+      return {
+        scene,
+        svg: Exporter.buildSVG(
+          scene.layers.flatMap((layer) => layer.curves),
+          view,
+          { w: this.app.document.view.artboard.width, h: this.app.document.view.artboard.height },
+          null,
+          scene.layers,
+          { time: this.app.document.animation.time, prefix, onUnsupported },
+        ),
+      };
+    }, true);
+  }
+
+  buildPlotterSVGFromCurrent() {
+    const doc = this.app.document;
+    const artboard = doc.view.artboard;
+    const w = artboard?.width ?? this.app.renderer.size().w;
+    const h = artboard?.height ?? this.app.renderer.size().h;
+    if (doc.view.layout !== 'quad') {
+      const scene = buildRenderScene({ evaluation: this.app.evaluation, document: doc, view: doc.view });
+      return {
+        svg: Exporter.buildPlotterSVG(
+          scene.layers.flatMap((layer) => layer.curves),
+          doc.view,
+          { w, h },
+          doc,
+          scene.layers,
+        ),
+        omitted: [],
+      };
+    }
+    return this.buildQuadExport((view, projection, _prefix, _onUnsupported) => {
+      const scene = buildRenderScene({ evaluation: this.app.evaluation, document: doc, view, projectionOverride: projection });
+      return {
+        scene,
+        svg: Exporter.buildPlotterSVG(
+          scene.layers.flatMap((layer) => layer.curves),
+          view,
+          { w: artboard.width, h: artboard.height },
+          null,
+          scene.layers,
+        ),
+      };
+    }, false);
+  }
+
+  buildQuadExport(buildPanel, includeBackground) {
+    const doc = this.app.document;
+    const artboard = doc.view.artboard;
+    const width = artboard?.width ?? this.app.renderer.size().w;
+    const height = artboard?.height ?? this.app.renderer.size().h;
+    const gap = Math.max(6, Math.round(Math.min(width, height) * 0.018));
+    const panelWidth = Math.max(1, (width - gap * 3) / 2);
+    const panelHeight = Math.max(1, (height - gap * 3) / 2);
+    const panels = [
+      ['3d', '3D'],
+      ['xy', 'XY'],
+      ['xz', 'XZ'],
+      ['yz', 'YZ'],
+    ];
+    const omitted = new Set();
+    const nested = [];
+    panels.forEach(([projection], index) => {
+      const view = { ...doc.view, layout: 'single', projection };
+      const panel = buildPanel(view, projection, `quad-${projection}`, (name) => omitted.add(name));
+      const raw = panel.svg
+        .replace(/^<\?xml[^>]*>\s*/, '')
+        .replace(/<!--[\s\S]*?-->\s*/g, '');
+      const open = raw.match(/^<svg[^>]*>/)?.[0];
+      if (!open) return;
+      const x = gap + (index % 2) * (panelWidth + gap);
+      const y = gap + Math.floor(index / 2) * (panelHeight + gap);
+      const tag = open
+        .replace(/\swidth="[^"]*"/, '')
+        .replace(/\sheight="[^"]*"/, '')
+        .replace('<svg ', `<svg x="${fmt(x)}" y="${fmt(y)}" width="${fmt(panelWidth)}" height="${fmt(panelHeight)}" data-panel="${projection}" `);
+      nested.push(tag + raw.slice(open.length));
+    });
+    const svg = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      `<!-- parametrica document: ${escapeComment(JSON.stringify({ app: APP_ID, ...doc }))} -->`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fmt(-width / 2)} ${fmt(-height / 2)} ${fmt(width)} ${fmt(height)}" width="${fmt(width)}" height="${fmt(height)}" data-layout="quad" style="isolation:isolate">`,
+      includeBackground
+        ? `  <rect x="${fmt(-width / 2)}" y="${fmt(-height / 2)}" width="${fmt(width)}" height="${fmt(height)}" fill="${escapeAttr(artboard?.background ?? '#000000')}"/>`
+        : '',
+      ...nested.map((panel) => `  ${panel}`),
+      '</svg>',
+      '',
+    ].filter(Boolean).join('\n');
     return { svg, omitted: [...omitted] };
   }
 
@@ -303,17 +404,7 @@ export class Exporter {
   }
 
   exportPlotterSVG() {
-    const doc = this.app.document;
-    const artboard = doc.view.artboard;
-    const w = artboard?.width ?? this.app.renderer.size().w;
-    const h = artboard?.height ?? this.app.renderer.size().h;
-    const scene = buildRenderScene({
-      evaluation: this.app.evaluation,
-      document: doc,
-      view: doc.view,
-    });
-    const curves = scene.layers.flatMap((layer) => layer.curves);
-    const svg = Exporter.buildPlotterSVG(curves, doc.view, { w, h }, doc, scene.layers);
+    const { svg } = this.buildPlotterSVGFromCurrent();
     downloadFile(`parametrica-plotter-${timestamp()}.svg`, svg, 'image/svg+xml');
   }
 

@@ -4,7 +4,7 @@
 - [x] 1.2 Keep canvas and rail inside the viewport.
 - [x] 1.3 Hide non-essential masthead/telemetry on short viewports.
 - [x] 1.4 Keep the mode bar on one line.
-- [ ] 1.5 Decide whether phone-sized layouts are officially supported.
+- [x] 1.5 Decide whether phone-sized layouts are officially supported.
 
 ## 2. Accessibility
 
@@ -22,7 +22,7 @@
 - [x] 3.2 E2E mode bar height.
 - [x] 3.3 Detector pass for undersized/contrast findings.
 - [ ] 3.4 Manual 200% zoom review on Safari and Firefox.
-- [ ] 3.5 Run full gates.
+- [x] 3.5 Run full gates.
 
 ## Acceptance criteria
 
