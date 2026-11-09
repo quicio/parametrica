@@ -4,7 +4,7 @@
  * mutated.
  */
 
-import { validatePickResult } from '../domain/interaction/surfacePicker.js';
+import { validatePickResult } from '../domain/interaction/surfacePicker.ts';
 
 const STORAGE_KEY = 'parametrica.surfaceInspector.v1';
 

@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.15] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for ray construction/intersection and surface picking.
+- Typed vectors, rays, bounds, transforms, mappings, meshes and pick results.
+- Domain layer is now 100% TypeScript.
+
+### Changed
+
+- `interaction/ray` and `interaction/surfacePicker` remain compatibility
+  re-exports.
+- No picking, inspection or output behavior changed.
+
 ## [0.2.14] - 2026-11-09
 
 ### Added
