@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.7] - 2026-11-09
+
+### Added
+
+- Explicit `UI_SURFACE` and `createUiPort` controller boundary.
+- Dynamic architecture check that scans every `app.*` use in `src/ui` against
+  the allowed surface.
+
+### Changed
+
+- Composition passes the UI port to `Controls`; panels keep the same API.
+- Unknown UI reads or writes now fail instead of silently reaching into App.
+- No panel behavior or document output changed.
+
 ## [0.2.6] - 2026-11-09
 
 ### Added

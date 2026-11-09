@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-11-09
+goal: Give the UI an explicit controller port instead of the concrete App object.

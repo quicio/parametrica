@@ -7,6 +7,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { UI_SURFACE } from '../../src/composition/createUiPort.js';
 import { join, relative } from 'node:path';
 
 const root = new URL('../../', import.meta.url).pathname;
@@ -88,6 +89,18 @@ export async function run(assert) {
   assert(!importsOf(exporterSource).some((spec) => spec.includes('application/App')), 'Exporter does not import App');
   assert(exporterSource.includes('this.port'), 'Exporter uses the injected export port');
   assert(read('src/composition/createApp.js').includes('createExportPort'), 'composition creates the export port');
+
+  const uiSurface = new Set(UI_SURFACE);
+  const usedByUi = new Set();
+  for (const file of filesUnder('src/ui')) {
+    for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
+      usedByUi.add(match[1]);
+    }
+  }
+  for (const name of usedByUi) {
+    assert(uiSurface.has(name), `UI port exposes app.${name}`);
+  }
+  assert(read('src/composition/createApp.js').includes('createUiPort'), 'composition passes the UI port to Controls');
 
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');
