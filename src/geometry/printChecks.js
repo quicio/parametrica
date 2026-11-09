@@ -6,7 +6,7 @@
  * areas are returned in square millimetres when a world scale exists.
  */
 
-import { millimetresPerUnit } from '../core/units.js';
+import { millimetresPerUnit } from '../domain/units.js';
 
 export const DEFAULT_OVERHANG_ANGLE = 50;
 

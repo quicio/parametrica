@@ -5,12 +5,7 @@
  * inflection points, sample points, arc-length ruler, bounding box.
  */
 
-export const OVERLAYS = [
-  { id: 'inflections', name: 'Inflection Points' },
-  { id: 'samplePoints', name: 'Sampled Points' },
-  { id: 'ruler', name: 'Arc-Length Ruler' },
-  { id: 'bbox', name: 'Bounding Box' },
-];
+export { OVERLAYS } from '../domain/overlays.js';
 
 export function drawOverlays(p, { curves, analysis, bbox, view }) {
   const on = view.overlays ?? {};

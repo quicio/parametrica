@@ -15,7 +15,7 @@ import {
   formatPhysicalLength,
   millimetresPerUnit,
   validateUnits,
-} from '../../core/units.js';
+} from '../../domain/units.js';
 export function buildLooksSection(controls) {
     const body = controls.section('Looks', { id: 'looks', mode: 'look' });
     body.appendChild(controls.panelHint(

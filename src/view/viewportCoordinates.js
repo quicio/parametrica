@@ -6,7 +6,7 @@
  * in-plane coordinates under the cursor. The dropped axis is never inferred.
  */
 
-import { millimetresPerUnit } from '../core/units.js';
+import { millimetresPerUnit } from '../domain/units.js';
 
 export const COORDINATE_UNIT_DISPLAYS = Object.freeze(['auto', 'world', 'physical']);
 export const DEFAULT_COORDINATES = Object.freeze({

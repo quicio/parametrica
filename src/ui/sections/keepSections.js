@@ -10,7 +10,7 @@ import { RenderPasses } from '../../core/registry.js';
 import { normalizeModes, toggleMode } from '../widgets/modeToggles.js';
 import { applyHardBounds } from '../params/ParamRegistry.js';
 import { PASS_APPEARANCE, passSupports } from '../../render/passStyle.js';
-import { OVERLAYS } from '../../viz/overlays.js';
+import { OVERLAYS } from '../../domain/overlays.js';
 import { ImagePanel } from '../widgets/ImagePanel.js';
 import { TimelinePanel } from '../widgets/TimelinePanel.js';
 import { LabPanel } from '../widgets/LabPanel.js';

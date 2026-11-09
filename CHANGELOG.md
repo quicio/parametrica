@@ -7,6 +7,25 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.4] - 2026-11-09
+
+### Added
+
+- `src/domain/` policy modules for units, overlay ids, pass style, cap
+  strategies and manufacturing profiles.
+- Executable architecture-boundary tests for domain isolation, document
+  imports and generator projection.
+- ADR-0004 Phase A slice 1: `core/document.js` no longer imports render, viz or
+  geometry; generators use the pure view camera.
+
+### Changed
+
+- Inner modules import domain policy directly.
+- `core/units`, `render/passStyle`, `viz/overlays`,
+  `geometry/manufacturingProfile` and `geometry/repair` keep compatibility
+  re-exports for existing tests and imports.
+- No document, geometry, export or UI behavior changed.
+
 ## [0.2.3] - 2026-11-09
 
 ### Added

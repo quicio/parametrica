@@ -23,7 +23,7 @@ import {
   PHYSICAL_UNIT_SYSTEMS,
   formatPhysicalLength,
   millimetresPerUnit,
-} from '../core/units.js';
+} from '../domain/units.js';
 import { buildFabricationReport } from '../application/fabricationSource.js';
 import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.js';
 import { manifoldSimplify } from '../geometry/manifoldEngine.js';

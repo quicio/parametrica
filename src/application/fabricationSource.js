@@ -15,10 +15,10 @@ import { validateForFabrication } from '../export/geometryExport.js';
 import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
-import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
+import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.js';
 import { sanitizeFabricationGroups } from '../core/document.js';
 import { compileExpression } from '../math/expression.js';
-import { buildManufacturingReport, sanitizeManufacturingProfile } from '../geometry/manufacturingProfile.js';
+import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.js';
 import { createStdlib } from '../math/stdlib.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {

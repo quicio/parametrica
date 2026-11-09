@@ -11,15 +11,15 @@
 
 import { Generators, Operators } from './registry.js';
 import { sanitizeParams } from './schema.js';
-import { OVERLAYS } from '../viz/overlays.js';
+import { OVERLAYS } from '../domain/overlays.js';
 import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
 import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
-import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from './units.js';
+import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from '../domain/units.js';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
-import { sanitizePassStyle } from '../render/passStyle.js';
-import { CAP_STRATEGIES } from '../geometry/repair.js';
+import { sanitizePassStyle } from '../domain/passStyle.js';
+import { CAP_STRATEGIES } from '../domain/fabrication.js';
 import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
 
 export const DOCUMENT_VERSION = 3;
@@ -57,7 +57,7 @@ const DEFAULT_STYLE = {
 const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
 export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
-import { DEFAULT_MANUFACTURING_PROFILE, sanitizeManufacturingProfile } from '../geometry/manufacturingProfile.js';
+import { DEFAULT_MANUFACTURING_PROFILE, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.js';
 
 export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvature', 'arc']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);

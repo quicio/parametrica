@@ -5,8 +5,8 @@
  * helpers, registries and App APIs. Sections never import each other.
  */
 
-import { PHYSICAL_UNIT_SYSTEMS } from '../../core/units.js';
-import { manufacturingPreset, sanitizeManufacturingProfile } from '../../geometry/manufacturingProfile.js';
+import { PHYSICAL_UNIT_SYSTEMS } from '../../domain/units.js';
+import { manufacturingPreset, sanitizeManufacturingProfile } from '../../domain/manufacturingProfile.js';
 export function buildFabricateSection(controls) {
     const body = controls.section('Fabricate', { id: 'fabricate', mode: 'fabricate' });
     body.appendChild(controls.panelHint(

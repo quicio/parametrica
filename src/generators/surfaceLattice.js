@@ -12,7 +12,7 @@ import { compileOrThrow, makeScope } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
 import { buildRevolveLattice } from '../geometry/latticeNetwork.js';
 import { latticeSpecHash, normalizeLatticeSpec } from '../geometry/latticeSpec.js';
-import { cameraFrom } from '../render/camera3d.js';
+import { cameraFrom } from '../view/camera.js';
 import { projectWorldCurves } from '../view/projection.js';
 
 const DEFAULT_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';

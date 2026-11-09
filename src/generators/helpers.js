@@ -2,7 +2,7 @@
  * generators/helpers.js — compatibility facade.
  *
  * New code should import from the responsibility-specific modules:
- *   math/periods.js, sampling/parametric.js, render/camera3d.js,
+ *   math/periods.js, sampling/parametric.js, view/camera.js,
  *   generators/context.js and generators/compose.js.
  */
 
@@ -25,4 +25,4 @@ export {
   lissajousTurns,
   roseTurns,
 } from '../math/periods.js';
-export { cameraFrom, project3D } from '../render/camera3d.js';
+export { cameraFrom, project3D } from '../view/camera.js';

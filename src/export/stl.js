@@ -7,7 +7,7 @@
  */
 
 import { isMesh, isSolid } from '../geometry/contracts.js';
-import { millimetresPerUnit } from '../core/units.js';
+import { millimetresPerUnit } from '../domain/units.js';
 import { validateForFabrication } from './geometryExport.js';
 
 const HEADER_BYTES = 80;

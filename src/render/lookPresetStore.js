@@ -5,7 +5,7 @@
  * artboard and fabrication state are never part of the record.
  */
 
-import { OVERLAYS } from '../viz/overlays.js';
+import { OVERLAYS } from '../domain/overlays.js';
 
 export const LOOKS_STORAGE_KEY = 'parametrica.looks.v1';
 export const LOOKS_VERSION = 1;
