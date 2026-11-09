@@ -18,7 +18,7 @@ import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/p
 import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.ts';
 import { sanitizeFabricationGroups } from '../core/document.js';
 import { compileExpression } from '../math/expression.js';
-import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.js';
+import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.ts';
 import { createStdlib } from '../math/stdlib.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {

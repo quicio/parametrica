@@ -6,7 +6,7 @@
  */
 
 import { PHYSICAL_UNIT_SYSTEMS } from '../../domain/units.ts';
-import { manufacturingPreset, sanitizeManufacturingProfile } from '../../domain/manufacturingProfile.js';
+import { manufacturingPreset, sanitizeManufacturingProfile } from '../../domain/manufacturingProfile.ts';
 export function buildFabricateSection(controls) {
     const body = controls.section('Fabricate', { id: 'fabricate', mode: 'fabricate' });
     body.appendChild(controls.panelHint(

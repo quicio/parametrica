@@ -1,2 +1,2 @@
 /** geometry/manufacturingProfile.js — compatibility export for the domain module. */
-export * from '../domain/manufacturingProfile.js';
+export * from '../domain/manufacturingProfile.ts';

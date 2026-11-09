@@ -57,7 +57,7 @@ const DEFAULT_STYLE = {
 const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const PROJECTIONS = Object.freeze(['3d', 'xy', 'xz', 'yz']);
 export const VIEW_LAYOUTS = Object.freeze(['single', 'quad']);
-import { DEFAULT_MANUFACTURING_PROFILE, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.js';
+import { DEFAULT_MANUFACTURING_PROFILE, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.ts';
 
 export const COLOR_METRICS = Object.freeze(['auto', 'height', 'radius', 'curvature', 'arc']);
 export const DEFAULT_COLOR_RAMP = Object.freeze(['#ffd400', '#8a2be2', '#1e5bff']);

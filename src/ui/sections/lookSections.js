@@ -5,7 +5,7 @@
  * helpers, registries and App APIs. Sections never import each other.
  */
 
-import { LOOK_PRESETS } from '../../domain/lookPresets.js';
+import { LOOK_PRESETS } from '../../domain/lookPresets.ts';
 import { supportsSpatial } from '../../core/capabilities.js';
 import { ARTBOARD_PRESETS } from '../../render/palettes.js';
 import {

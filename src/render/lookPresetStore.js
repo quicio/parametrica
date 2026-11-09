@@ -7,7 +7,7 @@
 
 import { OVERLAYS } from '../domain/overlays.ts';
 
-export { applyUserLookToView } from '../domain/lookPresets.js';
+export { applyUserLookToView } from '../domain/lookPresets.ts';
 
 export const LOOKS_STORAGE_KEY = 'parametrica.looks.v1';
 export const LOOKS_VERSION = 1;

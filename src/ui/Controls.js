@@ -13,7 +13,7 @@ import { supportsSpatial } from '../core/capabilities.js';
 import { normalizeModes } from '../domain/modeToggles.ts';
 import { PaletteStore } from '../render/palettes.js';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
-import { lookPresetMatchesView } from '../domain/lookPresets.js';
+import { lookPresetMatchesView } from '../domain/lookPresets.ts';
 import {
   isInstanceLayer,
   sourceGeneratorFor,

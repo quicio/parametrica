@@ -1,13 +1,49 @@
-/**
- * render/lookPresets.js — named visual starting points for Look.
- *
- * Presets are view-level recipes: render passes, overlays, color metric and
- * guides. They never touch geometry, style, units, camera or fabrication.
- */
+/** Named visual starting points for Look. */
 
-import { OVERLAYS } from '../domain/overlays.ts';
+import { OVERLAYS } from './overlays.ts';
 
-export const LOOK_PRESETS = Object.freeze([
+export type LookRequirement = 'surface' | 'fourier' | 'closed';
+
+export interface LookPreset {
+  id: string;
+  name: string;
+  description: string;
+  requires: LookRequirement | null;
+  modes: string[];
+  overlays: Record<string, boolean>;
+  colorMetric: string;
+  guides: boolean;
+}
+
+export interface LookContext {
+  hasSurface?: boolean;
+  generatorId?: string | null;
+  hasClosedCurves?: boolean;
+}
+
+export interface LookAvailability {
+  available: boolean;
+  reason: string | null;
+}
+
+export interface LookView {
+  modes?: string[];
+  overlays?: Record<string, unknown> | null;
+  colorMetric?: string;
+  guides?: boolean;
+  passOpacity?: Record<string, number>;
+  [key: string]: unknown;
+}
+
+export interface UserLook {
+  modes: string[];
+  overlays: Record<string, boolean>;
+  colorMetric: string;
+  guides: boolean;
+  passOpacity?: Record<string, number>;
+}
+
+export const LOOK_PRESETS: readonly LookPreset[] = Object.freeze([
   {
     id: 'line',
     name: 'Line',
@@ -82,15 +118,14 @@ export const LOOK_PRESETS = Object.freeze([
 
 export const DEFAULT_LOOK_PRESET = 'line';
 
-export function getLookPreset(id) {
+export function getLookPreset(id: string): LookPreset | null {
   return LOOK_PRESETS.find((preset) => preset.id === id) ?? null;
 }
 
-/**
- * Resolve availability from active-layer context. The caller supplies boolean
- * facts; presets never inspect the document themselves.
- */
-export function lookPresetAvailability(preset, context = {}) {
+export function lookPresetAvailability(
+  preset: LookPreset | null | undefined,
+  context: LookContext = {},
+): LookAvailability {
   if (!preset?.requires) return { available: true, reason: null };
   if (preset.requires === 'surface') {
     return context.hasSurface
@@ -110,21 +145,24 @@ export function lookPresetAvailability(preset, context = {}) {
   return { available: false, reason: 'Unsupported preset requirement' };
 }
 
-/** Build the view fields a preset should write. */
-export function resolveLookPreset(preset) {
+export function resolveLookPreset(preset: LookPreset): {
+  modes: string[];
+  overlays: Record<string, boolean>;
+  colorMetric: string;
+  guides: boolean;
+} {
   return {
     modes: [...preset.modes],
     overlays: Object.fromEntries(OVERLAYS.map((overlay) => [
       overlay.id,
       Boolean(preset.overlays?.[overlay.id]),
-    ])),
+    ])) as Record<string, boolean>,
     colorMetric: preset.colorMetric ?? 'auto',
     guides: preset.guides !== false,
   };
 }
 
-/** Does the current view match a preset exactly? */
-export function lookPresetMatchesView(preset, view = {}) {
+export function lookPresetMatchesView(preset: LookPreset | null | undefined, view: LookView = {}): boolean {
   if (!preset) return false;
   const resolved = resolveLookPreset(preset);
   const modes = Array.isArray(view.modes) ? [...new Set(view.modes)] : [];
@@ -140,9 +178,8 @@ export function lookPresetMatchesView(preset, view = {}) {
   return Boolean(view.guides) === resolved.guides;
 }
 
-
 /** Apply a user-authored look to a view without touching geometry. */
-export function applyUserLookToView(view, look) {
+export function applyUserLookToView(view: LookView | null | undefined, look: UserLook | null | undefined): boolean {
   if (!view || !look) return false;
   view.modes = [...look.modes];
   view.overlays = { ...look.overlays };

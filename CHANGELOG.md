@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.14] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for look presets and manufacturing profiles.
+- Typed look context/view/user look, manufacturing profiles, checks and
+  reports.
+
+### Changed
+
+- `render/lookPresets` and `geometry/manufacturingProfile` remain compatibility
+  re-exports.
+- No look behavior, report values or output changed.
+
 ## [0.2.13] - 2026-11-09
 
 ### Added
