@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T00:00:00.000Z",
+  "title": "Design System: Parametrica",
+  "extensions": {
+    "colorMeta": {
+      "carbon-black": { "role": "neutral", "displayName": "Carbon Black", "canonical": "#000000" },
+      "instrument-panel": { "role": "neutral", "displayName": "Instrument Panel", "canonical": "#050505" },
+      "raised-panel": { "role": "neutral", "displayName": "Raised Panel", "canonical": "#0d0d0d" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#242424" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#f2f2f2" },
+      "ink-dim": { "role": "neutral", "displayName": "Ink Dim", "canonical": "#a3a3a3" },
+      "ink-faint": { "role": "neutral", "displayName": "Ink Faint", "canonical": "#737373" },
+      "swiss-red": { "role": "primary", "displayName": "Swiss Signal Red", "canonical": "#e30613" },
+      "field": { "role": "neutral", "displayName": "Field Surface", "canonical": "#0d0d0d" },
+      "layer-row": { "role": "neutral", "displayName": "Layer Row", "canonical": "#080808" },
+      "dialog-surface": { "role": "neutral", "displayName": "Dialog Surface", "canonical": "#080808" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Masthead wordmark only." },
+      "headline": { "displayName": "Headline", "purpose": "Section headers and control titles." },
+      "body": { "displayName": "Body", "purpose": "Hints, descriptions and dialog copy." },
+      "label": { "displayName": "Label", "purpose": "Compact control labels and metadata." },
+      "mono": { "displayName": "Mono", "purpose": "Values, expressions, telemetry and IDs." }
+    },
+    "shadows": [
+      { "name": "dialog-separation", "value": "0 18px 60px rgba(0, 0, 0, 0.65)", "purpose": "Modal dialogs that suspend the instrument." },
+      { "name": "start-dialog", "value": "0 24px 80px rgba(0, 0, 0, 0.7)", "purpose": "Start With and new-document overlay." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "120ms ease", "purpose": "Caret and small state transitions." },
+      { "name": "ease-progress", "value": "180ms ease-out", "purpose": "Fabricate progress and short reveals." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "900px" },
+      { "name": "zoom-200", "value": "720px × 450px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Mode Tab",
+      "kind": "nav",
+      "refersTo": "mode-tab",
+      "description": "Workspace tab in the sticky mode bar.",
+      "html": "<button class=\"ds-mode-tab\" aria-selected=\"false\">FORM</button><button class=\"ds-mode-tab ds-mode-tab-active\" aria-selected=\"true\">LOOK</button>",
+      "css": ".ds-mode-tab { appearance: none; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--ink-faint, #737373); font-family: var(--font, 'Helvetica Neue', Helvetica, Arial, sans-serif); font-size: 11px; font-weight: 600; letter-spacing: 0.035em; min-height: 36px; padding: 9px 0; text-transform: uppercase; cursor: pointer; } .ds-mode-tab:hover { color: var(--ink, #f2f2f2); } .ds-mode-tab:focus-visible { outline: 1px solid var(--ink, #f2f2f2); outline-offset: 2px; } .ds-mode-tab-active { color: var(--ink, #f2f2f2); border-bottom-color: var(--swiss-red, #e30613); }"
+    },
+    {
+      "name": "Section Header",
+      "kind": "nav",
+      "refersTo": "section-header",
+      "description": "Expandable inspector section header.",
+      "html": "<button class=\"ds-section-header\"><span>Generator</span><span class=\"ds-caret\">⌄</span></button>",
+      "css": ".ds-section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--hairline, #242424); color: var(--ink-dim, #a3a3a3); cursor: pointer; font-family: var(--font, 'Helvetica Neue', Helvetica, Arial, sans-serif); font-size: 11px; font-weight: 700; letter-spacing: 0.18em; padding: 12px 12px 9px; text-align: left; text-transform: uppercase; } .ds-section-header:hover { color: var(--ink, #f2f2f2); } .ds-section-header:focus-visible { outline: 1px solid var(--ink, #f2f2f2); outline-offset: 2px; } .ds-caret { color: var(--ink-faint, #737373); font-size: 11px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Compact rectangular action button.",
+      "html": "<button class=\"ds-button\">EXPORT SVG</button>",
+      "css": ".ds-button { background: var(--panel-2, #0d0d0d); border: 1px solid var(--hairline, #242424); color: var(--ink, #f2f2f2); cursor: pointer; font-family: var(--font, 'Helvetica Neue', Helvetica, Arial, sans-serif); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; padding: 6px 8px; text-transform: uppercase; } .ds-button:hover { border-color: var(--swiss-red, #e30613); color: var(--swiss-red, #e30613); } .ds-button:focus-visible { outline: 1px solid var(--ink, #f2f2f2); outline-offset: 2px; box-shadow: 0 0 0 3px rgba(242, 242, 242, 0.07); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Mono field for values and expressions.",
+      "html": "<input class=\"ds-input\" value=\"sin(3*t) + 0.25*sin(11*t)\" aria-label=\"Expression\" />",
+      "css": ".ds-input { background: var(--panel-2, #0d0d0d); border: 1px solid var(--hairline, #242424); color: var(--ink, #f2f2f2); font-family: var(--mono, 'SF Mono', Menlo, monospace); font-size: 10px; padding: 6px 7px; outline: none; } .ds-input:focus { border-color: var(--swiss-red, #e30613); } .ds-input::placeholder { color: var(--ink-faint, #737373); }"
+    },
+    {
+      "name": "Preset Row",
+      "kind": "card",
+      "refersTo": "preset-item",
+      "description": "Preset browser row with thumbnail and metadata.",
+      "html": "<button class=\"ds-preset\"><span class=\"ds-preset-thumb\">◌</span><span class=\"ds-preset-copy\"><strong>Solid Vase 200</strong><small>200 mm hollow vase</small></span></button>",
+      "css": ".ds-preset { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 8px; background: transparent; border: 0; border-left: 2px solid transparent; color: var(--ink-dim, #a3a3a3); cursor: pointer; padding: 5px 4px 5px 6px; text-align: left; } .ds-preset:hover { background: var(--panel-2, #0d0d0d); color: var(--ink, #f2f2f2); } .ds-preset:focus-visible { outline: 1px solid var(--swiss-red, #e30613); outline-offset: -1px; } .ds-preset-thumb { width: 44px; height: 44px; display: grid; place-items: center; background: #0a0a0a; border: 1px solid #141414; color: var(--ink-faint, #737373); font-family: var(--mono, 'SF Mono', Menlo, monospace); } .ds-preset-copy { display: grid; gap: 1px; min-width: 0; } .ds-preset-copy strong { font-family: var(--font, 'Helvetica Neue', Helvetica, Arial, sans-serif); font-size: 10px; font-weight: 400; letter-spacing: 0.02em; } .ds-preset-copy small { color: var(--ink-faint, #737373); font-family: var(--mono, 'SF Mono', Menlo, monospace); font-size: 8px; line-height: 1.35; }"
+    },
+    {
+      "name": "Layer Row",
+      "kind": "custom",
+      "refersTo": "layer-row",
+      "description": "Inset row for selecting and acting on a layer.",
+      "html": "<div class=\"ds-layer-row\"><span>●</span><span>·</span><span class=\"ds-layer-name\">Outer shell</span></div>",
+      "css": ".ds-layer-row { display: grid; grid-template-columns: 18px 18px 1fr; align-items: center; gap: 2px; background: #080808; border: 1px solid var(--hairline, #242424); color: var(--ink, #f2f2f2); padding: 4px 5px; font-family: var(--mono, 'SF Mono', Menlo, monospace); font-size: 9px; } .ds-layer-row.active { border-color: var(--swiss-red, #e30613); } .ds-layer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "card",
+      "refersTo": "dialog",
+      "description": "Rectangular modal surface with deep separation.",
+      "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-modal=\"true\"><div class=\"ds-dialog-title\">EDIT LAYER</div><div class=\"ds-dialog-copy\">Rename the active layer.</div><input class=\"ds-dialog-input\" value=\"Outer shell\" aria-label=\"Layer name\" /><div class=\"ds-dialog-actions\"><button class=\"ds-dialog-cancel\">CANCEL</button><button class=\"ds-dialog-confirm\">ACCEPT</button></div></div>",
+      "css": ".ds-dialog { width: min(360px, calc(100vw - 32px)); background: #080808; border: 1px solid var(--hairline, #242424); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65); padding: 16px; font-family: var(--mono, 'SF Mono', Menlo, monospace); color: var(--ink, #f2f2f2); } .ds-dialog-title { color: var(--ink-dim, #a3a3a3); font-size: 9px; font-weight: 700; letter-spacing: 0.2em; margin-bottom: 10px; text-transform: uppercase; } .ds-dialog-copy { font-size: 10px; line-height: 1.5; margin-bottom: 10px; } .ds-dialog-input { width: 100%; background: var(--panel-2, #0d0d0d); border: 1px solid var(--hairline, #242424); color: var(--ink, #f2f2f2); font-family: inherit; font-size: 11px; padding: 8px; outline: none; } .ds-dialog-input:focus { border-color: var(--swiss-red, #e30613); } .ds-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 14px; } .ds-dialog-cancel, .ds-dialog-confirm { background: var(--panel-2, #0d0d0d); border: 1px solid var(--hairline, #242424); color: var(--ink, #f2f2f2); cursor: pointer; font-family: var(--font, 'Helvetica Neue', Helvetica, Arial, sans-serif); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; padding: 6px 8px; text-transform: uppercase; } .ds-dialog-confirm { border-color: var(--swiss-red, #e30613); color: var(--swiss-red, #e30613); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Swiss Instrument",
+    "overview": "Parametrica looks like a precision instrument that happens to be software: a black stage, a narrow measurement rail, hairline separators and one red signal. The canvas is the work; the panel is the console. Nothing is decorated unless it helps the user read a value, a state or a hierarchy. The system is flat by default. Depth comes from tonal steps and 1px hairlines, not from cards floating over the page. Red is rare and operational: it marks the active mode, the focused edge, an error or a destructive state. Large red surfaces are a failure of the language.",
+    "keyCharacteristics": [
+      "Carbon-black field with near-black instrument panels.",
+      "Hairline structure; zero-radius rectangles.",
+      "Functional sans for labels, mono for data and expressions.",
+      "One Swiss red signal, used sparingly.",
+      "Dense but legible: 11px functional text and compact 36px mode tabs.",
+      "The canvas remains visually dominant at every breakpoint."
+    ],
+    "rules": [
+      { "name": "The Red Signal Rule", "body": "Red occupies less than 10% of any screen. It marks state and attention; it never fills a panel, a card or a large button face.", "section": "colors" },
+      { "name": "The Hairline Rule", "body": "Structure comes from 1px lines and tonal steps. If a group can be separated with a hairline, do not add a shadow or a filled card.", "section": "colors" },
+      { "name": "The Functional Type Rule", "body": "No serif, display script or decorative face. If the text is data, it is mono; if it is a control label, it is sans and compact.", "section": "typography" },
+      { "name": "The Legibility Floor Rule", "body": "Functional text stays at 11px or larger where the layout allows. Do not shrink labels to make room for decoration.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "No card shadows, no hover lift, no glass panels. State changes are borders, color and focus outlines.", "section": "elevation" },
+      { "name": "The Overlay Exception", "body": "Shadows are allowed only when a dialog or overlay must detach from the full-screen instrument.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the canvas black and visually dominant.",
+      "Do use Swiss red for state, focus, error and one clear active accent.",
+      "Do separate groups with hairlines and tonal steps.",
+      "Do use mono for values, expressions, telemetry and IDs.",
+      "Do preserve keyboard focus, reduced motion and 200% zoom behavior.",
+      "Do keep controls compact and functional; density is part of the identity."
+    ],
+    "donts": [
+      "Don't introduce a second accent color or a gradient background.",
+      "Don't round cards, buttons or panels; radius is 0.",
+      "Don't add card shadows, hover lift or glassmorphism.",
+      "Don't fill large areas with Swiss red.",
+      "Don't use decorative serif or display faces.",
+      "Don't hide the canvas behind chrome or oversized empty states.",
+      "Don't lower functional text below 11px to create breathing room.",
+      "Don't invent testimonials, metrics or fabrication claims in UI copy."
+    ]
+  }
+}

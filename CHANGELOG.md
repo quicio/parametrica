@@ -7,6 +7,25 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.1] - 2026-11-09
+
+### Added
+
+- `PRODUCT.md` with confirmed users, purpose, positioning, constraints, brand
+  commitments, evidence and product principles.
+- `DESIGN.md` with the Swiss Instrument visual system: carbon palette, signal
+  red, functional typography, flat elevation, zero-radius shapes and component
+  rules.
+- `.impeccable/design.json` sidecar for live component previews.
+- ADR-0002: all UI/UX decisions pass through the Impeccable skill, with
+  `PRODUCT.md` and `DESIGN.md` as durable authority.
+
+### Changed
+
+- Design work is now a gated process: context, scoped command, craft floor,
+  rendered verification and detector.
+- README and OpenSpec conventions point at the product/design authority.
+
 ## [0.2.0] - 2026-11-09
 
 First tagged release after the v0.1.0 rewrite. This version covers the

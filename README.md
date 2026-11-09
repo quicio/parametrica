@@ -12,7 +12,7 @@ geometry: it sits closer to *Desmos*, *GeoGebra*, *Processing* or
 *Shadertoy* than to *Illustrator*. No pen tool, no anchor editing —
 mathematics is the only authoring surface.
 
-[**Live demo**](https://quicio.github.io/parametrica/) · [**Changelog**](./CHANGELOG.md) · [**SPEC.md**](./SPEC.md) (architecture & rationale) · [**Architecture diagram**](#architecture)
+[**Live demo**](https://quicio.github.io/parametrica/) · [**Product**](./PRODUCT.md) · [**Design**](./DESIGN.md) · [**Changelog**](./CHANGELOG.md) · [**SPEC.md**](./SPEC.md) (architecture & rationale)
 
 ![hero placeholder](https://placehold.co/1200x600/000000/e30613/png?text=Parametrica)
 
@@ -73,6 +73,17 @@ leaving your machine.
    Distance is the only raster-only omission; use PNG when it is active.
 
 ---
+
+## Design authority
+
+Product truth lives in [`PRODUCT.md`](./PRODUCT.md). The visual system lives in
+[`DESIGN.md`](./DESIGN.md) and the machine-readable
+[`.impeccable/design.json`](./.impeccable/design.json) sidecar.
+
+Every UI/UX change must pass through the **Impeccable** skill: context, the
+matching scoped command, the craft floor, rendered verification and the
+detector. The policy and its exceptions are recorded in
+[ADR-0002](./openspec/decisions/0002-design-decisions-impeccable.md).
 
 ## Versioning
 

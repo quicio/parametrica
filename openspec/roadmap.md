@@ -873,6 +873,12 @@ A slice can start only when:
 - `npm run check:version` enforces the changelog/package match.
 - See `openspec/decisions/0001-code-versioning.md`.
 
+### Design authority
+
+- `PRODUCT.md` holds product truth; `DESIGN.md` holds the visual system.
+- UI/UX changes run through the Impeccable skill before editing.
+- `openspec/decisions/0002-design-decisions-impeccable.md` is the policy.
+
 ### Walking skeleton
 
 `lab-observer` must deliver the thinnest end-to-end path:
