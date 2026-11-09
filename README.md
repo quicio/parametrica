@@ -89,6 +89,9 @@ the same bundle works at the root or under the `/parametrica/` project path.
 To enable it in a fork: **Settings → Pages → Build and deployment → Source:
 GitHub Actions**, then push to `main` or run the workflow manually.
 
+Full deployment notes, local subpath verification and troubleshooting:
+[`docs/github-pages.md`](./docs/github-pages.md).
+
 ## Architecture
 
 ```
