@@ -56,6 +56,33 @@ export async function run(assert) {
     assert(importsOf(source).some((spec) => spec.includes('/view/camera')), `${file} imports pure view camera`);
   }
 
+  const appImports = importsOf(read('src/application/App.js'));
+  for (const spec of [
+    '../render/p5/P5Adapter.js',
+    '../ui/Controls.js',
+    '../ui/StartWithOverlay.js',
+    '../ui/dialogs.js',
+    '../ui/ParametricOverlay.js',
+    '../ui/UVDomainInset.js',
+    '../ui/SurfaceInspector.js',
+    '../ui/SeamLegend.js',
+    '../export/Exporter.js',
+    '../presets/PresetManager.js',
+    '../presets/preview.js',
+    '../lab/notebook.js',
+    '../lab/notebookRepository.js',
+    '../lab/workspace.js',
+    '../core/session.js',
+    '../core/persistence.js',
+    '../mutation/MutationEngine.js',
+  ]) {
+    assert(!appImports.includes(spec), `application/App does not import ${spec}`);
+  }
+  assert(read('src/composition/createApp.js').includes('new P5Adapter'), 'composition creates the technical renderer');
+  assert(read('src/composition/createApp.js').includes('new Controls'), 'composition creates the controls');
+  assert(read('src/composition/createApp.js').includes('new Exporter'), 'composition creates the exporter');
+  assert(read('src/main.js').includes("from './composition/createApp.js'"), 'main boots through the composition root');
+
   assert(read('src/core/units.js').includes('../domain/units.js'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.js'), 'render/passStyle keeps a domain re-export');
   assert(read('src/viz/overlays.js').includes('../domain/overlays.js'), 'viz/overlays keeps a domain re-export');

@@ -12,13 +12,13 @@ import './generators/index.js';
 import './operators/index.js';
 import './render/passes/index.js';
 
-import { App } from './application/App.js';
+import { createApp } from './composition/createApp.js';
 import { initManifold } from './geometry/manifoldEngine.js';
 
 const versionEl = document.getElementById('app-version');
 if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`;
 
-const app = new App({
+const app = createApp({
   canvasContainer: document.getElementById('canvas-container'),
   uiContainer: document.getElementById('ui'),
   telemetryEl: document.getElementById('telemetry'),

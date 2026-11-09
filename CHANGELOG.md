@@ -7,6 +7,22 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.5] - 2026-11-09
+
+### Added
+
+- `src/composition/createApp.js` as the single browser composition root.
+- Service and adapter-factory injection into `App`.
+- Boundary checks that keep concrete renderer, UI, exporter and storage
+  implementations out of the application class.
+
+### Changed
+
+- `main.js` now boots through `createApp`.
+- `App` receives persistence, session, presets, notebook, look store, dialogs,
+  mutator, preview services and adapter factories.
+- No public behavior or document/export output changed.
+
 ## [0.2.4] - 2026-11-09
 
 ### Added

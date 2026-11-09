@@ -890,7 +890,7 @@ A slice can start only when:
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | `tsconfig`, `tsx`, `typecheck` and declaration foundation | done (0.2.3) |
-| A | Extract domain boundaries and ports without behavior change | in progress: domain policy + document/generator isolation (0.2.4) |
+| A | Extract domain boundaries and ports without behavior change | in progress: domain policy (0.2.4) + composition root (0.2.5) |
 | B | Split composition root and adapters; thin UI | proposed |
 | C | Convert domain, then application, then adapters to TypeScript | proposed |
 | D | Empty dependency baseline; `allowJs: false`; strict gates | proposed |

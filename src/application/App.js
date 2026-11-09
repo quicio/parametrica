@@ -24,55 +24,37 @@ import { supportsSpatial } from '../core/capabilities.js';
 import { evaluateDocument } from '../core/engine.js';
 import { schemaDefaults } from '../core/schema.js';
 import { History } from '../core/history.js';
-import { SessionStore } from '../core/session.js';
-import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
-import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.js';
-import { LocalNotebookRepository } from '../lab/notebookRepository.js';
-import { NotebookWorkspace } from '../lab/workspace.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
 import { applySuggestionToDocument } from '../ai/offline.js';
-import { P5Adapter } from '../render/p5/P5Adapter.js';
-import { Controls } from '../ui/Controls.js';
-import { StartWithOverlay } from '../ui/StartWithOverlay.js';
-import { Exporter } from '../export/Exporter.js';
-import { MutationEngine } from '../mutation/MutationEngine.js';
-import { PresetManager } from '../presets/PresetManager.js';
-import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.js';
 import { DEFAULT_CAMERA } from '../view/camera.js';
 import { MIN_CAMERA_FOV } from '../view/cameraController.js';
-import { DialogService } from '../ui/dialogs.js';
-import { ParametricOverlay } from '../ui/ParametricOverlay.js';
-import { UVDomainInset } from '../ui/UVDomainInset.js';
-import { SurfaceInspector } from '../ui/SurfaceInspector.js';
-import { SeamLegend } from '../ui/SeamLegend.js';
 import { buildRenderScene } from './renderSceneBuilder.js';
 import { artboardPointFromCanvas } from '../interaction/ray.js';
 import { pickSurface } from '../interaction/surfacePicker.js';
-import { LOOK_PRESETS, getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
-import { LookPresetStore, applyUserLookToView } from '../render/lookPresetStore.js';
+import { getLookPreset, lookPresetAvailability, resolveLookPreset } from '../render/lookPresets.js';
+import { applyUserLookToView } from '../render/lookPresetStore.js';
 import { normalizeModes } from '../ui/widgets/modeToggles.js';
 
 export class App {
-  constructor({ canvasContainer, uiContainer, telemetryEl }) {
+  constructor({ canvasContainer, telemetryEl, services, adapters }) {
+    if (!services || !adapters) throw new Error('App requires composition services and adapters');
     this.telemetryEl = telemetryEl;
-    this.persistence = createPersistenceRepository(globalThis.localStorage ?? null);
-    this.storageMigration = migrateLocalStorage(globalThis.localStorage ?? null);
-    this.presets = new PresetManager(globalThis.localStorage ?? null, {
-      renderPreview: renderPresetPreview,
-      repository: this.persistence,
-    });
-    this.mutator = new MutationEngine();
-    this.lookStore = new LookPresetStore(globalThis.localStorage ?? null, {
-      reservedNames: LOOK_PRESETS.map((preset) => preset.name),
-    });
-    this.dialogs = new DialogService();
+    this.persistence = services.persistence;
+    this.storageMigration = services.storageMigration;
+    this.presets = services.presets;
+    this.mutator = services.mutator;
+    this.lookStore = services.lookStore;
+    this.dialogs = services.dialogs;
+    this.renderPresetPreview = services.renderPresetPreview;
+    this.startWithPreviewSize = services.startWithPreviewSize;
+    this.adapters = adapters;
     this.document = createDocument('parametric');
     this.canvasContainer = canvasContainer;
 
     // Restore the last document before history, evaluation or UI creation so
     // the first paint already shows the generator/view the user left.
-    this.session = new SessionStore({ repository: this.persistence });
+    this.session = services.session;
     const lastSession = this.session.load();
     this.autoRestoredSession = Boolean(lastSession?.document);
     if (lastSession?.document) this.document = lastSession.document;
@@ -105,27 +87,20 @@ export class App {
       this.notify(`Storage migration: ${this.storageMigration.errors[0]}`, 'error');
     }
 
-    this.notebook = new Notebook({
-      storage: globalThis.localStorage ?? null,
-      repository: new LocalNotebookRepository(
-        globalThis.localStorage ?? null,
-        NOTEBOOK_STORAGE_KEY,
-        this.persistence,
-      ),
-    });
-    this.notebookWorkspace = new NotebookWorkspace(this.notebook);
+    this.notebook = services.notebook;
+    this.notebookWorkspace = services.notebookWorkspace;
     if (this.notebook.lastError) {
       this.notify(`Notebook storage: ${this.notebook.lastError}`, 'error');
     }
 
     this.evaluate();
-    this.parametricOverlay = new ParametricOverlay(canvasContainer, this);
-    this.uvDomainInset = new UVDomainInset(canvasContainer, this);
-    this.surfaceInspector = new SurfaceInspector(canvasContainer, this);
-    this.seamLegend = new SeamLegend(canvasContainer, this);
-    this.renderer = new P5Adapter(canvasContainer, this);
-    this.exporter = new Exporter(this);
-    this.controls = new Controls(this, uiContainer);
+    this.parametricOverlay = adapters.createParametricOverlay(this);
+    this.uvDomainInset = adapters.createUVDomainInset(this);
+    this.surfaceInspector = adapters.createSurfaceInspector(this);
+    this.seamLegend = adapters.createSeamLegend(this);
+    this.renderer = adapters.createRenderer(this);
+    this.exporter = adapters.createExporter(this);
+    this.controls = adapters.createControls(this);
 
     this.fileInput = document.createElement('input');
     this.fileInput.type = 'file';
@@ -384,7 +359,7 @@ export class App {
       this.startWithOverlay.focusFirst();
       return this.startWithOverlay;
     }
-    const overlay = new StartWithOverlay(this, {
+    const overlay = this.adapters.createStartWithOverlay(this, {
       firstRun,
       onClose: () => { this.startWithOverlay = null; },
     });
@@ -402,11 +377,11 @@ export class App {
     let dataUrl = null;
     try {
       if (choiceId === 'composition') {
-        dataUrl = this.presets.ensureLargePreview('Vortex Stack', START_WITH_PREVIEW_SIZE);
+        dataUrl = this.presets.ensureLargePreview('Vortex Stack', this.startWithPreviewSize);
       } else if (choiceId === 'surface') {
-        dataUrl = renderPresetPreview(createDocument('parametric-surface'), { size: START_WITH_PREVIEW_SIZE });
+        dataUrl = this.renderPresetPreview(createDocument('parametric-surface'), { size: this.startWithPreviewSize });
       } else if (choiceId === 'classic') {
-        dataUrl = renderPresetPreview(createDocument('parametric'), { size: START_WITH_PREVIEW_SIZE });
+        dataUrl = this.renderPresetPreview(createDocument('parametric'), { size: this.startWithPreviewSize });
       }
     } catch {
       dataUrl = null;
