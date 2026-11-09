@@ -306,6 +306,17 @@ export const PRESET_META = {
     tags: ['fabricate', 'functional', 'hook', 'wall', 'screw'],
   },
 
+  'Lampshade Ring Set': {
+    category: 'fabricate',
+    description: 'Three concentric open lampshades: 180/150/120 mm tall, 2 mm walls, separate bodies.',
+    tags: ['fabricate', 'decorative', 'lampshade', 'set', 'multi-body'],
+  },
+  'Stackable Tray 160': {
+    category: 'fabricate',
+    description: 'Rounded stackable tray: 168 × 98 × 30 mm lip, 3 mm wall and a locating top step.',
+    tags: ['fabricate', 'functional', 'tray', 'stackable', 'lip'],
+  },
+
   /* ——— Compositions ——— */
   'Vortex Stack': {
     category: 'compositions',

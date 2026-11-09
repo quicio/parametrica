@@ -574,6 +574,12 @@ labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
 Wall thickness remains correctly `unavailable` until a real estimator exists;
 external slicer verification remains a manual record.
 
+### Fabricate boolean groups and wave 3 (archived)
+
+Independent boolean groups now let one preset export several hollow bodies.
+This unlocked the three-shade `Lampshade Ring Set` and the multi-body grouped
+recipe. `Stackable Tray 160` adds a stepped lip without a second boolean.
+
 ### Fabricate object primitives and wave 2 (archived)
 
 Rounded superellipse shells, cutter layers, open annular shells and stepped

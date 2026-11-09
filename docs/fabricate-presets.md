@@ -27,6 +27,8 @@ fabrication controls without manual setup.
 | **Napkin Holder 140** | Functional | 140 × 70 × 60 mm shell with open front/back windows |
 | **Wall Planter 120** | Functional | 140 × 70 × 120 mm wall planter with keyhole and drain |
 | **Wall Hook 70** | Functional | 70 mm flanged peg with two screw holes |
+| **Lampshade Ring Set** | Decorative | Three concentric open shades, 180/150/120 mm, 2 mm walls, three bodies |
+| **Stackable Tray 160** | Functional | 168 × 98 × 30 mm rounded tray with a locating top lip |
 
 SDF Enneper and Möbius Challenge were removed: the former is a thin repair demo
 and the latter is intentionally non-exportable. The remaining technical solids
@@ -64,6 +66,8 @@ supports; the report surfaces that instead of hiding it.
 | Napkin Holder 140 | exportable | 9,309 mm² | 1% | Ready |
 | Wall Planter 120 | exportable | 9,032 mm² | 0% | Ready |
 | Wall Hook 70 | exportable | 1,519 mm² | 0% | Ready |
+| Lampshade Ring Set | exportable, 3 bodies | 2,859 mm² | 0% | Ready |
+| Stackable Tray 160 | exportable | 13,345 mm² | 4% | Ready |
 
 The torus/boolean family has no flat bed face. They remain as closed technical
 examples because they are useful for booleans and 3MF multi-body export, and
@@ -104,8 +108,10 @@ The object wave shares three preset-level primitives:
 - **Open and stepped solids**: annular shells with end caps, and solids of
   revolution with blind-hole or screw-hole cutters.
 
-All new objects use one Manifold difference per body. `Lampshade 180` is the
-only through-centre shell; the rest have a solid floor.
+Most objects use one Manifold difference per body. Grouped recipes let one
+preset combine independent boolean groups and export them as multiple bodies;
+`Lampshade Ring Set` uses three outer−inner differences. `Lampshade 180` is a
+through-centre shell; the rest have a solid floor.
 
 ## Product preview
 
@@ -115,14 +121,18 @@ lattice bodies. The renderer selection is enabled once Fabricate reports
 
 ## Next object candidates
 
-These remain proposed; they need capabilities beyond one difference operation.
+These remain proposed; they need a compound recipe beyond independent groups.
 
 | Candidate | Type | Why it is not in yet |
 |---|---|---|
-| **Modular Planter Tile** | Functional | Needs an interlocking tile/key; `Wall Planter 120` covers the wall-hung case. |
-| **Lampshade Ring Set** | Decorative | Needs nested open shells with separate annular caps. |
-| **Folding Wall Hook** | Functional | Needs a two-part hinge or sequential union-then-difference recipe. |
-| **Stackable Desk Tray** | Functional | Needs a registration lip and a compound boolean recipe. |
+| **Modular Planter Tile** | Functional | Needs a keyed rail or interlocking dovetail and a matching wall cleat. |
+| **Folding Wall Hook** | Functional | Needs a hinge/clevis and a pin, plus a union-then-difference recipe. |
+| **Stackable Bowl Set** | Functional | Needs nested bowls with registration feet and separate bodies. |
+| **Snap-Fit Desk Tray** | Functional | Needs a compliant snap feature and tolerance tuning. |
+
+The next practical step is a **sequential CSG recipe**: union the hinge base,
+then subtract the screw holes. Independent groups already cover multi-body
+sets such as the lampshade ring.
 
 ## Lattice example
 

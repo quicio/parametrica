@@ -881,8 +881,12 @@ export class Controls {
     if (els.scopeSelect) els.scopeSelect.value = report.scope ?? 'single';
     if (els.formatSelect) els.formatSelect.value = preparation.format === '3mf' ? '3mf' : 'stl';
     if (els.booleanSelect) {
-      els.booleanSelect.value = report.scope === 'single' ? 'none' : (report.boolean?.operation ?? preparation.boolean ?? 'none');
-      els.booleanSelect.disabled = report.scope === 'single' || (report.closed ?? 0) < 2;
+      const grouped = Boolean(report.groups?.length);
+      els.booleanSelect.value = grouped || report.scope === 'single'
+        ? 'none'
+        : (report.boolean?.operation ?? preparation.boolean ?? 'none');
+      els.booleanSelect.disabled = grouped || report.scope === 'single' || (report.closed ?? 0) < 2;
+      els.booleanSelect.title = grouped ? 'Grouped preset recipe' : '';
       for (const option of els.booleanSelect.options) {
         if (option.value === 'difference' || option.value === 'intersection') {
           option.disabled = (report.closed ?? 0) < 2;
@@ -902,11 +906,13 @@ export class Controls {
     els.status.textContent = ready
       ? (report.lattice?.struts
         ? 'READY · lattice body'
-        : report.boolean
-          ? `READY · ${report.boolean.operation} result`
-          : report.multiBody
-            ? `READY · ${report.bodies} bodies`
-            : report.repair
+        : report.groups?.length
+          ? `READY · ${report.groups.length} grouped ${report.groups.length === 1 ? 'body' : 'bodies'}`
+          : report.boolean
+            ? `READY · ${report.boolean.operation} result`
+            : report.multiBody
+              ? `READY · ${report.bodies} bodies`
+              : report.repair
               ? 'READY · repaired closed body'
               : (report.prepared ? 'READY · prepared closed body' : 'READY · validated closed body'))
       : state === 'units'
@@ -920,11 +926,13 @@ export class Controls {
     els.source.textContent = report.source
       ? report.lattice?.struts
         ? `${report.layerName ?? 'Active layer'} · lattice network · ${report.lattice.struts} struts`
-        : report.boolean
-          ? `${report.layerName ?? 'Active layer'} · boolean ${report.boolean.operation} · ${report.boolean.operands} operands`
-          : report.multiBody
-            ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
-            : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
+        : report.groups?.length
+          ? `${report.layerName ?? 'Active layer'} · grouped recipe · ${report.groups.length} groups · ${report.bodies} bodies`
+          : report.boolean
+            ? `${report.layerName ?? 'Active layer'} · boolean ${report.boolean.operation} · ${report.boolean.operands} operands`
+            : report.multiBody
+              ? `${report.layerName ?? 'Active layer'} · multi-body mesh · ${report.bodies} shells`
+              : `${report.layerName ?? 'Active layer'} · ${report.source.kind} ${report.source.id ?? ''}`.trim()
       : `${report.layerName ?? 'Active layer'} · no closed Mesh/Solid`;
     const formatLabel = preparation.format === '3mf' ? '3MF' : 'Binary STL';
     els.reason.textContent = report.reason ?? (ready
@@ -932,9 +940,11 @@ export class Controls {
         ? `${formatLabel} · millimetres · ${report.lattice.holes} holes · ${formatNumber(report.lattice.holeDiameter ?? 0)} mm`
         : report.lattice?.struts
         ? `${formatLabel} · millimetres · ${report.lattice.struts} struts · ${formatNumber((report.lattice.radius ?? 1.75) * 2)} mm`
-        : report.boolean
-          ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
-          : `${formatLabel} · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+        : report.groups?.length
+          ? `${formatLabel} · millimetres · ${report.groups.length} grouped ${report.groups.length === 1 ? 'body' : 'bodies'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+          : report.boolean
+            ? `${formatLabel} · millimetres · ${report.boolean.operation} of ${report.boolean.operands} bodies${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
+            : `${formatLabel} · millimetres · ${report.multiBody ? `${report.bodies} disjoint bodies` : 'single body'}${report.repair ? ' · repaired' : (report.prepared ? ' · prepared' : '')}`
       : report.candidates.length && (preparation.weld || preparation.cap)
         ? 'Preparation did not produce a closed body; adjust weld/cap or inspect the checks.'
         : 'Enable Weld or Cap to prepare an open mesh, or select a validated body.');
@@ -1096,9 +1106,11 @@ export class Controls {
     const compositionScope = report.scope === 'composition';
     els.compositionNote.hidden = instanceCount === 0 && !compositionScope;
     els.compositionNote.textContent = compositionScope
-      ? report.boolean
-        ? `Composition · ${report.boolean.operation} of ${report.boolean.operands} bodies · one derived shell`
-        : `Composition · ${report.bodies ?? 0} validated bod${report.bodies === 1 ? 'y' : 'ies'} · separate shells, not a union`
+      ? report.groups?.length
+        ? `Composition · ${report.groups.length} boolean groups · ${report.bodies ?? 0} derived bod${report.bodies === 1 ? 'y' : 'ies'}`
+        : report.boolean
+          ? `Composition · ${report.boolean.operation} of ${report.boolean.operands} bodies · one derived shell`
+          : `Composition · ${report.bodies ?? 0} validated bod${report.bodies === 1 ? 'y' : 'ies'} · separate shells, not a union`
       : instanceCount
         ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · ${report.multiBody ? `${report.bodies} bodies` : 'one body'} · scope: ${report.scope ?? 'single'}`
         : '';

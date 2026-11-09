@@ -16,13 +16,16 @@ import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../core/units.js';
+import { sanitizeFabricationGroups } from '../core/document.js';
 import { compileExpression } from '../math/expression.js';
 import { buildManufacturingReport, sanitizeManufacturingProfile } from '../geometry/manufacturingProfile.js';
 import { createStdlib } from '../math/stdlib.js';
 
 export function resolveFabricationSource({ evaluation = null, layerIndex = 0, preparation = null } = {}) {
   const prepare = normalizePreparation(preparation);
-  const scope = prepare.scope;
+  const groups = prepare.groups ?? [];
+  const useGroups = groups.length > 0;
+  const scope = useGroups ? 'composition' : prepare.scope;
   const layers = Array.isArray(evaluation?.layers) ? evaluation.layers : null;
   const activeIndex = Math.max(0, Math.min((layers?.length ?? 1) - 1, layerIndex));
   const activeLayer = layers ? layers[activeIndex] ?? null : evaluation ?? null;
@@ -128,13 +131,26 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
   }
 
   const exportable = candidates.filter((candidate) => candidate.exportable);
-  let source = scope === 'single' || exportable.length <= 1 ? exportable[0] ?? null : null;
+  let source = useGroups ? null : (scope === 'single' || exportable.length <= 1 ? exportable[0] ?? null : null);
   let mergedError = null;
   let bodies = source ? 1 : 0;
   let booleanError = null;
   let booleanEmpty = false;
+  let groupError = null;
+  let groupMetadata = null;
 
-  if (scope !== 'single' && prepare.boolean !== 'none') {
+  if (useGroups) {
+    const grouped = resolveBooleanGroups(exportable, groups, prepare);
+    if (grouped.error) {
+      source = null;
+      groupError = grouped.error;
+      groupMetadata = grouped.metadata ?? null;
+    } else {
+      source = grouped.source;
+      bodies = grouped.bodies;
+      groupMetadata = grouped.metadata;
+    }
+  } else if (scope !== 'single' && prepare.boolean !== 'none') {
     if (exportable.length < 2) {
       source = null;
       booleanError = `Boolean ${prepare.boolean} requires at least two validated bodies`;
@@ -276,17 +292,20 @@ export function resolveFabricationSource({ evaluation = null, layerIndex = 0, pr
     manufacturing: prepare.manufacturing,
     repair: source?.repair ?? null,
     prepared: Boolean(source?.prepared),
+    groups: groupMetadata,
     reason: source
       ? null
-      : perforationError
-        ? perforationError
-        : booleanError
-          ? booleanError
-          : mergedError
-            ? `Multi-body export failed: ${mergedError}`
-            : candidates.length
-          ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
-          : 'The active layer has no Mesh/Solid geometry',
+      : groupError
+        ? groupError
+        : perforationError
+          ? perforationError
+          : booleanError
+            ? booleanError
+            : mergedError
+              ? `Multi-body export failed: ${mergedError}`
+              : candidates.length
+                ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
+                : 'The active layer has no Mesh/Solid geometry',
   };
 }
 
@@ -480,6 +499,7 @@ function numeric(value, fallback) {
 function normalizePreparation(raw) {
   if (!raw || typeof raw !== 'object') return { weld: false, cap: false, scope: 'single' };
   return {
+    groups: sanitizeFabricationGroups(raw.groups),
     weld: raw.weld === true,
     cap: raw.cap === true,
     tolerance: raw.tolerance,
@@ -515,6 +535,105 @@ function normalizePreparation(raw) {
       : null,
     manufacturing: sanitizeManufacturingProfile(raw.manufacturing),
     quality: raw.quality,
+  };
+}
+
+function resolveBooleanGroups(exportable, groups, prepare) {
+  const byLayer = new Map();
+  for (const candidate of exportable) {
+    if (candidate.layerId) byLayer.set(candidate.layerId, candidate);
+  }
+  const bodies = [];
+  const metadata = [];
+  const used = new Set();
+  for (let index = 0; index < groups.length; index++) {
+    const group = groups[index];
+    const members = group.layers.map((id) => byLayer.get(id)).filter(Boolean);
+    if (!members.length) {
+      return { error: `Boolean group ${index + 1} has no validated body`, metadata };
+    }
+    if (members.some((member) => used.has(member))) {
+      return { error: `Layer reused across boolean groups`, metadata };
+    }
+    members.forEach((member) => used.add(member));
+    if (members.length === 1) {
+      bodies.push({ ...members[0], group: { index, name: group.name, operation: group.op, layerIds: group.layers } });
+      metadata.push({ index, name: group.name, operation: group.op, layers: group.layers });
+      continue;
+    }
+    const operands = members.map((candidate) => (
+      isSolid(candidate.geometry) ? candidate.geometry.boundary : candidate.geometry
+    ));
+    const result = booleanSolids(group.op, operands, {
+      tolerance: prepare.tolerance,
+      strategy: prepare.csgStrategy,
+      remeshResolution: prepare.remeshResolution,
+    });
+    if (!result.ok) {
+      return { error: `Boolean group ${index + 1} failed: ${result.error?.message ?? 'unknown error'}`, metadata };
+    }
+    if (result.empty) {
+      return { error: `Boolean group ${index + 1} is empty`, metadata };
+    }
+    const validation = validateForFabrication(result.geometry);
+    const closed = Boolean(validation.meta?.closed);
+    if (!validation.ok || !closed) {
+      return {
+        error: `Boolean group ${index + 1} is not a closed solid: ${validation.errors?.[0] ?? 'unknown error'}`,
+        metadata,
+      };
+    }
+    bodies.push({
+      geometry: result.geometry,
+      kind: 'mesh',
+      id: `group-${index + 1}`,
+      validation,
+      closed: true,
+      exportable: true,
+      prepared: members.some((member) => member.prepared),
+      repair: aggregateRepair(members),
+      preparation: aggregatePreparation(members),
+      boolean: { operation: group.op, operands: members.length, stats: result.stats },
+      group: { index, name: group.name, operation: group.op, layerIds: group.layers },
+    });
+    metadata.push({ index, name: group.name, operation: group.op, layers: group.layers });
+  }
+  if (!bodies.length) return { error: 'Boolean groups produced no bodies', metadata };
+  if (bodies.length === 1) {
+    return { source: bodies[0], bodies: 1, multiBody: false, metadata };
+  }
+  const meshes = bodies.map((body) => (
+    isSolid(body.geometry) ? body.geometry.boundary : body.geometry
+  ));
+  const merged = mergeMeshes(meshes, { id: 'grouped-multi-body' });
+  if (!merged.mesh) return { error: 'Grouped multi-body merge failed', metadata };
+  const validation = validateForFabrication(merged.mesh);
+  const closed = Boolean(validation.meta?.closed);
+  if (!validation.ok || !closed) {
+    return {
+      error: `Grouped multi-body failed validation: ${validation.errors?.[0] ?? 'unknown error'}`,
+      metadata,
+    };
+  }
+  return {
+    source: {
+      geometry: merged.mesh,
+      kind: 'mesh',
+      id: 'grouped-multi-body',
+      validation,
+      closed: true,
+      exportable: true,
+      prepared: bodies.some((body) => body.prepared),
+      repair: aggregateRepair(bodies),
+      preparation: aggregatePreparation(bodies),
+      bodies: bodies.length,
+      bodyIds: bodies.map((body) => body.id),
+      multiBody: true,
+      groups: metadata,
+    },
+    bodies: bodies.length,
+    multiBody: true,
+    metadata,
   };
 }
 

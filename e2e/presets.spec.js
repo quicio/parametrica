@@ -7,10 +7,10 @@ test('preset library groups, searches and applies a surface', async ({ page }) =
 
   const presets = await openSection(page, 'Presets');
   await expect(presets.locator('.preset-chip', { hasText: 'Surfaces' })).toBeVisible();
-  await expect(presets.locator('.preset-status')).toContainText('63 of 63 presets');
+  await expect(presets.locator('.preset-status')).toContainText('65 of 65 presets');
 
   await presets.locator('.preset-chip', { hasText: 'Surfaces' }).click();
-  await expect(presets.locator('.preset-status')).toContainText('9 of 63 presets');
+  await expect(presets.locator('.preset-status')).toContainText('9 of 65 presets');
   await expect(presets.locator('.preset-item')).toHaveCount(9);
   await expect(presets.locator('.preset-item', { hasText: 'Catenoid' }))
     .toContainText(/minimal surface of revolution/i);
@@ -40,9 +40,9 @@ test('fabricate category lists print-ready objects and drops the challenges', as
 
   const presets = await openSection(page, 'Presets');
   await presets.locator('.preset-chip', { hasText: 'Fabricate' }).click();
-  await expect(presets.locator('.preset-status')).toContainText('22 of 63 presets');
+  await expect(presets.locator('.preset-status')).toContainText('24 of 65 presets');
 
-  for (const name of ['Pencil Cup 100', 'Planter 120', 'Napkin Ring 50', 'Coaster 90', 'Bud Vase 160', 'Twisted Totem 220', 'Lampshade 180', 'Candle Holder 80', 'Soap Dish 120', 'Desk Tray 160', 'Napkin Holder 140', 'Wall Planter 120', 'Wall Hook 70']) {
+  for (const name of ['Pencil Cup 100', 'Planter 120', 'Napkin Ring 50', 'Coaster 90', 'Bud Vase 160', 'Twisted Totem 220', 'Lampshade 180', 'Candle Holder 80', 'Soap Dish 120', 'Desk Tray 160', 'Napkin Holder 140', 'Wall Planter 120', 'Wall Hook 70', 'Lampshade Ring Set', 'Stackable Tray 160']) {
     await expect(presets.locator(`[data-preset-row="${name}"]`)).toBeVisible();
   }
   await expect(presets.locator('.preset-item', { hasText: 'SDF Enneper' })).toHaveCount(0);
@@ -100,7 +100,7 @@ test('favorites persist and starring does not apply the preset', async ({ page }
 
   await presets.locator('.preset-chip', { hasText: 'Favorites' }).click();
   await expect(presets.locator('.preset-item')).toHaveCount(1);
-  await expect(presets.locator('.preset-status')).toContainText('1 of 63 presets · Favorites');
+  await expect(presets.locator('.preset-status')).toContainText('1 of 65 presets · Favorites');
 
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__parametrica?.evaluation));

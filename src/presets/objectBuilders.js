@@ -124,6 +124,36 @@ export function hollowRevolved(name, {
   return doc;
 }
 
+/** Add one hollow shell (outer + inner) to an existing document. */
+export function addHollowRevolved(doc, {
+  name,
+  profile,
+  height,
+  wall,
+  floor,
+  innerExtra = 4,
+  samplesU = 96,
+  samplesV = 64,
+  x = 0,
+  y = 0,
+}) {
+  const outer = surfaceLayer(`${name} outer`, {
+    exprX: `(${profile})*cos(u) + ${x}`,
+    exprY: `(${profile})*sin(u) + ${y}`,
+    exprZ: `${height}*v`,
+    samplesU, samplesV,
+  });
+  const inner = surfaceLayer(`${name} inner`, {
+    exprX: `(${profile} - ${wall})*cos(u) + ${x}`,
+    exprY: `(${profile} - ${wall})*sin(u) + ${y}`,
+    exprZ: `${floor} + ${height + innerExtra}*v`,
+    samplesU, samplesV,
+  });
+  addLayer(doc, outer);
+  addLayer(doc, inner);
+  return [outer, inner];
+}
+
 /** Closed solid of revolution, capped at both ends. */
 export function solidRevolved(name, {
   profile,
@@ -191,6 +221,46 @@ export function hollowRounded(name, {
   const inner = surfaceLayer('Inner shell', {
     exprX: superellipseX(width / 2 - wall, exponent),
     exprY: superellipseY(depth / 2 - wall, exponent),
+    exprZ: `${floor} + ${height + innerExtra}*v`,
+    samplesU, samplesV,
+  });
+  addLayer(doc, inner);
+  doc.activeLayer = 0;
+  return doc;
+}
+
+/** Rounded shell with width/depth expressions in v (for lips and steps). */
+export function hollowRoundedExpr(name, {
+  outerX,
+  outerY,
+  innerX,
+  innerY,
+  height,
+  floor,
+  innerExtra = 4,
+  samplesU = 128,
+  samplesV = 64,
+}) {
+  const doc = createDocument('parametric-surface', {
+    name,
+    generator: {
+      params: {
+        exprX: `(${outerX})*sign(cos(u))*abs(cos(u))^(2/4)`,
+        exprY: `(${outerY})*sign(sin(u))*abs(sin(u))^(2/4)`,
+        exprZ: `${height}*v`,
+        u0: 0, u1: 2 * PI,
+        v0: 0, v1: 1,
+        samplesU, samplesV,
+        closedU: true, closedV: false,
+        fit: 340,
+      },
+    },
+    view: mmView(HOLLOW_FABRICATION),
+  });
+  doc.layers[0].name = 'Outer shell';
+  const inner = surfaceLayer('Inner shell', {
+    exprX: `(${innerX})*sign(cos(u))*abs(cos(u))^(2/4)`,
+    exprY: `(${innerY})*sign(sin(u))*abs(sin(u))^(2/4)`,
     exprZ: `${floor} + ${height + innerExtra}*v`,
     samplesU, samplesV,
   });

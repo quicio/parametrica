@@ -297,6 +297,36 @@ test('product preview uses the cut body for a cutter-based object', async ({ pag
   await page.waitForTimeout(300);
 });
 
+test('product preview supports a grouped multi-body preset', async ({ page }) => {
+  test.setTimeout(90_000);
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Lampshade Ring Set'));
+  await page.waitForTimeout(500);
+
+  const fabricate = await openSection(page, 'Fabricate');
+  await expect(fabricate.locator('.fabricate-status')).toContainText('READY', { timeout: 30_000 });
+  const renderer = fabricate.locator('.fabricate-product-renderer');
+  await expect(renderer).toBeEnabled();
+  await renderer.selectOption('webgl');
+  await page.waitForFunction(() => Boolean(window.__parametrica.productPreview?.ready), null, { timeout: 15_000 });
+  await page.waitForTimeout(300);
+
+  const state = await page.evaluate(() => {
+    const app = window.__parametrica;
+    return {
+      backend: app.document.view.preview.backend,
+      active: Boolean(app.productPreviewActive),
+      bodies: app.controls.fabricationReport?.bodies ?? null,
+      groups: app.controls.fabricationReport?.groups?.length ?? null,
+      previewMesh: Boolean(app.fabricationPreview?.mesh),
+    };
+  });
+  expect(state).toEqual({ backend: 'webgl', active: true, bodies: 3, groups: 3, previewMesh: true });
+
+  await renderer.selectOption('p5');
+  await page.waitForTimeout(300);
+});
+
 test('product preview renders the prepared lattice with a finish and returns to technical', async ({ page }) => {
   test.setTimeout(90_000);
   await boot(page);

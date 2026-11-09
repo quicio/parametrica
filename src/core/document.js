@@ -68,6 +68,7 @@ export const FABRICATION_TOPOLOGY = Object.freeze(['none', 'split', 'remove']);
 export const FABRICATION_NON_ORIENTABLE = Object.freeze(['cut', 'reject']);
 export const FABRICATION_CSG_STRATEGIES = Object.freeze(['auto', 'manifold', 'bsp', 'remesh']);
 export const DEFAULT_FABRICATION = Object.freeze({
+  groups: Object.freeze([]),
   weld: false,
   cap: false,
   tolerance: 1e-4,
@@ -107,11 +108,29 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
+export function sanitizeFabricationGroups(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 16).map((group) => {
+    if (!group || typeof group !== 'object') return null;
+    const op = FABRICATION_BOOLEANS.includes(group.op) && group.op !== 'none' ? group.op : null;
+    const layers = Array.isArray(group.layers)
+      ? [...new Set(group.layers.filter((id) => typeof id === 'string' && id))].slice(0, 64)
+      : [];
+    if (!op || !layers.length) return null;
+    return {
+      op,
+      layers,
+      name: typeof group.name === 'string' ? group.name.trim().slice(0, 60) : '',
+    };
+  }).filter(Boolean);
+}
+
 export function sanitizeFabricationSettings(raw) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const tolerance = Number(source.tolerance);
   const maxHoleEdges = Number(source.maxHoleEdges);
   return {
+    groups: sanitizeFabricationGroups(source.groups),
     weld: source.weld === true,
     cap: source.cap === true,
     tolerance: Number.isFinite(tolerance) && tolerance > 0

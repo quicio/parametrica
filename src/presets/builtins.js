@@ -8,11 +8,13 @@
 import { createDocument, createInstanceLayer } from '../core/document.js';
 import {
   addCutter,
+  addHollowRevolved,
   cutterBox,
   cutterCylinderY,
   cutterCylinderZ,
   hollowRevolved,
   hollowRounded,
+  hollowRoundedExpr,
   mmView,
   SOLID_FABRICATION,
   solidRevolved,
@@ -634,6 +636,59 @@ export const BUILT_IN_PRESETS = {
     }));
     return doc;
   },
+
+  'Lampshade Ring Set': () => {
+    const doc = hollowRevolved('Lampshade Ring Set', {
+      profile: '85 - 30*v + 2*sin(pi*v)',
+      height: 180,
+      wall: 2,
+      floor: -4,
+      innerExtra: 8,
+      samplesV: 48,
+    });
+    doc.layers[0].name = 'Outer lampshade · shell';
+    doc.layers[1].name = 'Outer lampshade · inner';
+    const middle = addHollowRevolved(doc, {
+      name: 'Middle lampshade',
+      profile: '65 - 22*v + 2*sin(pi*v)',
+      height: 150,
+      wall: 2,
+      floor: -3,
+      innerExtra: 6,
+      samplesV: 44,
+    });
+    const inner = addHollowRevolved(doc, {
+      name: 'Inner lampshade',
+      profile: '45 - 15*v + 1.5*sin(pi*v)',
+      height: 120,
+      wall: 2,
+      floor: -3,
+      innerExtra: 6,
+      samplesV: 40,
+    });
+    doc.view.fabrication = {
+      ...doc.view.fabrication,
+      scope: 'composition',
+      boolean: 'none',
+      groups: [
+        { op: 'difference', name: 'Outer lampshade', layers: [doc.layers[0].id, doc.layers[1].id] },
+        { op: 'difference', name: 'Middle lampshade', layers: [middle[0].id, middle[1].id] },
+        { op: 'difference', name: 'Inner lampshade', layers: [inner[0].id, inner[1].id] },
+      ],
+    };
+    doc.activeLayer = 0;
+    return doc;
+  },
+
+  'Stackable Tray 160': () => hollowRoundedExpr('Stackable Tray 160', {
+    outerX: '80 + 4*clamp((v-0.78)/0.08,0,1)',
+    outerY: '45 + 4*clamp((v-0.78)/0.08,0,1)',
+    innerX: '77 + 4*clamp((v-0.78)/0.08,0,1)',
+    innerY: '42 + 4*clamp((v-0.78)/0.08,0,1)',
+    height: 30,
+    floor: 4,
+    innerExtra: 4,
+  }),
 
   'Lattice Vase 200': () =>
     createDocument('surface-lattice', {

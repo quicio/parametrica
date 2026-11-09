@@ -33,6 +33,8 @@ const PRESETS = [
   'Napkin Holder 140',
   'Wall Planter 120',
   'Wall Hook 70',
+  'Lampshade Ring Set',
+  'Stackable Tray 160',
   'Lattice Vase 200',
   'Organic Lattice Vase 200',
   'Perforated Vase 200',
@@ -133,6 +135,8 @@ export async function run(assert) {
     'Napkin Holder 140': { depth: 60, width: 140 },
     'Wall Planter 120': { depth: 120, width: 140 },
     'Wall Hook 70': { depth: 70, width: 44 },
+    'Lampshade Ring Set': { depth: 180, width: 170 },
+    'Stackable Tray 160': { depth: 30, width: 168 },
   };
   for (const [name, expected] of Object.entries(expectations)) {
     const report = reports.get(name);
@@ -158,6 +162,8 @@ export async function run(assert) {
     'Napkin Holder 140': 2,
     'Wall Planter 120': 3,
     'Wall Hook 70': 2,
+    'Lampshade Ring Set': 0,
+    'Stackable Tray 160': 0,
   };
   for (const [name, cutters] of Object.entries(cutterExpectations)) {
     const doc = BUILT_IN_PRESETS[name]();
@@ -170,6 +176,47 @@ export async function run(assert) {
     assert(scene.layers.every((layer) => layer.fabricationRole !== 'cutter'),
       `${name} never renders a cutter as authored geometry`);
   }
+  const ringSet = reports.get('Lampshade Ring Set');
+  assert(ringSet.bodies === 3 && ringSet.multiBody === true, 'Lampshade Ring Set exports three bodies');
+  assert(ringSet.groups?.length === 3, 'Lampshade Ring Set keeps three boolean groups');
+  assert(ringSet.groups.every((group) => group.operation === 'difference'), 'each lampshade group is a difference');
+  assert(BUILT_IN_PRESETS['Lampshade Ring Set']().layers.length === 6, 'Lampshade Ring Set keeps six shell layers');
+  assert(BUILT_IN_PRESETS['Stackable Tray 160']().layers.length === 2, 'Stackable Tray 160 is one hollow shell');
+  const badGroupDoc = BUILT_IN_PRESETS['Pencil Cup 100']();
+  badGroupDoc.view.fabrication = {
+    ...badGroupDoc.view.fabrication,
+    scope: 'composition',
+    boolean: 'none',
+    groups: [{ op: 'difference', layers: ['missing-layer'] }],
+  };
+  const badGroupReport = buildFabricationReport({
+    evaluation: evaluateDocument(badGroupDoc, { time: 0 }),
+    layerIndex: 0,
+    units: badGroupDoc.view.units,
+    preparation: badGroupDoc.view.fabrication,
+  });
+  assert(badGroupReport.exportable === false, 'a missing group layer blocks export');
+  assert(/Boolean group/i.test(badGroupReport.reason ?? ''), 'a failed group explains which group failed');
+
+  const reusedGroupDoc = BUILT_IN_PRESETS['Pencil Cup 100']();
+  const [firstLayer, secondLayer] = reusedGroupDoc.layers;
+  reusedGroupDoc.view.fabrication = {
+    ...reusedGroupDoc.view.fabrication,
+    scope: 'composition',
+    boolean: 'none',
+    groups: [
+      { op: 'difference', layers: [firstLayer.id, secondLayer.id] },
+      { op: 'difference', layers: [firstLayer.id, secondLayer.id] },
+    ],
+  };
+  const reusedReport = buildFabricationReport({
+    evaluation: evaluateDocument(reusedGroupDoc, { time: 0 }),
+    layerIndex: 0,
+    units: reusedGroupDoc.view.units,
+    preparation: reusedGroupDoc.view.fabrication,
+  });
+  assert(reusedReport.exportable === false, 'a layer reused across groups blocks export');
+  assert(/reused/i.test(reusedReport.reason ?? ''), 'reused group layers are reported');
   assert(!BUILT_IN_PRESETS['SDF Enneper'], 'SDF Enneper is removed from the fabricable library');
   assert(!BUILT_IN_PRESETS['Möbius Challenge'], 'Möbius Challenge is removed from the fabricable library');
 
