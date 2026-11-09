@@ -45,11 +45,18 @@ Current dependencies:
 
 | Dependency | Status | Purpose |
 |---|---|---|
-| `polygon-clipping` | ✅ shipped | Boolean union/difference/intersection |
+| `p5` | ✅ shipped (lazy) | Technical canvas renderer; the default |
+| `three` | ✅ shipped (lazy) | Optional WebGL/PBR Product preview |
+| `manifold-3d` | ✅ shipped (lazy) | Primary CSG engine with BSP/remesh fallbacks |
+| `polygon-clipping` | ✅ shipped | Legacy boolean union/difference/intersection |
 | `d3-delaunay` | ✅ shipped | Voronoi topology operator |
+| `lil-gui` | ✅ shipped | Parameter panel widgets |
 | `@codemirror/*` | ✅ shipped | Formula editor with math-aware syntax highlighting |
+| `gifenc` | ✅ shipped | Timeline GIF export |
 
-No UI framework. No WebGL (until a profiled need proves otherwise).
+No UI framework. WebGL is optional presentation only: p5 remains the technical
+default and the source of truth for overlays, picking, SVG/plotter and
+canonical exports.
 
 ---
 
@@ -198,11 +205,14 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `helix` | Generalized circular helix with radial/pitch modulation and torsion | r, p, turns, a, k, φ, θ, b, m, ψ, strands | t ∈ [θ0, θ0+2π·turns] |
 || `parametric-3d` | Projected x/y/z expression curve | exprX/Y/Z, t0, t1, samples | user |
 
-> **Current status (2026-11-04):** 24 generators, 37 operators and 14 render
-> passes. Phase 4A–4J shipped: Instance Layers, Physical Units, STL/Fabricate,
-> Viewport Coordinates, Look Presets, Startup Continuity, Vortex Stack and
-> Start With. Gates: 2151 unit checks, 134 e2e tests and 81 OpenSpec specs.
-> The historical milestone table below remains as the v0.1 record.
+> **Current status (2026-11-09):** 25 generators, 37 operators, 15 render
+> passes and 65 built-in presets. Fabricate includes Manifold CSG, STL/3MF,
+> multi-body and grouped recipes, repair/cap, lattice and perforated bodies,
+> a manufacturing profile and an optional WebGL/PBR Product preview. The
+> post-lattice accessibility, preview, persistence and image even-odd slices
+> are archived. Gates: 2,222 lab checks, 920 domain checks, 167 passing e2e
+> scenarios (1 conditional skip) and 125 OpenSpec specs. The historical
+> milestone table below remains as the v0.1 record.
 
 ---
 
@@ -469,18 +479,21 @@ evolution with numeric crossover, structural mutation and generation lineage.
 
 SVG (active vector render passes, overlays, blend modes and clean coordinates;
 Parametrica document embedded as XML comment under
-`<!-- parametrica document: … -->`) · PNG (HiDPI canvas) · animated GIF
-(timeline duration/FPS up to 50 FPS, 360 px max side) · JSON
+`<!-- parametrica document: … -->`) · plotter SVG (stroke-only, optional
+physical page) · PNG (HiDPI canvas) · Product PNG (WebGL/PBR preview) ·
+animated GIF (timeline duration/FPS up to 50 FPS, 360 px max side) · frame
+sequences (PNG/SVG ZIP + manifest) · binary STL · multi-object 3MF · JSON
 (ParametricaDocument) · clipboard JSON.
 SVG replays the same pass draw calls as the canvas through an SVG recorder:
 stroke, points, gradient wireframe, surface fill/wireframe, diagnostics and
 overlays are represented as vector primitives. Solid and linear/radial fill
 gradients use SVG paint definitions. Layer blend modes use CSS `mix-blend-mode`.
 Signed Distance remains a documented raster-only omission; PNG is the faithful
-raster fallback. Timeline also exports a ZIP of standalone SVG frames plus a
-manifest. Quad view is canvas-only for SVG/plotter; PNG and GIF capture the
-quad canvas.
-Tier 2: PNG/SVG frame sequences and GIF export.
+raster fallback. Timeline also exports ZIPs of standalone PNG/SVG frames plus a
+manifest. Quad view exports as four SVG/plotter panels (3D, XY, XZ, YZ) with
+stable panel identity; PNG and GIF capture the quad canvas. Fabricate writes
+binary STL for one validated body and 3MF for one or more objects, including
+multi-body and grouped recipes.
 
 ---
 
@@ -488,7 +501,7 @@ Tier 2: PNG/SVG frame sequences and GIF export.
 
 ```
 src/
-  core/        engine · registry · document · params schema
+  core/        engine · registry · document · params schema · persistence
   math/        tokenizer · parser · ast · stdlib · seeded noise
   generators/  one module per generator + index (auto-register)
   sampling/    adaptive · arc-length · normalize
@@ -496,15 +509,18 @@ src/
     geometry/  one module per operator
     topology/  one module per operator
   analysis/    differential geometry · intersections
-  render/      P5Renderer · passes/
+  render/      P5Renderer · passes/ · WebGL ProductPreview · trace fill
   viz/         overlays
   animation/   transport · animatable values
   ai/          offline rules · prompts · providers · cache
   input/       local image → contour → Fourier
   lab/         descriptor · notebook · exploration · evolution
   mutation/    MutationEngine
-  presets/     built-in GlyphDocuments · v1 migration
-  export/      SVG · plotter SVG · PNG · JSON
+  presets/     built-in documents · object builders · v1 migration
+  geometry/    CSG · lattice · repair · tessellation · print checks
+  application/ App composition · fabrication source/jobs · render scene
+  workers/     cancellable fabrication worker
+  export/      SVG · plotter SVG · PNG · Product PNG · GIF · frame ZIPs · STL · 3MF · JSON · clipboard
   ui/          Controls · OperatorStack · FormulaEditor · HarmonicTable
 ```
 
@@ -564,17 +580,20 @@ Implementation status as of **2026-10-23** (v0.1.0 + reliability hardening):
 | MS | Scope | Status | Evidence |
 |---|---|---|---|
 | **M1 — Core pipeline** | Types, registries, expression engine, sampler, 4 generators (parametric, polar, lissajous, rose), stroke renderer, dynamic GUI, JSON presets | ✅ **Done** | `lab.smoke.mjs` groups 1–3, 6; all checks pass |
-| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 24 generators registered, 36 operators, `analysis/differential.js`, 4 overlays |
-| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 14 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
+| **M2 — Generator library + geometry ops** | Superformula, fourier (basic), trochoids, spirograph, harmonic, noise, catmull-rom/bezier/cubic, bilateral-spline migration, T1 geometry operators, differential analysis + overlays (tangents/normals/curvature comb/inflections) | ✅ **Done** | 25 generators registered, 37 operators, `analysis/differential.js`, 4 overlays |
+| **M3 — Laboratory features** | Fourier lab UI + epicycles, harmonic table editor, formula editor w/ highlighting, animation transport + animatable params, T1 topology operators, mutation v2, built-in preset library, viz modes | ✅ **Done** — animation, mutation v2, presets, harmonic editor, CodeMirror formula editor, operator stack reorder/toggle, 15 render passes, 4 overlays, undo/redo | `lab.smoke.mjs` groups 8–10, 13; `e2e/ui.spec.js` |
 | **M4 — Heavy geometry** | Booleans, voronoi, skeleton/medial axis, centerline, stroke expansion, signed-distance pass, negative-space pass, frame-sequence and GIF export | ✅ **Done** — boolean, voronoi, skeleton, medial-axis, centerline, stroke expansion, signed-distance, negative-space, ZIP frame-sequence and GIF export | Source tree + `e2e` |
 
 ### What ships in v0.1.0
 
 The 11 acceptance criteria from §22 below are the gate. M1–M4 are shipped,
-including the CodeMirror formula editor, frame-sequence/GIF export and heavy
-geometry. The remaining deferred items (per-pass color/width, even-odd hole filling,
-quad SVG/plotter reconstruction and MAKE/fabrication) are future work outside
-the v0.1.0 scope.
+including the CodeMirror formula editor, frame-sequence/GIF export, heavy
+geometry, Manifold CSG, STL/3MF, lattice/perforated fabrication, grouped
+multi-body recipes, even-odd image fill, Quad SVG/plotter export, persistence,
+accessibility hardening and the optional Product preview. Remaining work is
+tracked in the roadmap: wall-thickness estimation, sequential CSG recipes,
+modular/snap-fit objects, stable cross-runner screenshot baselines and
+automated slicer verification.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in
@@ -591,8 +610,10 @@ the v0.1.0 scope.
 - No drawing tools of any kind (pen, brush, anchors, direct manipulation).
 - No nested layer groups, masks or typography. Layers, color and per-layer
   styles are supported; complex compositing remains out of scope.
-- No server, no accounts, no cloud preset sync.
-- No WebGL / WASM until profiling proves the CPU pipeline insufficient.
+- No server, no accounts, no cloud preset sync or remote compute.
+- WebGL remains presentation-only; the technical p5 path, overlays, picking,
+  SVG/plotter and canonical exports never depend on it.
+- WASM is limited to the Manifold CSG engine; BSP/remesh fallbacks remain.
 
 ---
 
@@ -609,7 +630,8 @@ the v0.1.0 scope.
 7. Mutate → new valid document in the same mathematical family.
 8. Save preset → JSON document; share → import on another machine ⇒
    identical glyph.
-9. Export SVG → clean paths, document embedded.
+9. Export SVG → clean paths, document embedded; export STL/3MF → validated
+   closed body or multi-object package in millimetres.
 10. Every v1 preset still loads (via `bilateral-spline` migration).
 11. Full test suite green; pipeline under budget.
 

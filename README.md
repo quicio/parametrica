@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm test             # node-only verification suite (2222 checks)
+npm test             # node-only verification suite (3,142 checks: 2,222 lab + 920 domains)
 npm run check        # lint + unit + production build
-npm run test:e2e     # Playwright suite (167 tests, starts Vite automatically)
+npm run test:e2e     # Playwright suite (168 scenarios: 167 pass, 1 skip)
 npm run build        # production bundle in dist/
 ```
 
@@ -51,9 +51,9 @@ leaving your machine.
 | **View** | Multiple render passes stack (curve, points, normals/tangents, curvature heatmap, epicycles, wireframe). Overlays: inflections, sample points, ruler, bbox |
 | **Animation** | Every numeric parameter accepts `time` expressions (`3 + 0.5*sin(0.7*time)`). Play/pause/scrub/speed |
 | **Mutation** | Perturbs parameters + numeric literals in equations. Always valid (re-rolled on failure) |
-| **Fabricate** | Validated single-body STL export with explicit weld/cap preparation for open meshes |
+| **Fabricate** | Validated STL/3MF export with Manifold booleans, grouped recipes, repair/cap, lattice and manufacturing checks, plus an optional WebGL/PBR Product preview |
 | **Presets** | Grouped, searchable library with derived previews, favorites and recent presets, plus user saves. Dual-format read: legacy v1 `glyph-lab` presets still load |
-| **Export** | SVG (active vector passes, overlays, blend + embedded document), plotter SVG (stroke-only, optional physical page), PNG (faithful raster), GIF (timeline), binary STL (validated closed Mesh/Solid), JSON, clipboard |
+| **Export** | SVG (active vector passes, overlays, blend + embedded document), plotter SVG, PNG, Product PNG, GIF, frame ZIPs, binary STL, 3MF, JSON, clipboard |
 
 ---
 
@@ -102,15 +102,18 @@ sampling/           uniform + adaptive + arc-length resampling + bbox helpers
 analysis/           differential geometry: tangents, normals, curvature, inflections
 lab/                descriptor, hash, sensitivity, notebook, exploration and diffs
 ai/                 deterministic offline narration and suggestion rules
-render/             p5 surface, artboard/palettes, thumbnails, projections and 14 passes
+render/             p5 surface, artboard/palettes, thumbnails, projections and 15 passes
 viz/                toggleable diagnostic overlays
 animation/          AnimatableValue + timeline resolution (keyframes/easing)
 mutation/           parameter-space mutation with full evaluation validation
 presets/            built-in library + JSON persistence in localStorage
-export/             SVG (pass-embedded document) · plotter SVG · PNG · GIF · JSON · clipboard
+application/        App composition, fabrication source/jobs, render scene
+workers/            cancellable fabrication worker
+export/             SVG · plotter SVG · PNG · GIF · frame ZIPs · STL · 3MF · JSON · clipboard
+input/              local image → contour → Fourier
 ui/                 instrument panel + custom widgets (expression field, harmonic editor, operator stack, mode toggles)
-core/               App composition root · engine · registry · document · schema · history
-geometry/           v1 Catmull-Rom + Mirror + OpticalCorrection (used by bilateral-spline generator)
+core/               engine · registry · document · schema · history · persistence
+geometry/           contracts, Manifold/BSP/remesh CSG, lattice, repair, tessellation, print checks
 ```
 
 Read **[SPEC.md](./SPEC.md)** for the full design rationale, principles
@@ -203,13 +206,15 @@ No central config to update.
 | Vesica Prime (v1) | `bilateral-spline` | legacy v1 generator, preserved |
 | Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
 
-The library is grouped into Curves, Patterns, Fourier, Attractors, 3D Curves,
-Surfaces, Fabricate, Compositions, Helix Lab and Legacy; user saves appear under
-My Presets. The Fabricate category includes ready solids, solid, lattice and
-perforated 200 mm vases, multi-body and boolean examples, repair/cap/SDF demos
-and a non-orientable challenge. Every row
-shows a deterministic preview derived from its document, and favorites and
-recents persist as workspace metadata without changing the preset JSON.
+The library has **65 built-in presets**, grouped into Curves, Patterns, Fourier,
+Attractors, 3D Curves, Surfaces, Fabricate, Compositions, Helix Lab and Legacy;
+user saves appear under My Presets. The **Fabricate** category contains 24
+exportable pieces: the 200 mm vase family, lattice and perforated vases,
+functional objects (pencil cup, planter, soap dish, desk tray, napkin holder,
+wall planter, wall hook, stackable tray), decorative/abstract pieces (bud vase,
+totem, lampshade set) and closed torus/boolean/cap examples. Every row shows a
+deterministic preview derived from its document, and favorites and recents
+persist as workspace metadata without changing the preset JSON.
 
 ---
 
@@ -221,17 +226,18 @@ recents persist as workspace metadata without changing the preset JSON.
 npm test
 ```
 
-Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — 2685
-checks across the full Node suite (expression engine, noise determinism,
-splines, all 25 registered generators, operators, document round-trip +
-dual-format read, built-in presets, chained mutation across families, SVG
-export, animation, sampling, performance budget, reliability regressions,
-offline and optional LLM advisors, image contour tracing, evolution, helix
-projections, session recovery, panel modes, parametric surfaces, preset
+Runs `test/lab.smoke.mjs` plus the domain modules in `test/domains/` — **3,142
+checks** (2,222 lab + 920 domain) across the full Node suite (expression engine,
+noise determinism, splines, all 25 registered generators, 37 operators, document
+round-trip + dual-format read, built-in presets, chained mutation across
+families, SVG/STL/3MF export, animation, sampling, performance budgets,
+reliability regressions, offline and optional LLM advisors, image contour
+tracing, evolution, helix projections, session recovery, persistence, panel
+modes, parametric surfaces, lattice refinement, fabrication profiles, preset
 library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
-`npm run test:e2e` runs the Playwright suite (167 tests) against a Vite server
-started by Playwright itself.
+`npm run test:e2e` runs **168 Playwright scenarios** (167 pass, 1 conditional
+skip) against a Vite server started by Playwright itself.
 
 ### Linting
 
@@ -246,7 +252,7 @@ npm run build      # writes dist/
 npm run preview    # serves the build
 ```
 
-Bundle: the eager shell is ~630 KB minified (~197 KB gzip), split into app,
+Bundle: the eager shell is ~741 KB minified (~227 KB gzip), split into app,
 CodeMirror, lil-gui and geometry-vendor chunks. p5 is lazy-loaded as a
 separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
@@ -254,19 +260,20 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 ## What ships in v0.1.0
 
-- **24 generators** registered and tested (parametric, polar, custom,
+- **25 generators** registered and tested (parametric, polar, custom,
   lissajous, rose, superformula, fourier, trochoids (hypo/epi/spirograph),
   harmonic-oscillator, noise-field, catmull-rom, bezier, cubic-spline,
   bilateral-spline, lorenz, clifford, dejong, aizawa, concentric-ellipses,
-  parametric-3d, generalized helix, parametric-surface)
+  parametric-3d, generalized helix, parametric-surface, surface-lattice)
 - **37 operators** across geometry (transform, symmetry, kaleidoscope,
   resample, offset, deform, project, stroke, boolean) and topology
   (radial/linear arrays, repeat, voronoi, skeleton, medial-axis,
   ribbons, centerline)
 - **4 analysis overlays** (inflections, sample points, ruler, bbox)
-- **14 render passes** (stroke, points, wireframe, control polygon,
+- **15 render passes** (stroke, points, wireframe, control polygon,
   gradient wireframe, tangents, normals, curvature heatmap, negative space,
-  signed distance, topology, epicycles)
+  signed distance, topology, epicycles, surface wireframe, surface fill and
+  lattice preview)
 - **Animation transport** with time-driven AnimatableValue expressions
 - **Analysis panel** with deterministic descriptor metrics and parameter influence
 - **Notebook** with checkpoints, thumbnails, lineage and A/B comparison
@@ -282,7 +289,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Seam overlay** for declared domain borders, closed seams and reverse/twist seams, with an explicit legend; UI-only and never exported
 - **Surface workbench** with world translate/rotate/scale/mirror/array before tessellation, multiple surfaces per layer and explicit SurfaceMapping lifecycle
 - **Physical units** with explicit world/artboard millimetre scales; geometry is never rescaled and unitless remains the default
-- **Binary STL export** for validated closed Mesh/Solid bodies, plus a read-only **Fabricate** mode with health, counts, volume and physical bounds
+- **STL/3MF fabrication** for validated closed Mesh/Solid bodies, with Manifold CSG, booleans, grouped multi-body recipes, repair/cap, lattice and perforated bodies, manufacturing checks and an optional WebGL/PBR Product preview with PNG export
 - **Artboard & style** with built-in/custom palettes, stroke/fill controls, linear/radial fill gradients and SVG/PNG export with vector-pass fidelity
 - **Parametric overlay** at the canvas edge: active generator/parameters, seed and operators, toggleable from the canvas or Canvas section
 - **2D grid & morph** for two-axis families and smooth A→B transitions
@@ -303,14 +310,15 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 - **Mutation v2** in parameter space with full-evaluation validation
 - **Dual-format preset read** (`glyph-lab` v1/v2 + `parametrica` v0)
 - **Undo/redo** (50 snapshots, coalesced slider gestures, ⌘/Ctrl+Z)
-- **Export** SVG (vector passes + embedded document) · plotter SVG (stroke-only) · PNG · GIF (timeline) · binary STL (validated closed body, mm) · JSON · clipboard
+- **Export** SVG (vector passes + embedded document) · plotter SVG · PNG · Product PNG · GIF (timeline) · frame ZIPs · binary STL · 3MF · JSON · clipboard
 
-Deferred to v0.x:
+Deferred / next:
 
-- Per-pass color and stroke-width settings
-- Even-odd hole filling / contour nesting
-- Quad SVG/plotter reconstruction (canvas-only today)
-- Fabrication: Manifold WASM CSG, 3MF, topology repair, self-intersection remeshing, STL and multi-body output
+- Wall-thickness estimation (the report still labels it `unavailable`)
+- Sequential CSG recipes beyond independent boolean groups
+- Modular dovetail planter tiles, folding hinges and snap-fit tolerances
+- Stable cross-runner screenshot baselines (CI uses pixel variance instead)
+- Automated slicer verification (the manufacturing record remains manual)
 
 ---
 

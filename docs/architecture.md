@@ -193,7 +193,7 @@ src/
 │   ├── PresetManager.js          built-ins, user storage, usage meta + previews
 │   ├── preview.js                deterministic preview key + rasteriser
 │   ├── catalog.js                categories, descriptions and tags
-│   └── builtins.js               40 built-in mathematical families
+│   └── builtins.js               65 built-in mathematical families
 │
 ├── export/
 │   ├── Exporter.js               SVG (pass-embedded document) · plotter SVG · PNG · GIF · JSON
@@ -707,8 +707,8 @@ should never produce a form that breaks at `time = 0.5`.
 
 ### Why per-stage caching?
 
-Slider drags fire 60 times per second. Re-evaluating 24 generators +
-36 operators from scratch on every drag is wasteful. The cache keys
+Slider drags fire 60 times per second. Re-evaluating 25 generators +
+37 operators from scratch on every drag is wasteful. The cache keys
 on `(seed, time, quality, camera, stage.id, stage.params, stage.mods,
 stage.enabled)` JSON-stringified. A slider drag invalidates exactly one
 stage and everything downstream.
@@ -758,7 +758,7 @@ Hot paths and their costs:
 | Boolean ops | O(vertices log vertices) | Optional, only when added |
 
 The eager shell is split into app, CodeMirror, lil-gui and geometry-vendor
-chunks (~630 KB minified / ~197 KB gzip total). p5 is dynamically imported
+chunks (~741 KB minified / ~227 KB gzip total). p5 is dynamically imported
 as a separate ~1.06 MB chunk after the shell is usable; the e2e suite waits
 for `renderer.readyPromise` before touching the canvas.
 
@@ -768,7 +768,7 @@ for `renderer.readyPromise` before touching the canvas.
 
 ### What the suite covers
 
-31 groups in `test/lab.smoke.mjs`:
+42 logged groups in `test/lab.smoke.mjs` (38 numbered groups plus sub-sections):
 
 | # | Group | What it verifies |
 |---|---|---|
@@ -778,7 +778,7 @@ for `renderer.readyPromise` before touching the canvas.
 | 4 | generators | evalOK over all 25 registered models + variations |
 | 5 | operators | each operator transforms validly, idempotence where applicable |
 | 6 | documents | round-trip identical, hostile input survives, **dual-format read** |
-| 7 | built-in presets | all 40 built-in presets evaluate to non-degenerate forms |
+| 7 | built-in presets | all 65 built-in presets evaluate to non-degenerate forms |
 | 8 | mutation | chained mutations across families never break the pipeline |
 | 9 | SVG export | output is well-formed, document is embedded, vector passes/overlays/blend/opacity are recorded, plotter output is stroke-only and raster-only SDF is reported |
 | 10 | animation | time-driven resolution, deterministic across time |
@@ -811,12 +811,12 @@ for `renderer.readyPromise` before touching the canvas.
 | 37 | surface picking | canvas→artboard→ray conversion, perspective/ortho rays, world triangle hits, occlusion, composition active-layer policy, seams/twists, perspective-consistent UV/XYZ, missing/malformed mappings, tiny-scale tolerance, viewport/quad lifecycle, marker/triangle/cell overlays, pin/release and render/export isolation |
 | 38 | surface seams | open borders, closed seams, reverse/twist styles, inverted domains, missing/malformed/zero-span mappings, perspective projection, no mutation and single-view export isolation |
 
-1924 checks total.
+2,222 lab checks. The domain modules in `test/domains/` add 920 checks, for 3,142 Node checks total.
 
 ### Panel behavior
 
-The inspector is split into Form, Look, Explore, Perform, Ingest and Keep
-modes. Sections are accordions persisted under `parametrica.ui.v1`; Generator
+The inspector is split into Form, Look, Explore, Perform, Ingest, Keep and
+Fabricate (Make) modes. Sections are accordions persisted under `parametrica.ui.v1`; Generator
 and Parameters open by default. Look is appearance/viewport only: Camera,
 Canvas, Style, Render and Overlays. Ingest owns Image; Perform owns Animation,
 Timeline, frame export and GIF export. Legacy `work` mode state is treated as
@@ -829,12 +829,14 @@ projection is disabled for 2D generators and falls back to the camera view.
 ### Quality gates
 
 `npm run lint` runs ESLint over `src`, `test`, `e2e` and config files.
-`npm run check` combines lint, the Node suite and the production build. CI
-runs lint before the unit suite.
+`npm run check` combines lint, the Node suite, the production build, the
+lazy-chunk guard and the spec-purpose check. CI runs `npm run check` before the
+Playwright suite.
 
 ### Adding tests
 
-Append to `lab.smoke.mjs` in the appropriate group. Helpers:
+Append pure contracts to `lab.smoke.mjs` or a module in `test/domains/` in the
+appropriate group. Helpers:
 
 ```js
 function assert(cond, msg)         // single check
