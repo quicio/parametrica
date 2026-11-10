@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.34] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the p5 rendering backend.
+- Typed p5 canvas/app/artboard/pointer/pin contracts.
+- Minimal local `p5` module declaration.
+
+### Changed
+
+- `render/p5/P5Adapter.js` remains a compatibility re-export.
+- Composition loads the `.ts` adapter; maintainability checks read it.
+- No drawing, capture, camera or animation behavior changed.
+
 ## [0.2.33] - 2026-11-10
 
 ### Added

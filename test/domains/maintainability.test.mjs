@@ -22,10 +22,10 @@ export function run(assert) {
   assert(wrappers.length >= 20, 'Controls only delegates section builds');
   assert(!/^ {2}build\w+Section\(\) \{\n/m.test(controls), 'Controls contains no inline section bodies');
 
-  const adapter = readFileSync(join(root, 'src/render/p5/P5Adapter.js'), 'utf8');
+  const adapter = readFileSync(join(root, 'src/render/p5/P5Adapter.ts'), 'utf8');
   assert(!adapter.includes('buildCoordinateTicks('), 'P5Adapter no longer owns coordinate overlay math');
   assert(!adapter.includes('buildSeamOverlay('), 'P5Adapter no longer owns seam overlay math');
-  assert(adapter.includes("from './overlays.js'"), 'P5Adapter routes overlays through the overlay module');
+  assert(adapter.includes("from './overlays.ts'"), 'P5Adapter routes overlays through the overlay module');
   const overlays = readFileSync(join(root, 'src/render/p5/overlays.ts'), 'utf8');
   for (const name of ['drawQuadView', 'drawCoordinates', 'drawReference', 'drawSeamOverlay', 'drawInspectionOverlay']) {
     assert(overlays.includes(`export function ${name}`), `${name} lives in the overlay module`);

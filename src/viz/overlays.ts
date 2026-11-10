@@ -42,6 +42,8 @@ export interface OverlayData {
   analysis: AllCurveAnalysis;
   bbox?: OverlayBBox | null;
   view: OverlayView;
+  document?: unknown;
+  time?: number;
 }
 
 export function drawOverlays(p: OverlayContext, { curves, analysis, bbox, view }: OverlayData): void {
