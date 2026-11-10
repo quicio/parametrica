@@ -20,8 +20,8 @@ const SYMMETRY_BINS = 128;
 
 /**
  * @param {object} document
- * @param {Array<{points:Array, closed:boolean}>} curves
- * @param {{hash?: boolean}} options
+ * @param {Array<{points?:Array, closed?:boolean}>} curves
+ * @param {{hash?: boolean, layers?: Array|null, geometry?: Array|null}} options
  */
 export function computeDescriptor(document, curves, { hash = true, layers = null, geometry = null } = {}) {
   const safeCurves = Array.isArray(curves) ? curves.filter((c) => c && Array.isArray(c.points)) : [];

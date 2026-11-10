@@ -48,7 +48,7 @@ module.exports = {
       severity: 'error',
       comment: 'ADR-0004: only composition selects concrete adapters.',
       from: { path: '^src/ui/' },
-      to: { path: '^src/(composition/|application/App[.]js$)' },
+      to: { path: '^src/(composition/|application/App[.](js|ts)$)' },
     },
     {
       name: 'adapters-no-composition',

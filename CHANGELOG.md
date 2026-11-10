@@ -7,6 +7,22 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.21] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the `application/App` controller.
+- Structural service and adapter contracts in `application/appPorts.ts`.
+- Typed document, evaluation, history, session, notebook, preview and overlay
+  state.
+
+### Changed
+
+- `application/App.js` remains a compatibility re-export.
+- Architecture checks inspect `App.ts` and the dependency rule covers both
+  extensions.
+- No controller, session, history or UI behavior changed.
+
 ## [0.2.20] - 2026-11-09
 
 ### Added

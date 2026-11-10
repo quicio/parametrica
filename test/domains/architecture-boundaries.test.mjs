@@ -68,7 +68,7 @@ export async function run(assert) {
     assert(importsOf(source).some((spec) => spec.includes('/view/camera')), `${file} imports pure view camera`);
   }
 
-  const appImports = importsOf(read('src/application/App.js'));
+  const appImports = importsOf(read('src/application/App.ts'));
   for (const spec of [
     '../render/p5/P5Adapter.js',
     '../ui/Controls.js',

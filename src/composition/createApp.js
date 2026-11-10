@@ -6,7 +6,7 @@
  * factories; it does not import P5, Exporter, Controls or localStorage stores.
  */
 
-import { App } from '../application/App.js';
+import { App } from '../application/App.ts';
 import { createAdvisorPort } from './createAdvisorPort.js';
 import { createFabricationPort } from './createFabricationPort.js';
 import { createFormPort } from './createFormPort.js';

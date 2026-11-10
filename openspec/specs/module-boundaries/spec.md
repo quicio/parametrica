@@ -31,8 +31,7 @@ The dependency direction SHALL be documented and enforced.
 
 - **WHEN** any runtime module under `src/core` is loaded in Node
 - **THEN** it does not import UI widgets, DOM panels or lil-gui
-- **AND** the composition root `App.js` is the only core file allowed to
-  import UI modules
+- **AND** no controller file outside the composition root imports UI modules
 
 #### Scenario: UI may depend on core
 
@@ -119,7 +118,7 @@ adapters and stores.
 
 #### Scenario: Application purity
 
-- **WHEN** `application/App.js` is inspected
+- **WHEN** `application/App.ts` is inspected
 - **THEN** it does not import `P5Adapter`, `Controls`, `Exporter`, `StartWithOverlay`,
   dialogs, overlays, `PresetManager`, `Notebook`, `SessionStore` or
   `MutationEngine`
@@ -548,5 +547,32 @@ The old `export/zip.js`, `export/gif.js`, `export/stl.js`, `export/3mf.js` and
 
 - **WHEN** Exporter, timeline, tests or presets import the old paths
 - **THEN** compatibility re-exports resolve
+- **AND** behavior is unchanged
+
+### Requirement: Typed App controller
+
+The application controller SHALL be strict TypeScript.
+
+#### Scenario: Controller state
+
+- **WHEN** the controller is constructed
+- **THEN** document, evaluation, history, session, notebook, preview, overlay,
+  renderer and controls state is typed
+- **AND** services and adapter factories arrive through structural ports
+
+#### Scenario: Controller flows
+
+- **WHEN** documents are evaluated, mutated, restored, exported or previewed
+- **THEN** method inputs and outputs are typed
+- **AND** behavior is unchanged
+
+### Requirement: App compatibility
+
+The old `application/App.js` path SHALL keep resolving.
+
+#### Scenario: Import
+
+- **WHEN** composition or tests import the old path
+- **THEN** a compatibility re-export resolves
 - **AND** behavior is unchanged
 
