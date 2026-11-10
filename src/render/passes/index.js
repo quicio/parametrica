@@ -2,9 +2,9 @@
  * render/passes/index.js — side-effect imports: self-registration.
  */
 
-import './core.js';
-import './gradient.js';
-import './vectors.js';
-import './fields.js';
-import './epicycles.js';
-import './surface.js';
+import './core.ts';
+import './gradient.ts';
+import './vectors.ts';
+import './fields.ts';
+import './epicycles.ts';
+import './surface.ts';

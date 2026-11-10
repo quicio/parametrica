@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.24] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for all registered render passes.
+- Shared pass context, curve, mesh, style, view, analysis and document
+  contracts.
+- Typed gradient ramp/range and cached signed-distance raster.
+
+### Changed
+
+- The converted `render/passes/*.js` modules remain compatibility re-exports.
+- The pass index imports the `.ts` modules.
+- No drawing, pass ordering or preview behavior changed.
+
 ## [0.2.23] - 2026-11-09
 
 ### Added
