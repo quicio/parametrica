@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.36] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the notebook, exploration and evolution models.
+- Typed checkpoint/project/series, exploration candidate and evolution child
+  contracts.
+
+### Changed
+
+- The converted `lab/*.js` modules remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No persistence, candidate math or evolution behavior changed.
+
 ## [0.2.35] - 2026-11-10
 
 ### Added

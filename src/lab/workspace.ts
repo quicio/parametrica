@@ -1,6 +1,6 @@
 /** Active notebook target owned by the domain. */
 
-import { INBOX_PROJECT_ID } from './notebook.js';
+import { INBOX_PROJECT_ID } from './notebook.ts';
 
 export interface NotebookProjectLike {
   id: string;

@@ -21,7 +21,7 @@ import { createRenderPort } from './createRenderPort.js';
 import { createUiPort } from './createUiPort.js';
 import { createPersistenceRepository, migrateLocalStorage } from '../core/persistence.js';
 import { SessionStore } from '../core/session.js';
-import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.js';
+import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.ts';
 import { LocalNotebookRepository } from '../lab/notebookRepository.js';
 import { NotebookWorkspace } from '../lab/workspace.ts';
 import { MutationEngine } from '../mutation/MutationEngine.ts';

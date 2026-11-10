@@ -14,7 +14,7 @@ import {
   nextGeneration,
   MAX_CHILDREN,
   MAX_PARENTS,
-} from '../../lab/evolution.js';
+} from '../../lab/evolution.ts';
 import { boundsOf, curvesDataURL } from '../../render/thumbnail.ts';
 
 export class EvolutionPanel {

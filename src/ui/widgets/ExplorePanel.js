@@ -7,7 +7,7 @@
  */
 
 import { evaluateDocument } from '../../core/engine.ts';
-import { ExplorationSession, morphDocuments } from '../../lab/exploration.js';
+import { ExplorationSession, morphDocuments } from '../../lab/exploration.ts';
 import { attachLayerAliases } from '../../core/document.ts';
 import {
   numericParameterRefs,

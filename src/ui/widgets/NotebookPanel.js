@@ -6,7 +6,7 @@
  * comparison drawer.
  */
 
-import { INBOX_PROJECT_ID } from '../../lab/notebook.js';
+import { INBOX_PROJECT_ID } from '../../lab/notebook.ts';
 import { Generators } from '../../core/registry.ts';
 
 export class NotebookPanel {
