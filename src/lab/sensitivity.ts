@@ -2,7 +2,7 @@
 
 import { clampNumber } from '../core/schema.ts';
 import type { SchemaEntry } from '../core/schema.ts';
-import { evaluateDocument } from '../core/engine.js';
+import { evaluateDocument } from '../core/engine.ts';
 import { bboxAll, resampleUniform } from '../sampling/sampling.js';
 import { computeDescriptor } from './descriptor.js';
 import { attachLayerAliases } from '../core/document.ts';

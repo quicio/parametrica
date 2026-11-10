@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.31] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the evaluation engine and its result contract.
+- Typed curves, geometry, errors, stats, layer results, options and caches.
+- Typed stage, spatial, surface, instance and budget pipelines.
+
+### Changed
+
+- `core/engine.js` remains a compatibility re-export.
+- App, mutation and preview boundaries use the typed evaluation.
+- Internal imports point at `engine.ts`.
+- No evaluation, cache, budget or projection behavior changed.
+
 ## [0.2.30] - 2026-11-10
 
 ### Added

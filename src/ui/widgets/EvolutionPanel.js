@@ -6,7 +6,7 @@
  * and keep only the ones worth keeping. No automatic aesthetic score.
  */
 
-import { evaluateDocument } from '../../core/engine.js';
+import { evaluateDocument } from '../../core/engine.ts';
 import { computeDescriptor } from '../../lab/descriptor.js';
 import {
   createGeneration,

@@ -8,7 +8,7 @@
  * Apply.
  */
 
-import { evaluateDocument } from '../../core/engine.js';
+import { evaluateDocument } from '../../core/engine.ts';
 import { documentDiff, descriptorDiff } from '../../lab/diff.ts';
 import { validateSuggestion } from '../../ai/offline.js';
 import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.js';

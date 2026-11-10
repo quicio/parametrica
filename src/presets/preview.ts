@@ -1,6 +1,6 @@
 /** Deterministic preset thumbnails. */
 
-import { evaluateDocument } from '../core/engine.js';
+import { evaluateDocument } from '../core/engine.ts';
 import { curvesDataURL } from '../render/thumbnail.ts';
 import { canonicalStringify, sha256Hex } from '../lab/hash.ts';
 
@@ -58,7 +58,7 @@ export function previewKey(document: unknown, { size = PREVIEW_SIZE }: { size?: 
 export function renderPresetPreview(document: unknown, { size = PREVIEW_SIZE }: { size?: number } = {}): string | null {
   if (!document || typeof document !== 'object') return null;
   try {
-    const evaluation = evaluateDocument(document, { time: 0, bypassCache: true }) as {
+    const evaluation = evaluateDocument(document as never, { time: 0, bypassCache: true }) as {
       errors?: unknown[];
       curves?: unknown[];
       bbox?: unknown;

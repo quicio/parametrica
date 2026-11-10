@@ -21,7 +21,7 @@ import {
 } from '../core/layers.ts';
 import { Generators, Operators, RenderPasses } from '../core/registry.ts';
 import { supportsSpatial } from '../core/capabilities.ts';
-import { evaluateDocument } from '../core/engine.js';
+import { evaluateDocument } from '../core/engine.ts';
 import { schemaDefaults } from '../core/schema.ts';
 import { History } from '../core/history.js';
 import { computeDescriptor } from '../lab/descriptor.js';
@@ -261,13 +261,13 @@ export class App {
   }
 
   evaluate() {
-    this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time });
+    this._evaluation = evaluateDocument(this.document, { time: this.document.animation.time }) as unknown as EvaluationLike;
     this.renderer?.invalidateCoordinatePin?.();
     this.controls?.refreshRenderModes?.();
     this.controls?.refreshCoordinatePin?.();
     this.controls?.refreshFabricate?.();
     this.controls?.refreshLookPresets?.();
-    this.controls?.showErrors(this._evaluation.errors);
+    this.controls?.showErrors(this._evaluation?.errors ?? []);
     this.updateTelemetry();
     this.parametricOverlay?.refresh?.();
     this.uvDomainInset?.refresh?.();

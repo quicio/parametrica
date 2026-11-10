@@ -6,7 +6,7 @@
  * on a separate 2D canvas, so previewing never mutates the live document.
  */
 
-import { evaluateDocument } from '../../core/engine.js';
+import { evaluateDocument } from '../../core/engine.ts';
 import { ExplorationSession, morphDocuments } from '../../lab/exploration.js';
 import { attachLayerAliases } from '../../core/document.ts';
 import {

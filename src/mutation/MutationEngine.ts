@@ -3,7 +3,7 @@
 import { Generators, Operators } from '../core/registry.ts';
 import { TYPE, sanitizeValue } from '../core/schema.ts';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
-import { evaluateDocument } from '../core/engine.js';
+import { evaluateDocument } from '../core/engine.ts';
 import { perturbLiterals } from '../math/expression.js';
 
 export interface ParamSchema {
@@ -115,7 +115,7 @@ export class MutationEngine {
   /** Full evaluation probe: finite, non-degenerate, within budget. */
   static isValid(document: DocumentLike): boolean {
     try {
-      const { curves, errors, stats, bbox } = evaluateDocument(document, { time: 0 }) as {
+      const { curves, errors, stats, bbox } = evaluateDocument(document as unknown as import('../core/documentTypes.ts').DocumentShape, { time: 0 }) as {
         curves: unknown[];
         errors: unknown[];
         stats: { pointCount: number };
