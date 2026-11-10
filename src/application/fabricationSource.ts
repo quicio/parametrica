@@ -5,7 +5,7 @@ import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
 import { booleanSolids } from '../geometry/csg.js';
 import { repairMesh } from '../geometry/repair.js';
 import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.js';
-import { validateForFabrication } from '../export/geometryExport.js';
+import { validateForFabrication } from '../export/geometryExport.ts';
 import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';

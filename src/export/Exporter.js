@@ -14,8 +14,8 @@ import { buildRenderScene } from '../application/renderSceneBuilder.ts';
 import { drawOverlays } from '../viz/overlays.js';
 import { SvgContext } from './svgContext.js';
 import { artboardToMillimetres, millimetresPerUnit } from '../domain/units.ts';
-import { exportBinarySTL, STL_MIME_TYPE } from './stl.js';
-import { export3MF, THREE_MF_MIME_TYPE } from './3mf.js';
+import { exportBinarySTL, STL_MIME_TYPE } from './stl.ts';
+import { export3MF, THREE_MF_MIME_TYPE } from './3mf.ts';
 import { buildFabricationReport } from '../application/fabricationSource.ts';
 import { resolvePassStyle } from '../domain/passStyle.ts';
 import { traceFillGroups, withoutTraceFill } from '../render/traceFill.js';
@@ -472,7 +472,7 @@ export class Exporter {
     loop = this.port.getDocument().animation?.timeline?.loop ?? true,
     onProgress = null,
   } = {}) {
-    const { gifFrameTimes, encodeGIF } = await import('./gif.js');
+    const { gifFrameTimes, encodeGIF } = await import('./gif.ts');
     const times = gifFrameTimes(duration, fps);
     if (typeof this.port.renderNow !== 'function' || typeof this.port.artboardImageData !== 'function') {
       throw new Error('Renderer is not ready');

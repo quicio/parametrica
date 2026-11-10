@@ -15,7 +15,7 @@ import {
   removeTrack,
 } from '../../animation/timeline.js';
 import { numericParameterRefs, pathForRef } from '../../lab/parameters.js';
-import { zipStore } from '../../export/zip.js';
+import { zipStore } from '../../export/zip.ts';
 
 export class TimelinePanel {
   constructor(app, { render = null } = {}) {

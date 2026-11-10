@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.20] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the ZIP, GIF, binary STL and 3MF export encoders.
+- Typed geometry export validation contract and typed GIF frame/options types.
+- Local `gifenc` module declaration for the adapter boundary.
+
+### Changed
+
+- `export/zip.js`, `export/gif.js`, `export/stl.js`, `export/3mf.js` and
+  `export/geometryExport.js` remain compatibility re-exports.
+- No archive layout, byte order, XML, triangulation or unit behavior changed.
+
 ## [0.2.19] - 2026-11-09
 
 ### Added
