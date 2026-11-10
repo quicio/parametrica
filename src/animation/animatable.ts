@@ -1,7 +1,7 @@
 /** Time-driven parameter resolution. */
 
 import { compileExpression } from '../math/expression.js';
-import { TYPE, clampNumber } from '../core/schema.js';
+import { TYPE, clampNumber } from '../core/schema.ts';
 import { resolveTimelineValue } from './timeline.ts';
 import type { Timeline } from './timeline.ts';
 

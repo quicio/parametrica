@@ -6,7 +6,7 @@
  * live document or the first paint.
  */
 
-import { Generators } from '../../core/registry.js';
+import { Generators } from '../../core/registry.ts';
 import { CATEGORY_USER, PRESET_CATEGORIES, categoryInfo } from '../../presets/catalog.js';
 
 const CATEGORY_ORDER = new Map([

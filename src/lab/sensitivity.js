@@ -8,7 +8,7 @@
  * documents are throwaway clones and are never adopted.
  */
 
-import { clampNumber } from '../core/schema.js';
+import { clampNumber } from '../core/schema.ts';
 import { evaluateDocument } from '../core/engine.js';
 import { bboxAll, resampleUniform } from '../sampling/sampling.js';
 import { computeDescriptor } from './descriptor.js';

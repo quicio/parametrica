@@ -1,6 +1,6 @@
 /** tangents · normals · curvature heatmap. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import type { PassAnalysis, PassContext, PassCurve, PassData, PassPoint } from './types.ts';
 
 function drawVectorField(

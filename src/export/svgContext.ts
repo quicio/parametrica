@@ -1,6 +1,6 @@
 /** A tiny p5-like recorder that emits SVG markup. */
 
-import { resolveFillGradient } from '../core/fillGradient.js';
+import { resolveFillGradient } from '../core/fillGradient.ts';
 
 export class SvgUnsupportedError extends Error {}
 

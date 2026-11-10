@@ -2,8 +2,8 @@
  * rose.js — rhodonea curves: r = cos(k·θ), k = n/d.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { genId, isClosedPolyline, postProcess, roseTurns, TAU } from './helpers.js';
 import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 

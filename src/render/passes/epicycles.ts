@@ -1,6 +1,6 @@
 /** Fourier epicycle chain visualization. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import { bboxAll } from '../../sampling/sampling.js';
 import type { PassContext, PassData } from './types.ts';
 

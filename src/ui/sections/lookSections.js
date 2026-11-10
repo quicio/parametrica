@@ -6,7 +6,7 @@
  */
 
 import { LOOK_PRESETS } from '../../domain/lookPresets.ts';
-import { supportsSpatial } from '../../core/capabilities.js';
+import { supportsSpatial } from '../../core/capabilities.ts';
 import { ARTBOARD_PRESETS } from '../../render/palettes.ts';
 import {
   PHYSICAL_UNIT_SYSTEMS,

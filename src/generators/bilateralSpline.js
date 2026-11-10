@@ -6,8 +6,8 @@
  * lives on inside Parametrica. v1 presets migrate here unchanged.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { MasterSpline } from '../geometry/legacy/MasterSpline.js';
 import { Mirror } from '../geometry/legacy/Mirror.js';
 import { sampleSegments } from '../geometry/legacy/CatmullRom.js';

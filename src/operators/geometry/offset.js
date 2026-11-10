@@ -7,8 +7,8 @@
  * correct regardless of winding.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { bbox } from '../../sampling/sampling.js';
 import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.js';
 

@@ -6,8 +6,8 @@
  * the geometry (stroke → shape), so ribbon variants live in topology.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { offsetPoints } from './offset.js';
 
 let id = 0;

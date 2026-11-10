@@ -7,8 +7,8 @@
  */
 
 import GUI from 'lil-gui';
-import { Generators, Operators } from '../../core/registry.js';
-import { supportsSpatial } from '../../core/capabilities.js';
+import { Generators, Operators } from '../../core/registry.ts';
+import { supportsSpatial } from '../../core/capabilities.ts';
 import { isBindable } from '../params/ParamRegistry.js';
 import {
   bindStageParams,

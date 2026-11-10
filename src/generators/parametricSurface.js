@@ -7,8 +7,8 @@
  * and rendering happen downstream.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { compileOrThrow, makeScope, TAU } from './helpers.js';
 import { createSurface } from '../geometry/contracts.js';
 

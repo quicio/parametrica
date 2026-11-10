@@ -7,7 +7,7 @@
  * not editing Controls or OperatorStack.
  */
 
-import { TYPE } from '../../core/schema.js';
+import { TYPE } from '../../core/schema.ts';
 
 const types = new Map();
 

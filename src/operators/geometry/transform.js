@@ -4,8 +4,8 @@
  * is transformed in canonical world space.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { fitCurves } from '../../sampling/sampling.js';
 import { cloneGeometry, mapGeometryPoints } from '../../geometry/transformGeometry.js';
 import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.js';

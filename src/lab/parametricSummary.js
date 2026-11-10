@@ -5,8 +5,8 @@
  * generator schema and operator stack into stable rows.
  */
 
-import { Generators, Operators } from '../core/registry.js';
-import { isInstanceLayer, sourceLayerFor } from '../core/layers.js';
+import { Generators, Operators } from '../core/registry.ts';
+import { isInstanceLayer, sourceLayerFor } from '../core/layers.ts';
 
 export function buildParametricSummary(document, layerIndex = document?.activeLayer ?? 0) {
   const layers = document?.layers ?? [];

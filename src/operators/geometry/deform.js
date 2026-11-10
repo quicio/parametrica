@@ -2,8 +2,8 @@
  * operators/geometry/deform.js — twist · bend · warp · noise displace.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { bboxAll } from '../../sampling/sampling.js';
 import { compileExpression } from '../../math/expression.js';
 import { createNoise2D } from '../../math/noise.js';

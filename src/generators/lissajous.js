@@ -2,8 +2,8 @@
  * lissajous.js — x = sin(a·t + δ), y = sin(b·t).
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { genId, postProcess, isClosedPolyline, lissajousTurns, TAU } from './helpers.js';
 import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
 

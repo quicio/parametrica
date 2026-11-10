@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.27] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the core schema, registry, layer graph, capabilities
+  and fill-gradient helpers.
+- Typed stage/generator/operator/render-pass definitions and registries.
+- Typed schema entries, params, harmonics and layer/source contracts.
+
+### Changed
+
+- The converted `core/*.js` modules remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No schema defaults, registry validation, layer rules or gradients changed.
+
 ## [0.2.26] - 2026-11-09
 
 ### Added

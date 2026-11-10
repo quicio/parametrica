@@ -5,8 +5,8 @@
  * helpers, registries and App APIs. Sections never import each other.
  */
 
-import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../../core/fillGradient.js';
-import { RenderPasses } from '../../core/registry.js';
+import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../../core/fillGradient.ts';
+import { RenderPasses } from '../../core/registry.ts';
 import { normalizeModes, toggleMode } from '../../domain/modeToggles.ts';
 import { applyHardBounds } from '../params/ParamRegistry.js';
 import { PASS_APPEARANCE, passSupports } from '../../render/passStyle.js';

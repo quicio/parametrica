@@ -5,8 +5,8 @@
  * helpers, registries and App APIs. Sections never import each other.
  */
 
-import { Generators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Generators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { ExpressionField } from '../widgets/ExpressionField.js';
 import { HarmonicsEditor } from '../widgets/HarmonicsEditor.js';
 import { OperatorStack } from '../widgets/OperatorStack.js';
@@ -20,7 +20,7 @@ import {
   isInstanceLayer,
   sourceGeneratorFor,
   sourceLayerFor,
-} from '../../core/layers.js';
+} from '../../core/layers.ts';
 
 export function buildLayersSection(controls) {
     const body = controls.section('Layers', { id: 'layers', mode: 'form' });

@@ -5,8 +5,8 @@
  * key: string }. These helpers keep sensitivity and exploration aligned.
  */
 
-import { Generators, Operators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators, Operators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 
 export function numericParameterRefs(document) {
   const refs = [];

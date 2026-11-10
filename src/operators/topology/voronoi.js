@@ -9,8 +9,8 @@
  */
 
 import { Delaunay } from 'd3-delaunay';
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { resampleUniform, bboxAll } from '../../sampling/sampling.js';
 
 let id = 0;

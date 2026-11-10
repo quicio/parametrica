@@ -3,8 +3,8 @@
  * duplicate · radial repeat · polar repeat · grid repeat · recursive repeat.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { mapGeometryPoints } from '../../geometry/transformGeometry.js';
 
 let id = 0;

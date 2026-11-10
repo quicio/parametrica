@@ -18,11 +18,11 @@ import {
   instanceSourceCandidates,
   isInstanceLayer,
   sourceLayerFor,
-} from '../core/layers.js';
-import { Generators, Operators, RenderPasses } from '../core/registry.js';
-import { supportsSpatial } from '../core/capabilities.js';
+} from '../core/layers.ts';
+import { Generators, Operators, RenderPasses } from '../core/registry.ts';
+import { supportsSpatial } from '../core/capabilities.ts';
 import { evaluateDocument } from '../core/engine.js';
-import { schemaDefaults } from '../core/schema.js';
+import { schemaDefaults } from '../core/schema.ts';
 import { History } from '../core/history.js';
 import { computeDescriptor } from '../lab/descriptor.js';
 import { computeSensitivity } from '../lab/sensitivity.js';
@@ -730,12 +730,12 @@ export class App {
       }
       return null;
     }
-    const candidates = instanceSourceCandidates(this.document).filter(({ layer }: { layer: AppLayer }) => {
+    const candidates = instanceSourceCandidates(this.document).filter(({ layer }) => {
       const generatorId = layer.generator?.id;
       return Boolean(generatorId)
         && Generators.has(generatorId as string)
         && Generators.get(generatorId as string).capabilities?.geometryKind === 'surface';
-    }) as Array<{ layer: AppLayer }>;
+    }) as unknown as Array<{ layer: AppLayer }>;
     const source = candidates.find(({ layer }) => layer.id === sourceLayerId)?.layer
       ?? candidates.find(({ layer }) => layer.id === this.activeLayer?.id)?.layer
       ?? candidates[0]?.layer
@@ -1142,7 +1142,7 @@ export class App {
     Object.assign(this.document.view, doc.view);
     const active = this.document.layers?.[this.document.activeLayer ?? 0];
     const generator = generatorForLayer(this.document, active);
-    const projectable = Boolean(generator && supportsSpatial(Generators.get(generator.id)));
+    const projectable = Boolean(generator?.id && supportsSpatial(Generators.get(generator.id)));
     if (!projectable && this.document.view.projection !== '3d') {
       this.document.view.projection = '3d';
     }

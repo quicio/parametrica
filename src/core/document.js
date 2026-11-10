@@ -9,18 +9,18 @@
  * automatically (dual-format read on `app: 'glyph-lab' | 'parametrica'`).
  */
 
-import { Generators, Operators } from './registry.js';
-import { sanitizeParams } from './schema.js';
+import { Generators, Operators } from './registry.ts';
+import { sanitizeParams } from './schema.ts';
 import { OVERLAYS } from '../domain/overlays.ts';
 import { createTimeline, sanitizeTimeline } from '../animation/timeline.ts';
-import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
+import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.ts';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.ts';
 import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.ts';
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from '../domain/units.ts';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.ts';
 import { sanitizePassStyle } from '../domain/passStyle.ts';
 import { CAP_STRATEGIES } from '../domain/fabrication.ts';
-import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.js';
+import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.ts';
 
 export const DOCUMENT_VERSION = 3;
 

@@ -10,8 +10,8 @@
  * curves by adding harmonics.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { genId, postProcess, isClosedPolyline, TAU } from './helpers.js';
 import { sampleUniform } from '../sampling/sampling.js';
 

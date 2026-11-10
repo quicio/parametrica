@@ -7,7 +7,7 @@
  */
 
 import { APP_ID } from '../core/document.js';
-import { RenderPasses } from '../core/registry.js';
+import { RenderPasses } from '../core/registry.ts';
 import { analyzeAll } from '../analysis/differential.ts';
 import { bboxAll } from '../sampling/sampling.js';
 import { buildRenderScene } from '../application/renderSceneBuilder.ts';
@@ -246,7 +246,8 @@ export class Exporter {
             ...layerData.view,
             style: resolvePassStyle(mode, view as never, layerStyle),
           };
-          RenderPasses.get(mode).draw(ctx, { ...layerData, view: passView } as never);
+          const draw = RenderPasses.get(mode).draw as unknown as (p: unknown, data: unknown) => void;
+          draw(ctx, { ...layerData, view: passView });
         } catch {
           omitted?.(RenderPasses.get(mode).name);
           continue;

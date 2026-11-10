@@ -1,6 +1,6 @@
 /** Solid and gradient fill application for render passes. */
 
-import { resolveFillGradient } from '../core/fillGradient.js';
+import { resolveFillGradient } from '../core/fillGradient.ts';
 
 interface Vec2 { x: number; y: number; depthAlpha?: number; [key: string]: unknown }
 interface CurveLike {

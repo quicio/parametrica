@@ -12,8 +12,8 @@
  * circles (or ellipses) with adjustable offset, count, and size.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { composeCurves, makeScope, postProcess, TAU } from './helpers.js';
 
 Generators.register({

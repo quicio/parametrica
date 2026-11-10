@@ -6,10 +6,10 @@
  * validated before it reaches the UI.
  */
 
-import { clampNumber, TYPE } from '../core/schema.js';
+import { clampNumber, TYPE } from '../core/schema.ts';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
-import { Generators, Operators } from '../core/registry.js';
-import { isInstanceLayer } from '../core/layers.js';
+import { Generators, Operators } from '../core/registry.ts';
+import { isInstanceLayer } from '../core/layers.ts';
 
 export const ADVISOR_VERSION = 1;
 

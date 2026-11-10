@@ -6,8 +6,8 @@
  * Fabricate turns the same network into a closed tube solid.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { compileOrThrow, makeScope } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
 import { buildRevolveLattice } from '../geometry/latticeNetwork.js';

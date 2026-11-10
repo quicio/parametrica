@@ -7,7 +7,7 @@
  */
 
 import { INBOX_PROJECT_ID } from '../../lab/notebook.js';
-import { Generators } from '../../core/registry.js';
+import { Generators } from '../../core/registry.ts';
 
 export class NotebookPanel {
   constructor(app) {

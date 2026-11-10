@@ -1,7 +1,7 @@
 /** Mutation in parameter space. */
 
-import { Generators, Operators } from '../core/registry.js';
-import { TYPE, sanitizeValue } from '../core/schema.js';
+import { Generators, Operators } from '../core/registry.ts';
+import { TYPE, sanitizeValue } from '../core/schema.ts';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
 import { evaluateDocument } from '../core/engine.js';
 import { perturbLiterals } from '../math/expression.js';

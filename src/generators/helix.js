@@ -14,8 +14,8 @@
  * renderer can offer orthographic views without re-evaluating geometry.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { sampleAdaptive, sampleUniform } from '../sampling/sampling.js';
 import { cameraFrom, genId, TAU } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';

@@ -1,6 +1,6 @@
 /** negative space · signed distance · topology. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import { polylineIntersections, selfIntersections } from '../../analysis/intersections.ts';
 import type { PassContext, PassCurve, PassData, PassImage, PassPoint } from './types.ts';
 

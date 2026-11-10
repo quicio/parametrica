@@ -5,8 +5,8 @@
  * samples, normalizes, centers and generates geometry.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { compileOrThrow, makeScope, sampleParametric, postProcess, genId, TAU } from './helpers.js';
 
 Generators.register({

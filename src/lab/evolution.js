@@ -7,9 +7,9 @@
  * kept automatically.
  */
 
-import { clampNumber, schemaDefaults, TYPE } from '../core/schema.js';
+import { clampNumber, schemaDefaults, TYPE } from '../core/schema.ts';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
-import { Operators } from '../core/registry.js';
+import { Operators } from '../core/registry.ts';
 import { evaluateDocument } from '../core/engine.js';
 import { mulberry32 } from '../math/noise.js';
 import {

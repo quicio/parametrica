@@ -5,8 +5,8 @@
  * Deterministic under the document seed (spec G6).
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { createNoise2D } from '../math/noise.js';
 import { genId, postProcess, TAU } from './helpers.js';
 

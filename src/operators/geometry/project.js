@@ -2,8 +2,8 @@
  * operators/geometry/project.js — project · clip.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 
 let id = 0;
 const opId = () => `pj-${id++}`;

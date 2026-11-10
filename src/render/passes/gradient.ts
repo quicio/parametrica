@@ -1,6 +1,6 @@
 /** Height/radius gradient wireframe. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import { DEFAULT_COLOR_RAMP } from '../../core/document.js';
 import { gradientAxisValue } from '../projection.ts';
 import type { Projection } from '../projection.ts';

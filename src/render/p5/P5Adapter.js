@@ -8,8 +8,8 @@
  *  - HiDPI via pixelDensity; black field; CAD guides.
  */
 
-import { Generators, RenderPasses } from '../../core/registry.js';
-import { supportsSpatial } from '../../core/capabilities.js';
+import { Generators, RenderPasses } from '../../core/registry.ts';
+import { supportsSpatial } from '../../core/capabilities.ts';
 import { drawOverlays } from '../../viz/overlays.ts';
 import { buildRenderScene } from '../../application/renderSceneBuilder.ts';
 import { drawEvenOddFill } from '../fill.ts';

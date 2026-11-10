@@ -30,8 +30,8 @@
  * stroke by depth — closer curves read brighter, farther ones dimmer.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { cameraFrom, compileOrThrow, genId, makeScope, TAU } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
 import { projectWorldCurves } from '../view/projection.ts';

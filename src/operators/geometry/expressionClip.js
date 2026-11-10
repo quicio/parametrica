@@ -3,8 +3,8 @@
  * boolean expression, emitting one open polyline per surviving run.
  */
 
-import { Operators } from '../../core/registry.js';
-import { TYPE } from '../../core/schema.js';
+import { Operators } from '../../core/registry.ts';
+import { TYPE } from '../../core/schema.ts';
 import { compileExpression } from '../../math/expression.js';
 
 let id = 0;

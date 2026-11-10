@@ -1,6 +1,6 @@
 /** Projected mesh fill and wireframe. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import { applyFill, fillGradientEnabled, setFillDepth } from '../fill.ts';
 import type { PassContext, PassData, PassMesh, Rgb } from './types.ts';
 

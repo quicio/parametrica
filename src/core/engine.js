@@ -9,8 +9,8 @@
  * because `time` flows into every stage).
  */
 
-import { Generators, Operators } from './registry.js';
-import { supportsSpatial } from './capabilities.js';
+import { Generators, Operators } from './registry.ts';
+import { supportsSpatial } from './capabilities.ts';
 import { resolveParams } from '../animation/animatable.ts';
 import { createStdlib } from '../math/stdlib.js';
 import { analyzeAll } from '../analysis/differential.ts';
@@ -23,7 +23,7 @@ import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.js
 import { mapGeometryPoints } from '../geometry/transformGeometry.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { isSurface, isMesh } from '../geometry/contracts.js';
-import { isInstanceLayer } from './layers.js';
+import { isInstanceLayer } from './layers.ts';
 
 const STAGE_CACHE = new WeakMap();
 const ANALYSIS_CACHE = new WeakMap();

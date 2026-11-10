@@ -6,8 +6,8 @@
  * math/curves.js.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../math/curves.js';
 import { createNoise1D } from '../math/noise.js';
 import { genId, TAU } from './helpers.js';

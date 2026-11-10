@@ -8,8 +8,8 @@
  */
 
 import GUI from 'lil-gui';
-import { Generators, RenderPasses } from '../core/registry.js';
-import { supportsSpatial } from '../core/capabilities.js';
+import { Generators, RenderPasses } from '../core/registry.ts';
+import { supportsSpatial } from '../core/capabilities.ts';
 import { normalizeModes } from '../domain/modeToggles.ts';
 import { PaletteStore } from '../render/palettes.ts';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
@@ -18,7 +18,7 @@ import {
   isInstanceLayer,
   sourceGeneratorFor,
   sourceLayerFor,
-} from '../core/layers.js';
+} from '../core/layers.ts';
 import {
   PHYSICAL_UNIT_SYSTEMS,
   formatPhysicalLength,

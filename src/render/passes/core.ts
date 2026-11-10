@@ -1,6 +1,6 @@
 /** stroke · points · wireframe · control polygon. */
 
-import { RenderPasses } from '../../core/registry.js';
+import { RenderPasses } from '../../core/registry.ts';
 import { drawEvenOddFill } from '../fill.ts';
 import type { PassContext, PassCurve, PassData, Rgb } from './types.ts';
 

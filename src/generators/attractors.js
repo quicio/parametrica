@@ -23,8 +23,8 @@
  * output but expose the full mathematical range.
  */
 
-import { Generators } from '../core/registry.js';
-import { TYPE } from '../core/schema.js';
+import { Generators } from '../core/registry.ts';
+import { TYPE } from '../core/schema.ts';
 import { createNoise2D } from '../math/noise.js';
 import { TAU } from './helpers.js';
 
