@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.35] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the deterministic figure descriptor.
+- Typed descriptor inputs, results and analysis helper contracts.
+
+### Changed
+
+- `lab/descriptor.js` remains a compatibility re-export.
+- Internal imports point at `descriptor.ts`.
+- No descriptor values, hashes, budgets or ordering changed.
+
 ## [0.2.34] - 2026-11-10
 
 ### Added

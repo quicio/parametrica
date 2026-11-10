@@ -7,7 +7,7 @@
  */
 
 import { evaluateDocument } from '../../core/engine.ts';
-import { computeDescriptor } from '../../lab/descriptor.js';
+import { computeDescriptor } from '../../lab/descriptor.ts';
 import {
   createGeneration,
   describeStructuralChange,

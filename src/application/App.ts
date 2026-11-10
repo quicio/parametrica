@@ -24,7 +24,7 @@ import { supportsSpatial } from '../core/capabilities.ts';
 import { evaluateDocument } from '../core/engine.ts';
 import { schemaDefaults } from '../core/schema.ts';
 import { History } from '../core/history.js';
-import { computeDescriptor } from '../lab/descriptor.js';
+import { computeDescriptor } from '../lab/descriptor.ts';
 import { computeSensitivity } from '../lab/sensitivity.ts';
 import { applySuggestionToDocument } from '../ai/offline.js';
 import { DEFAULT_CAMERA } from '../view/camera.ts';
@@ -290,7 +290,7 @@ export class App {
   analyzeFigure({ sensitivity = false }: { sensitivity?: boolean } = {}) {
     if (!this._evaluation) return null;
     const descriptor = computeDescriptor(this.document, this._evaluation.curves, {
-      layers: this._evaluation.layers ?? null,
+      layers: (this._evaluation.layers ?? null) as never,
       geometry: this._evaluation.geometry ?? null,
     });
     const report = sensitivity
@@ -325,7 +325,7 @@ export class App {
         throw new Error('Cannot save an invalid or empty figure');
       }
       if (!capturedDescriptor) {
-        capturedDescriptor = computeDescriptor(source, evaluation.curves, { layers: evaluation.layers ?? null, geometry: evaluation.geometry ?? null });
+        capturedDescriptor = computeDescriptor(source, evaluation.curves, { layers: (evaluation.layers ?? null) as never, geometry: evaluation.geometry ?? null });
       }
     } else {
       if (!this._evaluation || this._evaluation.errors.length || !this._evaluation.curves.length) {
