@@ -9,14 +9,16 @@ import {
   resolveEffectiveCamera,
   sanitizeFrame,
   SPACE,
-} from '../view/transform.js';
+} from '../view/transform.ts';
+import type { ProjectionId } from '../view/transform.ts';
+import type { CameraState } from '../view/camera.ts';
 import {
   applyViewTransformToCurves,
   applyViewTransformToMeshes,
   projectWorldCurvesToView,
   projectWorldMeshesToView,
   projectionForGeometry,
-} from '../view/projection.js';
+} from '../view/projection.ts';
 import { isMesh } from '../geometry/contracts.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
 import { sanitizeReference } from '../view/spatialReference.ts';
@@ -180,7 +182,7 @@ export function buildRenderScene({
     }
   } else {
     const pointLists = spatial.flatMap(groupWorldPointLists);
-    const camera = resolveEffectiveCamera(view?.camera, pointLists);
+    const camera = resolveEffectiveCamera(view?.camera as CameraState | null | undefined, pointLists);
     const prepared = spatial.map((group) => prepareSpatialGroup(group, { projection, view, camera }));
     const viewPoints = prepared.flatMap((entry) => entry.points);
     const bounds = boundsOfProjectedPoints(viewPoints);
@@ -192,8 +194,8 @@ export function buildRenderScene({
       frame: { mode: frameSpec.mode, anchor: frameSpec.anchor, fit, scale },
       artboard,
       bounds,
-      projectedOrigin: projectPointToView({ x: 0, y: 0, z: 0 }, projection, camera),
-    } as never) as TransformLike;
+      projectedOrigin: projectPointToView({ x: 0, y: 0, z: 0 }, projection as ProjectionId, camera),
+    } as never) as unknown as TransformLike;
 
     const preparedByGroup = new Map(spatial.map((group, index) => [group, prepared[index]]));
     for (const group of groups) {
@@ -212,13 +214,13 @@ export function buildRenderScene({
     ));
     if (target) {
       const targetTransform = target.transform as TransformLike;
-      const projected = projectWorldMeshesToView([preview.mesh], {
+      const projected = projectWorldMeshesToView([preview.mesh] as never, {
         camera: targetTransform.camera,
         projection: target.projection,
         depthFade: true,
         depthStrength: 0.55,
       } as never);
-      const meshes = applyViewTransformToMeshes(projected, targetTransform);
+      const meshes = applyViewTransformToMeshes(projected, targetTransform as never);
       target.entry.meshes = meshes;
       target.entry.renderMeshes = meshes;
       target.entry.modes = ['lattice-preview'];
@@ -358,7 +360,7 @@ function resolveProjection(
     ...(group.geometry ?? []),
     ...(group.meshes ?? []),
   ]);
-  if (world.length) return projectionForGeometry(world, view?.projection ?? '3d');
+  if (world.length) return projectionForGeometry(world, (view?.projection ?? '3d') as ProjectionId);
   return evaluation.viewProjection ?? view?.projection ?? '3d';
 }
 
@@ -396,13 +398,13 @@ function prepareSpatialGroup(
 ): PreparedGroup {
   const generator = (group.renderGenerator ?? group.generator) as UnknownRecord | null;
   const params = (generator?.params ?? {}) as UnknownRecord;
-  const curves = projectWorldCurvesToView(worldCurvesOf(group), {
+  const curves = projectWorldCurvesToView(worldCurvesOf(group) as never, {
     camera: camera ?? view?.camera,
     projection,
     depthFade: params.depthOcclusion ?? true,
     depthStrength: params.depthAttenuation ?? 0.55,
   } as never) as CurveLike[];
-  const meshes = projectWorldMeshesToView(worldMeshesOf(group), {
+  const meshes = projectWorldMeshesToView(worldMeshesOf(group) as never, {
     camera: camera ?? view?.camera,
     projection,
     depthFade: params.depthOcclusion ?? true,
@@ -425,8 +427,8 @@ function applyPreparedGroup(
   projection: string,
 ): LayerResult {
   const safe = prepared ?? { curves: [], meshes: [], points: [] };
-  const curves = applyViewTransformToCurves(safe.curves, transform) as CurveLike[];
-  const meshes = applyViewTransformToMeshes(safe.meshes, transform) as MeshLike[];
+  const curves = applyViewTransformToCurves(safe.curves as never, transform as never) as CurveLike[];
+  const meshes = applyViewTransformToMeshes(safe.meshes as never, transform as never) as MeshLike[];
   const wireframe = meshWireframeCurves(meshes) as CurveLike[];
   return renderLayer(group, {
     curves: [...curves, ...wireframe],
@@ -442,7 +444,7 @@ function buildCompositionGroup(
   { projection, view, document: doc }: { projection: string; view: ViewLike; document: DocumentLike },
 ): LayerResult {
   if (!isSpatialGroup(group)) return buildArtboardGroup(group, view, projection);
-  const camera = resolveEffectiveCamera(view?.camera, groupWorldPointLists(group));
+  const camera = resolveEffectiveCamera(view?.camera as CameraState | null | undefined, groupWorldPointLists(group));
   const prepared = prepareSpatialGroup(group, { projection, view, camera });
   const transform = createViewTransform({
     projection,
@@ -450,8 +452,8 @@ function buildCompositionGroup(
     frame: { mode: 'composition', anchor: 'bbox', fit: legacyFit(group, doc) },
     artboard: view?.artboard,
     bounds: boundsOfProjectedPoints(prepared.points),
-    projectedOrigin: projectPointToView({ x: 0, y: 0, z: 0 }, projection, camera),
-  } as never) as TransformLike;
+    projectedOrigin: projectPointToView({ x: 0, y: 0, z: 0 }, projection as ProjectionId, camera),
+  } as never) as unknown as TransformLike;
   return applyPreparedGroup(group, prepared, transform, projection);
 }
 

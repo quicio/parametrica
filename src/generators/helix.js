@@ -19,7 +19,7 @@ import { TYPE } from '../core/schema.js';
 import { sampleAdaptive, sampleUniform } from '../sampling/sampling.js';
 import { cameraFrom, genId, TAU } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
-import { projectWorldCurves } from '../view/projection.js';
+import { projectWorldCurves } from '../view/projection.ts';
 
 const MAX_STRANDS = 2;
 

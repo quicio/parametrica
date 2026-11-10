@@ -34,7 +34,7 @@ import { Generators } from '../core/registry.js';
 import { TYPE } from '../core/schema.js';
 import { cameraFrom, compileOrThrow, genId, makeScope, TAU } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';
-import { projectWorldCurves } from '../view/projection.js';
+import { projectWorldCurves } from '../view/projection.ts';
 
 
 Generators.register({

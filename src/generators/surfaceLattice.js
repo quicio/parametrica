@@ -13,7 +13,7 @@ import { createCurve3D } from '../geometry/contracts.js';
 import { buildRevolveLattice } from '../geometry/latticeNetwork.js';
 import { latticeSpecHash, normalizeLatticeSpec } from '../geometry/latticeSpec.js';
 import { cameraFrom } from '../view/camera.ts';
-import { projectWorldCurves } from '../view/projection.js';
+import { projectWorldCurves } from '../view/projection.ts';
 
 const DEFAULT_PROFILE = '45 + 42.5*e^(-((v-0.42)/0.22)^2) + 22.5*e^(-((v-1.0)/0.12)^2) - 12*e^(-((v-0.75)/0.14)^2)';
 const NETWORK_CACHE = new Map();

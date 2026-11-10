@@ -23,7 +23,7 @@ import {
   panelAtPoint,
   quadPanelLayout,
   worldFromArtboardPoint,
-} from '../../view/viewportCoordinates.js';
+} from '../../view/viewportCoordinates.ts';
 import { resolvePassStyle } from '../passStyle.js';
 import {
   drawCoordinates,

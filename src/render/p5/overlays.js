@@ -23,7 +23,7 @@ import {
   panelAtPoint,
   quadPanelLayout,
   worldFromArtboardPoint,
-} from '../../view/viewportCoordinates.js';
+} from '../../view/viewportCoordinates.ts';
 import { drawSpatialReference } from '../reference.ts';
 
 export function drawQuadView(adapter, p, evaluation, doc, artboard) {

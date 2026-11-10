@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.26] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the world→view→artboard transform and frames.
+- Typed curve/mesh projection, orthographic helpers and projected points.
+- Typed viewport descriptors, coordinate readouts, ranges, ticks and quad
+  panel layout.
+
+### Changed
+
+- The converted `view/*.js` modules remain compatibility re-exports.
+- Internal imports and the scene builder use the typed view contracts.
+- No framing, projection, coordinate or picking behavior changed.
+
 ## [0.2.25] - 2026-11-09
 
 ### Added

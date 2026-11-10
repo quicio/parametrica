@@ -1,6 +1,6 @@
 /** Render-time orthographic views. */
 
-import { boundsOfProjectedPoints, createViewTransform } from '../view/transform.js';
+import { boundsOfProjectedPoints, createViewTransform } from '../view/transform.ts';
 
 export interface ProjectedPoint {
   x: number;
