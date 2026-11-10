@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.32] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the p5 frame-context overlays.
+- Typed p5 overlay context/adapter, coordinate options and overlay shapes.
+- Typed quad, coordinates, underlay, seam, inspection, reference and guide
+  drawing.
+
+### Changed
+
+- `render/p5/overlays.js` remains a compatibility re-export.
+- No overlay drawing, layout, clipping or hit-test behavior changed.
+
 ## [0.2.31] - 2026-11-10
 
 ### Added
