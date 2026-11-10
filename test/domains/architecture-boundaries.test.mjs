@@ -55,7 +55,7 @@ export async function run(assert) {
     }
   }
 
-  const documentImports = importsOf(read('src/core/document.js'));
+  const documentImports = importsOf(read('src/core/document.ts'));
   for (const spec of documentImports) {
     assert(!spec.includes('/render/'), 'core/document does not import render');
     assert(!spec.includes('/viz/'), 'core/document does not import viz');

@@ -12,7 +12,7 @@ import { Generators, RenderPasses } from '../core/registry.ts';
 import { supportsSpatial } from '../core/capabilities.ts';
 import { normalizeModes } from '../domain/modeToggles.ts';
 import { PaletteStore } from '../render/palettes.ts';
-import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
+import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.ts';
 import { lookPresetMatchesView } from '../domain/lookPresets.ts';
 import {
   isInstanceLayer,

@@ -7,7 +7,7 @@
  * Contract: openspec/specs/lab-notebook/spec.md
  */
 
-import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
+import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { documentDiff, descriptorDiff } from './diff.js';
 import { LocalNotebookRepository, migrateNotebook } from './notebookRepository.js';
 

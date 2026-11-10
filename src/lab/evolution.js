@@ -8,7 +8,7 @@
  */
 
 import { clampNumber, schemaDefaults, TYPE } from '../core/schema.ts';
-import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
+import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { Operators } from '../core/registry.ts';
 import { evaluateDocument } from '../core/engine.js';
 import { mulberry32 } from '../math/noise.js';

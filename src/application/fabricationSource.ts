@@ -10,7 +10,7 @@ import { buildLatticeSolid } from '../geometry/latticeSolid.js';
 import { analyzePrintability } from '../geometry/printChecks.js';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
 import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.ts';
-import { sanitizeFabricationGroups } from '../core/document.js';
+import { sanitizeFabricationGroups } from '../core/document.ts';
 import { compileExpression } from '../math/expression.js';
 import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.ts';
 import type { ManufacturingProfile, ManufacturingReport } from '../domain/manufacturingProfile.ts';

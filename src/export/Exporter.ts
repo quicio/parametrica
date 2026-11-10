@@ -6,7 +6,7 @@
  * comment. Signed Distance is the only raster-only omission.
  */
 
-import { APP_ID } from '../core/document.js';
+import { APP_ID } from '../core/document.ts';
 import { RenderPasses } from '../core/registry.ts';
 import { analyzeAll } from '../analysis/differential.ts';
 import { bboxAll } from '../sampling/sampling.js';

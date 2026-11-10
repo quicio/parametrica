@@ -7,7 +7,7 @@
  * swapped only by methods that also rebuild the affected UI sections.
  */
 
-import { createDocument, sanitizeDocument, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId } from '../core/document.js';
+import { createDocument, sanitizeDocument, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId } from '../core/document.ts';
 import {
   MAX_INSTANCE_LAYERS,
   MAX_LAYERS,
@@ -38,7 +38,6 @@ import { normalizeModes } from '../domain/modeToggles.ts';
 import type {
   AppAdapters,
   AppDocument,
-  AppLayer,
   AppOptions,
   AppServices,
   AppView,
@@ -60,6 +59,7 @@ import type {
   SurfaceInspectorLike,
   OverlayLike,
 } from './appPorts.ts';
+import type { LayerShape } from '../core/documentTypes.ts';
 
 const DEFAULT_NOTIFY_KIND = 'info';
 
@@ -317,8 +317,9 @@ export class App {
     let source = this.document;
     let capturedDescriptor = descriptor;
     if (document) {
-      source = sanitizeDocument(structuredClone(document));
-      if (!source) throw new Error('Cannot save an invalid document');
+      const sanitized = sanitizeDocument(structuredClone(document));
+      if (!sanitized) throw new Error('Cannot save an invalid document');
+      source = sanitized;
       const evaluation = evaluateDocument(source, { time: source.animation.time }) as unknown as EvaluationLike;
       if (evaluation.errors.length || !evaluation.curves.length) {
         throw new Error('Cannot save an invalid or empty figure');
@@ -721,7 +722,7 @@ export class App {
     this.rebuild();
   }
 
-  addInstanceLayer(sourceLayerId: string | null = null): AppLayer | null {
+  addInstanceLayer(sourceLayerId: string | null = null): LayerShape | null {
     if (!canAddInstanceLayer(this.document)) {
       if (countInstanceLayers(this.document) >= MAX_INSTANCE_LAYERS) {
         this.notify(`Instance limit reached (${MAX_INSTANCE_LAYERS})`);
@@ -735,7 +736,7 @@ export class App {
       return Boolean(generatorId)
         && Generators.has(generatorId as string)
         && Generators.get(generatorId as string).capabilities?.geometryKind === 'surface';
-    }) as unknown as Array<{ layer: AppLayer }>;
+    }) as unknown as Array<{ layer: LayerShape }>;
     const source = candidates.find(({ layer }) => layer.id === sourceLayerId)?.layer
       ?? candidates.find(({ layer }) => layer.id === this.activeLayer?.id)?.layer
       ?? candidates[0]?.layer
@@ -1041,7 +1042,7 @@ export class App {
   }
 
   resetCamera() {
-    const camera = (this.document.view.camera ??= {});
+    const camera = this.document.view.camera;
     camera.yaw = DEFAULT_CAMERA.yaw;
     camera.pitch = DEFAULT_CAMERA.pitch;
     camera.fov = DEFAULT_CAMERA.fov;

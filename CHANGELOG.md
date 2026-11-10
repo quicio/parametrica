@@ -7,6 +7,23 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.28] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the canonical document model and sanitization.
+- Shared document/view/layer/style/animation contracts in
+  `core/documentTypes.ts`.
+- Typed defaults, layer creation/aliases, fabrication settings and v1
+  migration.
+
+### Changed
+
+- `core/document.js` remains a compatibility re-export.
+- `App` uses the shared document shape instead of a duplicate contract.
+- Internal imports and the architecture check read `document.ts`.
+- No document shape, default, alias or migration behavior changed.
+
 ## [0.2.27] - 2026-11-10
 
 ### Added

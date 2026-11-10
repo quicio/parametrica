@@ -5,7 +5,7 @@
  * operator stack. They are families to explore, not logos to admire.
  */
 
-import { createDocument, createInstanceLayer } from '../core/document.js';
+import { createDocument, createInstanceLayer } from '../core/document.ts';
 import {
   addCutter,
   addHollowRevolved,

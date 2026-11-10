@@ -8,7 +8,7 @@
  * objects are capped surfaces.
  */
 
-import { createDocument, createLayer } from '../core/document.js';
+import { createDocument, createLayer } from '../core/document.ts';
 
 const PI = Math.PI;
 

@@ -7,7 +7,7 @@
  */
 
 import { clampNumber } from '../core/schema.ts';
-import { attachLayerAliases } from '../core/document.js';
+import { attachLayerAliases } from '../core/document.ts';
 import { Generators, Operators } from '../core/registry.ts';
 import { mulberry32 } from '../math/noise.js';
 import {

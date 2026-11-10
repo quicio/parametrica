@@ -11,7 +11,7 @@
  * objects (`{width, height, data}`) so the pipeline is Node-testable.
  */
 
-import { createDocument, createLayer, attachLayerAliases } from '../core/document.js';
+import { createDocument, createLayer, attachLayerAliases } from '../core/document.ts';
 
 export const MAX_IMAGE_EDGE = 1024;
 export const DEFAULT_HARMONICS = 32;

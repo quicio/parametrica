@@ -12,7 +12,7 @@ import { clampNumber } from '../core/schema.ts';
 import { evaluateDocument } from '../core/engine.js';
 import { bboxAll, resampleUniform } from '../sampling/sampling.js';
 import { computeDescriptor } from './descriptor.js';
-import { attachLayerAliases } from '../core/document.js';
+import { attachLayerAliases } from '../core/document.ts';
 import { numericParameterRefs, pathForRef, schemaForRef, stageForRef } from './parameters.js';
 
 const EPS = 1e-9;

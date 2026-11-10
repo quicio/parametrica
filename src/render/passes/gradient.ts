@@ -1,7 +1,7 @@
 /** Height/radius gradient wireframe. */
 
 import { RenderPasses } from '../../core/registry.ts';
-import { DEFAULT_COLOR_RAMP } from '../../core/document.js';
+import { DEFAULT_COLOR_RAMP } from '../../core/document.ts';
 import { gradientAxisValue } from '../projection.ts';
 import type { Projection } from '../projection.ts';
 import type { PassAnalysis, PassContext, PassCurve, PassData, PassPoint, Rgb } from './types.ts';

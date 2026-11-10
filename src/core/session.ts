@@ -1,6 +1,6 @@
 /** Debounced local session snapshots. */
 
-import { sanitizeDocument } from './document.js';
+import { sanitizeDocument } from './document.ts';
 import { PersistenceRepository } from './persistence.ts';
 import type { StorageLike } from './persistence.ts';
 

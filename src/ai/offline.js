@@ -7,7 +7,7 @@
  */
 
 import { clampNumber, TYPE } from '../core/schema.ts';
-import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
+import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { Generators, Operators } from '../core/registry.ts';
 import { isInstanceLayer } from '../core/layers.ts';
 

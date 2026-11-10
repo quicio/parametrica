@@ -11,7 +11,7 @@
 import { BUILT_IN_PRESETS } from './builtins.js';
 import { CATEGORY_USER, PRESET_CATEGORIES, presetInfo } from './catalog.js';
 import { PREVIEW_MAX_CHARS, previewKey } from './preview.js';
-import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.js';
+import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.ts';
 import { PersistenceRepository } from '../core/persistence.js';
 
 const STORAGE_KEY = 'parametrica.presets.v0';

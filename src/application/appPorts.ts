@@ -8,6 +8,7 @@
 
 import type { MigrationResult, PersistenceRepository } from '../core/persistence.ts';
 import type { SessionStore } from '../core/session.ts';
+import type { DocumentShape } from '../core/documentTypes.ts';
 
 export interface VectorLike {
   x?: unknown;
@@ -92,18 +93,7 @@ export interface AppView {
   [key: string]: unknown;
 }
 
-export interface AppDocument {
-  name: string;
-  seed: number;
-  activeLayer: number;
-  layers: AppLayer[];
-  view: AppView;
-  animation: AppAnimation;
-  generator?: LayerGeneratorLike;
-  operators?: LayerOperatorLike[];
-  version?: number;
-  [key: string]: unknown;
-}
+export type AppDocument = DocumentShape;
 
 export interface EvaluationLayer {
   curves?: Array<{ closed?: boolean; [key: string]: unknown }>;
@@ -271,7 +261,7 @@ export type LookSaveResult =
 
 export interface LookStoreLike {
   get(id: string): UserLookLike | null;
-  save(name: string, view: AppView): LookSaveResult;
+  save(name: string, view: unknown): LookSaveResult;
   remove(id: string): boolean;
 }
 

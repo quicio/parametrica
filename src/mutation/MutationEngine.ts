@@ -2,7 +2,7 @@
 
 import { Generators, Operators } from '../core/registry.ts';
 import { TYPE, sanitizeValue } from '../core/schema.ts';
-import { sanitizeDocument, attachLayerAliases } from '../core/document.js';
+import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { evaluateDocument } from '../core/engine.js';
 import { perturbLiterals } from '../math/expression.js';
 
