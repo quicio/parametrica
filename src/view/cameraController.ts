@@ -21,7 +21,7 @@ export function clamp(value: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, value));
 }
 
-export function orbitCamera(camera: CameraState, start: CameraState, dx: number, dy: number): CameraState {
+export function orbitCamera(camera: CameraState, start: Pick<CameraState, 'yaw' | 'pitch'>, dx: number, dy: number): CameraState {
   return {
     ...camera,
     yaw: wrapPi(start.yaw - dx * (Math.PI / 180)),

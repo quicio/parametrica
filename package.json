@@ -1,7 +1,7 @@
 {
   "name": "parametrica",
   "private": true,
-  "version": "0.2.32",
+  "version": "0.2.33",
   "type": "module",
   "description": "A parametric geometry workbench: discover continuous monoline forms by exploring mathematical equations, harmonics and parameter domains.",
   "scripts": {
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
+    "@types/three": "^0.180.0",
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.13.0",
     "globals": "^17.13.0",

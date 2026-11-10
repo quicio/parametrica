@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.33] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the optional THREE/WebGL product preview.
+- Typed mesh/bounds/scene/app, material/quality and interaction contracts.
+- `@types/three` development dependency.
+
+### Changed
+
+- `render/webgl/ProductPreview.js` remains a compatibility re-export.
+- Composition loads the `.ts` module.
+- No rendering, framing, quality or capture behavior changed.
+
 ## [0.2.32] - 2026-11-10
 
 ### Added

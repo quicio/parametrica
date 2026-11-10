@@ -63,7 +63,7 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }) {
     startWithPreviewSize: START_WITH_PREVIEW_SIZE,
     loadProductPreview: async (app) => {
       if (app.productPreview) return app.productPreview;
-      const { ProductPreview } = await import('../render/webgl/ProductPreview.js');
+      const { ProductPreview } = await import('../render/webgl/ProductPreview.ts');
       return new ProductPreview(app, canvasContainer);
     },
   };
