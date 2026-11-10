@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.23] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the shared render helpers: renderer contract,
+  projection, fill, trace fill, spatial reference and thumbnails.
+- Typed palette store and user look store with explicit storage contracts.
+- Typed p5-like and SVG context boundaries for render passes.
+
+### Changed
+
+- The converted `render/*.js` modules remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No projection, fill, thumbnail or persistence behavior changed.
+
 ## [0.2.22] - 2026-11-09
 
 ### Added

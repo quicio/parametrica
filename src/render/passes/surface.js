@@ -3,7 +3,7 @@
  */
 
 import { RenderPasses } from '../../core/registry.js';
-import { applyFill, fillGradientEnabled, setFillDepth } from '../fill.js';
+import { applyFill, fillGradientEnabled, setFillDepth } from '../fill.ts';
 
 RenderPasses.register({
   id: 'surface-wireframe',

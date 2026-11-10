@@ -18,7 +18,7 @@ import { exportBinarySTL, STL_MIME_TYPE } from './stl.ts';
 import { export3MF, THREE_MF_MIME_TYPE } from './3mf.ts';
 import { buildFabricationReport } from '../application/fabricationSource.ts';
 import { resolvePassStyle } from '../domain/passStyle.ts';
-import { traceFillGroups, withoutTraceFill } from '../render/traceFill.js';
+import { traceFillGroups, withoutTraceFill } from '../render/traceFill.ts';
 import type { FabricationReport } from '../application/fabricationSource.ts';
 
 interface Vec2 { x: number; y: number; [key: string]: unknown }

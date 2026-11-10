@@ -11,7 +11,7 @@ import GUI from 'lil-gui';
 import { Generators, RenderPasses } from '../core/registry.js';
 import { supportsSpatial } from '../core/capabilities.js';
 import { normalizeModes } from '../domain/modeToggles.ts';
-import { PaletteStore } from '../render/palettes.js';
+import { PaletteStore } from '../render/palettes.ts';
 import { DEFAULT_COLOR_RAMP, sanitizeColorRamp } from '../core/document.js';
 import { lookPresetMatchesView } from '../domain/lookPresets.ts';
 import {

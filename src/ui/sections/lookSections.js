@@ -7,7 +7,7 @@
 
 import { LOOK_PRESETS } from '../../domain/lookPresets.ts';
 import { supportsSpatial } from '../../core/capabilities.js';
-import { ARTBOARD_PRESETS } from '../../render/palettes.js';
+import { ARTBOARD_PRESETS } from '../../render/palettes.ts';
 import {
   PHYSICAL_UNIT_SYSTEMS,
   artboardToMillimetres,

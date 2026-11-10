@@ -8,7 +8,7 @@
 
 import { RenderPasses } from '../../core/registry.js';
 import { DEFAULT_COLOR_RAMP } from '../../core/document.js';
-import { gradientAxisValue } from '../projection.js';
+import { gradientAxisValue } from '../projection.ts';
 
 const BUCKETS = 64;
 

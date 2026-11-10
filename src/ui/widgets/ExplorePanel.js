@@ -13,7 +13,7 @@ import {
   numericParameterRefs,
   refKey,
 } from '../../lab/parameters.js';
-import { boundsOf, curvesDataURL } from '../../render/thumbnail.js';
+import { boundsOf, curvesDataURL } from '../../render/thumbnail.ts';
 
 const TECHNICAL = new Set([
   'samples', 'adaptive', 'fit', 'size', 'seed', 'steps', 'skip', 'dt',

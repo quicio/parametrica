@@ -7,7 +7,7 @@
  */
 
 import { evaluateDocument } from '../core/engine.js';
-import { curvesDataURL } from '../render/thumbnail.js';
+import { curvesDataURL } from '../render/thumbnail.ts';
 import { canonicalStringify, sha256Hex } from '../lab/hash.js';
 
 export const PREVIEW_VERSION = 4;

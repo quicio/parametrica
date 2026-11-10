@@ -3,7 +3,7 @@
  */
 
 import { RenderPasses } from '../../core/registry.js';
-import { drawEvenOddFill } from '../fill.js';
+import { drawEvenOddFill } from '../fill.ts';
 
 export function traceCurve(p, curve, rgb = [255, 255, 255], baseAlpha = 255) {
   // Two paths: if the curve carries per-point depth, draw segment-by-segment

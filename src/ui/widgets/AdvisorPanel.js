@@ -13,7 +13,7 @@ import { documentDiff, descriptorDiff } from '../../lab/diff.js';
 import { validateSuggestion } from '../../ai/offline.js';
 import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.js';
 import { AdvisorCache } from '../../ai/cache.js';
-import { curvesDataURL, boundsOf } from '../../render/thumbnail.js';
+import { curvesDataURL, boundsOf } from '../../render/thumbnail.ts';
 
 const SETTINGS_KEY = 'parametrica.ai.settings';
 const AUTO_DELAY = 700;

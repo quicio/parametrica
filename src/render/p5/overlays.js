@@ -24,7 +24,7 @@ import {
   quadPanelLayout,
   worldFromArtboardPoint,
 } from '../../view/viewportCoordinates.js';
-import { drawSpatialReference } from '../reference.js';
+import { drawSpatialReference } from '../reference.ts';
 
 export function drawQuadView(adapter, p, evaluation, doc, artboard) {
     const panels = quadPanelLayout(artboard.width, artboard.height);

@@ -12,8 +12,8 @@ import { Generators, RenderPasses } from '../../core/registry.js';
 import { supportsSpatial } from '../../core/capabilities.js';
 import { drawOverlays } from '../../viz/overlays.js';
 import { buildRenderScene } from '../../application/renderSceneBuilder.ts';
-import { drawEvenOddFill } from '../fill.js';
-import { traceFillGroups, withoutTraceFill } from '../traceFill.js';
+import { drawEvenOddFill } from '../fill.ts';
+import { traceFillGroups, withoutTraceFill } from '../traceFill.ts';
 import {
   buildViewportDescriptor,
   coordinateUnitInfo,
