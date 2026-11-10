@@ -7,6 +7,22 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.22] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the SVG recorder and the Exporter adapter.
+- Explicit export port, SVG builder inputs and GIF export options.
+- Legacy plain export context normalization.
+
+### Changed
+
+- `export/svgContext.js` and `export/Exporter.js` remain compatibility
+  re-exports.
+- Architecture checks inspect `Exporter.ts`; the export rule covers both
+  extensions.
+- No SVG markup, bytes, downloads or report behavior changed.
+
 ## [0.2.21] - 2026-11-09
 
 ### Added

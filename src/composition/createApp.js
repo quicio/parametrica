@@ -30,7 +30,7 @@ import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview
 import { LOOK_PRESETS } from '../domain/lookPresets.ts';
 import { LookPresetStore } from '../render/lookPresetStore.js';
 import { P5Adapter } from '../render/p5/P5Adapter.js';
-import { Exporter } from '../export/Exporter.js';
+import { Exporter } from '../export/Exporter.ts';
 import { Controls } from '../ui/Controls.js';
 import { StartWithOverlay } from '../ui/StartWithOverlay.js';
 import { DialogService } from '../ui/dialogs.js';

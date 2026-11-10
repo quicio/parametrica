@@ -69,7 +69,7 @@ module.exports = {
       severity: 'error',
       comment: 'The export adapter uses the export port, not App.',
       from: { path: '^src/export/' },
-      to: { path: '^src/application/App\\.js$' },
+      to: { path: '^src/application/App[.](js|ts)$' },
     },
   ],
   options: {

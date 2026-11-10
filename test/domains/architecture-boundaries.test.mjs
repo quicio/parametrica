@@ -95,7 +95,7 @@ export async function run(assert) {
   assert(read('src/composition/createApp.js').includes('new Exporter'), 'composition creates the exporter');
   assert(read('src/main.js').includes("from './composition/createApp.js'"), 'main boots through the composition root');
 
-  const exporterSource = read('src/export/Exporter.js');
+  const exporterSource = read('src/export/Exporter.ts');
   assert(!exporterSource.includes('this.app'), 'Exporter never reaches into the App instance');
   assert(!importsOf(exporterSource).some((spec) => spec.includes('application/App')), 'Exporter does not import App');
   assert(exporterSource.includes('this.port'), 'Exporter uses the injected export port');
