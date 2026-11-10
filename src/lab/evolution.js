@@ -17,7 +17,7 @@ import {
   pathForRef,
   schemaForRef,
   stageForRef,
-} from './parameters.js';
+} from './parameters.ts';
 
 export const EVOLUTION_VERSION = 1;
 export const MAX_PARENTS = 4;

@@ -12,7 +12,7 @@ import { attachLayerAliases } from '../../core/document.ts';
 import {
   numericParameterRefs,
   refKey,
-} from '../../lab/parameters.js';
+} from '../../lab/parameters.ts';
 import { boundsOf, curvesDataURL } from '../../render/thumbnail.ts';
 
 const TECHNICAL = new Set([

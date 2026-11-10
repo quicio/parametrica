@@ -25,7 +25,7 @@ import { evaluateDocument } from '../core/engine.js';
 import { schemaDefaults } from '../core/schema.ts';
 import { History } from '../core/history.js';
 import { computeDescriptor } from '../lab/descriptor.js';
-import { computeSensitivity } from '../lab/sensitivity.js';
+import { computeSensitivity } from '../lab/sensitivity.ts';
 import { applySuggestionToDocument } from '../ai/offline.js';
 import { DEFAULT_CAMERA } from '../view/camera.ts';
 import { MIN_CAMERA_FOV } from '../view/cameraController.ts';
@@ -294,7 +294,7 @@ export class App {
       geometry: this._evaluation.geometry ?? null,
     });
     const report = sensitivity
-      ? computeSensitivity(this.document, this._evaluation.curves, {
+      ? computeSensitivity(this.document, this._evaluation.curves as never, {
         time: this.document.animation.time,
       })
       : null;

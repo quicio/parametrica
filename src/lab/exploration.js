@@ -16,7 +16,7 @@ import {
   sameRef,
   schemaForRef,
   stageForRef,
-} from './parameters.js';
+} from './parameters.ts';
 
 export class ExplorationSession {
   constructor(document) {

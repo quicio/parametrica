@@ -3,7 +3,7 @@
  * It is UI-only; it never mutates the document.
  */
 
-import { buildParametricSummary } from '../lab/parametricSummary.js';
+import { buildParametricSummary } from '../lab/parametricSummary.ts';
 
 const STORAGE_KEY = 'parametrica.parametrics.v1';
 

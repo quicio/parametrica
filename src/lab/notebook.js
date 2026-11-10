@@ -8,7 +8,7 @@
  */
 
 import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
-import { documentDiff, descriptorDiff } from './diff.js';
+import { documentDiff, descriptorDiff } from './diff.ts';
 import { LocalNotebookRepository, migrateNotebook } from './notebookRepository.js';
 
 export const NOTEBOOK_VERSION = 2;

@@ -14,7 +14,7 @@ import {
   removeKeyframe,
   removeTrack,
 } from '../../animation/timeline.ts';
-import { numericParameterRefs, pathForRef } from '../../lab/parameters.js';
+import { numericParameterRefs, pathForRef } from '../../lab/parameters.ts';
 import { zipStore } from '../../export/zip.ts';
 
 export class TimelinePanel {

@@ -23,7 +23,7 @@ import { createPersistenceRepository, migrateLocalStorage } from '../core/persis
 import { SessionStore } from '../core/session.js';
 import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.js';
 import { LocalNotebookRepository } from '../lab/notebookRepository.js';
-import { NotebookWorkspace } from '../lab/workspace.js';
+import { NotebookWorkspace } from '../lab/workspace.ts';
 import { MutationEngine } from '../mutation/MutationEngine.ts';
 import { PresetManager } from '../presets/PresetManager.js';
 import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.js';

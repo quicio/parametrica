@@ -9,7 +9,7 @@
  */
 
 import { evaluateDocument } from '../../core/engine.js';
-import { documentDiff, descriptorDiff } from '../../lab/diff.js';
+import { documentDiff, descriptorDiff } from '../../lab/diff.ts';
 import { validateSuggestion } from '../../ai/offline.js';
 import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.js';
 import { AdvisorCache } from '../../ai/cache.js';
