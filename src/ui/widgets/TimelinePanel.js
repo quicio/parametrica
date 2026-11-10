@@ -13,7 +13,7 @@ import {
   upsertKeyframe,
   removeKeyframe,
   removeTrack,
-} from '../../animation/timeline.js';
+} from '../../animation/timeline.ts';
 import { numericParameterRefs, pathForRef } from '../../lab/parameters.js';
 import { zipStore } from '../../export/zip.ts';
 

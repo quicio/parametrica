@@ -3,8 +3,8 @@
  */
 
 import { makeScope } from './context.js';
-import { postProcess } from '../sampling/parametric.js';
-import { TAU } from '../math/periods.js';
+import { postProcess } from '../sampling/parametric.ts';
+import { TAU } from '../math/periods.ts';
 
 /**
  * Compose a Curve[] from a per-sample branch function.

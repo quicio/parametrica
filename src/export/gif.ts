@@ -1,7 +1,7 @@
 /** Deterministic GIF encoding for timeline exports. */
 
 import { GIFEncoder, quantize, applyPalette } from 'gifenc/dist/gifenc.esm.js';
-import { frameTimes } from '../animation/timeline.js';
+import { frameTimes } from '../animation/timeline.ts';
 
 export const GIF_MAX_FRAMES = 240;
 export const GIF_MAX_FPS = 50;

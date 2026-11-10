@@ -1,7 +1,7 @@
 /** negative space · signed distance · topology. */
 
 import { RenderPasses } from '../../core/registry.js';
-import { polylineIntersections, selfIntersections } from '../../analysis/intersections.js';
+import { polylineIntersections, selfIntersections } from '../../analysis/intersections.ts';
 import type { PassContext, PassCurve, PassData, PassImage, PassPoint } from './types.ts';
 
 RenderPasses.register({
@@ -118,7 +118,7 @@ RenderPasses.register({
     }
     const markers: Array<{ x: number; y: number }> = [];
     for (const c of curves) {
-      markers.push(...selfIntersections(c.points, { closed: c.closed }));
+      markers.push(...selfIntersections(c.points, { closed: c.closed ?? false }));
     }
     for (let i = 0; i < curves.length; i++) {
       for (let j = i + 1; j < curves.length; j++) {
@@ -126,7 +126,7 @@ RenderPasses.register({
         const second = curves[j];
         if (!first || !second) continue;
         markers.push(...polylineIntersections(first.points, second.points, {
-          closedA: first.closed, closedB: second.closed,
+          closedA: first.closed ?? false, closedB: second.closed ?? false,
         }));
       }
     }

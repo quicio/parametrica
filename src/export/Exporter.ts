@@ -8,10 +8,10 @@
 
 import { APP_ID } from '../core/document.js';
 import { RenderPasses } from '../core/registry.js';
-import { analyzeAll } from '../analysis/differential.js';
+import { analyzeAll } from '../analysis/differential.ts';
 import { bboxAll } from '../sampling/sampling.js';
 import { buildRenderScene } from '../application/renderSceneBuilder.ts';
-import { drawOverlays } from '../viz/overlays.js';
+import { drawOverlays } from '../viz/overlays.ts';
 import { SvgContext } from './svgContext.ts';
 import { artboardToMillimetres, millimetresPerUnit } from '../domain/units.ts';
 import { exportBinarySTL, STL_MIME_TYPE } from './stl.ts';

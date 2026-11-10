@@ -14,7 +14,7 @@
  */
 
 import { bbox } from '../sampling/sampling.js';
-import { cameraFrom, project3D } from './camera.js';
+import { cameraFrom, project3D } from './camera.ts';
 
 export const SPACE = Object.freeze({
   PARAMETER: 'parameter',

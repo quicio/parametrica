@@ -7,6 +7,23 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.25] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for camera state/projection and spatial references.
+- Typed period math, parametric sampling, intersection and differential
+  analysis.
+- Typed timeline/animatable resolution, mutation engine and diagnostic
+  overlays.
+
+### Changed
+
+- The converted support-helper `.js` modules remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- Architecture checks read the typed viz overlay module.
+- No camera, sampling, analysis, timeline or mutation behavior changed.
+
 ## [0.2.24] - 2026-11-09
 
 ### Added

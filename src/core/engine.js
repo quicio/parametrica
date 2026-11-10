@@ -11,9 +11,9 @@
 
 import { Generators, Operators } from './registry.js';
 import { supportsSpatial } from './capabilities.js';
-import { resolveParams } from '../animation/animatable.js';
+import { resolveParams } from '../animation/animatable.ts';
 import { createStdlib } from '../math/stdlib.js';
-import { analyzeAll } from '../analysis/differential.js';
+import { analyzeAll } from '../analysis/differential.ts';
 import { analyzeGeometry } from '../geometry/analysis.js';
 import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
 import { validateGeometry } from '../geometry/validate.js';

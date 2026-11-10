@@ -12,10 +12,10 @@
 import { Generators, Operators } from './registry.js';
 import { sanitizeParams } from './schema.js';
 import { OVERLAYS } from '../domain/overlays.ts';
-import { createTimeline, sanitizeTimeline } from '../animation/timeline.js';
+import { createTimeline, sanitizeTimeline } from '../animation/timeline.ts';
 import { createDefaultFillGradient, sanitizeFillGradient, DEFAULT_FILL_GRADIENT } from './fillGradient.js';
 import { createFrame, DEFAULT_FRAME, sanitizeFrame } from '../view/transform.js';
-import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.js';
+import { createReference, DEFAULT_REFERENCE, sanitizeReference } from '../view/spatialReference.ts';
 import { createDefaultUnits, sanitizeUnits, DEFAULT_UNITS } from '../domain/units.ts';
 import { createCoordinates, sanitizeCoordinates, DEFAULT_COORDINATES } from '../view/viewportCoordinates.js';
 import { sanitizePassStyle } from '../domain/passStyle.ts';

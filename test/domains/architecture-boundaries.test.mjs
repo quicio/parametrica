@@ -177,7 +177,7 @@ export async function run(assert) {
 
   assert(read('src/core/units.js').includes('../domain/units.ts'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.ts'), 'render/passStyle keeps a domain re-export');
-  assert(read('src/viz/overlays.js').includes('../domain/overlays.ts'), 'viz/overlays keeps a domain re-export');
+  assert(read('src/viz/overlays.ts').includes('../domain/overlays.ts'), 'viz/overlays keeps a domain re-export');
   assert(read('src/geometry/manufacturingProfile.js').includes('../domain/manufacturingProfile.ts'), 'geometry/manufacturingProfile keeps a domain re-export');
   assert(read('src/geometry/repair.js').includes('../domain/fabrication.ts'), 'geometry/repair imports domain cap strategies');
 }

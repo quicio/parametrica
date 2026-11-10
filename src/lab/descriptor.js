@@ -8,10 +8,10 @@
  * Contract: openspec/specs/figure-observation/spec.md
  */
 
-import { analyzeCurve } from '../analysis/differential.js';
+import { analyzeCurve } from '../analysis/differential.ts';
 import { analyzeGeometry, bbox3 } from '../geometry/analysis.js';
 import { bboxAll, resampleUniform } from '../sampling/sampling.js';
-import { selfIntersections, polylineIntersections } from '../analysis/intersections.js';
+import { selfIntersections, polylineIntersections } from '../analysis/intersections.ts';
 import { canonicalStringify, sha256Hex } from './hash.js';
 
 const EPS = 1e-9;

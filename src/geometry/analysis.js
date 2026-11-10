@@ -4,7 +4,7 @@
 
 import { isCurve2D, isCurve3D, isSurface } from './contracts.js';
 import { surfaceArea } from './surfaceTessellation.js';
-import { analyzeCurve } from '../analysis/differential.js';
+import { analyzeCurve } from '../analysis/differential.ts';
 
 export function analyzeCurve3D(points, closed = false) {
   const n = points.length;

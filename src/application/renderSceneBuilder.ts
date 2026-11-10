@@ -19,7 +19,7 @@ import {
 } from '../view/projection.js';
 import { isMesh } from '../geometry/contracts.js';
 import { meshWireframeCurves } from '../geometry/wireframe.js';
-import { sanitizeReference } from '../view/spatialReference.js';
+import { sanitizeReference } from '../view/spatialReference.ts';
 import { createRenderLayer, createRenderScene } from '../domain/scene.ts';
 import type { RenderLayer, RenderScene } from '../domain/scene.ts';
 

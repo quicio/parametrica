@@ -7,7 +7,7 @@
  */
 
 import { isCurve3D, isMesh, isSurface } from '../geometry/contracts.js';
-import { cameraFrom, project3D } from './camera.js';
+import { cameraFrom, project3D } from './camera.ts';
 import {
   boundsOfProjectedPoints,
   createViewTransform,

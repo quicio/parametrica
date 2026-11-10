@@ -10,7 +10,7 @@
 
 import { Generators, RenderPasses } from '../../core/registry.js';
 import { supportsSpatial } from '../../core/capabilities.js';
-import { drawOverlays } from '../../viz/overlays.js';
+import { drawOverlays } from '../../viz/overlays.ts';
 import { buildRenderScene } from '../../application/renderSceneBuilder.ts';
 import { drawEvenOddFill } from '../fill.ts';
 import { traceFillGroups, withoutTraceFill } from '../traceFill.ts';
@@ -35,7 +35,7 @@ import {
   drawUnderlay,
 } from './overlays.js';
 import { pickSurface } from '../../domain/interaction/surfacePicker.ts';
-import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.js';
+import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.ts';
 import { artboardPointFromCanvas } from '../../domain/interaction/ray.ts';
 import { AnimationController } from '../../application/animationController.js';
 

@@ -7,7 +7,7 @@ import { TYPE } from '../../core/schema.js';
 import { bboxAll } from '../../sampling/sampling.js';
 import { compileExpression } from '../../math/expression.js';
 import { createNoise2D } from '../../math/noise.js';
-import { analyzeCurve } from '../../analysis/differential.js';
+import { analyzeCurve } from '../../analysis/differential.ts';
 
 let id = 0;
 const opId = () => `df-${id++}`;

@@ -13,7 +13,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { orbitCamera, zoomCamera } from '../../view/cameraController.js';
+import { orbitCamera, zoomCamera } from '../../view/cameraController.ts';
 
 const MATERIALS = Object.freeze({
   clay: {

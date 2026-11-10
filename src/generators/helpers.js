@@ -15,7 +15,7 @@ export {
   sampleParametric,
   postProcess,
   isClosedPolyline,
-} from '../sampling/parametric.js';
+} from '../sampling/parametric.ts';
 export {
   TAU,
   gcd,
@@ -24,5 +24,5 @@ export {
   trochoidTurns,
   lissajousTurns,
   roseTurns,
-} from '../math/periods.js';
-export { cameraFrom, project3D } from '../view/camera.js';
+} from '../math/periods.ts';
+export { cameraFrom, project3D } from '../view/camera.ts';
