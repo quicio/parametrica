@@ -41,7 +41,7 @@ const nextId = () => `c${curveId++}`;
 
 /**
  * @param {object} document  GlyphDocument (sanitized)
- * @param {{time?: number, quality?: object}} options
+ * @param {{time?: number, quality?: object, cacheKey?: object, bypassCache?: boolean, layerIndex?: number}} options
  * @returns {{curves, analysis, errors, stats, bbox}}
  */
 export function evaluateDocument(document, options = {}) {

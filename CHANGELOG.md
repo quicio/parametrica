@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.30] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for deterministic preset previews.
+- Typed advisor cache and grounded prompt helpers.
+- Typed preview keys/thumbnails, cache keys and prompt payloads.
+
+### Changed
+
+- The converted `presets/preview.js`, `ai/cache.js` and `ai/prompt.js` remain
+  compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No preview, cache eviction or prompt payload behavior changed.
+
 ## [0.2.29] - 2026-11-10
 
 ### Added

@@ -12,7 +12,7 @@ import { evaluateDocument } from '../../core/engine.js';
 import { documentDiff, descriptorDiff } from '../../lab/diff.ts';
 import { validateSuggestion } from '../../ai/offline.js';
 import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.js';
-import { AdvisorCache } from '../../ai/cache.js';
+import { AdvisorCache } from '../../ai/cache.ts';
 import { curvesDataURL, boundsOf } from '../../render/thumbnail.ts';
 
 const SETTINGS_KEY = 'parametrica.ai.settings';

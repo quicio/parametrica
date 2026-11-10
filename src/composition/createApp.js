@@ -26,7 +26,7 @@ import { LocalNotebookRepository } from '../lab/notebookRepository.js';
 import { NotebookWorkspace } from '../lab/workspace.ts';
 import { MutationEngine } from '../mutation/MutationEngine.ts';
 import { PresetManager } from '../presets/PresetManager.js';
-import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.js';
+import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.ts';
 import { LOOK_PRESETS } from '../domain/lookPresets.ts';
 import { LookPresetStore } from '../render/lookPresetStore.ts';
 import { P5Adapter } from '../render/p5/P5Adapter.js';

@@ -7,8 +7,8 @@
  */
 
 import { adviseOffline, validateSuggestion } from './offline.js';
-import { buildAdvisorPrompt, PROMPT_VERSION } from './prompt.js';
-import { AdvisorCache, cacheKey } from './cache.js';
+import { buildAdvisorPrompt, PROMPT_VERSION } from './prompt.ts';
+import { AdvisorCache, cacheKey } from './cache.ts';
 
 export const PROVIDERS = [
   { id: 'offline', name: 'Offline rules', network: false },
