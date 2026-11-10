@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.19] - 2026-11-09
+
+### Added
+
+- Strict TypeScript for the bounded history, persistence repository, storage
+  migration, debounced session store and notebook repositories.
+- Typed storage boundary, migration result and session/notebook payloads.
+
+### Changed
+
+- `core/history.js`, `core/persistence.js`, `core/session.js` and
+  `lab/notebookRepository.js` remain compatibility re-exports.
+- No storage key, migration, timing or payload behavior changed.
+
 ## [0.2.18] - 2026-11-09
 
 ### Added
