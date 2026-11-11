@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.42] - 2026-11-11
+
+### Added
+
+- Strict TypeScript for polar, custom, Fourier, noise-field,
+  concentric-ellipses and bilateral-spline generators.
+- Typed parameter interfaces and multi-curve metadata.
+
+### Changed
+
+- These generator `.js` paths remain compatibility re-exports.
+- The generator index imports the `.ts` modules.
+- No geometry or sampling behavior changed.
+
 ## [0.2.41] - 2026-11-11
 
 ### Added

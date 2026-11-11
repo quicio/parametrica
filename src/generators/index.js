@@ -4,19 +4,19 @@
  */
 
 import './parametric.ts';
-import './polar.js';
-import './custom.js';
+import './polar.ts';
+import './custom.ts';
 import './lissajous.ts';
 import './rose.ts';
 import './superformula.ts';
-import './fourier.js';
+import './fourier.ts';
 import './trochoids.js';
 import './harmonicOscillator.ts';
-import './noiseField.js';
+import './noiseField.ts';
 import './splines.js';
-import './bilateralSpline.js';
+import './bilateralSpline.ts';
 import './attractors.js';
-import './concentricEllipses.js';
+import './concentricEllipses.ts';
 import './parametric3D.js';
 import './helix.js';
 import './parametricSurface.js';
