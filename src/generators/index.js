@@ -15,7 +15,7 @@ import './harmonicOscillator.ts';
 import './noiseField.ts';
 import './splines.ts';
 import './bilateralSpline.ts';
-import './attractors.js';
+import './attractors.ts';
 import './concentricEllipses.ts';
 import './parametric3D.ts';
 import './helix.ts';

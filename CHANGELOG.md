@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.45] - 2026-11-11
+
+### Added
+
+- Strict TypeScript for the Lorenz, Clifford, De Jong and Aizawa attractors.
+- Typed attractor params, starts, iteration and projections.
+
+### Changed
+
+- `generators/attractors.js` remains a compatibility re-export.
+- The generator index imports the `.ts` module.
+- No attractor geometry or sampling behavior changed.
+
 ## [0.2.44] - 2026-11-11
 
 ### Added
