@@ -3,15 +3,15 @@
  * self-registers with the Generators registry on load.
  */
 
-import './parametric.js';
+import './parametric.ts';
 import './polar.js';
 import './custom.js';
-import './lissajous.js';
-import './rose.js';
-import './superformula.js';
+import './lissajous.ts';
+import './rose.ts';
+import './superformula.ts';
 import './fourier.js';
 import './trochoids.js';
-import './harmonicOscillator.js';
+import './harmonicOscillator.ts';
 import './noiseField.js';
 import './splines.js';
 import './bilateralSpline.js';

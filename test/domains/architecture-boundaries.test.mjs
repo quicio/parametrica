@@ -62,7 +62,7 @@ export async function run(assert) {
     assert(!spec.includes('/geometry/'), 'core/document does not import geometry');
   }
 
-  for (const file of ['src/generators/helpers.js', 'src/generators/surfaceLattice.js']) {
+  for (const file of ['src/generators/helpers.ts', 'src/generators/surfaceLattice.js']) {
     const source = read(file);
     assert(!importsOf(source).some((spec) => spec.includes('/render/')), `${file} does not import render`);
     assert(importsOf(source).some((spec) => spec.includes('/view/camera')), `${file} imports pure view camera`);

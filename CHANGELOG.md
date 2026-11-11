@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.41] - 2026-11-11
+
+### Added
+
+- Strict TypeScript for generator context, composition and the classic 2D
+  generators.
+- Typed generator contexts, composed curves and per-generator params.
+- Correct sampling return types for parametric points.
+
+### Changed
+
+- Classic generator `.js` paths remain compatibility re-exports.
+- The generator index imports the `.ts` modules.
+- No generator output, domains or registry behavior changed.
+
 ## [0.2.40] - 2026-11-10
 
 ### Added

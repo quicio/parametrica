@@ -29,6 +29,9 @@ export interface SampleParametricOptions {
 }
 export interface PostProcessOptions {
   center?: boolean;
+  fit?: number;
+  size?: number;
+  [key: string]: unknown;
 }
 
 /** Sample x(t), y(t) over a domain with optional adaptive refinement. */
@@ -36,7 +39,7 @@ export function sampleParametric(
   fnX: (scope: Record<string, unknown>) => number,
   fnY: (scope: Record<string, unknown>) => number,
   { t0, t1, samples, adaptive, scope }: SampleParametricOptions,
-): ParametricCurve[] {
+): ParametricPoint[] {
   let a = t0;
   let b = t1;
   if (a > b) [a, b] = [b, a];
@@ -47,7 +50,7 @@ export function sampleParametric(
   };
   return (adaptive
     ? sampleAdaptive(fn, a, b, { minSteps: Math.min(512, samples), samples, maxDepth: 8 })
-    : sampleUniform(fn, a, b, samples)) as ParametricCurve[];
+    : sampleUniform(fn, a, b, samples)) as ParametricPoint[];
 }
 
 /**
