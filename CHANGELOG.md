@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.43] - 2026-11-11
+
+### Added
+
+- Strict TypeScript for trochoid, spirograph and spline generators.
+- Typed trochoid turns/points and procedural spline node contracts.
+
+### Changed
+
+- The two generator `.js` paths remain compatibility re-exports.
+- The generator index imports the `.ts` modules.
+- No geometry or sampling behavior changed.
+
 ## [0.2.42] - 2026-11-11
 
 ### Added
