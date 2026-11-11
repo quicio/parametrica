@@ -20,4 +20,4 @@ import './concentricEllipses.ts';
 import './parametric3D.ts';
 import './helix.ts';
 import './parametricSurface.ts';
-import './surfaceLattice.js';
+import './surfaceLattice.ts';

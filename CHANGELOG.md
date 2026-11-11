@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.46] - 2026-11-11
+
+### Added
+
+- Strict TypeScript for the surface lattice generator.
+- Typed lattice params, network cells/edges, openings and cache.
+
+### Changed
+
+- `generators/surfaceLattice.js` remains a compatibility re-export.
+- The generator index and architecture check read the `.ts` module.
+- No lattice geometry or caching behavior changed.
+
 ## [0.2.45] - 2026-11-11
 
 ### Added
