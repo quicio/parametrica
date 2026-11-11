@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.37] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the offline advisor and optional providers.
+- Typed path resolution, suggestion results, advisor responses and provider
+  contracts.
+
+### Changed
+
+- `ai/offline.js` and `ai/provider.js` remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No rules, payloads, cache or fallback behavior changed.
+
 ## [0.2.36] - 2026-11-10
 
 ### Added

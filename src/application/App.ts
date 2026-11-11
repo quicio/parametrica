@@ -26,7 +26,7 @@ import { schemaDefaults } from '../core/schema.ts';
 import { History } from '../core/history.js';
 import { computeDescriptor } from '../lab/descriptor.ts';
 import { computeSensitivity } from '../lab/sensitivity.ts';
-import { applySuggestionToDocument } from '../ai/offline.js';
+import { applySuggestionToDocument } from '../ai/offline.ts';
 import { DEFAULT_CAMERA } from '../view/camera.ts';
 import { MIN_CAMERA_FOV } from '../view/cameraController.ts';
 import { buildRenderScene } from './renderSceneBuilder.ts';
@@ -425,7 +425,7 @@ export class App {
   /* ———————— advisor ———————— */
 
   suggestCandidate(suggestion: unknown): AppDocument | null {
-    return applySuggestionToDocument(this.document, suggestion);
+    return applySuggestionToDocument(this.document, suggestion as never);
   }
 
   applySuggestion(suggestion: { path: string; [key: string]: unknown }): AppDocument {

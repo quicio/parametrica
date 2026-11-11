@@ -10,8 +10,8 @@
 
 import { evaluateDocument } from '../../core/engine.ts';
 import { documentDiff, descriptorDiff } from '../../lab/diff.ts';
-import { validateSuggestion } from '../../ai/offline.js';
-import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.js';
+import { validateSuggestion } from '../../ai/offline.ts';
+import { createProvider, runAdvisor, shouldAutoAnalyze, PROVIDERS } from '../../ai/provider.ts';
 import { AdvisorCache } from '../../ai/cache.ts';
 import { curvesDataURL, boundsOf } from '../../render/thumbnail.ts';
 
