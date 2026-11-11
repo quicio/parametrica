@@ -7,7 +7,7 @@
  */
 
 import { Generators } from '../../core/registry.ts';
-import { CATEGORY_USER, PRESET_CATEGORIES, categoryInfo } from '../../presets/catalog.js';
+import { CATEGORY_USER, PRESET_CATEGORIES, categoryInfo } from '../../presets/catalog.ts';
 
 const CATEGORY_ORDER = new Map([
   ...PRESET_CATEGORIES.map((category, index) => [category.id, index]),

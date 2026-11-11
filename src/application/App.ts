@@ -112,6 +112,7 @@ export class App {
   timelineRecorder: ((time: number) => void) | null = null;
   lastAnalysis: { descriptor: unknown; sensitivity: unknown } | null = null;
   lastLookPreset: string | null = null;
+  exploreSeed: number = 1;
 
   constructor({ canvasContainer, telemetryEl, services, adapters }: AppOptions) {
     if (!services || !adapters) throw new Error('App requires composition services and adapters');

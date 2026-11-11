@@ -173,7 +173,13 @@ export interface RendererLike {
   quadActive?: boolean;
   invalidateCoordinatePin?(): void;
   artboardRect(): RectLike;
-  thumbnailDataURL?(): string | null;
+  renderNow?(): void | null;
+  artboardDataURL?(): string | null;
+  currentCoordinateReadout?(): unknown;
+  setCoordinatePin?(readout: unknown): boolean;
+  clearCoordinatePin?(): void;
+  coordinatePinReadout?(): unknown;
+  thumbnailDataURL?(maxSize?: number, maxChars?: number): string | null;
   setProductPreviewActive?(active: boolean): void;
 }
 

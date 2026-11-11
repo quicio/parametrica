@@ -25,7 +25,7 @@ import { Notebook, NOTEBOOK_STORAGE_KEY } from '../lab/notebook.ts';
 import { LocalNotebookRepository } from '../lab/notebookRepository.js';
 import { NotebookWorkspace } from '../lab/workspace.ts';
 import { MutationEngine } from '../mutation/MutationEngine.ts';
-import { PresetManager } from '../presets/PresetManager.js';
+import { PresetManager } from '../presets/PresetManager.ts';
 import { renderPresetPreview, START_WITH_PREVIEW_SIZE } from '../presets/preview.ts';
 import { LOOK_PRESETS } from '../domain/lookPresets.ts';
 import { LookPresetStore } from '../render/lookPresetStore.ts';

@@ -7,6 +7,35 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.39] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for all composition ports and shared binding helpers.
+- Typed UI Proxy handlers, port records and renderer capture/pin surface.
+- Typed UI-only `exploreSeed` state on App.
+
+### Changed
+
+- The converted `composition/create*Port.js` modules remain compatibility
+  re-exports.
+- Port allow-lists, getters and binding behavior are unchanged.
+
+## [0.2.38] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the preset catalog, object builders, built-ins and
+  manager.
+- Typed preset metadata, builder options, built-in factories and preview
+  caches.
+
+### Changed
+
+- The converted `presets/*.js` modules remain compatibility re-exports.
+- Internal imports point at the `.ts` modules.
+- No preset documents, storage keys or preview behavior changed.
+
 ## [0.2.37] - 2026-11-10
 
 ### Added

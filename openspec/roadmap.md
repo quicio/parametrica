@@ -892,7 +892,7 @@ A slice can start only when:
 | 0 | `tsconfig`, `tsx`, `typecheck` and declaration foundation | done (0.2.3) |
 | A | Extract domain boundaries and ports without behavior change | done through 0.2.12 |
 | B | Split composition root and adapters; thin UI | done through 0.2.12 |
-| C | Convert domain, then application, then adapters to TypeScript | domain/app/view/core/render/lab/ai (0.2.37); presets/input/UI/geometry next |
+| C | Convert domain, then application, then adapters to TypeScript | ...presets/ports (0.2.39); input/UI/geometry/generators next |
 | D | Empty dependency baseline; `allowJs: false`; strict gates | proposed |
 
 ADRs: `0004-clean-architecture-boundaries.md`, `0005-incremental-typescript.md`,

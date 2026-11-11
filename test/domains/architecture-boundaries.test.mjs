@@ -122,7 +122,7 @@ export async function run(assert) {
     assert(!source.includes('controls.app.renderer'), `${file} does not use controls.app.renderer`);
   }
   for (const name of RENDER_PORT) {
-    assert(read('src/composition/createRenderPort.js').includes(name), `render port documents ${name}`);
+    assert(read('src/composition/createRenderPort.ts').includes(name), `render port documents ${name}`);
   }
 
   const notebookPanel = read('src/ui/widgets/NotebookPanel.js');

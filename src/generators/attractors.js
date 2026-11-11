@@ -311,5 +311,5 @@ Generators.register({
 });
 
 /* —————————— Attractor preset helpers —————————— */
-// (built-in presets are registered in src/presets/builtins.js using
+// (built-in presets are registered in src/presets/builtins.ts using
 // createDocument('lorenz' | 'clifford' | 'dejong' | 'aizawa').)
