@@ -174,7 +174,9 @@ export interface RendererLike {
   invalidateCoordinatePin?(): void;
   artboardRect(): RectLike;
   renderNow?(): void | null;
+  size?(): { w: number; h: number };
   artboardDataURL?(): string | null;
+  artboardImageData?(maxSize: number): unknown;
   currentCoordinateReadout?(): unknown;
   setCoordinatePin?(readout: unknown): boolean;
   clearCoordinatePin?(): void;
@@ -244,6 +246,7 @@ export interface PresetService {
   parse(json: string): { name: string; document: AppDocument };
   markUsed(name: string): void;
   ensureLargePreview(name: string, size: number): string | null;
+  serialize(name: string, document: unknown): string;
 }
 
 export interface MutatorLike {

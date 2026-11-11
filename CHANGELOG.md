@@ -7,6 +7,21 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.40] - 2026-11-10
+
+### Added
+
+- Strict TypeScript for the image tracing pipeline.
+- Strict TypeScript for `createApp` and the browser entry (`main.ts`).
+- Typed image/contour/harmonic and composition-root contracts.
+
+### Changed
+
+- `input/imageTrace.js`, `composition/createApp.js` and `main.js` remain
+  compatibility modules.
+- `index.html` loads `src/main.ts`.
+- No tracing, boot or composition behavior changed.
+
 ## [0.2.39] - 2026-11-10
 
 ### Added

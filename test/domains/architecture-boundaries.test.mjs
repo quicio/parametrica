@@ -90,23 +90,23 @@ export async function run(assert) {
   ]) {
     assert(!appImports.includes(spec), `application/App does not import ${spec}`);
   }
-  assert(read('src/composition/createApp.js').includes('new P5Adapter'), 'composition creates the technical renderer');
-  assert(read('src/composition/createApp.js').includes('new Controls'), 'composition creates the controls');
-  assert(read('src/composition/createApp.js').includes('new Exporter'), 'composition creates the exporter');
-  assert(read('src/main.js').includes("from './composition/createApp.js'"), 'main boots through the composition root');
+  assert(read('src/composition/createApp.ts').includes('new P5Adapter'), 'composition creates the technical renderer');
+  assert(read('src/composition/createApp.ts').includes('new Controls'), 'composition creates the controls');
+  assert(read('src/composition/createApp.ts').includes('new Exporter'), 'composition creates the exporter');
+  assert(read('src/main.ts').includes("from './composition/createApp.ts'"), 'main boots through the composition root');
 
   const exporterSource = read('src/export/Exporter.ts');
   assert(!exporterSource.includes('this.app'), 'Exporter never reaches into the App instance');
   assert(!importsOf(exporterSource).some((spec) => spec.includes('application/App')), 'Exporter does not import App');
   assert(exporterSource.includes('this.port'), 'Exporter uses the injected export port');
-  assert(read('src/composition/createApp.js').includes('createExportPort'), 'composition creates the export port');
+  assert(read('src/composition/createApp.ts').includes('createExportPort'), 'composition creates the export port');
 
   const uiSurface = new Set(UI_SURFACE);
   const controlsSource = read('src/ui/Controls.js');
   for (const match of controlsSource.matchAll(/this\.app\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(uiSurface.has(match[1]), `control port exposes app.${match[1]}`);
   }
-  assert(read('src/composition/createApp.js').includes('createUiPort'), 'composition passes the control port to Controls');
+  assert(read('src/composition/createApp.ts').includes('createUiPort'), 'composition passes the control port to Controls');
 
   const fabricationSource = read('src/ui/sections/fabricateSections.js');
   assert(!fabricationSource.includes('controls.app.'), 'Fabricate panel uses the narrow fabrication port');
@@ -114,7 +114,7 @@ export async function run(assert) {
     assert(fabricationSource.includes(`controls.fabrication.${name}`) || name === 'document' || name === 'exporter',
       `Fabricate port member ${name} is the documented surface`);
   }
-  assert(read('src/composition/createApp.js').includes('createFabricationPort'), 'composition passes the fabrication port');
+  assert(read('src/composition/createApp.ts').includes('createFabricationPort'), 'composition passes the fabrication port');
 
   for (const file of ['src/ui/widgets/TimelinePanel.js', 'src/ui/widgets/AdvisorPanel.js', 'src/ui/SurfaceInspector.js', 'src/ui/sections/lookSections.js']) {
     const source = read(file);
@@ -129,15 +129,15 @@ export async function run(assert) {
   for (const match of notebookPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(NOTEBOOK_PORT.includes(match[1]), `notebook port exposes app.${match[1]}`);
   }
-  assert(read('src/composition/createApp.js').includes('createNotebookPort'), 'composition passes the notebook port');
-  assert(read('src/composition/createApp.js').includes('createRenderPort'), 'composition passes the render port');
+  assert(read('src/composition/createApp.ts').includes('createNotebookPort'), 'composition passes the notebook port');
+  assert(read('src/composition/createApp.ts').includes('createRenderPort'), 'composition passes the render port');
   assert(!notebookPanel.includes('controls.app.'), 'Notebook panel uses the notebook port');
 
   const presetPanel = read('src/ui/widgets/PresetPanel.js');
   for (const match of presetPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(PRESET_PORT.includes(match[1]), `preset port exposes app.${match[1]}`);
   }
-  assert(read('src/composition/createApp.js').includes('createPresetPort'), 'composition passes the preset port');
+  assert(read('src/composition/createApp.ts').includes('createPresetPort'), 'composition passes the preset port');
   assert(read('src/ui/sections/keepSections.js').includes('new PresetPanel(controls.presetPort'), 'preset panel uses the preset port');
 
   for (const file of ['src/ui/widgets/LabPanel.js', 'src/ui/widgets/ExplorePanel.js', 'src/ui/widgets/EvolutionPanel.js']) {
@@ -145,7 +145,7 @@ export async function run(assert) {
       assert(LAB_PORT.includes(match[1]), `lab port exposes app.${match[1]} for ${file}`);
     }
   }
-  assert(read('src/composition/createApp.js').includes('createLabPort'), 'composition passes the lab port');
+  assert(read('src/composition/createApp.ts').includes('createLabPort'), 'composition passes the lab port');
   assert(read('src/ui/sections/keepSections.js').includes('new LabPanel(controls.labPort'), 'analysis uses the lab port');
   assert(read('src/ui/sections/keepSections.js').includes('new ExplorePanel(controls.labPort'), 'explore uses the lab port');
   assert(read('src/ui/sections/keepSections.js').includes('new EvolutionPanel(controls.labPort'), 'evolution uses the lab port');
@@ -171,7 +171,7 @@ export async function run(assert) {
   assertAppPort('src/ui/widgets/AdvisorPanel.js', ADVISOR_PORT, 'advisor port');
   assertAppPort('src/ui/StartWithOverlay.js', START_WITH_PORT, 'start-with port');
   for (const name of ['createFormPort', 'createLookPort', 'createKeepPort', 'createIngestPort', 'createAdvisorPort', 'createStartWithPort']) {
-    assert(read('src/composition/createApp.js').includes(name), `composition passes ${name}`);
+    assert(read('src/composition/createApp.ts').includes(name), `composition passes ${name}`);
   }
   assert(!read('src/ui/sections/keepSections.js').includes('controls.app.'), 'keep sections use narrow ports');
 
