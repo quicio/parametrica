@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.49] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for the resample, subdivide and smooth operators.
+- Typed curve inputs, params and midpoint/chaikin/laplacian helpers.
+
+### Changed
+
+- `operators/geometry/resample.js` remains a compatibility re-export.
+- No sampling, subdivision or smoothing behavior changed.
+
 ## [0.2.48] - 2026-11-12
 
 ### Added
