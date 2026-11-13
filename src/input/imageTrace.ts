@@ -206,7 +206,7 @@ function annotateNesting(contours: ContourEntry[]): void {
   });
 }
 
-function boundsOf(points: ReadonlyArray<Point> | null | undefined): Bounds & { width: number; height: number; cx: number; cy: number } {
+function boundsOf(points: ReadonlyArray<Point> | null | undefined): Bounds {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -217,16 +217,7 @@ function boundsOf(points: ReadonlyArray<Point> | null | undefined): Bounds & { w
     maxX = Math.max(maxX, point.x);
     maxY = Math.max(maxY, point.y);
   }
-  return {
-    minX: Number.isFinite(minX) ? minX : 0,
-    minY: Number.isFinite(minY) ? minY : 0,
-    maxX: Number.isFinite(maxX) ? maxX : 0,
-    maxY: Number.isFinite(maxY) ? maxY : 0,
-    width: Number.isFinite(minX) ? maxX - minX : 0,
-    height: Number.isFinite(minY) ? maxY - minY : 0,
-    cx: Number.isFinite(minX) ? (minX + maxX) / 2 : 0,
-    cy: Number.isFinite(minY) ? (minY + maxY) / 2 : 0,
-  };
+  return { minX, minY, maxX, maxY };
 }
 
 function containsBox(outer: Bounds, inner: Bounds): boolean {
@@ -293,7 +284,7 @@ function traceComponent(labels: Int32Array, label: number, area: number, width: 
 export function buildFourierDocuments(result: { ok?: boolean; contours?: ContourEntry[]; harmonicsX?: Harmonic[]; harmonicsY?: Harmonic[]; hole?: boolean; depth?: number } | null | undefined, { name = 'Traced contour', size = 420, samples = 1200 }: FourierDocumentOptions = {}): DocumentShape {
   const entries: ContourEntry[] = Array.isArray(result?.contours) && result.contours.length
     ? result.contours
-    : result?.ok && Array.isArray(result.harmonicsX) && Array.isArray(result.harmonicsY)
+    : result?.ok
       ? [result as unknown as ContourEntry]
       : [];
   if (!entries.length) throw new Error('Cannot build a document from an empty trace');

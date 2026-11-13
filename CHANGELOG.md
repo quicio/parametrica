@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.65] - 2026-11-13
+
+### Fixed
+
+- The public `input/imageTrace.js` path now re-exports the typed image tracing
+  module instead of running the parallel untyped implementation.
+
+### Changed
+
+- Image tracing consumers and tests exercise `imageTrace.ts` directly.
+- No tracing math, limits or output changed.
+
 ## [0.2.64] - 2026-11-13
 
 ### Added
