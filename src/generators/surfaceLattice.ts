@@ -20,7 +20,7 @@ interface LatticeParams {
   depthOcclusion: boolean; depthAttenuation: number;
 }
 interface LatticeCell { id: string; boundary: boolean; invalidOpening: boolean; openingCenter?: { theta: number; z: number } | null; openingWidth: number }
-interface LatticeEdge { points: unknown[]; edgeId: string; cellIds: string[]; length: number }
+interface LatticeEdge { points: { x: number; y: number; z: number }[]; edgeId: string; cellIds: string[]; length: number }
 interface LatticeNetwork { curves: LatticeEdge[]; cells: LatticeCell[]; stats: Rec; specHash: string; networkHash: string; algorithmVersion: string }
 import { compileOrThrow, makeScope } from './helpers.js';
 import { createCurve3D } from '../geometry/contracts.js';

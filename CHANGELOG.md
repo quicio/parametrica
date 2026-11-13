@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.53] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the canonical geometry contracts and kinds.
+- Typed trust metadata, kind conversions, world transforms and generic point
+  mapping.
+
+### Changed
+
+- `geometry/contracts.js`, `trust.js`, `relations.js`, `transform.js` and
+  `transformGeometry.js` remain compatibility re-exports.
+- No geometry shape, transform or trust behavior changed.
+
 ## [0.2.52] - 2026-11-12
 
 ### Added

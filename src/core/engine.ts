@@ -996,7 +996,7 @@ function evaluateInstanceLayer(document: DocumentShape, options: EvaluateOptions
 function cloneInstanceSurface(surface: EngineGeometry, layer: LayerShape, sourceLayer: LayerShape, index: number): EngineGeometry {
   const cloned = mapGeometryPoints(surface, (point: EnginePoint) => ({ ...point }), {
     id: `${layer.id}:surface:${index}`,
-  });
+  }) as EngineGeometry;
   cloned.meta = {
     ...(surface.meta ?? {}),
     instanceLayerId: layer.id,
