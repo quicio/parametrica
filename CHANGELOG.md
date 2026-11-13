@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.80] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the notebook panel.
+- Typed checkpoints, projects, series, comparisons, dialogs and editor state.
+
+### Changed
+
+- `ui/widgets/NotebookPanel.js` remains a compatibility re-export.
+- The notebook-port architecture check reads the typed module.
+- No notebook behavior changed.
+
 ## [0.2.79] - 2026-11-13
 
 ### Added

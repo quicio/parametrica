@@ -125,7 +125,7 @@ export async function run(assert) {
     assert(read('src/composition/createRenderPort.ts').includes(name), `render port documents ${name}`);
   }
 
-  const notebookPanel = read('src/ui/widgets/NotebookPanel.js');
+  const notebookPanel = read('src/ui/widgets/NotebookPanel.ts');
   for (const match of notebookPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(NOTEBOOK_PORT.includes(match[1]), `notebook port exposes app.${match[1]}`);
   }
