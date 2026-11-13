@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.86] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the form section builders.
+- Typed Controls form port, layers, stages, schemas and instance candidates.
+
+### Changed
+
+- `ui/sections/formSections.js` remains a compatibility re-export.
+- Form-port and maintainability checks read the typed module.
+- No form section behavior changed.
+
 ## [0.2.85] - 2026-11-13
 
 ### Added

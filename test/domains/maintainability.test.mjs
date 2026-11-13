@@ -2,19 +2,21 @@
  * maintainability.test.mjs — import-boundary and module-ownership checks.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
 const sectionsDir = join(root, 'src/ui/sections');
-const sectionFiles = readdirSync(sectionsDir).filter((name) => name.endsWith('.js'));
+const sectionFiles = readdirSync(sectionsDir)
+  .filter((name) => name.endsWith('.ts') || name.endsWith('.js'))
+  .filter((name) => !name.endsWith('.js') || !existsSync(join(sectionsDir, name.replace(/\.js$/, '.ts'))));
 
 export function run(assert) {
   assert(sectionFiles.length >= 4, 'inspector sections are split into domain modules');
   for (const name of sectionFiles) {
     const source = readFileSync(join(sectionsDir, name), 'utf8');
     assert(!/from '\.\/[^']+\.js'/.test(source), `${name} does not import another section module`);
-    assert(/export function build\w+Section\(controls\)/.test(source), `${name} exports section builders`);
+    assert(/export function build\w+Section\(controls(?:: [^)]+)?\)/.test(source), `${name} exports section builders`);
   }
 
   const controls = readFileSync(join(root, 'src/ui/Controls.js'), 'utf8');
