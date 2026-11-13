@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.84] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the image panel.
+- Typed image sources, underlays, trace results, sliders and app ports.
+
+### Changed
+
+- `ui/widgets/ImagePanel.js` remains a compatibility re-export.
+- The ingest-port architecture check reads the typed module.
+- No image, threshold or tracing behavior changed.
+
 ## [0.2.83] - 2026-11-13
 
 ### Added
