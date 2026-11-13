@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.78] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the evolution panel.
+- Typed checkpoints, children, evaluations, app/notebook ports and state.
+
+### Changed
+
+- `ui/widgets/EvolutionPanel.js` remains a compatibility re-export.
+- The lab-port architecture check reads the typed module.
+- No breeding or keep behavior changed.
+
 ## [0.2.77] - 2026-11-13
 
 ### Added
