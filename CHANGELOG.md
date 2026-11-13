@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.48] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for translate, mirror, rotate, scale and normalize.
+- Typed transform params, points, expression scopes and point counts.
+
+### Changed
+
+- `operators/geometry/transform.js` remains a compatibility re-export.
+- No transform behavior changed.
+
 ## [0.2.47] - 2026-11-12
 
 ### Added
