@@ -10,7 +10,7 @@ The advisor panel SHALL be strict TypeScript.
 - **THEN** providers, responses, suggestions, settings and ports are typed
 - **AND** privacy, previews and apply behavior are unchanged
 
-### Requirement: Advisor compatibility
+### Requirement: Advisor panel module compatibility
 
 The old `ui/widgets/AdvisorPanel.js` path SHALL keep resolving.
 
