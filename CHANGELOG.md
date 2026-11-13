@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.74] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the CodeMirror expression field.
+- Typed editor options, extensions, timers and edit/error/disabled states.
+
+### Changed
+
+- `ui/widgets/ExpressionField.js` remains a compatibility re-export.
+- No editor, highlight or debounce behavior changed.
+
 ## [0.2.73] - 2026-11-13
 
 ### Added
