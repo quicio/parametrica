@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.59] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for deterministic solid preparation: weld, boundary
+  loops, caps, merge and the composed prepare step.
+- Typed prep stats, warnings and usable-mesh guards.
+
+### Changed
+
+- `geometry/solidPrep.js` remains a compatibility re-export.
+- No weld, cap or merge behavior changed.
+
 ## [0.2.58] - 2026-11-13
 
 ### Added

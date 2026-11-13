@@ -204,7 +204,7 @@ export function resolveFabricationSource({
       return;
     }
     if (isMesh(item) && (prepare.weld || prepare.cap)) {
-      const prepared = prepareMesh(item, prepare as never) as { mesh: MeshLike; warnings?: string[]; stats: Rec };
+      const prepared = prepareMesh(item, prepare as never) as unknown as { mesh: MeshLike; warnings?: string[]; stats: Rec };
       const validation = validateForFabrication(prepared.mesh) as ValidationLike;
       const closed = Boolean(validation.meta?.closed);
       candidates.push({
