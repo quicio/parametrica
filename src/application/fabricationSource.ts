@@ -485,7 +485,7 @@ export function buildFabricationReport({
   const minFeature = lattice?.radius
     ? Number(lattice.radius) * 2
     : (lattice?.mode === 'cutouts' ? Number(lattice.strut) : null);
-  const printability = analyzePrintability(mesh as never, { units, minFeature, lattice } as never) as Rec;
+  const printability = analyzePrintability(mesh as never, { units, minFeature, lattice } as never) as unknown as Rec;
   const manufacturing = buildManufacturingReport({
     profile: resolved.manufacturing,
     printability,

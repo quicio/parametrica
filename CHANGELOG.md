@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.55] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for curve, surface, mesh and solid validation.
+- Typed printability summaries, lattice checks and validation metadata.
+
+### Changed
+
+- `geometry/validate.js` and `printChecks.js` remain compatibility re-exports.
+- No validation or printability behavior changed.
+
 ## [0.2.54] - 2026-11-13
 
 ### Added
