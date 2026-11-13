@@ -133,7 +133,7 @@ export async function run(assert) {
   assert(read('src/composition/createApp.ts').includes('createRenderPort'), 'composition passes the render port');
   assert(!notebookPanel.includes('controls.app.'), 'Notebook panel uses the notebook port');
 
-  const presetPanel = read('src/ui/widgets/PresetPanel.js');
+  const presetPanel = read('src/ui/widgets/PresetPanel.ts');
   for (const match of presetPanel.matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(PRESET_PORT.includes(match[1]), `preset port exposes app.${match[1]}`);
   }

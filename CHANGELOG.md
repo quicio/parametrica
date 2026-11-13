@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.79] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the preset panel.
+- Typed preset entries, categories, filter state and lazy previews.
+
+### Changed
+
+- `ui/widgets/PresetPanel.js` remains a compatibility re-export.
+- The preset-port architecture check reads the typed module.
+- No preset browsing behavior changed.
+
 ## [0.2.78] - 2026-11-13
 
 ### Added
