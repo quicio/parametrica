@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.47] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for operator expression helpers and the registration index.
+- Typed optional expression compilation, scopes and point evaluation.
+
+### Changed
+
+- `operators/expression.js` and `operators/index.js` remain compatibility
+  modules.
+- No expression or registration behavior changed.
+
 ## [0.2.46] - 2026-11-11
 
 ### Added
