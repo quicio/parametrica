@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.69] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for inspection and seam/domain overlays.
+- Typed layers, mappings, transforms, UV edges and overlay results.
+
+### Changed
+
+- `interaction/inspectionOverlay.js` and `seamOverlay.js` remain
+  compatibility re-exports.
+- No overlay geometry or status behavior changed.
+
 ## [0.2.68] - 2026-11-13
 
 ### Added

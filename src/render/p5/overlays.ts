@@ -351,7 +351,7 @@ export function drawSeamOverlay(
   if (!adapter.app.isSeamsVisible?.()) return;
   let overlay = adapter._seamOverlays.get(scene);
   if (!overlay) {
-    overlay = buildSeamOverlay({ evaluation: adapter.app.evaluation, scene }) as SeamOverlay;
+    overlay = buildSeamOverlay({ evaluation: adapter.app.evaluation as never, scene: scene as never }) as unknown as SeamOverlay;
     adapter._seamOverlays.set(scene, overlay);
   }
   adapter.app.seamLegend?.setStatus?.(overlay.status);
@@ -394,10 +394,10 @@ export function drawInspectionOverlay(
   const result = adapter.app.surfaceInspector?.activeResult?.();
   if (!result) return;
   const overlay = buildInspectionOverlay({
-    evaluation: adapter.app.evaluation,
-    scene,
-    result,
-  }) as InspectionOverlay | null;
+    evaluation: adapter.app.evaluation as never,
+    scene: scene as never,
+    result: result as never,
+  }) as unknown as InspectionOverlay | null;
   if (!overlay) return;
   const scale = rect.scale > 0 ? rect.scale : 1;
   const artboard = rect.artboard;
