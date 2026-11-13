@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.82] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the UV domain inset.
+- Typed domain summaries, axes, app ports and SVG helpers.
+
+### Changed
+
+- `ui/UVDomainInset.js` remains a compatibility re-export.
+- No chart or label behavior changed.
+
 ## [0.2.81] - 2026-11-13
 
 ### Added
