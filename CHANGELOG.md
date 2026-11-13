@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.63] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for BSP constructive solid geometry.
+- Typed planes, polygons, BSP nodes, budgets, results and T-junction repair.
+
+### Changed
+
+- `geometry/csg.js` remains a compatibility re-export.
+- No boolean, split or T-junction behavior changed.
+
 ## [0.2.62] - 2026-11-13
 
 ### Added
