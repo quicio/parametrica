@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.70] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the surface-of-revolution lattice network.
+- Typed seeds, power cells, openings, nodes, edges and network stats.
+
+### Changed
+
+- `geometry/latticeNetwork.js` remains a compatibility re-export.
+- No cell, edge or opening behavior changed.
+
 ## [0.2.69] - 2026-11-13
 
 ### Added
