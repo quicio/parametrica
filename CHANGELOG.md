@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.72] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the seam legend, parametric overlay, dialog service,
+  harmonics editor and mode-toggle re-export.
+- Typed overlay apps, legend statuses, dialog results and harmonic rows.
+
+### Changed
+
+- The old UI paths remain compatibility re-exports.
+- No DOM, copy or interaction behavior changed.
+
 ## [0.2.71] - 2026-11-13
 
 ### Added
