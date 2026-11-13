@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.60] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for non-manifold fan splitting and non-orientable seam
+  cuts.
+- Typed edge maps, fans, orientation conflicts and repair reports.
+
+### Changed
+
+- `geometry/topologyRepair.js` remains a compatibility re-export.
+- No fan split, seam cut or report behavior changed.
+
 ## [0.2.59] - 2026-11-13
 
 ### Added
