@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.85] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the timeline panel.
+- Typed timelines, tracks, keyframes, app/render/exporter ports and exports.
+
+### Changed
+
+- `ui/widgets/TimelinePanel.js` remains a compatibility re-export.
+- The timeline-port architecture check reads the typed module.
+- No timeline or export behavior changed.
+
 ## [0.2.84] - 2026-11-13
 
 ### Added

@@ -166,7 +166,7 @@ export async function run(assert) {
   assertControlsPort('src/ui/sections/lookSections.js', 'lookPort', LOOK_PORT, 'look sections');
   assertControlsPort('src/ui/sections/keepSections.js', 'keepPort', KEEP_PORT, 'keep sections');
   assertControlsPort('src/ui/sections/keepSections.js', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
-  assertAppPort('src/ui/widgets/TimelinePanel.js', KEEP_PORT, 'keep/timeline port');
+  assertAppPort('src/ui/widgets/TimelinePanel.ts', KEEP_PORT, 'keep/timeline port');
   assertAppPort('src/ui/widgets/ImagePanel.ts', INGEST_PORT, 'ingest port');
   assertAppPort('src/ui/widgets/AdvisorPanel.ts', ADVISOR_PORT, 'advisor port');
   assertAppPort('src/ui/StartWithOverlay.ts', START_WITH_PORT, 'start-with port');
