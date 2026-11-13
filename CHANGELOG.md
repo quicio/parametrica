@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.83] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the advisor panel.
+- Typed providers, responses, suggestions, settings and cache.
+
+### Changed
+
+- `ui/widgets/AdvisorPanel.js` remains a compatibility re-export.
+- The advisor-port architecture check reads the typed module.
+- No advisor, privacy or preview behavior changed.
+
 ## [0.2.82] - 2026-11-13
 
 ### Added

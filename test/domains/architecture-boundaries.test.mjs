@@ -168,7 +168,7 @@ export async function run(assert) {
   assertControlsPort('src/ui/sections/keepSections.js', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
   assertAppPort('src/ui/widgets/TimelinePanel.js', KEEP_PORT, 'keep/timeline port');
   assertAppPort('src/ui/widgets/ImagePanel.js', INGEST_PORT, 'ingest port');
-  assertAppPort('src/ui/widgets/AdvisorPanel.js', ADVISOR_PORT, 'advisor port');
+  assertAppPort('src/ui/widgets/AdvisorPanel.ts', ADVISOR_PORT, 'advisor port');
   assertAppPort('src/ui/StartWithOverlay.ts', START_WITH_PORT, 'start-with port');
   for (const name of ['createFormPort', 'createLookPort', 'createKeepPort', 'createIngestPort', 'createAdvisorPort', 'createStartWithPort']) {
     assert(read('src/composition/createApp.ts').includes(name), `composition passes ${name}`);
