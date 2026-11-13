@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.81] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the surface inspector.
+- Typed pick results, app/render ports, pinned state and readout rows.
+
+### Changed
+
+- `ui/SurfaceInspector.js` remains a compatibility re-export.
+- No inspection behavior changed.
+
 ## [0.2.80] - 2026-11-13
 
 ### Added
