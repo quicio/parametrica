@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.58] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for SDF repair, lattice specs, local SDF joints and
+  perforation cutters.
+- Typed level-set boundaries, lattice contracts and radius profiles.
+
+### Changed
+
+- `geometry/sdfRepair.js`, `latticeSpec.js`, `latticeJointBlend.js` and
+  `perforation.js` remain compatibility re-exports.
+- No SDF, lattice or perforation behavior changed.
+
 ## [0.2.57] - 2026-11-13
 
 ### Added
