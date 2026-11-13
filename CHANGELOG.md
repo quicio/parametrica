@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.73] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for parameter type registration and shared stage binding.
+- Typed bind contexts, stage shapes, lil-gui controllers and expression
+  entries.
+
+### Changed
+
+- `ui/params/ParamRegistry.js` and `ui/params/StageEditor.js` remain
+  compatibility re-exports.
+- No control, folder or expression behavior changed.
+
 ## [0.2.72] - 2026-11-13
 
 ### Added
