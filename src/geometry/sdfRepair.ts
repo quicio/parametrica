@@ -89,7 +89,7 @@ export function sdfRepair(mesh: unknown, {
     tolerance: distanceTolerance,
     repairTolerance,
   };
-  const result = manifoldLevelSet(sdf, levelSetOptions as never) as Rec & { geometry?: unknown; stats?: Rec };
+  const result = manifoldLevelSet(sdf, levelSetOptions as never) as unknown as Rec & { geometry?: unknown; stats?: Rec };
   return {
     ...result,
     ok: Boolean(result.ok),

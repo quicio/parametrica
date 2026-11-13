@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.62] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the lazy Manifold WASM adapter.
+- Typed booleans, simplify, level sets, stats and failure records.
+
+### Changed
+
+- `geometry/manifoldEngine.js` remains a compatibility re-export.
+- No boolean, simplify or level-set behavior changed.
+
 ## [0.2.61] - 2026-11-13
 
 ### Added
