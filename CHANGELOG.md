@@ -7,6 +7,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.64] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for voxel remeshing and feature projection.
+- Typed triangle BVH, closest-point queries, inside tests and winding numbers.
+
+### Changed
+
+- `geometry/remesh.js` remains a compatibility re-export.
+- No remesh, projection or inside behavior changed.
+
 ## [0.2.63] - 2026-11-13
 
 ### Added

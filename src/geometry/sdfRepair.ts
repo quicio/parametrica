@@ -11,7 +11,7 @@ import { manifoldLevelSet } from './manifoldEngine.js';
 import type { ValidationResult } from './validate.ts';
 
 type Rec = Record<string, unknown>;
-interface Point3D { x: number; y: number; z: number }
+interface Point3D { x: number; y: number; z: number; [key: string]: unknown }
 interface BBox {
   min: Point3D;
   max: Point3D;
@@ -56,7 +56,7 @@ export function sdfRepair(mesh: unknown, {
       error: { code: 'invalid-operand', message: 'sdfRepair requires a Mesh' },
     };
   }
-  const bvh = buildTriangleBvh(source);
+  const bvh = buildTriangleBvh(source as never);
   const bbox = meshBbox(source);
   const diagonal = Math.hypot(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z);
   if (!Number.isFinite(diagonal) || diagonal <= 0) {
