@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.77] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the Explore panel.
+- Typed refs, candidates, controls, app ports and scope state.
+
+### Changed
+
+- `ui/widgets/ExplorePanel.js` remains a compatibility re-export.
+- The lab-port architecture check reads the typed module.
+- No exploration behavior changed.
+
 ## [0.2.76] - 2026-11-13
 
 ### Added
