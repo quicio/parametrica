@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.52] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for duplicate, radial, linear, polar, grid and recursive
+  repeat, plus Voronoi, skeleton and medial axis.
+- A local d3-delaunay declaration for triangles, halfedges and cells.
+
+### Changed
+
+- `operators/topology/repeat.js` and `voronoi.js` remain compatibility
+  re-exports.
+- No array, Voronoi or skeleton behavior changed.
+
 ## [0.2.51] - 2026-11-12
 
 ### Added
