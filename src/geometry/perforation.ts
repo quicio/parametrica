@@ -11,7 +11,7 @@ import { buildRevolveLattice } from './latticeNetwork.js';
 import { cylinderMesh } from './latticeSolid.js';
 
 type Rec = Record<string, unknown>;
-interface Point3D { x: number; y: number; z: number }
+interface Point3D { x: number; y: number; z: number; [key: string]: unknown }
 interface ProfileSample { z: number; r: number }
 interface SurfaceLike { grid?: { points?: unknown[][] } }
 interface MeshLike { vertices?: unknown[] }

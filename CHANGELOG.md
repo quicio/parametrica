@@ -7,6 +7,24 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.71] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for lattice struts, joints, floors, rims, opening gauges
+  and the geometry barrel.
+- Typed organic refinement, SDF joint fallbacks and clearance measurement.
+
+### Changed
+
+- `geometry/latticeSolid.js` and `geometry/index.js` remain compatibility
+  re-exports.
+- No lattice solid or gauge behavior changed.
+
+### Milestone
+
+- Geometry is 100% strict TypeScript.
+
 ## [0.2.70] - 2026-11-13
 
 ### Added
