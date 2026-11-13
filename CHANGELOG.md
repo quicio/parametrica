@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.61] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for composed mesh repair and remesh-based
+  self-intersection repair.
+- Typed repair reports, orientation shells, caps and strategy deltas.
+
+### Changed
+
+- `geometry/repair.js` and `selfIntersectionRepair.js` remain compatibility
+  re-exports.
+- No cleanup, cap, orientation or remesh behavior changed.
+
 ## [0.2.60] - 2026-11-13
 
 ### Added
