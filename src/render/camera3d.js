@@ -1,5 +1,2 @@
-/**
- * render/camera3d.js — compatibility export for the view camera module.
- */
-
-export { DEFAULT_CAMERA, cameraFrom, project3D } from '../view/camera.ts';
+/** src/render/camera3d.js — compatibility export. */
+export * from './camera3d.ts';

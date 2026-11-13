@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.68] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the fabrication worker entry.
+- Typed generator/render-pass indexes and render compatibility aliases.
+
+### Changed
+
+- `workers/fabricationWorker.js`, `generators/index.js`, `render/passes/index.js`,
+  `render/camera3d.js` and `render/P5Renderer.js` remain compatibility
+  re-exports.
+- No worker message, registration or alias behavior changed.
+
 ## [0.2.67] - 2026-11-13
 
 ### Added
