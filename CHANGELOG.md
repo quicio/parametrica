@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.75] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the operator stack editor.
+- Typed app/form port surface, operator stages and engine errors.
+
+### Changed
+
+- `ui/widgets/OperatorStack.js` remains a compatibility re-export.
+- The architecture form-port check reads the typed module.
+- No operator stack behavior changed.
+
 ## [0.2.74] - 2026-11-13
 
 ### Added

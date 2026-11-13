@@ -161,7 +161,7 @@ export async function run(assert) {
       assert(port.includes(match[1]), `${label} exposes ${portName}.${match[1]}`);
     }
   };
-  assertAppPort('src/ui/widgets/OperatorStack.js', FORM_PORT, 'form port');
+  assertAppPort('src/ui/widgets/OperatorStack.ts', FORM_PORT, 'form port');
   assertControlsPort('src/ui/sections/formSections.js', 'formPort', FORM_PORT, 'form sections');
   assertControlsPort('src/ui/sections/lookSections.js', 'lookPort', LOOK_PORT, 'look sections');
   assertControlsPort('src/ui/sections/keepSections.js', 'keepPort', KEEP_PORT, 'keep sections');

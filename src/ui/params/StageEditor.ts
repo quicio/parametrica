@@ -75,6 +75,7 @@ export function createExpressionField({
   get: () => string;
   set: (value: string) => void;
   index?: number | null;
+  stage?: StageLike;
 }): ExpressionFieldHandle {
   const options = {
     label: schema.label ?? key,
