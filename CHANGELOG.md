@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.66] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the expression engine, seeded noise, stdlib and
+  shared spline math.
+- Typed tokens, AST nodes, compile/evaluate results and span errors.
+
+### Changed
+
+- `math/expression.js`, `noise.js`, `stdlib.js` and `curves.js` remain
+  compatibility re-exports.
+- No expression, noise or spline behavior changed.
+
 ## [0.2.65] - 2026-11-13
 
 ### Fixed
