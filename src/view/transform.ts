@@ -188,7 +188,7 @@ export function boundsOfProjectedPoints(
 ): BoundsLike | null {
   const visible = (points ?? []).filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
   if (!visible.length) return null;
-  return bbox(visible) as BoundsLike;
+  return bbox(visible as Array<{ x: number; y: number }>) as BoundsLike;
 }
 
 /**

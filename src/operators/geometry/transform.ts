@@ -164,7 +164,7 @@ Operators.register(({
     size: { advanced: true, label: 'Fit Size', type: TYPE.NUMBER, min: 20, max: 800, step: 1, default: 340 },
   },
   apply(curves: unknown[], p: Rec): unknown[] {
-    return fitCurves(curves, p.size);
+    return fitCurves(curves as never, Number(p.size));
   },
 }) as never);
 

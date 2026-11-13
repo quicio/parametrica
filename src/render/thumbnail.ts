@@ -80,5 +80,5 @@ export function curvesDataURL(
 /** Union bounds across a list of Curve[] groups. */
 export function boundsOf(groups: ReadonlyArray<ReadonlyArray<CurveLike>>): BoundsLike {
   const curves = groups.flat();
-  return bboxAll(curves) as BoundsLike;
+  return bboxAll(curves as never) as BoundsLike;
 }

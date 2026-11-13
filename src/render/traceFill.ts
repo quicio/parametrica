@@ -70,7 +70,7 @@ export function traceFillGroups(layers: ReadonlyArray<LayerLike> | null | undefi
   }
   return [...groups.values()]
     .filter((group) => group.fill && group.curves.length)
-    .map((group) => ({ ...group, bbox: bboxAll(group.curves) }));
+    .map((group) => ({ ...group, bbox: bboxAll(group.curves as never) }));
 }
 
 /** Keep the stroke but move the fill to the shared even-odd group. */

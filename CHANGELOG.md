@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.67] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for uniform/adaptive sampling, discontinuity splitting,
+  arc-length resampling, bboxes, fitting and centering.
+- Typed sampling options, intervals, split results and bboxes.
+
+### Changed
+
+- `sampling/sampling.js` remains a compatibility re-export.
+- No sampling, split or bbox behavior changed.
+
 ## [0.2.66] - 2026-11-13
 
 ### Added
