@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.54] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for robust orientation/exact predicates, snapping and
+  adaptive tolerances.
+- Typed triangle classification, BVH nodes and self-intersection pairs.
+
+### Changed
+
+- `geometry/robustPredicates.js` and `selfIntersection.js` remain
+  compatibility re-exports.
+- No numeric, tolerance or detection behavior changed.
+
 ## [0.2.53] - 2026-11-13
 
 ### Added
