@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.56] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for world-space analysis and `bbox3`.
+- Typed UV domain summaries, surface tessellation/mapping and wireframes.
+
+### Changed
+
+- `geometry/analysis.js`, `uvDomain.js`, `surfaceTessellation.js` and
+  `wireframe.js` remain compatibility re-exports.
+- No mesh, mapping or wireframe behavior changed.
+
 ## [0.2.55] - 2026-11-13
 
 ### Added

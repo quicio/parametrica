@@ -429,7 +429,7 @@ function applyPreparedGroup(
   const safe = prepared ?? { curves: [], meshes: [], points: [] };
   const curves = applyViewTransformToCurves(safe.curves as never, transform as never) as CurveLike[];
   const meshes = applyViewTransformToMeshes(safe.meshes as never, transform as never) as MeshLike[];
-  const wireframe = meshWireframeCurves(meshes) as CurveLike[];
+  const wireframe = meshWireframeCurves(meshes) as unknown as CurveLike[];
   return renderLayer(group, {
     curves: [...curves, ...wireframe],
     meshes,
