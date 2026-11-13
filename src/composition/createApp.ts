@@ -120,7 +120,7 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }: CreateA
       ingest: createIngestPort(app),
       advisor: createAdvisorPort(app),
     }),
-    createStartWithOverlay: (app: App, options: { firstRun: boolean; onClose: () => void }) => new StartWithOverlay(createStartWithPort(app), options as never),
+    createStartWithOverlay: (app: App, options: { firstRun: boolean; onClose: () => void }) => new StartWithOverlay(createStartWithPort(app) as never, options as never),
   };
 
   return new App({

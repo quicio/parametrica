@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.76] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the lab observation panel and the start-with chooser.
+- Typed descriptors, sensitivity entries, start choices, cards and focus flow.
+
+### Changed
+
+- `ui/widgets/LabPanel.js` and `ui/StartWithOverlay.js` remain compatibility
+  re-exports; architecture port checks read the typed modules.
+- No metrics, modal copy, focus trap or preview behavior changed.
+
 ## [0.2.75] - 2026-11-13
 
 ### Added

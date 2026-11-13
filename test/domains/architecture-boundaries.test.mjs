@@ -140,7 +140,7 @@ export async function run(assert) {
   assert(read('src/composition/createApp.ts').includes('createPresetPort'), 'composition passes the preset port');
   assert(read('src/ui/sections/keepSections.js').includes('new PresetPanel(controls.presetPort'), 'preset panel uses the preset port');
 
-  for (const file of ['src/ui/widgets/LabPanel.js', 'src/ui/widgets/ExplorePanel.js', 'src/ui/widgets/EvolutionPanel.js']) {
+  for (const file of ['src/ui/widgets/LabPanel.ts', 'src/ui/widgets/ExplorePanel.js', 'src/ui/widgets/EvolutionPanel.js']) {
     for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
       assert(LAB_PORT.includes(match[1]), `lab port exposes app.${match[1]} for ${file}`);
     }
@@ -169,7 +169,7 @@ export async function run(assert) {
   assertAppPort('src/ui/widgets/TimelinePanel.js', KEEP_PORT, 'keep/timeline port');
   assertAppPort('src/ui/widgets/ImagePanel.js', INGEST_PORT, 'ingest port');
   assertAppPort('src/ui/widgets/AdvisorPanel.js', ADVISOR_PORT, 'advisor port');
-  assertAppPort('src/ui/StartWithOverlay.js', START_WITH_PORT, 'start-with port');
+  assertAppPort('src/ui/StartWithOverlay.ts', START_WITH_PORT, 'start-with port');
   for (const name of ['createFormPort', 'createLookPort', 'createKeepPort', 'createIngestPort', 'createAdvisorPort', 'createStartWithPort']) {
     assert(read('src/composition/createApp.ts').includes(name), `composition passes ${name}`);
   }
