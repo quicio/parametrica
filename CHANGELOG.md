@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.51] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for twist, bend, warp, expression displace, noise
+  displace, project, shape clip, expression clip and boolean.
+- Typed expression contracts and polygon-clipping ring/result types.
+
+### Changed
+
+- `operators/geometry/deform.js`, `project.js`, `expressionClip.js` and
+  `boolean.js` remain compatibility re-exports.
+- No deformation, clipping or boolean behavior changed.
+
 ## [0.2.50] - 2026-11-12
 
 ### Added
