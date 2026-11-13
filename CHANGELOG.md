@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.50] - 2026-11-12
+
+### Added
+
+- Strict TypeScript for offset, inflate, shrink, symmetrize, kaleidoscope,
+  optical correction, stroke expansion, ribbon and centerline.
+- Typed vec2/curve shapes and the shared offset/stroke helpers.
+
+### Changed
+
+- `operators/geometry/offset.js`, `symmetry.js` and `stroke.js` remain
+  compatibility re-exports.
+- No offset, symmetry or outline behavior changed.
+
 ## [0.2.49] - 2026-11-12
 
 ### Added
