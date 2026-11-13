@@ -1,7 +1,7 @@
 {
   "name": "parametrica",
   "private": true,
-  "version": "0.2.56",
+  "version": "0.2.57",
   "type": "module",
   "description": "A parametric geometry workbench: discover continuous monoline forms by exploring mathematical equations, harmonics and parameter domains.",
   "scripts": {

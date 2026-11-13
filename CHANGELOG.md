@@ -7,6 +7,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.57] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the legacy Curve bridge.
+- Typed Catmull-Rom segments, master spline params/metrics, mirror and optical
+  correction.
+
+### Changed
+
+- `geometry/legacy.js` and `geometry/legacy/*.js` remain compatibility
+  re-exports.
+- No spline, mirror or optical behavior changed.
+
 ## [0.2.56] - 2026-11-13
 
 ### Added

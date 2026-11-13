@@ -133,8 +133,8 @@ export function geometryDimension(value: { dimension?: unknown } | null | undefi
 export function createCurve2D({ id, points, closed = false, meta = {} }: {
   id?: string | undefined;
   points: Point2D[];
-  closed?: boolean;
-  meta?: GeometryMeta;
+  closed?: boolean | undefined;
+  meta?: GeometryMeta | undefined;
 }): Curve2D {
   return {
     kind: GEOMETRY_KIND.CURVE2D,
@@ -149,8 +149,8 @@ export function createCurve2D({ id, points, closed = false, meta = {} }: {
 export function createCurve3D({ id, points, closed = false, meta = {} }: {
   id?: string | undefined;
   points: Point3D[];
-  closed?: boolean;
-  meta?: GeometryMeta;
+  closed?: boolean | undefined;
+  meta?: GeometryMeta | undefined;
 }): Curve3D {
   return {
     kind: GEOMETRY_KIND.CURVE3D,
@@ -166,7 +166,7 @@ export function createSurface({ id, domain, grid, meta = {} }: {
   id?: string | undefined;
   domain: Rec;
   grid: SurfaceGrid;
-  meta?: GeometryMeta;
+  meta?: GeometryMeta | undefined;
 }): Surface {
   return {
     kind: GEOMETRY_KIND.SURFACE,
@@ -182,10 +182,10 @@ export function createMesh({ id, vertices, faces, normals = null, faceNormals = 
   id?: string | undefined;
   vertices: Point3D[];
   faces: number[][];
-  normals?: Point3D[] | null;
-  faceNormals?: Point3D[] | null;
-  uvs?: unknown;
-  meta?: GeometryMeta;
+  normals?: Point3D[] | null | undefined;
+  faceNormals?: Point3D[] | null | undefined;
+  uvs?: unknown | undefined;
+  meta?: GeometryMeta | undefined;
 }): Mesh {
   return {
     kind: GEOMETRY_KIND.MESH,
@@ -203,8 +203,8 @@ export function createMesh({ id, vertices, faces, normals = null, faceNormals = 
 export function createSolid({ id, boundary, shells = [], meta = {} }: {
   id?: string | undefined;
   boundary: Mesh;
-  shells?: unknown[];
-  meta?: GeometryMeta;
+  shells?: unknown[] | undefined;
+  meta?: GeometryMeta | undefined;
 }): Solid {
   return {
     kind: GEOMETRY_KIND.SOLID,
