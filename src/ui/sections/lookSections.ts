@@ -14,17 +14,17 @@ import type { Controller } from 'lil-gui';
 
 type Rec = Record<string, unknown>;
 
-interface ArtboardLike { width: number; height: number; background: string; margin: number; [key: string]: unknown }
-interface ReferenceLike { enabled?: boolean; ground?: boolean; [key: string]: unknown }
-interface CoordinatesLike { enabled?: boolean; grid?: boolean; cursor?: boolean; step: number | null; unitDisplay: string; [key: string]: unknown }
-interface UnitsLike {
+export interface ArtboardLike { width: number; height: number; background: string; margin: number; [key: string]: unknown }
+export interface ReferenceLike { enabled?: boolean; ground?: boolean; [key: string]: unknown }
+export interface CoordinatesLike { enabled?: boolean; grid?: boolean; cursor?: boolean; step: number | null; unitDisplay: string; [key: string]: unknown }
+export interface UnitsLike {
   world: string;
   artboard: string;
   mmPerWorldUnit: number | null;
   mmPerArtboardUnit: number | null;
   [key: string]: unknown;
 }
-interface ViewLike {
+export interface ViewLike {
   projection?: string;
   layout?: string;
   guides?: boolean;
@@ -34,7 +34,7 @@ interface ViewLike {
   units: UnitsLike;
   [key: string]: unknown;
 }
-interface LookPortLike {
+export interface LookPortLike {
   document: { view: ViewLike; [key: string]: unknown };
   evaluation?: { worldBBox?: Rec | null; bbox?: Rec | null } | null;
   lookStore: { findByName(name: string): unknown | null };
@@ -60,7 +60,7 @@ interface RenderPortLike {
   setCoordinatePin?: (readout: CoordinateReadout) => boolean;
   clearCoordinatePin?: () => void;
 }
-interface LookControls {
+export interface LookControls {
   lookPort: LookPortLike;
   section: (title: string, options: { id: string; mode: string }) => HTMLElement;
   panelHint: (message: string) => HTMLElement;

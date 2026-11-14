@@ -27,17 +27,17 @@ import type { FillGradient } from '../../core/fillGradient.ts';
 
 type Rec = Record<string, unknown>;
 
-interface StrokeLike { color: string; width: number; opacity: number; cap: string; join: string; [key: string]: unknown }
-interface FillLike { enabled: boolean; color: string; opacity: number; gradient?: FillGradient | null; [key: string]: unknown }
-interface StyleLike { stroke: StrokeLike; fill: FillLike; blend: string; [key: string]: unknown }
-interface ArtboardLike { background: string; width: number; height: number; [key: string]: unknown }
-interface LayerLike {
+export interface StrokeLike { color: string; width: number; opacity: number; cap: string; join: string; [key: string]: unknown }
+export interface FillLike { enabled: boolean; color: string; opacity: number; gradient?: FillGradient | null; [key: string]: unknown }
+export interface StyleLike { stroke: StrokeLike; fill: FillLike; blend: string; [key: string]: unknown }
+export interface ArtboardLike { background: string; width: number; height: number; [key: string]: unknown }
+export interface LayerLike {
   name: string;
   modes?: string[] | null;
   colorMetric?: string | null;
   [key: string]: unknown;
 }
-interface ViewLike {
+export interface ViewLike {
   style: StyleLike;
   modes: string[];
   passOpacity?: Record<string, number>;
@@ -47,7 +47,7 @@ interface ViewLike {
   artboard: ArtboardLike;
   [key: string]: unknown;
 }
-interface LookPortLike {
+export interface LookPortLike {
   document: { view: ViewLike; [key: string]: unknown };
   activeLayer: LayerLike | null;
   activeLayerLocked?: boolean;
@@ -55,7 +55,7 @@ interface LookPortLike {
   notify?(message: string, kind?: string): void;
   [key: string]: unknown;
 }
-interface KeepPortLike {
+export interface KeepPortLike {
   document: { animation: { playing: boolean; speed: number; time: number }; seed: number; [key: string]: unknown };
   exporter: {
     exportSVG(): void;
@@ -76,15 +76,15 @@ interface KeepPortLike {
   notify?(message: string, kind?: string): void;
   [key: string]: unknown;
 }
-interface PaletteStoreLike {
+export interface PaletteStoreLike {
   entries(): Array<{ id: string; name: string; builtIn: boolean; background: string; stroke: string; fill: string }>;
   get(id: string): { id: string; name: string; builtIn: boolean; background: string; stroke: string; fill: string } | null;
   isCustom(id: string): boolean;
   save(name: string, colors: { background: string; stroke: string; fill: string }): { id: string; name: string };
   delete(id: string): boolean;
 }
-interface SectionEl { header: HTMLElement; [key: string]: unknown }
-interface ModeEntry {
+export interface SectionEl { header: HTMLElement; [key: string]: unknown }
+export interface ModeEntry {
   id: string;
   input: HTMLInputElement;
   row: HTMLDivElement;
@@ -98,7 +98,7 @@ interface ModeEntry {
   appearance: HTMLDivElement | null;
   syncState(): void;
 }
-interface PresetPortLike {
+export interface PresetPortLike {
   presets: {
     names(): string[];
     save(name: string, document: unknown): string;
@@ -110,7 +110,7 @@ interface PresetPortLike {
   notify?(message: string, kind?: string): void;
   openImportDialog(): void;
 }
-interface KeepControls {
+export interface KeepControls {
   section: (title: string, options: { id: string; mode: string }) => HTMLElement;
   panelHint: (message: string) => HTMLElement;
   makeGui: (container: HTMLElement) => GUI;

@@ -12,8 +12,8 @@ import type { ManufacturingProfile } from '../../domain/manufacturingProfile.ts'
 
 type Rec = Record<string, unknown>;
 
-interface UnitsLike { world: string; mmPerWorldUnit: number | null; [key: string]: unknown }
-interface PreviewLike {
+export interface UnitsLike { world: string; mmPerWorldUnit: number | null; [key: string]: unknown }
+export interface PreviewLike {
   quality: string;
   material: string;
   shadow: boolean;
@@ -22,7 +22,7 @@ interface PreviewLike {
   contactShadow: boolean;
   [key: string]: unknown;
 }
-interface FabricationSettings {
+export interface FabricationSettings {
   scope?: string;
   boolean?: string;
   format?: string;
@@ -46,8 +46,8 @@ interface FabricationSettings {
   manufacturing: ManufacturingProfile;
   [key: string]: unknown;
 }
-interface FabricationView { units: UnitsLike; preview: PreviewLike; fabrication: FabricationSettings }
-interface FabricationPortLike {
+export interface FabricationView { units: UnitsLike; preview: PreviewLike; fabrication: FabricationSettings }
+export interface FabricationPortLike {
   document: { view: FabricationView; [key: string]: unknown };
   exporter: {
     exportSTL(): void;
@@ -60,7 +60,7 @@ interface FabricationPortLike {
   syncProductPreview?(): void;
   [key: string]: unknown;
 }
-interface FabricateControls {
+export interface FabricateControls {
   section: (title: string, options: { id: string; mode: string }) => HTMLElement;
   panelHint: (message: string) => HTMLElement;
   fabrication: FabricationPortLike;

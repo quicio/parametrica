@@ -49,7 +49,7 @@ interface FormDocument {
   [key: string]: unknown;
 }
 
-interface FormPortLike {
+export interface FormPortLike {
   document: FormDocument;
   activeLayer: LayerLike;
   activeLayerLocked: boolean;
@@ -77,7 +77,7 @@ interface GuiLike {
   };
 }
 
-interface FormControls {
+export interface FormControls {
   formPort: FormPortLike;
   section: (title: string, options: { id: string; mode: string }) => HTMLElement;
   panelHint: (message: string) => HTMLElement;
