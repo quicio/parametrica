@@ -416,8 +416,8 @@ export const BUILT_IN_PRESETS: Readonly<Record<string, () => DocumentShape>> = {
     name: 'Cap Catenoid',
     generator: {
       params: {
-        exprX: 'cosh(v)*cos(u)',
-        exprY: 'cosh(v)*sin(u)',
+        exprX: '(cosh(v) - 0.6*v^2)*cos(u)',
+        exprY: '(cosh(v) - 0.6*v^2)*sin(u)',
         exprZ: 'v',
         u0: 0, u1: 2 * PI,
         v0: -1.1, v1: 1.1,
@@ -463,7 +463,7 @@ export const BUILT_IN_PRESETS: Readonly<Record<string, () => DocumentShape>> = {
   'Bud Vase 160': () => hollowRevolved('Bud Vase 160', {
     profile: '18 + 14*sin(pi*v) - 7*exp(-((v-0.72)/0.12)^2)',
     height: 160,
-    wall: 2.5,
+    wall: 4,
     floor: 3,
   }),
 
@@ -777,11 +777,11 @@ export const BUILT_IN_PRESETS: Readonly<Record<string, () => DocumentShape>> = {
       ...doc.view.fabrication,
       lattice: true,
       latticeMode: 'cutouts',
-      latticeCellSize: 20,
-      latticeStrut: 3.5,
+      latticeCellSize: 32,
+      latticeStrut: 8,
       latticeWall: 2.5,
       latticeFloor: 3,
-      latticeRim: 4,
+      latticeRim: 12,
       latticeSeed: 7,
       latticePreview: 'solid',
     };

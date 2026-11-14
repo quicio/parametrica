@@ -470,6 +470,12 @@ test('Fabricate estimates wall thickness from the prepared body', async ({ page 
   expect(wall.p05).toBeGreaterThan(0);
   expect(wall.source).toBe('estimated');
   expect(wall.value).toBeCloseTo(wall.p05, 5);
-  await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('Wall thickness');
+
+  // A curated preset now passes the default minimum, so make the check fail
+  // explicitly to verify the detail row.
+  const minWall = fabricate.locator('.fabricate-manufacturing-wall');
+  await minWall.fill('50');
+  await minWall.dispatchEvent('change');
+  await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('Wall thickness', { timeout: 10_000 });
   await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('samples');
 });

@@ -13,12 +13,12 @@ fabrication controls without manual setup.
 | **Solid Vase 200** | Decorative | Hollow vase: 200 mm tall, ~175 mm diameter, ~135 mm mouth, 2.5 mm wall |
 | **Lattice Vase 200** | Decorative | Openwork vase: 200 mm tall, 20 mm Voronoi cells, 3.5 mm struts |
 | **Organic Lattice Vase 200** | Decorative | Organic 20 mm cells, rounded joints, 3.5 mm strut envelope |
-| **Perforated Vase 200** | Decorative | Solid wall with 208 seeded 16.5 mm through-holes |
+| **Perforated Vase 200** | Decorative | Solid wall with 74 seeded 24 mm through-holes |
 | **Pencil Cup 100** | Functional | 100 mm tall cup, 65 mm wide, 3 mm wall, flat base |
 | **Planter 120** | Functional | 120 mm tall pot, 110 mm base, 4 mm wall, flat foot |
 | **Napkin Ring 50** | Functional | 48 mm wide, 30 mm tall, 3 mm through-wall ring |
 | **Coaster 90** | Functional | 90 mm solid disc, 6 mm profile |
-| **Bud Vase 160** | Decorative | 160 mm tall slim vase, soft waist, 2.5 mm wall |
+| **Bud Vase 160** | Decorative | 160 mm tall slim vase, soft waist, 4 mm radial wall |
 | **Twisted Totem 220** | Abstract | 220 mm solid, five-lobed twisted profile, flat base |
 | **Lampshade 180** | Decorative | Open annular shell, 180 mm tall, 170 mm base, 2 mm wall |
 | **Candle Holder 80** | Functional | Tea-light recess plus deeper taper-candle hole |
@@ -48,11 +48,11 @@ supports; the report surfaces that instead of hiding it.
 | Twin Tori | exportable, 2 bodies | 0 mm² | 25% | Needs supports |
 | Boolean Union | exportable | 0 mm² | 19% | Needs supports |
 | Boolean Difference | exportable | 0 mm² | 25% | Needs supports |
-| Cap Catenoid | exportable | 872 mm² | 5% | Ready |
+| Cap Catenoid | exportable | 278 mm² | 0% | Ready |
 | Solid Vase 200 | exportable | 6,675 mm² | 0% | Ready |
 | Lattice Vase 200 | exportable | 6,825 mm² | 9% | Ready |
 | Organic Lattice Vase 200 | exportable | 6,828 mm² | 9% | Ready |
-| Perforated Vase 200 | exportable | 6,675 mm² | 2% | Ready |
+| Perforated Vase 200 | exportable | 6,675 mm² | 0% | Ready |
 | Pencil Cup 100 | exportable | 3,215 mm² | 0% | Ready |
 | Planter 120 | exportable | 9,497 mm² | 0% | Ready |
 | Napkin Ring 50 | exportable | 424 mm² | 0% | Ready |
@@ -166,8 +166,8 @@ Suggested starting values: `Cell size 20`, `Strut 3.5`, `Rim 4`, `Floor 3`.
 - Seeds come from the same periodic Voronoi network, but only their positions
   are used.
 - Each seed becomes a radial cylinder of `(Cell size − Strut) / 2` radius
-  through the wall; 20 mm cells and 3.5 mm struts produce 16.5 mm holes.
-- Holes stop short of the floor and the rim, so both stay solid.
+  through the wall; 32 mm cells and 8 mm struts produce 24 mm holes.
+- Holes stop short of the floor and the 12 mm rim, so both stay solid.
 - The source is the normal outer−inner Boolean shell; the cutters are subtracted
   in one Manifold difference.
 

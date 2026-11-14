@@ -58,6 +58,8 @@ export async function run(assert) {
     });
     assert(report.exportable === true, `${name} is exportable from Fabricate`);
     assert(report.triangles > 0, `${name} has exportable triangles`);
+    const wallCheck = report.manufacturing?.checks?.find((check) => check.id === 'wall');
+    assert(wallCheck?.severity === 'ok', `${name} meets the minimum wall`);
     reports.set(name, report);
   }
 

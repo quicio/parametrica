@@ -7,6 +7,28 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.93] - 2026-11-14
+
+### Changed
+
+- Bud Vase 160: radial wall raised from 2.5 mm to 4 mm; sampled p5 is now
+  about 1.64 mm.
+- Cap Catenoid: the ends turn inward (`cosh(v) - 0.6·v²`), removing the acute
+  cap overhang; sampled p5 is about 18.8 mm.
+- Perforated Vase 200: 32 mm cells, 8 mm struts and a 12 mm rim produce 74
+  holes of 24 mm; sampled p5 is about 1.24 mm.
+- Fabricate preset docs and review table reflect the new geometry and evidence.
+
+### Added
+
+- The Fabricate preset loop now fails if any curated preset reports a failed
+  wall check.
+
+### Notes
+
+- All 24 Fabricate presets pass the default FDM wall minimum.
+- No estimator, gating, unit or export-format change.
+
 ## [0.2.92] - 2026-11-14
 
 ### Added
