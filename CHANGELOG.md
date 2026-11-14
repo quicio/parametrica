@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.87] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the look section builders.
+- Typed look port, view, artboard, coordinates, units and GUI use.
+
+### Changed
+
+- `ui/sections/lookSections.js` remains a compatibility re-export.
+- The look-port architecture check reads the typed module.
+- No look/camera/coordinates/units behavior changed.
+
 ## [0.2.86] - 2026-11-13
 
 ### Added

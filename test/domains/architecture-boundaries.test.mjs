@@ -163,7 +163,7 @@ export async function run(assert) {
   };
   assertAppPort('src/ui/widgets/OperatorStack.ts', FORM_PORT, 'form port');
   assertControlsPort('src/ui/sections/formSections.ts', 'formPort', FORM_PORT, 'form sections');
-  assertControlsPort('src/ui/sections/lookSections.js', 'lookPort', LOOK_PORT, 'look sections');
+  assertControlsPort('src/ui/sections/lookSections.ts', 'lookPort', LOOK_PORT, 'look sections');
   assertControlsPort('src/ui/sections/keepSections.js', 'keepPort', KEEP_PORT, 'keep sections');
   assertControlsPort('src/ui/sections/keepSections.js', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
   assertAppPort('src/ui/widgets/TimelinePanel.ts', KEEP_PORT, 'keep/timeline port');
