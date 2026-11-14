@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.88] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the keep section builders.
+- Typed style, render passes, overlays, animation, panels and preset ports.
+
+### Changed
+
+- `ui/sections/keepSections.js` remains a compatibility re-export.
+- Keep/look port and maintainability checks read the typed module.
+- No keep section behavior changed.
+
 ## [0.2.87] - 2026-11-13
 
 ### Added

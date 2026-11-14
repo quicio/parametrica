@@ -138,7 +138,7 @@ export async function run(assert) {
     assert(PRESET_PORT.includes(match[1]), `preset port exposes app.${match[1]}`);
   }
   assert(read('src/composition/createApp.ts').includes('createPresetPort'), 'composition passes the preset port');
-  assert(read('src/ui/sections/keepSections.js').includes('new PresetPanel(controls.presetPort'), 'preset panel uses the preset port');
+  assert(read('src/ui/sections/keepSections.ts').includes('new PresetPanel(controls.presetPort'), 'preset panel uses the preset port');
 
   for (const file of ['src/ui/widgets/LabPanel.ts', 'src/ui/widgets/ExplorePanel.ts', 'src/ui/widgets/EvolutionPanel.ts']) {
     for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
@@ -146,9 +146,9 @@ export async function run(assert) {
     }
   }
   assert(read('src/composition/createApp.ts').includes('createLabPort'), 'composition passes the lab port');
-  assert(read('src/ui/sections/keepSections.js').includes('new LabPanel(controls.labPort'), 'analysis uses the lab port');
-  assert(read('src/ui/sections/keepSections.js').includes('new ExplorePanel(controls.labPort'), 'explore uses the lab port');
-  assert(read('src/ui/sections/keepSections.js').includes('new EvolutionPanel(controls.labPort'), 'evolution uses the lab port');
+  assert(read('src/ui/sections/keepSections.ts').includes('new LabPanel(controls.labPort'), 'analysis uses the lab port');
+  assert(read('src/ui/sections/keepSections.ts').includes('new ExplorePanel(controls.labPort'), 'explore uses the lab port');
+  assert(read('src/ui/sections/keepSections.ts').includes('new EvolutionPanel(controls.labPort'), 'evolution uses the lab port');
 
   const assertAppPort = (file, port, label) => {
     for (const match of read(file).matchAll(/\bapp\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
@@ -164,8 +164,8 @@ export async function run(assert) {
   assertAppPort('src/ui/widgets/OperatorStack.ts', FORM_PORT, 'form port');
   assertControlsPort('src/ui/sections/formSections.ts', 'formPort', FORM_PORT, 'form sections');
   assertControlsPort('src/ui/sections/lookSections.ts', 'lookPort', LOOK_PORT, 'look sections');
-  assertControlsPort('src/ui/sections/keepSections.js', 'keepPort', KEEP_PORT, 'keep sections');
-  assertControlsPort('src/ui/sections/keepSections.js', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
+  assertControlsPort('src/ui/sections/keepSections.ts', 'keepPort', KEEP_PORT, 'keep sections');
+  assertControlsPort('src/ui/sections/keepSections.ts', 'lookPort', LOOK_PORT, 'look-blocks in keep sections');
   assertAppPort('src/ui/widgets/TimelinePanel.ts', KEEP_PORT, 'keep/timeline port');
   assertAppPort('src/ui/widgets/ImagePanel.ts', INGEST_PORT, 'ingest port');
   assertAppPort('src/ui/widgets/AdvisorPanel.ts', ADVISOR_PORT, 'advisor port');
@@ -173,7 +173,7 @@ export async function run(assert) {
   for (const name of ['createFormPort', 'createLookPort', 'createKeepPort', 'createIngestPort', 'createAdvisorPort', 'createStartWithPort']) {
     assert(read('src/composition/createApp.ts').includes(name), `composition passes ${name}`);
   }
-  assert(!read('src/ui/sections/keepSections.js').includes('controls.app.'), 'keep sections use narrow ports');
+  assert(!read('src/ui/sections/keepSections.ts').includes('controls.app.'), 'keep sections use narrow ports');
 
   assert(read('src/core/units.js').includes('../domain/units.ts'), 'core/units keeps a domain re-export');
   assert(read('src/render/passStyle.js').includes('../domain/passStyle.ts'), 'render/passStyle keeps a domain re-export');
