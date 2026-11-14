@@ -7,6 +7,19 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.89] - 2026-11-13
+
+### Added
+
+- Strict TypeScript for the Fabricate section.
+- Typed fabrication port, view/settings, manufacturing profile and element map.
+
+### Changed
+
+- `ui/sections/fabricateSections.js` remains a compatibility re-export.
+- The fabrication-port architecture check reads the typed module.
+- No fabrication behavior changed.
+
 ## [0.2.88] - 2026-11-13
 
 ### Added

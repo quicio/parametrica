@@ -108,7 +108,7 @@ export async function run(assert) {
   }
   assert(read('src/composition/createApp.ts').includes('createUiPort'), 'composition passes the control port to Controls');
 
-  const fabricationSource = read('src/ui/sections/fabricateSections.js');
+  const fabricationSource = read('src/ui/sections/fabricateSections.ts');
   assert(!fabricationSource.includes('controls.app.'), 'Fabricate panel uses the narrow fabrication port');
   for (const name of FABRICATION_PORT) {
     assert(fabricationSource.includes(`controls.fabrication.${name}`) || name === 'document' || name === 'exporter',
