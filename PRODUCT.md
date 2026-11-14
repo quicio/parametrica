@@ -75,8 +75,9 @@ without changing its authoring model.
 - The Fabricate category is curated: every entry is exportable. Technical torus
   and boolean examples may require supports; functional/decorative objects must
   have bed contact and stay below the overhang warning.
-- Wall-thickness estimation remains `unavailable`; external slicer verification
-  is a manual record, not an automated claim.
+- Wall thickness is estimated from sampled surface rays and labelled
+  `estimated`; external slicer verification remains a manual record, not an
+  automated claim.
 - The document, notebook and presets have separate persistence responsibilities
   with idempotent migration and backup.
 - Existing v1 `glyph-lab` documents/presets remain readable; writes emit

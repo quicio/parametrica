@@ -70,6 +70,19 @@ export async function run(assert) {
   assert(sourceById.wall === 'unavailable', 'wall thickness is unavailable, not invented');
   assert(pass.checks.find((check) => check.id === 'wall').severity === 'unknown', 'unavailable wall is unknown');
 
+  const withWall = buildManufacturingReport({
+    profile: defaults,
+    printability: PRINT,
+    lattice: LATTICE,
+    units: UNITS,
+    bbox: BBOX,
+    wall: { available: true, minMm: 0.9, p05Mm: 1, medianMm: 1.1, samples: 512, triangles: 1200 },
+  });
+  const wallCheck = withWall.checks.find((check) => check.id === 'wall');
+  assert(wallCheck?.source === 'estimated', 'sampled wall evidence is estimated');
+  assert(wallCheck?.severity === 'fail', 'sampled wall below the minimum fails');
+  assert(String(wallCheck?.detail).includes('512 samples'), 'wall evidence states the sample count');
+
   const verifiedReport = buildManufacturingReport({
     profile: verified,
     printability: PRINT,

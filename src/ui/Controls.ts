@@ -1177,7 +1177,7 @@ export class Controls {
       const manufacturing = report.manufacturing;
       const issues = (manufacturing?.checks ?? [])
         .filter((check) => check.severity !== 'ok')
-        .map((check) => `${check.label}: ${check.source}`);
+        .map((check) => `${check.label}: ${check.detail}`);
       els.manufacturingChecks.textContent = manufacturing
         ? (issues.length ? issues.join(' · ') : 'all checks pass')
         : '—';

@@ -440,3 +440,36 @@ test('product preview renders the prepared lattice with a finish and returns to 
     expect(fallback.notice).toContain('WebGL context');
   }
 });
+
+test('Fabricate estimates wall thickness from the prepared body', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Bud Vase 160'));
+  await page.waitForTimeout(600);
+  const fabricate = await openSection(page, 'Fabricate');
+  await page.waitForFunction(
+    () => Boolean(window.__parametrica.controls?.fabricationReport?.wallThickness),
+    null,
+    { timeout: 15_000 },
+  );
+
+  const wall = await page.evaluate(() => {
+    const report = window.__parametrica.controls.fabricationReport;
+    const check = report.manufacturing?.checks?.find((candidate) => candidate.id === 'wall');
+    return {
+      available: report.wallThickness?.available,
+      min: report.wallThickness?.minMm,
+      p05: report.wallThickness?.p05Mm,
+      samples: report.wallThickness?.samples,
+      source: check?.source,
+      value: check?.value,
+    };
+  });
+  expect(wall.available).toBe(true);
+  expect(wall.samples).toBeGreaterThan(0);
+  expect(wall.min).toBeGreaterThan(0);
+  expect(wall.p05).toBeGreaterThan(0);
+  expect(wall.source).toBe('estimated');
+  expect(wall.value).toBeCloseTo(wall.p05, 5);
+  await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('Wall thickness');
+  await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('samples');
+});

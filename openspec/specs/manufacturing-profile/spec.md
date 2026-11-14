@@ -51,7 +51,7 @@ and severity.
 - **WHEN** a fabricated body is reported
 - **THEN** strut, joint, opening, overhang, bed contact and envelope are
   included where applicable
-- **AND** wall thickness is declared or unavailable
+- **AND** wall thickness is measured, estimated or unavailable
 - **AND** each check states what was actually evaluated
 
 ### Requirement: Export gating
@@ -104,4 +104,40 @@ as an automated gate.
 - **THEN** the record is stored as documentation
 - **AND** the report does not claim a slicer guarantee
 - **AND** CI does not depend on the record
+
+### Requirement: Estimated wall thickness
+
+Fabricate SHALL estimate minimum wall thickness from the prepared mesh.
+
+#### Scenario: Hollow body
+
+- **WHEN** a hollow body reaches the manufacturing report
+- **THEN** the wall check reports a robust minimum (p05), the absolute minimum
+  and the median in millimetres
+- **AND** the source is `estimated`
+- **AND** the detail states how many surface samples were measured
+
+#### Scenario: Solid body
+
+- **WHEN** a solid body is sampled
+- **THEN** the reported thickness follows the material between opposite surfaces
+- **AND** the bounding box is never used as a substitute
+
+#### Scenario: Unavailable
+
+- **WHEN** the mesh is empty, open or beyond the sampling cap
+- **THEN** the wall check is `unknown`
+- **AND** it is not treated as passing
+
+#### Scenario: Determinism
+
+- **WHEN** the same mesh, scale and sample budget are measured twice
+- **THEN** the reported values are identical
+
+#### Scenario: Gating
+
+- **WHEN** the robust minimum (p05) is below the profile minimum
+- **THEN** the check fails
+- **AND** warn or block mode decides whether export stops
+- **AND** block mode names the wall check in the reason
 

@@ -357,7 +357,6 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 Deferred / next:
 
-- Wall-thickness estimation (the report still labels it `unavailable`)
 - Sequential CSG recipes beyond independent boolean groups
 - Modular dovetail planter tiles, folding hinges and snap-fit tolerances
 - Stable cross-runner screenshot baselines (CI uses pixel variance instead)

@@ -12,6 +12,9 @@ Fabricate is a guided single-panel workflow: Source → Repair → Combine → O
 - **Output** — format, world scale and export.
 - **Checks** — source, triangles/vertices/volume, bounds, warnings, preparation
   and repair report.
+- **Manufacturing** — profile, process minima, evidence checks and slicer
+  verification. Minimum wall is estimated from sampled surface rays; the
+  detail shows p5, absolute minimum, median and sample count.
 
 Existing controls, classes and behavior are unchanged.
 

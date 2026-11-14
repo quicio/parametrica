@@ -556,6 +556,7 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 | `2026-11-06-manufacturing-profile` | Phase 5: profile and evidence report | archived (2026-11-08) |
 | `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | archived (2026-11-08) |
 | `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | archived (2026-11-08) |
+| `2026-11-14-fabricate-wall-thickness` | Phase 5 follow-up: sampled wall estimate | archived (2026-11-14) |
 
 Appearance/PBR is now **implemented**, not deferred. It remains independent of
 the geometry pipeline and ships behind an explicit Technical/Product toggle, with
@@ -571,8 +572,10 @@ an explicit budgeted SDF option; `rounded` remains the default.
 The manufacturing profile is now **implemented** as an evidence report:
 serializable FDM/Resin/Custom minima, measured/declared/estimated/unavailable
 labels, warn-by-default gating, opt-in block mode and a Fabricate check table.
-Wall thickness remains correctly `unavailable` until a real estimator exists;
-external slicer verification remains a manual record.
+Wall thickness is now `estimated` from deterministic area-weighted surface
+samples and inward rays against a BVH; p05 is the robust minimum and the detail
+reports the absolute minimum, median and sample count. External slicer
+verification remains a manual record.
 
 ### Fabricate boolean groups and wave 3 (archived)
 

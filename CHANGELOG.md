@@ -7,6 +7,30 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.92] - 2026-11-14
+
+### Added
+
+- Deterministic mesh wall-thickness estimator: area-weighted triangle samples,
+  inward rays and a BVH over triangle bounds.
+- Minimum, p05, median, sample count, hits, misses and fallback counts on the
+  fabrication report.
+- Estimated wall evidence in the manufacturing check: p05 is the robust minimum
+  and the detail reports the absolute minimum, median and samples.
+
+### Changed
+
+- Fabricate check rows show the check detail instead of only the source label.
+- Product and manufacturing docs describe wall thickness as estimated.
+
+### Notes
+
+- The check is a sampling estimate, not a slicer measurement; it is never
+  labelled `measured`.
+- Open, empty or oversized meshes stay `unknown`.
+- Bud Vase, Cap Catenoid and Perforated Vase expose real sub-1.2 mm regions and
+  now warn in Fabricate. Warn mode still allows export.
+
 ## [0.2.91] - 2026-11-14
 
 ### Changed

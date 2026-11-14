@@ -77,6 +77,16 @@ interface BBoxLike {
   [key: string]: unknown;
 }
 
+export interface WallThicknessLike {
+  available?: unknown;
+  minMm?: unknown;
+  p05Mm?: unknown;
+  medianMm?: unknown;
+  samples?: unknown;
+  triangles?: unknown;
+  reason?: unknown;
+}
+
 export const MANUFACTURING_PROCESSES: readonly ManufacturingProcess[] = Object.freeze(['fdm', 'resin', 'custom']);
 export const MANUFACTURING_GATING: readonly ManufacturingGating[] = Object.freeze(['warn', 'block']);
 
@@ -173,12 +183,14 @@ export function buildManufacturingReport({
   lattice = null,
   units = null,
   bbox = null,
+  wall = null,
 }: {
   profile?: unknown;
   printability?: PrintabilityLike | null;
   lattice?: LatticeLike | null;
   units?: unknown;
   bbox?: BBoxLike | null;
+  wall?: WallThicknessLike | null;
 } = {}): ManufacturingReport {
   const resolved = sanitizeManufacturingProfile(profile);
   const scale = millimetresPerUnit(units, 'world') ?? 1;
@@ -197,7 +209,7 @@ export function buildManufacturingReport({
   add(lengthCheck('joint', 'Minimum joint', joint, resolved.minStrut, 'declared'));
   const opening = toMm(lattice?.openingGauge?.minWidth ?? lattice?.minOpeningWidth);
   add(lengthCheck('opening', 'Minimum opening', opening, resolved.minOpeningWidth, 'measured'));
-  add(wallCheck(resolved.minWall));
+  add(wallCheck(wall, resolved.minWall));
   add(overhangCheck(printability));
   add(bedCheck(printability));
   add(envelopeCheck(bbox, units));
@@ -258,16 +270,43 @@ function lengthCheck(
   };
 }
 
-function wallCheck(limit: number): ManufacturingCheck {
+function wallCheck(wall: WallThicknessLike | null, limit: number): ManufacturingCheck {
+  const min = Number(wall?.minMm);
+  if (wall?.available !== true || !Number.isFinite(min)) {
+    const reason = typeof wall?.reason === 'string' && wall.reason
+      ? wall.reason
+      : 'No mesh-based wall-thickness estimate is available';
+    return {
+      id: 'wall',
+      label: 'Minimum wall',
+      value: null,
+      unit: 'mm',
+      limit,
+      source: 'unavailable',
+      severity: 'unknown',
+      detail: reason,
+    };
+  }
+  const p05 = Number(wall.p05Mm);
+  const median = Number(wall.medianMm);
+  const samples = Number(wall.samples);
+  const robust = Number.isFinite(p05) ? p05 : min;
+  const evidence = [
+    'estimated',
+    Number.isFinite(samples) ? `${samples} samples` : null,
+    `p5 ${robust.toFixed(2)} mm`,
+    `min ${min.toFixed(2)} mm`,
+    Number.isFinite(median) ? `median ${median.toFixed(2)} mm` : null,
+  ].filter(Boolean).join(' · ');
   return {
     id: 'wall',
-    label: 'Minimum wall',
-    value: null,
+    label: 'Wall thickness',
+    value: robust,
     unit: 'mm',
     limit,
-    source: 'unavailable',
-    severity: 'unknown',
-    detail: 'No mesh-based wall-thickness estimator in this slice',
+    source: 'estimated',
+    severity: robust + 1e-6 < limit ? 'fail' : 'ok',
+    detail: evidence,
   };
 }
 

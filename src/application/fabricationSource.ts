@@ -8,6 +8,8 @@ import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.ts';
 import { validateForFabrication } from '../export/geometryExport.ts';
 import { buildLatticeSolid } from '../geometry/latticeSolid.ts';
 import { analyzePrintability } from '../geometry/printChecks.ts';
+import { measureWallThickness } from '../geometry/wallThickness.ts';
+import type { WallThicknessReport } from '../geometry/wallThickness.ts';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.ts';
 import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.ts';
 import { sanitizeFabricationGroups } from '../core/document.ts';
@@ -129,6 +131,7 @@ export interface FabricationReport extends Omit<ResolvedFabricationSource, 'manu
   lattice: Rec | null;
   printability: Rec;
   manufacturing: ManufacturingReport | null;
+  wallThickness: WallThicknessReport | null;
   unitsReady: boolean;
   exportable: boolean;
 }
@@ -468,6 +471,7 @@ export function buildFabricationReport({
       errors: resolved.booleanError ? [resolved.booleanError] : (resolved.mergedError ? [resolved.mergedError] : (resolved.candidates?.[0]?.validation?.errors ?? [])),
       preparation: null,
       manufacturing: null,
+      wallThickness: null,
       repair: null,
       prepared: false,
       printability: {},
@@ -482,6 +486,8 @@ export function buildFabricationReport({
   const physical = bboxToMillimetres(bbox, units);
   const unitsReady = millimetresPerUnit(units, 'world') !== null;
   const lattice = (source.lattice as Rec | null | undefined) ?? null;
+  const worldScale = millimetresPerUnit(units, 'world') ?? 1;
+  const wallThickness = measureWallThickness(mesh, { scale: worldScale });
   const minFeature = lattice?.radius
     ? Number(lattice.radius) * 2
     : (lattice?.mode === 'cutouts' ? Number(lattice.strut) : null);
@@ -492,6 +498,7 @@ export function buildFabricationReport({
     lattice,
     units,
     bbox,
+    wall: wallThickness,
   });
   const manufacturingBlocked = manufacturing.exportAllowed === false;
   return {
@@ -510,6 +517,7 @@ export function buildFabricationReport({
     lattice,
     printability,
     manufacturing,
+    wallThickness,
     unitsReady,
     exportable: source.exportable && unitsReady && !manufacturingBlocked,
     reason: !unitsReady

@@ -591,9 +591,8 @@ including the CodeMirror formula editor, frame-sequence/GIF export, heavy
 geometry, Manifold CSG, STL/3MF, lattice/perforated fabrication, grouped
 multi-body recipes, even-odd image fill, Quad SVG/plotter export, persistence,
 accessibility hardening and the optional Product preview. Remaining work is
-tracked in the roadmap: wall-thickness estimation, sequential CSG recipes,
-modular/snap-fit objects, stable cross-runner screenshot baselines and
-automated slicer verification.
+tracked in the roadmap: sequential CSG recipes, modular/snap-fit objects,
+stable cross-runner screenshot baselines and automated slicer verification.
 
 > **v0.1.0 vs Glyph Lab v2.0.0:** v0.1.0 is the same engine under a new
 > brand identity and a renumbered version. No engine changes shipped in
