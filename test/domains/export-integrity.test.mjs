@@ -2,10 +2,10 @@
  * export-integrity.test.mjs — 3MF triangulation and trust-flag lifecycle.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { repairMesh } from '../../src/geometry/repair.js';
-import { prepareMesh } from '../../src/geometry/solidPrep.js';
-import { triangulateFace } from '../../src/export/3mf.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { repairMesh } from '../../src/geometry/repair.ts';
+import { prepareMesh } from '../../src/geometry/solidPrep.ts';
+import { triangulateFace } from '../../src/export/3mf.ts';
 
 function triangleCube(meta = {}) {
   const vertices = [

@@ -2,10 +2,10 @@
  * surface-seams.test.mjs — seam overlay domain checks.
  */
 
-import { createSurface } from '../../src/geometry/contracts.js';
-import { tessellateSurface, tessellateSurfaceWithMapping } from '../../src/geometry/surfaceTessellation.js';
-import { createViewTransform } from '../../src/view/transform.js';
-import { buildSeamOverlay } from '../../src/interaction/seamOverlay.js';
+import { createSurface } from '../../src/geometry/contracts.ts';
+import { tessellateSurface, tessellateSurfaceWithMapping } from '../../src/geometry/surfaceTessellation.ts';
+import { createViewTransform } from '../../src/view/transform.ts';
+import { buildSeamOverlay } from '../../src/interaction/seamOverlay.ts';
 
 export function run(assert) {
   /* ——— 38. Surface seams ——— */

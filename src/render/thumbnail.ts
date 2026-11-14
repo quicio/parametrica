@@ -1,6 +1,6 @@
 /** Browser-only polyline thumbnails for exploration. */
 
-import { bboxAll } from '../sampling/sampling.js';
+import { bboxAll } from '../sampling/sampling.ts';
 
 interface Vec2 { x: number; y: number; [key: string]: unknown }
 interface CurveLike {

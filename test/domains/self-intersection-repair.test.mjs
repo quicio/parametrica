@@ -2,11 +2,11 @@
  * self-intersection-repair.test.mjs — remesh repair, reporting and fabrication.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { detectSelfIntersections } from '../../src/geometry/selfIntersection.js';
-import { repairSelfIntersections } from '../../src/geometry/selfIntersectionRepair.js';
-import { validateMesh } from '../../src/geometry/validate.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { detectSelfIntersections } from '../../src/geometry/selfIntersection.ts';
+import { repairSelfIntersections } from '../../src/geometry/selfIntersectionRepair.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null };
 

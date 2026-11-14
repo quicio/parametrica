@@ -21,7 +21,7 @@ test('CSG auto uses Manifold for overlapping non-convex tori', async ({ page }) 
       mmPerArtboardUnit: null,
     };
     app.document.view.fabrication.remeshResolution = 32;
-    const { createInstanceLayer } = await import('/src/core/document.js');
+    const { createInstanceLayer } = await import('/src/core/document.ts');
     const source = app.document.layers[0];
     app.document.layers.push(createInstanceLayer(source.id, {
       name: 'Torus overlap',

@@ -2,8 +2,8 @@
  * 3mf-export.test.mjs — package structure, scaling, determinism and rejection.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { build3MFModelXML, export3MF } from '../../src/export/3mf.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { build3MFModelXML, export3MF } from '../../src/export/3mf.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null };
 

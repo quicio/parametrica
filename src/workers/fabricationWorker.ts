@@ -2,7 +2,7 @@
  * workers/fabricationWorker.ts — heavy fabrication jobs off the main thread.
  */
 
-import { runFabricationJob } from '../application/fabricationJobRunner.js';
+import { runFabricationJob } from '../application/fabricationJobRunner.ts';
 import type { FabricationJobInput } from '../application/fabricationJobRunner.ts';
 
 interface WorkerScope {

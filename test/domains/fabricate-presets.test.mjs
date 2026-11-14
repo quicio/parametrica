@@ -2,16 +2,16 @@
  * fabricate-presets.test.mjs — built-in Fabricate examples stay usable.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
-import { initManifold } from '../../src/geometry/manifoldEngine.js';
-import { project3D } from '../../src/view/camera.js';
-import { exportBinarySTL } from '../../src/export/stl.js';
-import { buildRenderScene } from '../../src/application/renderSceneBuilder.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { BUILT_IN_PRESETS } from '../../src/presets/builtins.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
+import { initManifold } from '../../src/geometry/manifoldEngine.ts';
+import { project3D } from '../../src/view/camera.ts';
+import { exportBinarySTL } from '../../src/export/stl.ts';
+import { buildRenderScene } from '../../src/application/renderSceneBuilder.ts';
 
 const PRESETS = [
   'Solid Torus',

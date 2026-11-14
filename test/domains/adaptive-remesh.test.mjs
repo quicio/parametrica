@@ -2,13 +2,13 @@
  * adaptive-remesh.test.mjs — feature projection and deterministic remesh.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { createMesh } from '../../src/geometry/contracts.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { PresetManager } from '../../src/presets/PresetManager.js';
-import { remesh } from '../../src/geometry/remesh.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { PresetManager } from '../../src/presets/PresetManager.ts';
+import { remesh } from '../../src/geometry/remesh.ts';
 
 function cube() {
   const h = 1;

@@ -28,7 +28,7 @@ interface ConcentricParams {
   closed: boolean;
   fit: number;
 }
-import { composeCurves, makeScope, postProcess, TAU } from './helpers.js';
+import { composeCurves, makeScope, postProcess, TAU } from './helpers.ts';
 
 Generators.register(({
   id: 'concentric-ellipses',

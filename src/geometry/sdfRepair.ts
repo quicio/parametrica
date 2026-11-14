@@ -6,8 +6,8 @@
  * guaranteed manifold result.
  */
 
-import { buildTriangleBvh, closestPointOnMesh, windingNumberMulti } from './remesh.js';
-import { manifoldLevelSet } from './manifoldEngine.js';
+import { buildTriangleBvh, closestPointOnMesh, windingNumberMulti } from './remesh.ts';
+import { manifoldLevelSet } from './manifoldEngine.ts';
 import type { ValidationResult } from './validate.ts';
 
 type Rec = Record<string, unknown>;

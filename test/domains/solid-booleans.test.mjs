@@ -2,12 +2,12 @@
  * solid-booleans.test.mjs — CSG cube/sphere matrix, determinism and failures.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { booleanSolids } from '../../src/geometry/csg.js';
-import { validateMesh } from '../../src/geometry/validate.js';
-import { exportBinarySTL } from '../../src/export/stl.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
-import { sanitizeFabricationSettings } from '../../src/core/document.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { booleanSolids } from '../../src/geometry/csg.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
+import { exportBinarySTL } from '../../src/export/stl.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
+import { sanitizeFabricationSettings } from '../../src/core/document.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null };
 

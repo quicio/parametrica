@@ -4,7 +4,7 @@ import { Generators, Operators } from '../core/registry.ts';
 import { TYPE, sanitizeValue } from '../core/schema.ts';
 import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { evaluateDocument } from '../core/engine.ts';
-import { perturbLiterals } from '../math/expression.js';
+import { perturbLiterals } from '../math/expression.ts';
 
 export interface ParamSchema {
   type?: string;

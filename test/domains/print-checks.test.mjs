@@ -2,8 +2,8 @@
  * print-checks.test.mjs — heuristic overhang, bed contact and feature checks.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { analyzePrintability } from '../../src/geometry/printChecks.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { analyzePrintability } from '../../src/geometry/printChecks.ts';
 
 const MM = { world: 'mm', mmPerWorldUnit: 1 };
 

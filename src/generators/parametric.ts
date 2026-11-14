@@ -21,7 +21,7 @@ interface ParametricParams {
   closed: boolean;
   fit: number;
 }
-import { compileOrThrow, makeScope, sampleParametric, postProcess, genId, TAU } from './helpers.js';
+import { compileOrThrow, makeScope, sampleParametric, postProcess, genId, TAU } from './helpers.ts';
 
 Generators.register(({
   id: 'parametric',

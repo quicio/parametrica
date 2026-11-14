@@ -5,7 +5,7 @@
 
 import { Operators } from '../../core/registry.ts';
 import { TYPE } from '../../core/schema.ts';
-import { compileExpression } from '../../math/expression.js';
+import { compileExpression } from '../../math/expression.ts';
 import type { GeneratorContext } from '../../generators/context.ts';
 
 type Rec = Record<string, unknown>;

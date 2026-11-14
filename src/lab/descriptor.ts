@@ -9,8 +9,8 @@
  */
 
 import { analyzeCurve } from '../analysis/differential.ts';
-import { analyzeGeometry, bbox3 } from '../geometry/analysis.js';
-import { bboxAll, resampleUniform } from '../sampling/sampling.js';
+import { analyzeGeometry, bbox3 } from '../geometry/analysis.ts';
+import { bboxAll, resampleUniform } from '../sampling/sampling.ts';
 import { selfIntersections, polylineIntersections } from '../analysis/intersections.ts';
 import { canonicalStringify, sha256Hex } from './hash.ts';
 import type { CurveAnalysis } from '../analysis/differential.ts';

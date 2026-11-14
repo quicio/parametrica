@@ -1,20 +1,20 @@
 /** Read-only fabrication source selection and report assembly. */
 
-import { isMesh, isSolid } from '../geometry/contracts.js';
-import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.js';
-import { booleanSolids } from '../geometry/csg.js';
-import { repairMesh } from '../geometry/repair.js';
-import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.js';
+import { isMesh, isSolid } from '../geometry/contracts.ts';
+import { mergeMeshes, prepareMesh } from '../geometry/solidPrep.ts';
+import { booleanSolids } from '../geometry/csg.ts';
+import { repairMesh } from '../geometry/repair.ts';
+import { repairSelfIntersections } from '../geometry/selfIntersectionRepair.ts';
 import { validateForFabrication } from '../export/geometryExport.ts';
-import { buildLatticeSolid } from '../geometry/latticeSolid.js';
-import { analyzePrintability } from '../geometry/printChecks.js';
-import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.js';
+import { buildLatticeSolid } from '../geometry/latticeSolid.ts';
+import { analyzePrintability } from '../geometry/printChecks.ts';
+import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.ts';
 import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.ts';
 import { sanitizeFabricationGroups } from '../core/document.ts';
-import { compileExpression } from '../math/expression.js';
+import { compileExpression } from '../math/expression.ts';
 import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.ts';
 import type { ManufacturingProfile, ManufacturingReport } from '../domain/manufacturingProfile.ts';
-import { createStdlib } from '../math/stdlib.js';
+import { createStdlib } from '../math/stdlib.ts';
 
 type Rec = Record<string, unknown>;
 interface VectorLike { x?: unknown; y?: unknown; z?: unknown; [key: string]: unknown }

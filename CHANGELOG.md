@@ -7,6 +7,31 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.91] - 2026-11-14
+
+### Changed
+
+- Internal imports resolve through explicit `.ts` specifiers.
+- `allowJs` is false and every source module is strict TypeScript.
+- The dependency gate cruises `src/**/*.ts` (367 modules) instead of `.js`.
+- The fabrication worker URL and e2e dynamic imports point at `.ts`.
+
+### Removed
+
+- 199 `.js` compatibility shims; `src/` contains no JavaScript.
+- 60 obsolete per-module compatibility requirements.
+
+### Fixed
+
+- `depcruise` was silently cruising zero modules after the migration; it now
+  inspects the real TypeScript graph.
+- The `ui` layer no longer has a runtime `App` edge; the type-only import is
+  covered by a textual architecture check.
+
+### Milestone
+
+- ADR-0005 Phase 4 complete: empty baseline, `allowJs: false`, strict gates.
+
 ## [0.2.90] - 2026-11-14
 
 ### Added

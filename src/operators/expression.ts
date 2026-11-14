@@ -1,6 +1,6 @@
 /** Shared helpers for optional expression parameters on geometry operators. */
 
-import { compileExpression } from '../math/expression.js';
+import { compileExpression } from '../math/expression.ts';
 import type { GeneratorContext } from '../generators/context.ts';
 
 type Rec = Record<string, unknown>;

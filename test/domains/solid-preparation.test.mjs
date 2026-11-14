@@ -2,17 +2,17 @@
  * solid-preparation.test.mjs — weld, boundary, cap, merge and fabrication prep.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
 import {
   boundaryLoops,
   capMesh,
   mergeMeshes,
   prepareMesh,
   weldMesh,
-} from '../../src/geometry/solidPrep.js';
-import { validateMesh } from '../../src/geometry/validate.js';
-import { createDefaultView, sanitizeDocument, sanitizeFabricationSettings, createDocument } from '../../src/core/document.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
+} from '../../src/geometry/solidPrep.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
+import { createDefaultView, sanitizeDocument, sanitizeFabricationSettings, createDocument } from '../../src/core/document.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
 
 function openQuad() {
   return createMesh({

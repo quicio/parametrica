@@ -1,7 +1,7 @@
 /** Fourier epicycle chain visualization. */
 
 import { RenderPasses } from '../../core/registry.ts';
-import { bboxAll } from '../../sampling/sampling.js';
+import { bboxAll } from '../../sampling/sampling.ts';
 import type { PassContext, PassData } from './types.ts';
 
 interface Harmonic {

@@ -1,6 +1,6 @@
 /** Parameter schema helpers. */
 
-import { compileExpression } from '../math/expression.js';
+import { compileExpression } from '../math/expression.ts';
 
 export const TYPE = {
   NUMBER: 'number',

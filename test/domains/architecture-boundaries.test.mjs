@@ -7,18 +7,18 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { UI_SURFACE } from '../../src/composition/createUiPort.js';
-import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.js';
-import { NOTEBOOK_PORT } from '../../src/composition/createNotebookPort.js';
-import { LAB_PORT } from '../../src/composition/createLabPort.js';
-import { PRESET_PORT } from '../../src/composition/createPresetPort.js';
-import { FORM_PORT } from '../../src/composition/createFormPort.js';
-import { LOOK_PORT } from '../../src/composition/createLookPort.js';
-import { KEEP_PORT } from '../../src/composition/createKeepPort.js';
-import { INGEST_PORT } from '../../src/composition/createIngestPort.js';
-import { ADVISOR_PORT } from '../../src/composition/createAdvisorPort.js';
-import { START_WITH_PORT } from '../../src/composition/createStartWithPort.js';
-import { RENDER_PORT } from '../../src/composition/createRenderPort.js';
+import { UI_SURFACE } from '../../src/composition/createUiPort.ts';
+import { FABRICATION_PORT } from '../../src/composition/createFabricationPort.ts';
+import { NOTEBOOK_PORT } from '../../src/composition/createNotebookPort.ts';
+import { LAB_PORT } from '../../src/composition/createLabPort.ts';
+import { PRESET_PORT } from '../../src/composition/createPresetPort.ts';
+import { FORM_PORT } from '../../src/composition/createFormPort.ts';
+import { LOOK_PORT } from '../../src/composition/createLookPort.ts';
+import { KEEP_PORT } from '../../src/composition/createKeepPort.ts';
+import { INGEST_PORT } from '../../src/composition/createIngestPort.ts';
+import { ADVISOR_PORT } from '../../src/composition/createAdvisorPort.ts';
+import { START_WITH_PORT } from '../../src/composition/createStartWithPort.ts';
+import { RENDER_PORT } from '../../src/composition/createRenderPort.ts';
 import { join, relative } from 'node:path';
 
 const root = new URL('../../', import.meta.url).pathname;
@@ -55,6 +55,10 @@ export async function run(assert) {
     }
   }
 
+  const sourceFiles = filesUnder('src');
+  const jsFiles = sourceFiles.filter((file) => file.endsWith('.js'));
+  assert(jsFiles.length === 0, `src contains no .js files${jsFiles.length ? `: ${jsFiles.join(', ')}` : ''}`);
+
   const documentImports = importsOf(read('src/core/document.ts'));
   for (const spec of documentImports) {
     assert(!spec.includes('/render/'), 'core/document does not import render');
@@ -68,25 +72,32 @@ export async function run(assert) {
     assert(importsOf(source).some((spec) => spec.includes('/view/camera')), `${file} imports pure view camera`);
   }
 
+  for (const file of filesUnder('src/ui')) {
+    if (!file.endsWith('.ts')) continue;
+    const source = read(file);
+    const runtimeAppImport = /import\s+(?!type\b)(?:[^'"]*?\sfrom\s+)?['"][^'"]*application\/App\.ts['"]/;
+    assert(!runtimeAppImport.test(source), `${file} does not runtime-import App`);
+  }
+
   const appImports = importsOf(read('src/application/App.ts'));
   for (const spec of [
-    '../render/p5/P5Adapter.js',
-    '../ui/Controls.js',
-    '../ui/StartWithOverlay.js',
-    '../ui/dialogs.js',
-    '../ui/ParametricOverlay.js',
-    '../ui/UVDomainInset.js',
-    '../ui/SurfaceInspector.js',
-    '../ui/SeamLegend.js',
-    '../export/Exporter.js',
-    '../presets/PresetManager.js',
-    '../presets/preview.js',
-    '../lab/notebook.js',
-    '../lab/notebookRepository.js',
-    '../lab/workspace.js',
-    '../core/session.js',
-    '../core/persistence.js',
-    '../mutation/MutationEngine.js',
+    '../render/p5/P5Adapter.ts',
+    '../ui/Controls.ts',
+    '../ui/StartWithOverlay.ts',
+    '../ui/dialogs.ts',
+    '../ui/ParametricOverlay.ts',
+    '../ui/UVDomainInset.ts',
+    '../ui/SurfaceInspector.ts',
+    '../ui/SeamLegend.ts',
+    '../export/Exporter.ts',
+    '../presets/PresetManager.ts',
+    '../presets/preview.ts',
+    '../lab/notebook.ts',
+    '../lab/notebookRepository.ts',
+    '../lab/workspace.ts',
+    '../core/session.ts',
+    '../core/persistence.ts',
+    '../mutation/MutationEngine.ts',
   ]) {
     assert(!appImports.includes(spec), `application/App does not import ${spec}`);
   }
@@ -116,7 +127,7 @@ export async function run(assert) {
   }
   assert(read('src/composition/createApp.ts').includes('createFabricationPort'), 'composition passes the fabrication port');
 
-  for (const file of ['src/ui/widgets/TimelinePanel.js', 'src/ui/widgets/AdvisorPanel.js', 'src/ui/SurfaceInspector.js', 'src/ui/sections/lookSections.js']) {
+  for (const file of ['src/ui/widgets/TimelinePanel.ts', 'src/ui/widgets/AdvisorPanel.ts', 'src/ui/SurfaceInspector.ts', 'src/ui/sections/lookSections.ts']) {
     const source = read(file);
     assert(!source.includes('this.app.renderer'), `${file} uses the render port`);
     assert(!source.includes('controls.app.renderer'), `${file} does not use controls.app.renderer`);
@@ -175,9 +186,9 @@ export async function run(assert) {
   }
   assert(!read('src/ui/sections/keepSections.ts').includes('controls.app.'), 'keep sections use narrow ports');
 
-  assert(read('src/core/units.js').includes('../domain/units.ts'), 'core/units keeps a domain re-export');
-  assert(read('src/render/passStyle.js').includes('../domain/passStyle.ts'), 'render/passStyle keeps a domain re-export');
+  assert(read('src/core/units.ts').includes('../domain/units.ts'), 'core/units keeps a domain re-export');
+  assert(read('src/render/passStyle.ts').includes('../domain/passStyle.ts'), 'render/passStyle keeps a domain re-export');
   assert(read('src/viz/overlays.ts').includes('../domain/overlays.ts'), 'viz/overlays keeps a domain re-export');
-  assert(read('src/geometry/manufacturingProfile.js').includes('../domain/manufacturingProfile.ts'), 'geometry/manufacturingProfile keeps a domain re-export');
+  assert(read('src/geometry/manufacturingProfile.ts').includes('../domain/manufacturingProfile.ts'), 'geometry/manufacturingProfile keeps a domain re-export');
   assert(read('src/geometry/repair.ts').includes('../domain/fabrication.ts'), 'geometry/repair imports domain cap strategies');
 }

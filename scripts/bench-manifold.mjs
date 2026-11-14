@@ -2,14 +2,14 @@
  * Node benchmark for the Manifold CSG strategy.
  * Run: npm run bench:manifold
  */
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
-import { evaluateDocument } from '../src/core/engine.js';
-import { PresetManager } from '../src/presets/PresetManager.js';
-import { createInstanceLayer } from '../src/core/document.js';
-import { booleanSolids } from '../src/geometry/csg.js';
-import { initManifold, isManifoldReady } from '../src/geometry/manifoldEngine.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
+import { evaluateDocument } from '../src/core/engine.ts';
+import { PresetManager } from '../src/presets/PresetManager.ts';
+import { createInstanceLayer } from '../src/core/document.ts';
+import { booleanSolids } from '../src/geometry/csg.ts';
+import { initManifold, isManifoldReady } from '../src/geometry/manifoldEngine.ts';
 
 const startInit = performance.now();
 await initManifold();

@@ -6,9 +6,9 @@
  * orbits at radius fov around the origin with world +Z up.
  */
 
-import { project3D, DEFAULT_CAMERA } from '../../src/view/camera.js';
-import { orbitCamera } from '../../src/view/cameraController.js';
-import { rayForArtboardPoint } from '../../src/interaction/ray.js';
+import { project3D, DEFAULT_CAMERA } from '../../src/view/camera.ts';
+import { orbitCamera } from '../../src/view/cameraController.ts';
+import { rayForArtboardPoint } from '../../src/interaction/ray.ts';
 
 const CAM = Object.freeze({ yaw: 0, pitch: 0, fov: 320 });
 

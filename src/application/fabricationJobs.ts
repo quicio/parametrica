@@ -1,6 +1,6 @@
 /** Main-thread controller for fabrication jobs. */
 
-import { buildFabricationReport } from './fabricationSource.js';
+import { buildFabricationReport } from './fabricationSource.ts';
 
 export interface FabricationPreparationLike {
   boolean?: string;
@@ -103,7 +103,7 @@ export class FabricationJobs {
     this.running = true;
     const worker = this.workerFactory
       ? this.workerFactory()
-      : new Worker(new URL('../workers/fabricationWorker.js', import.meta.url), { type: 'module' }) as WorkerLike;
+      : new Worker(new URL('../workers/fabricationWorker.ts', import.meta.url), { type: 'module' }) as WorkerLike;
     this.worker = worker;
     worker.onmessage = (event: MessageEvent) => {
       const data = event.data as {

@@ -26,7 +26,7 @@ import {
 } from '../domain/units.ts';
 import { buildFabricationReport } from '../application/fabricationSource.ts';
 import { FabricationJobs, isHeavyFabrication } from '../application/fabricationJobs.ts';
-import { manifoldSimplify } from '../geometry/manifoldEngine.js';
+import { manifoldSimplify } from '../geometry/manifoldEngine.ts';
 import { buildLayersSection, buildInstanceSection, buildGeneratorSection, buildParamsSection, buildEquationsSection, buildHarmonicsSection, buildOperatorsSection } from './sections/formSections.ts';
 import { buildLooksSection, buildCameraSection, buildCanvasSection, buildCoordinatesSection, buildUnitsSection } from './sections/lookSections.ts';
 import { buildFabricateSection } from './sections/fabricateSections.ts';

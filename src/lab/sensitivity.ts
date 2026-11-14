@@ -3,7 +3,7 @@
 import { clampNumber } from '../core/schema.ts';
 import type { SchemaEntry } from '../core/schema.ts';
 import { evaluateDocument } from '../core/engine.ts';
-import { bboxAll, resampleUniform } from '../sampling/sampling.js';
+import { bboxAll, resampleUniform } from '../sampling/sampling.ts';
 import { computeDescriptor } from './descriptor.ts';
 import { attachLayerAliases } from '../core/document.ts';
 import { numericParameterRefs, pathForRef, schemaForRef, stageForRef } from './parameters.ts';

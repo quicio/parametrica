@@ -1,6 +1,6 @@
 /** Per-sample expression context and errors. */
 
-import { compileExpression } from '../math/expression.js';
+import { compileExpression } from '../math/expression.ts';
 
 export interface GeneratorContext {
   time?: number;

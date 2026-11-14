@@ -1,6 +1,6 @@
 /** World geometry to render-space geometry. */
 
-import { isCurve3D, isMesh, isSurface } from '../geometry/contracts.js';
+import { isCurve3D, isMesh, isSurface } from '../geometry/contracts.ts';
 import { cameraFrom, project3D } from './camera.ts';
 import type { CameraState } from './camera.ts';
 import {

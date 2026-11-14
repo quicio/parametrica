@@ -2,10 +2,10 @@
  * topology-repair.test.mjs — non-manifold splitting and non-orientable handling.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { repairTopology } from '../../src/geometry/topologyRepair.js';
-import { repairMesh } from '../../src/geometry/repair.js';
-import { validateMesh } from '../../src/geometry/validate.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { repairTopology } from '../../src/geometry/topologyRepair.ts';
+import { repairMesh } from '../../src/geometry/repair.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
 
 function tetraFaces(a, b, c, d) {
   return [[a, c, b], [a, b, d], [b, c, d], [a, d, c]];

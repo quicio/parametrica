@@ -25,9 +25,9 @@ interface HelixParams {
   b: number; m: number; psi: number; strands: number; samples: number; adaptive: boolean; closed: boolean;
   depthOcclusion: boolean; depthAttenuation: number; fit: number;
 }
-import { sampleAdaptive, sampleUniform } from '../sampling/sampling.js';
-import { cameraFrom, genId, TAU } from './helpers.js';
-import { createCurve3D } from '../geometry/contracts.js';
+import { sampleAdaptive, sampleUniform } from '../sampling/sampling.ts';
+import { cameraFrom, genId, TAU } from './helpers.ts';
+import { createCurve3D } from '../geometry/contracts.ts';
 import { projectWorldCurves } from '../view/projection.ts';
 
 const MAX_STRANDS = 2;

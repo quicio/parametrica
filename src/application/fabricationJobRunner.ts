@@ -1,7 +1,7 @@
 /** Serializable heavy fabrication job used by the worker and sync fallback. */
 
-import { buildFabricationReport } from './fabricationSource.js';
-import { initManifold } from '../geometry/manifoldEngine.js';
+import { buildFabricationReport } from './fabricationSource.ts';
+import { initManifold } from '../geometry/manifoldEngine.ts';
 
 export interface FabricationPreparationLike {
   boolean?: string;

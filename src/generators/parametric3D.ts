@@ -41,8 +41,8 @@ interface Parametric3DParams {
   t0: number; t1: number; samples: number;
   depthOcclusion: boolean; depthAttenuation: number; fit: number;
 }
-import { cameraFrom, compileOrThrow, genId, makeScope, TAU } from './helpers.js';
-import { createCurve3D } from '../geometry/contracts.js';
+import { cameraFrom, compileOrThrow, genId, makeScope, TAU } from './helpers.ts';
+import { createCurve3D } from '../geometry/contracts.ts';
 import { projectWorldCurves } from '../view/projection.ts';
 
 

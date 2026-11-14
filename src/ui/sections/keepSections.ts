@@ -8,17 +8,17 @@
 import { createDefaultFillGradient, FILL_GRADIENT_COLORS } from '../../core/fillGradient.ts';
 import { RenderPasses } from '../../core/registry.ts';
 import { normalizeModes, toggleMode } from '../../domain/modeToggles.ts';
-import { applyHardBounds } from '../params/ParamRegistry.js';
-import { PASS_APPEARANCE, passSupports } from '../../render/passStyle.js';
+import { applyHardBounds } from '../params/ParamRegistry.ts';
+import { PASS_APPEARANCE, passSupports } from '../../render/passStyle.ts';
 import { OVERLAYS } from '../../domain/overlays.ts';
-import { ImagePanel } from '../widgets/ImagePanel.js';
-import { TimelinePanel } from '../widgets/TimelinePanel.js';
-import { LabPanel } from '../widgets/LabPanel.js';
-import { NotebookPanel } from '../widgets/NotebookPanel.js';
-import { AdvisorPanel } from '../widgets/AdvisorPanel.js';
-import { ExplorePanel } from '../widgets/ExplorePanel.js';
-import { EvolutionPanel } from '../widgets/EvolutionPanel.js';
-import { PresetPanel } from '../widgets/PresetPanel.js';
+import { ImagePanel } from '../widgets/ImagePanel.ts';
+import { TimelinePanel } from '../widgets/TimelinePanel.ts';
+import { LabPanel } from '../widgets/LabPanel.ts';
+import { NotebookPanel } from '../widgets/NotebookPanel.ts';
+import { AdvisorPanel } from '../widgets/AdvisorPanel.ts';
+import { ExplorePanel } from '../widgets/ExplorePanel.ts';
+import { EvolutionPanel } from '../widgets/EvolutionPanel.ts';
+import { PresetPanel } from '../widgets/PresetPanel.ts';
 
 import type GUI from 'lil-gui';
 import type { Controller } from 'lil-gui';

@@ -36,7 +36,7 @@ export interface PresetManagerOptions {
 export interface PresetParseResult { name: string; document: DocumentShape }
 import { PREVIEW_MAX_CHARS, previewKey } from './preview.ts';
 import { sanitizeDocument, createDocument, APP_ID, DOCUMENT_VERSION } from '../core/document.ts';
-import { PersistenceRepository } from '../core/persistence.js';
+import { PersistenceRepository } from '../core/persistence.ts';
 
 const STORAGE_KEY = 'parametrica.presets.v0';
 export const META_STORAGE_KEY = 'parametrica.presets.meta.v1';

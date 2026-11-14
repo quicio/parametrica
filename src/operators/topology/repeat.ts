@@ -5,7 +5,7 @@
 
 import { Operators } from '../../core/registry.ts';
 import { TYPE } from '../../core/schema.ts';
-import { mapGeometryPoints } from '../../geometry/transformGeometry.js';
+import { mapGeometryPoints } from '../../geometry/transformGeometry.ts';
 
 type Rec = Record<string, unknown>;
 interface Vec2 { x: number; y: number }

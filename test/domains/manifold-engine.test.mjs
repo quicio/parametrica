@@ -2,16 +2,16 @@
  * manifold-engine.test.mjs — Manifold WASM adapter and CSG strategy.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { PresetManager } from '../../src/presets/PresetManager.js';
-import { createInstanceLayer } from '../../src/core/document.js';
-import { createMesh } from '../../src/geometry/contracts.js';
-import { booleanSolids } from '../../src/geometry/csg.js';
-import { initManifold, isManifoldReady, manifoldBoolean } from '../../src/geometry/manifoldEngine.js';
-import { validateMesh } from '../../src/geometry/validate.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { PresetManager } from '../../src/presets/PresetManager.ts';
+import { createInstanceLayer } from '../../src/core/document.ts';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { booleanSolids } from '../../src/geometry/csg.ts';
+import { initManifold, isManifoldReady, manifoldBoolean } from '../../src/geometry/manifoldEngine.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
 
 await initManifold();
 

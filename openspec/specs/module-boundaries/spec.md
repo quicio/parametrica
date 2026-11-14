@@ -401,16 +401,6 @@ The animation transport and fabrication job boundary SHALL be strict TypeScript.
 - **THEN** worker messages, progress and reports are typed
 - **AND** the synchronous fallback uses the same contract
 
-### Requirement: Compatibility during application migration
-
-Old application `.js` imports SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** a worker, panel or test imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed scene builder
 
 The application render scene builder SHALL be strict TypeScript.
@@ -427,16 +417,6 @@ The application render scene builder SHALL be strict TypeScript.
 - **THEN** the preview path is typed
 - **AND** its output matches the existing scene contract
 
-### Requirement: Scene compatibility
-
-The old `application/renderSceneBuilder.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, Exporter, renderers or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed fabrication source
 
 The fabrication source resolver and report builder SHALL be strict TypeScript.
@@ -452,16 +432,6 @@ The fabrication source resolver and report builder SHALL be strict TypeScript.
 - **WHEN** a report is built
 - **THEN** units, bbox, printability, manufacturing and exportability are typed
 - **AND** output values are unchanged
-
-### Requirement: Fabrication compatibility
-
-The old `application/fabricationSource.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** jobs, tests or export call the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed core infrastructure
 
@@ -495,17 +465,6 @@ The notebook storage boundary SHALL be strict TypeScript.
 - **THEN** local and memory repositories are typed
 - **AND** the notebook migration is typed
 
-### Requirement: Core compatibility
-
-The old `core/history.js`, `core/persistence.js`, `core/session.js` and
-`lab/notebookRepository.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, panels, lab or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed export encoders
 
 The ZIP, GIF, STL and 3MF encoders SHALL be strict TypeScript.
@@ -538,17 +497,6 @@ The shared fabrication export validation contract SHALL be strict TypeScript.
 - **THEN** errors, warnings and metadata are typed
 - **AND** unsupported inputs keep the same rejection message
 
-### Requirement: Export compatibility
-
-The old `export/zip.js`, `export/gif.js`, `export/stl.js`, `export/3mf.js` and
-`export/geometryExport.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Exporter, timeline, tests or presets import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed App controller
 
 The application controller SHALL be strict TypeScript.
@@ -564,16 +512,6 @@ The application controller SHALL be strict TypeScript.
 
 - **WHEN** documents are evaluated, mutated, restored, exported or previewed
 - **THEN** method inputs and outputs are typed
-- **AND** behavior is unchanged
-
-### Requirement: App compatibility
-
-The old `application/App.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** composition or tests import the old path
-- **THEN** a compatibility re-export resolves
 - **AND** behavior is unchanged
 
 ### Requirement: Typed SVG recorder
@@ -663,16 +601,6 @@ The renderer backend contract SHALL be strict TypeScript.
 - **THEN** the contract methods are typed
 - **AND** concrete adapters keep their behavior
 
-### Requirement: Render compatibility
-
-The old `render/*.js` paths for the converted helpers SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** adapters, passes, presets or UI import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed render passes
 
 The registered render passes SHALL be strict TypeScript.
@@ -695,16 +623,6 @@ The registered render passes SHALL be strict TypeScript.
 - **WHEN** surface wireframe, fill or lattice preview draws
 - **THEN** meshes, faces, depth and fills are typed
 - **AND** painter order and preview output are unchanged
-
-### Requirement: Pass compatibility
-
-The old `render/passes/*.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the pass index or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed support helpers
 
@@ -736,16 +654,6 @@ be strict TypeScript.
 - **THEN** curves, analysis, bounds and contexts are typed
 - **AND** overlay output is unchanged
 
-### Requirement: Support helper compatibility
-
-The old support-helper `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** engine, generators, renderer, lab, UI or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed view pipeline
 
 The world/view/artboard transform, projection and viewport-coordinate helpers
@@ -768,18 +676,6 @@ SHALL be strict TypeScript.
 - **WHEN** panel descriptors, world readouts, ranges, ticks or quad panels are built
 - **THEN** axes, units, ranges, ticks and layout are typed
 - **AND** displayed coordinates are unchanged
-
-### Requirement: View pipeline compatibility
-
-The old `view/transform.js`, `view/projection.js` and
-`view/viewportCoordinates.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** engine, scene builder, renderer, picking, export or tests import the
-  old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed core support
 
@@ -810,17 +706,6 @@ SHALL be strict TypeScript.
 - **THEN** capability flags and gradient specs are typed
 - **AND** defaults, bounds and stops are unchanged
 
-### Requirement: Core support compatibility
-
-The old core support `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** engine, document, generators, passes, App, UI or tests import the old
-  paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed document model
 
 The canonical document, view, layer and style model SHALL be strict
@@ -844,17 +729,6 @@ TypeScript.
 - **WHEN** active-layer generator/operators/seed aliases are attached
 - **THEN** accessors are typed without changing enumerability
 - **AND** canonical `layers` data remains the source of truth
-
-### Requirement: Document compatibility
-
-The old `core/document.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** engine, presets, session, notebook, App, export, fabrication, UI or
-  tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed lab support
 
@@ -884,16 +758,6 @@ be strict TypeScript.
 - **WHEN** content is canonically hashed or parameters are sensitivity-probed
 - **THEN** canonical JSON, SHA-256 and probe results are typed
 - **AND** digests and impact values are unchanged
-
-### Requirement: Lab support compatibility
-
-The old lab support `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, notebook, exploration, advisor, UI or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed preview and advisor support
 
@@ -952,17 +816,6 @@ The evaluation engine SHALL be strict TypeScript.
 - **THEN** point budgets and curve contracts are typed
 - **AND** point limits and decimation are unchanged
 
-### Requirement: Engine compatibility
-
-The old `core/engine.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, previews, presets, mutation, sensitivity, lab, export, UI or
-  tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed p5 overlays
 
 The p5 frame-context overlay helpers SHALL be strict TypeScript.
@@ -984,16 +837,6 @@ The p5 frame-context overlay helpers SHALL be strict TypeScript.
 - **WHEN** spatial reference axes/ground or artboard guides draw
 - **THEN** transforms, runs and clip rectangles are typed
 - **AND** output is unchanged
-
-### Requirement: p5 overlay compatibility
-
-The old `render/p5/overlays.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** `P5Adapter` or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed product preview
 
@@ -1017,16 +860,6 @@ The optional THREE/WebGL product preview SHALL be strict TypeScript.
 - **THEN** timing samples, quality overrides and metrics are typed
 - **AND** thresholds and notifications are unchanged
 
-### Requirement: Product preview compatibility
-
-The old `render/webgl/ProductPreview.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** composition or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed p5 adapter
 
 The p5 rendering backend SHALL be strict TypeScript.
@@ -1049,16 +882,6 @@ The p5 rendering backend SHALL be strict TypeScript.
 - **THEN** camera state, canvas points and pins are typed
 - **AND** gating and readout behavior are unchanged
 
-### Requirement: p5 adapter compatibility
-
-The old `render/p5/P5Adapter.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** composition or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed figure descriptor
 
 The deterministic figure descriptor SHALL be strict TypeScript.
@@ -1074,16 +897,6 @@ The deterministic figure descriptor SHALL be strict TypeScript.
 - **WHEN** symmetry, Fourier, complexity, topology or coverage is computed
 - **THEN** sampling, budgets and results are typed
 - **AND** numerical output is unchanged
-
-### Requirement: Descriptor compatibility
-
-The old `lab/descriptor.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, notebook, sensitivity, advisor, UI or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed lab model
 
@@ -1110,17 +923,6 @@ The notebook, exploration and evolution models SHALL be strict TypeScript.
   typed
 - **AND** deterministic breeding is unchanged
 
-### Requirement: Lab model compatibility
-
-The old `lab/notebook.js`, `lab/exploration.js` and `lab/evolution.js` paths
-SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, Lab/Notebook panels or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed advisor
 
 The offline advisor and optional providers SHALL be strict TypeScript.
@@ -1142,16 +944,6 @@ The offline advisor and optional providers SHALL be strict TypeScript.
 - **WHEN** a provider is created or run with cache/image options
 - **THEN** config, messages, response parsing, cache and fallback are typed
 - **AND** network payloads and fallback behavior are unchanged
-
-### Requirement: Advisor compatibility
-
-The old `ai/offline.js` and `ai/provider.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, advisor panel or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed presets
 
@@ -1177,16 +969,6 @@ TypeScript.
 - **THEN** user presets, metadata, preview caches and payloads are typed
 - **AND** storage keys and behavior are unchanged
 
-### Requirement: Presets compatibility
-
-The old `presets/*.js` paths for these modules SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** App, UI or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed composition ports
 
 The composition ports SHALL be strict TypeScript.
@@ -1202,16 +984,6 @@ The composition ports SHALL be strict TypeScript.
 - **WHEN** the UI port is read, set or checked
 - **THEN** the proxy handlers are typed
 - **AND** unknown properties still throw
-
-### Requirement: Composition port compatibility
-
-The old `composition/create*Port.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** createApp, UI or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed image tracing
 
@@ -1234,17 +1006,6 @@ The composition root and browser entry SHALL be strict TypeScript.
 - **THEN** createApp options, services, adapters and the App return are typed
 - **AND** the same concrete adapters and boot side effects are used
 
-### Requirement: Input/entry compatibility
-
-The old `input/imageTrace.js`, `composition/createApp.js` and `main.js` paths
-SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** UI, tests or HTML reference the old paths
-- **THEN** compatibility modules resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed generator core
 
 Generator context, composition helpers and the classic 2D generators SHALL be
@@ -1263,16 +1024,6 @@ strict TypeScript.
 - **THEN** params, domains and sample functions are typed
 - **AND** generated geometry is unchanged
 
-### Requirement: Generator compatibility
-
-The old generator `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the generator index, presets or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed 2D generators
 
 Polar, custom, Fourier, noise-field, concentric-ellipses and bilateral-spline
@@ -1283,16 +1034,6 @@ generators SHALL be strict TypeScript.
 - **WHEN** these generators sample curves or emit multiple curves
 - **THEN** params, expressions, harmonics, branches and metadata are typed
 - **AND** generated geometry is unchanged
-
-### Requirement: 2D generator compatibility
-
-The old generator `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the generator index, presets or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed trochoids and splines
 
@@ -1327,16 +1068,6 @@ TypeScript.
 - **THEN** params, points, domains, seams and projection options are typed
 - **AND** geometry is unchanged
 
-### Requirement: Spatial generator compatibility
-
-The old generator `.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the generator index, presets or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed attractors
 
 The strange-attractor generators SHALL be strict TypeScript.
@@ -1347,16 +1078,6 @@ The strange-attractor generators SHALL be strict TypeScript.
 - **THEN** params, starts, iteration and projections are typed
 - **AND** geometry is unchanged
 
-### Requirement: Attractor compatibility
-
-The old `generators/attractors.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the generator index, presets or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed surface lattice
 
 The surface lattice generator SHALL be strict TypeScript.
@@ -1366,16 +1087,6 @@ The surface lattice generator SHALL be strict TypeScript.
 - **WHEN** a lattice network is built and projected
 - **THEN** params, cells, edges, openings, cache and projection are typed
 - **AND** geometry is unchanged
-
-### Requirement: Lattice compatibility
-
-The old `generators/surfaceLattice.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the generator index, presets or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed operator core
 
@@ -1415,16 +1126,6 @@ Translate, mirror, rotate, scale and normalize SHALL be strict TypeScript.
 - **THEN** params, points, scopes and counts are typed
 - **AND** transformed geometry is unchanged
 
-### Requirement: Transform compatibility
-
-The old `operators/geometry/transform.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the operator index or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed resample operators
 
 Resample, subdivide and smooth SHALL be strict TypeScript.
@@ -1434,16 +1135,6 @@ Resample, subdivide and smooth SHALL be strict TypeScript.
 - **WHEN** curves are resampled, subdivided or smoothed
 - **THEN** curves, params and helper points are typed
 - **AND** output points and closed flags are unchanged
-
-### Requirement: Resample compatibility
-
-The old `operators/geometry/resample.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the operator index or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed offset and stroke operators
 
@@ -1466,17 +1157,6 @@ Symmetrize, kaleidoscope and optical correction SHALL be strict TypeScript.
 - **THEN** points, folds, centers and amounts are typed
 - **AND** generated geometry is unchanged
 
-### Requirement: Offset family compatibility
-
-The old `operators/geometry/offset.js`, `symmetry.js` and `stroke.js` paths
-SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the operator index or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed deform and expression operators
 
 Twist, bend, warp, displace, noise displace and expression clip SHALL be strict
@@ -1497,17 +1177,6 @@ Project, clip and boolean SHALL be strict TypeScript.
 - **WHEN** curves are projected, clipped to a window or combined
 - **THEN** targets, window predicates, rings and results are typed
 - **AND** generated geometry is unchanged
-
-### Requirement: Deform family compatibility
-
-The old `operators/geometry/deform.js`, `project.js`, `expressionClip.js` and
-`boolean.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the operator index or tests import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed topology repeat operators
 
@@ -1562,17 +1231,6 @@ strict TypeScript.
 - **WHEN** geometry is lifted, converted or mapped
 - **THEN** points, transforms and results are typed
 - **AND** geometry output is unchanged
-
-### Requirement: Geometry contract compatibility
-
-The old `geometry/contracts.js`, `trust.js`, `relations.js`, `transform.js` and
-`transformGeometry.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed robust predicates
 
@@ -1667,17 +1325,6 @@ UV domain summaries and mesh wireframes SHALL be strict TypeScript.
 - **THEN** ranges, seams, runs and curves are typed
 - **AND** reported values and ids are unchanged
 
-### Requirement: Surface helper compatibility
-
-The old `geometry/analysis.js`, `uvDomain.js`, `surfaceTessellation.js` and
-`wireframe.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed legacy glyph bridge
 
 Legacy Curve[] conversion SHALL be strict TypeScript.
@@ -1730,17 +1377,6 @@ Lattice normalization and perforation cutters SHALL be strict TypeScript.
 - **THEN** specs, profiles, seeds and cutters are typed
 - **AND** hashes, hole placement and limits are unchanged
 
-### Requirement: Fabrication helper compatibility
-
-The old `geometry/sdfRepair.js`, `latticeSpec.js`, `latticeJointBlend.js` and
-`perforation.js` paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed solid preparation
 
 Weld, boundary loops, caps, merge and prepareMesh SHALL be strict TypeScript.
@@ -1750,16 +1386,6 @@ Weld, boundary loops, caps, merge and prepareMesh SHALL be strict TypeScript.
 - **WHEN** a fabrication mesh is welded, capped or merged
 - **THEN** meshes, loops, stats and warnings are typed
 - **AND** prepared geometry and stats are unchanged
-
-### Requirement: Solid prep compatibility
-
-The old `geometry/solidPrep.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed topology repair
 
@@ -1771,16 +1397,6 @@ TypeScript.
 - **WHEN** a mesh has non-manifold or non-orientable topology
 - **THEN** edges, fans, conflicts, vertices and reports are typed
 - **AND** topology output and report counters are unchanged
-
-### Requirement: Topology repair compatibility
-
-The old `geometry/topologyRepair.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed composed mesh repair
 
@@ -1830,16 +1446,6 @@ Manifold loading, booleans, simplify and level sets SHALL be strict TypeScript.
 - **THEN** bounds, tolerance, edge length and results are typed
 - **AND** level-set output is unchanged
 
-### Requirement: Manifold adapter compatibility
-
-The old `geometry/manifoldEngine.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed CSG booleans
 
 BSP constructive solid geometry SHALL be strict TypeScript.
@@ -1859,16 +1465,6 @@ T-junction insertion and face deduplication SHALL be strict TypeScript.
 - **WHEN** BSP output contains T-junctions
 - **THEN** vertex grids, inserted splits and faces are typed
 - **AND** repaired topology is unchanged
-
-### Requirement: CSG compatibility
-
-The old `geometry/csg.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed voxel remeshing
 
@@ -1890,16 +1486,6 @@ SHALL be strict TypeScript.
 - **WHEN** inside tests or winding numbers are evaluated
 - **THEN** nodes, triangles, rays and results are typed
 - **AND** query results are unchanged
-
-### Requirement: Remesh compatibility
-
-The old `geometry/remesh.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Single typed image tracing implementation
 
@@ -1931,17 +1517,6 @@ Noise, stdlib and spline math SHALL be strict TypeScript.
 - **THEN** seeds, functions, segments and points are typed
 - **AND** numeric output is unchanged
 
-### Requirement: Math compatibility
-
-The old `math/expression.js`, `noise.js`, `stdlib.js` and `curves.js` paths
-SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
-
 ### Requirement: Typed curve sampling
 
 Uniform/adaptive sampling and discontinuity splitting SHALL be strict
@@ -1964,16 +1539,6 @@ TypeScript.
 - **THEN** tables, counts, bboxes and point types are typed
 - **AND** normalized geometry is unchanged
 
-### Requirement: Sampling compatibility
-
-The old `sampling/sampling.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed worker entry
 
 The fabrication worker entry SHALL be strict TypeScript.
@@ -1992,16 +1557,6 @@ Generator/render-pass indexes and render aliases SHALL be strict TypeScript.
 
 - **WHEN** the app imports the adapter indexes
 - **THEN** registration order and alias exports are unchanged
-
-### Requirement: Adapter compatibility
-
-The old worker/index/alias paths SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** modules or worker URLs use the old paths
-- **THEN** compatibility re-exports resolve
-- **AND** behavior is unchanged
 
 ### Requirement: Typed inspection overlay
 
@@ -2043,16 +1598,6 @@ The surface-of-revolution lattice network SHALL be strict TypeScript.
 - **WHEN** a lattice network is generated from a spec
 - **THEN** seeds, cells, openings, nodes, edges and stats are typed
 - **AND** network geometry, ordering and hashes are unchanged
-
-### Requirement: Lattice network compatibility
-
-The old `geometry/latticeNetwork.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** generators, perforation or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed lattice solid
 
@@ -2139,16 +1684,6 @@ The CodeMirror expression field SHALL be strict TypeScript.
 - **THEN** options, extensions, timers and states are typed
 - **AND** tokens, highlighting, debounce and markup are unchanged
 
-### Requirement: Expression field compatibility
-
-The old `ui/widgets/ExpressionField.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls, OperatorStack or StageEditor import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed operator stack
 
 The operator stack editor SHALL be strict TypeScript.
@@ -2158,16 +1693,6 @@ The operator stack editor SHALL be strict TypeScript.
 - **WHEN** operators are added, removed, reordered, toggled or edited
 - **THEN** app/form port methods, stages, expressions and errors are typed
 - **AND** behavior, labels and order are unchanged
-
-### Requirement: Operator stack compatibility
-
-The old `ui/widgets/OperatorStack.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** architecture port checks read the typed module
 
 ### Requirement: Typed lab panel
 
@@ -2210,16 +1735,6 @@ The Explore panel SHALL be strict TypeScript.
 - **THEN** refs, candidates, controls, ports and DOM state are typed
 - **AND** candidate generation and adoption are unchanged
 
-### Requirement: Explore compatibility
-
-The old `ui/widgets/ExplorePanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** lab-port checks read the typed module
-
 ### Requirement: Typed evolution panel
 
 The evolution panel SHALL be strict TypeScript.
@@ -2229,16 +1744,6 @@ The evolution panel SHALL be strict TypeScript.
 - **WHEN** parents are selected and a generation is bred or kept
 - **THEN** checkpoints, children, evaluations and options are typed
 - **AND** breeding, previews and keep behavior are unchanged
-
-### Requirement: Evolution compatibility
-
-The old `ui/widgets/EvolutionPanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** lab-port checks read the typed module
 
 ### Requirement: Typed preset panel
 
@@ -2250,16 +1755,6 @@ The preset panel SHALL be strict TypeScript.
 - **THEN** entries, categories, ports and preview queues are typed
 - **AND** browsing and preview behavior are unchanged
 
-### Requirement: Preset compatibility
-
-The old `ui/widgets/PresetPanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** keep sections import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** preset-port checks read the typed module
-
 ### Requirement: Typed notebook panel
 
 The notebook panel SHALL be strict TypeScript.
@@ -2269,16 +1764,6 @@ The notebook panel SHALL be strict TypeScript.
 - **WHEN** checkpoints are saved, organized, edited, compared or restored
 - **THEN** checkpoints, projects, series, diffs and ports are typed
 - **AND** notebook behavior is unchanged
-
-### Requirement: Notebook compatibility
-
-The old `ui/widgets/NotebookPanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** keep sections import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** notebook-port checks read the typed module
 
 ### Requirement: Typed surface inspector
 
@@ -2290,16 +1775,6 @@ The surface inspector SHALL be strict TypeScript.
 - **THEN** pick results, ports, pins and rows are typed
 - **AND** readout and behavior are unchanged
 
-### Requirement: Surface inspector compatibility
-
-The old `ui/SurfaceInspector.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the canvas imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
-
 ### Requirement: Typed UV domain inset
 
 The UV domain inset SHALL be strict TypeScript.
@@ -2309,16 +1784,6 @@ The UV domain inset SHALL be strict TypeScript.
 - **WHEN** the active surface domain is displayed
 - **THEN** summaries, axes, app ports and SVG nodes are typed
 - **AND** chart geometry, labels and dataset are unchanged
-
-### Requirement: UV inset compatibility
-
-The old `ui/UVDomainInset.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** the canvas imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** behavior is unchanged
 
 ### Requirement: Typed advisor panel
 
@@ -2330,16 +1795,6 @@ The advisor panel SHALL be strict TypeScript.
 - **THEN** providers, responses, suggestions, settings and ports are typed
 - **AND** privacy, previews and apply behavior are unchanged
 
-### Requirement: Advisor panel module compatibility
-
-The old `ui/widgets/AdvisorPanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** keep sections import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** advisor-port checks read the typed module
-
 ### Requirement: Typed image panel
 
 The image panel SHALL be strict TypeScript.
@@ -2350,16 +1805,6 @@ The image panel SHALL be strict TypeScript.
 - **THEN** sources, underlays, results and ports are typed
 - **AND** loading, previews and tracing are unchanged
 
-### Requirement: Image panel compatibility
-
-The old `ui/widgets/ImagePanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** keep sections import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** ingest-port checks read the typed module
-
 ### Requirement: Typed timeline panel
 
 The timeline panel SHALL be strict TypeScript.
@@ -2369,16 +1814,6 @@ The timeline panel SHALL be strict TypeScript.
 - **WHEN** tracks and keyframes are edited, recorded or exported
 - **THEN** timelines, tracks, keyframes and ports are typed
 - **AND** editing, recording and export output are unchanged
-
-### Requirement: Timeline compatibility
-
-The old `ui/widgets/TimelinePanel.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** keep sections import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** timeline-port checks read the typed module
 
 ### Requirement: Typed form sections
 
@@ -2391,16 +1826,6 @@ sections SHALL be strict TypeScript.
 - **THEN** controls, ports, layers, stages and schemas are typed
 - **AND** section markup and behavior are unchanged
 
-### Requirement: Form section compatibility
-
-The old `ui/sections/formSections.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** form-port and maintainability checks read the typed module
-
 ### Requirement: Typed look sections
 
 Preset, camera, canvas, coordinates and scale sections SHALL be strict
@@ -2411,16 +1836,6 @@ TypeScript.
 - **WHEN** look sections are built
 - **THEN** controls, ports, view, artboard, units and GUI are typed
 - **AND** section markup and behavior are unchanged
-
-### Requirement: Look section compatibility
-
-The old `ui/sections/lookSections.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** look-port checks read the typed module
 
 ### Requirement: Typed keep sections
 
@@ -2434,16 +1849,6 @@ TypeScript.
 - **THEN** controls, ports, view/style, pass entries and panels are typed
 - **AND** section markup and behavior are unchanged
 
-### Requirement: Keep section compatibility
-
-The old `ui/sections/keepSections.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** keep/look port and maintainability checks read the typed module
-
 ### Requirement: Typed fabricate section
 
 The Fabricate section SHALL be strict TypeScript.
@@ -2455,16 +1860,6 @@ The Fabricate section SHALL be strict TypeScript.
 - **THEN** controls, ports, settings and profiles are typed
 - **AND** fabrication gating and controls are unchanged
 
-### Requirement: Fabricate section compatibility
-
-The old `ui/sections/fabricateSections.js` path SHALL keep resolving.
-
-#### Scenario: Import
-
-- **WHEN** Controls imports the old path
-- **THEN** a compatibility re-export resolves
-- **AND** fabrication-port checks read the typed module
-
 ### Requirement: Typed Controls coordinator
 
 The Controls coordinator SHALL be strict TypeScript.
@@ -2475,13 +1870,20 @@ The Controls coordinator SHALL be strict TypeScript.
 - **THEN** ports, fields, DOM state and reports are typed
 - **AND** panel behavior and layout are unchanged
 
-### Requirement: Controls compatibility
+### Requirement: Explicit TypeScript module graph
 
-The old `ui/Controls.js` path SHALL keep resolving.
+Every runtime module under `src/` SHALL be TypeScript and internal imports
+SHALL name the `.ts` file.
 
 #### Scenario: Import
 
-- **WHEN** composition creates the panel or tests import the old path
-- **THEN** a compatibility re-export resolves
-- **AND** maintainability and port checks read the typed module
+- **WHEN** one source module imports another
+- **THEN** the specifier ends in `.ts`
+- **AND** no `.js` compatibility shim is required
+
+#### Scenario: Cross-layer re-export
+
+- **WHEN** an adapter path re-exports domain policy
+- **THEN** the re-export module is `.ts`
+- **AND** the architecture check still verifies the target
 

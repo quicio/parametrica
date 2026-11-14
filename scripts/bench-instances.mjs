@@ -2,11 +2,11 @@
  * Node benchmark for the current 24-instance limit.
  * Run: npm run bench:instances
  */
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
-import { createDocument, createInstanceLayer } from '../src/core/document.js';
-import { evaluateDocument } from '../src/core/engine.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
+import { createDocument, createInstanceLayer } from '../src/core/document.ts';
+import { evaluateDocument } from '../src/core/engine.ts';
 
 const INSTANCES = 24;
 const doc = createDocument('parametric-surface', {

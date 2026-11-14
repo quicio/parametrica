@@ -7,7 +7,7 @@ import {
   buildManufacturingReport,
   manufacturingPreset,
   sanitizeManufacturingProfile,
-} from '../../src/geometry/manufacturingProfile.js';
+} from '../../src/geometry/manufacturingProfile.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1 };
 const PRINT = {

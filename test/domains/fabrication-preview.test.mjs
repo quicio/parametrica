@@ -2,12 +2,12 @@
  * fabrication-preview.test.mjs — optional PBR preview contracts.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import { createDocument, sanitizeDocument } from '../../src/core/document.js';
-import { createMesh } from '../../src/geometry/contracts.js';
-import { buildSpatialScene } from '../../src/application/renderSceneBuilder.js';
-import { Exporter } from '../../src/export/Exporter.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import { createDocument, sanitizeDocument } from '../../src/core/document.ts';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { buildSpatialScene } from '../../src/application/renderSceneBuilder.ts';
+import { Exporter } from '../../src/export/Exporter.ts';
 
 function cube() {
   const vertices = [];

@@ -2,9 +2,9 @@
  * self-intersection.test.mjs — triangle diagnostics and fabrication rejection.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { detectSelfIntersections } from '../../src/geometry/selfIntersection.js';
-import { validateMesh } from '../../src/geometry/validate.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { detectSelfIntersections } from '../../src/geometry/selfIntersection.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
 
 function mesh(id, vertices, faces) {
   return createMesh({ id, vertices, faces });

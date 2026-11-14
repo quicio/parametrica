@@ -9,7 +9,7 @@
 import { APP_ID } from '../core/document.ts';
 import { RenderPasses } from '../core/registry.ts';
 import { analyzeAll } from '../analysis/differential.ts';
-import { bboxAll } from '../sampling/sampling.js';
+import { bboxAll } from '../sampling/sampling.ts';
 import { buildRenderScene } from '../application/renderSceneBuilder.ts';
 import { drawOverlays } from '../viz/overlays.ts';
 import { SvgContext } from './svgContext.ts';

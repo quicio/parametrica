@@ -4,11 +4,11 @@
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
-import { createDocument, sanitizeDocument } from '../src/core/document.js';
-import { SESSION_STORAGE_KEY } from '../src/core/session.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
+import { createDocument, sanitizeDocument } from '../src/core/document.ts';
+import { SESSION_STORAGE_KEY } from '../src/core/session.ts';
 
 const document = sanitizeDocument(createDocument('parametric'));
 const value = JSON.stringify({

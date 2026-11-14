@@ -7,7 +7,7 @@ test('24 instances render without errors and within the benchmark envelope', asy
 
   const result = await page.evaluate(async () => {
     const app = window.__parametrica;
-    const { createInstanceLayer } = await import('/src/core/document.js');
+    const { createInstanceLayer } = await import('/src/core/document.ts');
     app.applyPreset('Torus');
     const source = app.document.layers[0];
     for (let i = 0; i < 24; i++) {

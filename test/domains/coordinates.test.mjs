@@ -2,7 +2,7 @@
  * coordinates.test.mjs — viewport coordinates domain checks.
  */
 
-import '../../src/generators/index.js';
+import '../../src/generators/index.ts';
 import {
   DEFAULT_COORDINATES,
   PROJECTION_AXES,
@@ -19,11 +19,11 @@ import {
   quadPanelLayout,
   sanitizeCoordinates,
   worldFromArtboardPoint,
-} from '../../src/view/viewportCoordinates.js';
-import { createDefaultUnits } from '../../src/core/units.js';
-import { createDocument, sanitizeDocument } from '../../src/core/document.js';
-import { createViewTransform } from '../../src/view/transform.js';
-import { evaluateDocument } from '../../src/core/engine.js';
+} from '../../src/view/viewportCoordinates.ts';
+import { createDefaultUnits } from '../../src/core/units.ts';
+import { createDocument, sanitizeDocument } from '../../src/core/document.ts';
+import { createViewTransform } from '../../src/view/transform.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
 
 export function run(assert) {
   /* ——— 30f. viewport coordinates ——— */

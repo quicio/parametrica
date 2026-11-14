@@ -2,12 +2,12 @@
  * image-evenodd.test.mjs — contour nesting and even-odd fill/export.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { traceImageContours, buildFourierDocuments } from '../../src/input/imageTrace.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { Exporter } from '../../src/export/Exporter.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { traceImageContours, buildFourierDocuments } from '../../src/input/imageTrace.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { Exporter } from '../../src/export/Exporter.ts';
 
 function makeImage(width, height, inside) {
   const data = new Uint8ClampedArray(width * height * 4);

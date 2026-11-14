@@ -24,7 +24,7 @@ import {
   quadPanelLayout,
   worldFromArtboardPoint,
 } from '../../view/viewportCoordinates.ts';
-import { resolvePassStyle } from '../passStyle.js';
+import { resolvePassStyle } from '../passStyle.ts';
 import {
   drawCoordinates,
   drawGuides,
@@ -37,7 +37,7 @@ import {
 import { pickSurface } from '../../domain/interaction/surfacePicker.ts';
 import { clamp, orbitCamera, zoomCamera } from '../../view/cameraController.ts';
 import { artboardPointFromCanvas } from '../../domain/interaction/ray.ts';
-import { AnimationController } from '../../application/animationController.js';
+import { AnimationController } from '../../application/animationController.ts';
 
 const ANALYSIS_MODES = new Set(['tangents', 'normals', 'curvature']);
 

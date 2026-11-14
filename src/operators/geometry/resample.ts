@@ -8,7 +8,7 @@ import { TYPE } from '../../core/schema.ts';
 type Rec = Record<string, unknown>;
 interface Vec2 { x: number; y: number }
 interface CurveLike { points: Vec2[]; closed?: boolean; id?: string; [key: string]: unknown }
-import { resampleUniform } from '../../sampling/sampling.js';
+import { resampleUniform } from '../../sampling/sampling.ts';
 
 let id = 0;
 const opId = (): string => `rs-${id++}`;

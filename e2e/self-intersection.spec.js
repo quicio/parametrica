@@ -45,7 +45,7 @@ test('Fabricate rejects a mesh with self-intersecting triangles', async ({ page 
 
   const report = await page.evaluate(async () => {
     const app = window.__parametrica;
-    const { buildFabricationReport } = await import('/src/application/fabricationSource.js');
+    const { buildFabricationReport } = await import('/src/application/fabricationSource.ts');
     const result = buildFabricationReport({
       evaluation: app.evaluation,
       layerIndex: app.document.activeLayer ?? 0,

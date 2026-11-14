@@ -2,18 +2,18 @@
  * surface-lattice.test.mjs — cellular network and its fabrication solid.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { buildRevolveLattice } from '../../src/geometry/latticeNetwork.js';
-import { buildLatticeSolid } from '../../src/geometry/latticeSolid.js';
-import { normalizeLatticeSpec, latticeSpecHash, LATTICE_ALGORITHM_VERSION } from '../../src/geometry/latticeSpec.js';
-import { initManifold } from '../../src/geometry/manifoldEngine.js';
-import { validateMesh } from '../../src/geometry/validate.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
-import { buildRenderScene } from '../../src/application/renderSceneBuilder.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { buildRevolveLattice } from '../../src/geometry/latticeNetwork.ts';
+import { buildLatticeSolid } from '../../src/geometry/latticeSolid.ts';
+import { normalizeLatticeSpec, latticeSpecHash, LATTICE_ALGORITHM_VERSION } from '../../src/geometry/latticeSpec.ts';
+import { initManifold } from '../../src/geometry/manifoldEngine.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { BUILT_IN_PRESETS } from '../../src/presets/builtins.ts';
+import { buildRenderScene } from '../../src/application/renderSceneBuilder.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
 
 const PROFILE = (v) => 45
   + 42.5 * Math.exp(-(((v - 0.42) / 0.22) ** 2))

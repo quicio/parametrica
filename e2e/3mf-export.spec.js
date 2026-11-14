@@ -20,7 +20,7 @@ test('Fabricate exports multi-body 3MF with stable object identity', async ({ pa
       artboard: 'unitless',
       mmPerArtboardUnit: null,
     };
-    const { createInstanceLayer } = await import('/src/core/document.js');
+    const { createInstanceLayer } = await import('/src/core/document.ts');
     const source = app.document.layers[0];
     app.document.layers.push(createInstanceLayer(source.id, {
       name: 'Torus copy',

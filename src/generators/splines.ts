@@ -14,9 +14,9 @@ interface NodeOptions { count: number; radius: number; wobble: number; seed: num
 interface CatmullParams { [key: string]: unknown; points: number; radius: number; wobble: number; tension: number; seed: number; closed: boolean; samplesPer: number }
 interface BezierParams { [key: string]: unknown; nodes: number; radius: number; spread: number; curl: number; seed: number; closed: boolean; samplesPer: number }
 interface CubicParams { [key: string]: unknown; nodes: number; radius: number; wobble: number; seed: number; closed: boolean; samplesPer: number }
-import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../math/curves.js';
-import { createNoise1D } from '../math/noise.js';
-import { genId, TAU } from './helpers.js';
+import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../math/curves.ts';
+import { createNoise1D } from '../math/noise.ts';
+import { genId, TAU } from './helpers.ts';
 
 /** Procedural control polygon: n nodes, golden-angle option, seeded radial wobble. */
 function proceduralNodes({ count, radius, wobble, seed, golden, phase = 0 }: NodeOptions): Array<{ x: number; y: number }> {

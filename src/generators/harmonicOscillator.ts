@@ -25,8 +25,8 @@ interface OscillatorParams {
   samples: number;
   adaptive: boolean;
 }
-import { genId, postProcess, TAU } from './helpers.js';
-import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
+import { genId, postProcess, TAU } from './helpers.ts';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.ts';
 
 Generators.register(({
   id: 'harmonic-oscillator',

@@ -13,7 +13,7 @@ import {
   snapPoint,
   snapRound,
   triangleTriangleIntersection,
-} from '../../src/geometry/robustPredicates.js';
+} from '../../src/geometry/robustPredicates.ts';
 
 function p(x, y, z = 0) {
   return { x, y, z };

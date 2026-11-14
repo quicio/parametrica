@@ -2,8 +2,8 @@
 
 import { analyzeAll } from '../../analysis/differential.ts';
 import { buildRenderScene } from '../../application/renderSceneBuilder.ts';
-import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.js';
-import { buildSeamOverlay } from '../../interaction/seamOverlay.js';
+import { buildInspectionOverlay } from '../../interaction/inspectionOverlay.ts';
+import { buildSeamOverlay } from '../../interaction/seamOverlay.ts';
 import { clamp } from '../../view/cameraController.ts';
 import { buildSpatialReference } from '../../view/spatialReference.ts';
 import type { BuiltSpatialReference, SpatialTransform } from '../../view/spatialReference.ts';

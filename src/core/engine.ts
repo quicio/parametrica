@@ -12,17 +12,17 @@
 import { Generators, Operators } from './registry.ts';
 import { supportsSpatial } from './capabilities.ts';
 import { resolveParams } from '../animation/animatable.ts';
-import { createStdlib } from '../math/stdlib.js';
+import { createStdlib } from '../math/stdlib.ts';
 import { analyzeAll } from '../analysis/differential.ts';
-import { analyzeGeometry } from '../geometry/analysis.js';
-import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.js';
-import { validateGeometry } from '../geometry/validate.js';
+import { analyzeGeometry } from '../geometry/analysis.ts';
+import { bboxAll, splitCurveAtDiscontinuities } from '../sampling/sampling.ts';
+import { validateGeometry } from '../geometry/validate.ts';
 import { projectionForGeometry, projectWorldCurves, projectWorldMeshes } from '../view/projection.ts';
 import { resolveFrame, SPACE } from '../view/transform.ts';
-import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.js';
-import { mapGeometryPoints } from '../geometry/transformGeometry.js';
-import { meshWireframeCurves } from '../geometry/wireframe.js';
-import { isSurface, isMesh } from '../geometry/contracts.js';
+import { tessellateSurfaceWithMapping } from '../geometry/surfaceTessellation.ts';
+import { mapGeometryPoints } from '../geometry/transformGeometry.ts';
+import { meshWireframeCurves } from '../geometry/wireframe.ts';
+import { isSurface, isMesh } from '../geometry/contracts.ts';
 import { isInstanceLayer } from './layers.ts';
 import type {
   EngineBBox,

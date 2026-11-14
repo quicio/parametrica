@@ -16,8 +16,8 @@ interface RoseParams {
   adaptive: boolean;
   fit: number;
 }
-import { genId, isClosedPolyline, postProcess, roseTurns, TAU } from './helpers.js';
-import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
+import { genId, isClosedPolyline, postProcess, roseTurns, TAU } from './helpers.ts';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.ts';
 
 Generators.register(({
   id: 'rose',

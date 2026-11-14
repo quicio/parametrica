@@ -2,12 +2,12 @@
  * quad-svg-export.test.mjs — Quad layout in SVG and plotter output.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import '../../src/render/passes/index.js';
-import { evaluateDocument } from '../../src/core/engine.js';
-import { BUILT_IN_PRESETS } from '../../src/presets/builtins.js';
-import { Exporter } from '../../src/export/Exporter.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import '../../src/render/passes/index.ts';
+import { evaluateDocument } from '../../src/core/engine.ts';
+import { BUILT_IN_PRESETS } from '../../src/presets/builtins.ts';
+import { Exporter } from '../../src/export/Exporter.ts';
 
 export async function run(assert) {
   const doc = BUILT_IN_PRESETS['Enneper Surface']();

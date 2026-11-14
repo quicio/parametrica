@@ -24,9 +24,9 @@ mathematics is the only authoring surface.
 npm install
 npm run dev          # vite dev server, opens the app
 npm run lint         # ESLint flat config
-npm run typecheck    # tsc --noEmit (incremental TypeScript)
+npm run typecheck    # tsc --noEmit (strict TypeScript, allowJs false)
 npm run arch:check   # dependency-cruiser layer rules + baseline
-npm test             # node-only verification suite via tsx (3,142 checks: 2,222 lab + 920 domains)
+npm test             # node-only verification suite via tsx (3,639 checks: 2,224 lab + 1,415 domains)
 npm run check        # lint + unit + production build
 npm run test:e2e     # Playwright suite (168 scenarios: 167 pass, 1 skip)
 npm run build        # production bundle in dist/
@@ -278,8 +278,7 @@ library, viewport coordinates, user Looks, per-pass appearance, surface seams
 and import boundaries). The whole core is DOM-free and runs in pure Node.
 `npm run test:e2e` runs **168 Playwright scenarios** (167 pass, 1 conditional
 skip) against a Vite server started by Playwright itself. The Node suites run
-through `tsx`, so they can import `.ts` modules as the incremental TypeScript
-migration advances.
+through `tsx`, so they import the TypeScript sources directly.
 
 ### Linting
 

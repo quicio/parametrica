@@ -2,12 +2,12 @@
  * advanced-repair.test.mjs — orientation, cleanup, caps and repair reports.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { repairMesh, repairOrientation, capWithStrategy } from '../../src/geometry/repair.js';
-import { validateMesh } from '../../src/geometry/validate.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
-import { sanitizeFabricationSettings } from '../../src/core/document.js';
-import { exportBinarySTL } from '../../src/export/stl.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { repairMesh, repairOrientation, capWithStrategy } from '../../src/geometry/repair.ts';
+import { validateMesh } from '../../src/geometry/validate.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
+import { sanitizeFabricationSettings } from '../../src/core/document.ts';
+import { exportBinarySTL } from '../../src/export/stl.ts';
 
 function cube(offset = 0, size = 2, id = `cube-${offset}`) {
   const h = size / 2;

@@ -24,10 +24,10 @@ interface BilateralParams {
   mirror: boolean;
   samplesPer: number;
 }
-import { MasterSpline } from '../geometry/legacy/MasterSpline.js';
-import { Mirror } from '../geometry/legacy/Mirror.js';
-import { sampleSegments } from '../geometry/legacy/CatmullRom.js';
-import { genId } from './helpers.js';
+import { MasterSpline } from '../geometry/legacy/MasterSpline.ts';
+import { Mirror } from '../geometry/legacy/Mirror.ts';
+import { sampleSegments } from '../geometry/legacy/CatmullRom.ts';
+import { genId } from './helpers.ts';
 
 Generators.register(({
   id: 'bilateral-spline',

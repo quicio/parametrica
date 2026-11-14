@@ -23,8 +23,8 @@ interface SpiroParams {
   mix: number; rotations: number; samples: number; adaptive: boolean; fit: number;
 }
 interface SampleOptions { samples: number; adaptive: boolean }
-import { genId, isClosedPolyline, postProcess, trochoidTurns, TAU } from './helpers.js';
-import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
+import { genId, isClosedPolyline, postProcess, trochoidTurns, TAU } from './helpers.ts';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.ts';
 
 /** Manual rotations override the mathematically derived period. */
 function turnsFor(p: TrochoidParams, mode: string): number {

@@ -5,7 +5,7 @@ import {
   sampleAdaptive,
   centerCurves,
   splitCurveAtDiscontinuities,
-} from './sampling.js';
+} from './sampling.ts';
 
 export interface ParametricPoint {
   x: number;

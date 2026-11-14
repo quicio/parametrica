@@ -1,6 +1,6 @@
 /** World/view evaluation to RenderScene. */
 
-import { bboxAll } from '../sampling/sampling.js';
+import { bboxAll } from '../sampling/sampling.ts';
 import {
   boundsOfProjectedPoints,
   createViewTransform,
@@ -19,8 +19,8 @@ import {
   projectWorldMeshesToView,
   projectionForGeometry,
 } from '../view/projection.ts';
-import { isMesh } from '../geometry/contracts.js';
-import { meshWireframeCurves } from '../geometry/wireframe.js';
+import { isMesh } from '../geometry/contracts.ts';
+import { meshWireframeCurves } from '../geometry/wireframe.ts';
 import { sanitizeReference } from '../view/spatialReference.ts';
 import { createRenderLayer, createRenderScene } from '../domain/scene.ts';
 import type { RenderLayer, RenderScene } from '../domain/scene.ts';

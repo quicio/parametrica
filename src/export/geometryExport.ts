@@ -1,7 +1,7 @@
 /** Contracts for fabrication exporters. */
 
-import { isMesh, isSolid } from '../geometry/contracts.js';
-import { validateMesh, validateSolid } from '../geometry/validate.js';
+import { isMesh, isSolid } from '../geometry/contracts.ts';
+import { validateMesh, validateSolid } from '../geometry/validate.ts';
 
 export interface FabricationValidation {
   ok: boolean;

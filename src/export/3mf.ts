@@ -1,6 +1,6 @@
 /** Deterministic minimal 3MF package for validated bodies. */
 
-import { isMesh, isSolid } from '../geometry/contracts.js';
+import { isMesh, isSolid } from '../geometry/contracts.ts';
 import { zipStore } from './zip.ts';
 import { FabricationExportError, resolveMillimetreScale } from './stl.ts';
 import { validateForFabrication } from './geometryExport.ts';

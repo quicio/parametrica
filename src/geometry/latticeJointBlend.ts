@@ -6,7 +6,7 @@
  * is not used by the production lattice unless a caller explicitly asks for it.
  */
 
-import { manifoldLevelSet } from './manifoldEngine.js';
+import { manifoldLevelSet } from './manifoldEngine.ts';
 import { validateMesh } from './validate.ts';
 import type { ValidationResult } from './validate.ts';
 

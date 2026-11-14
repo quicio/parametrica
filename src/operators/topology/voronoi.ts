@@ -11,7 +11,7 @@
 import { Delaunay } from 'd3-delaunay';
 import { Operators } from '../../core/registry.ts';
 import { TYPE } from '../../core/schema.ts';
-import { resampleUniform, bboxAll } from '../../sampling/sampling.js';
+import { resampleUniform, bboxAll } from '../../sampling/sampling.ts';
 
 type Rec = Record<string, unknown>;
 interface Vec2 { x: number; y: number }

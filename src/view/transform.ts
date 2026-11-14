@@ -1,6 +1,6 @@
 /** Explicit coordinate spaces and the single world→artboard transform. */
 
-import { bbox } from '../sampling/sampling.js';
+import { bbox } from '../sampling/sampling.ts';
 import { cameraFrom, project3D } from './camera.ts';
 import type { CameraState, Projected3D } from './camera.ts';
 

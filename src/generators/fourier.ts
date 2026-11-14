@@ -21,8 +21,8 @@ interface FourierParams {
   samples: number;
   size: number;
 }
-import { genId, postProcess, isClosedPolyline, TAU } from './helpers.js';
-import { sampleUniform } from '../sampling/sampling.js';
+import { genId, postProcess, isClosedPolyline, TAU } from './helpers.ts';
+import { sampleUniform } from '../sampling/sampling.ts';
 
 const DEFAULT_X = [
   { freq: 1, amp: 1, phase: 0, rot: 0, ox: 0, oy: 0 },

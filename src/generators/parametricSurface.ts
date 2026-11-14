@@ -18,8 +18,8 @@ interface SurfaceParams {
   u0: number; u1: number; v0: number; v1: number; samplesU: number; samplesV: number;
   closedU: boolean; closedV: boolean; seamU: string; seamV: string; fit: number;
 }
-import { compileOrThrow, makeScope, TAU } from './helpers.js';
-import { createSurface } from '../geometry/contracts.js';
+import { compileOrThrow, makeScope, TAU } from './helpers.ts';
+import { createSurface } from '../geometry/contracts.ts';
 
 Generators.register(({
   id: 'parametric-surface',

@@ -12,76 +12,76 @@
 import { writeFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
 
 import { Registry, Generators, Operators, RenderPasses } from '../src/core/registry.ts';
-import { trochoidTurns, lissajousTurns, roseTurns } from '../src/generators/helpers.js';
-import { compileExpression, evaluate, perturbLiterals } from '../src/math/expression.js';
-import { createStdlib } from '../src/math/stdlib.js';
-import { createNoise2D } from '../src/math/noise.js';
-import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.js';
-import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.js';
-import { postProcess } from '../src/sampling/parametric.js';
-import { createDocument, sanitizeDocument, migrateV1Document, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.js';
+import { trochoidTurns, lissajousTurns, roseTurns } from '../src/generators/helpers.ts';
+import { compileExpression, evaluate, perturbLiterals } from '../src/math/expression.ts';
+import { createStdlib } from '../src/math/stdlib.ts';
+import { createNoise2D } from '../src/math/noise.ts';
+import { catmullRomToBezier, bezierToPoints, cubicSplinePoints } from '../src/math/curves.ts';
+import { sampleAdaptive, splitCurveAtDiscontinuities } from '../src/sampling/sampling.ts';
+import { postProcess } from '../src/sampling/parametric.ts';
+import { createDocument, sanitizeDocument, migrateV1Document, createLayer, createInstanceLayer, attachLayerAliases, nextLayerId, DOCUMENT_VERSION, APP_ID, isLegacyApp, PROJECTIONS, sanitizeProjection, sanitizeColorRamp, DEFAULT_COLOR_RAMP, DEFAULT_VIEW } from '../src/core/document.ts';
 import { createDefaultFillGradient, sanitizeFillGradient, resolveFillGradient } from '../src/core/fillGradient.ts';
-import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.js';
+import { evaluateDocument, POINT_LIMITS } from '../src/core/engine.ts';
 import { schemaDefaults } from '../src/core/schema.ts';
-import { History } from '../src/core/history.js';
-import { SessionStore, SESSION_STORAGE_KEY } from '../src/core/session.js';
-import { toggleMode, normalizeModes } from '../src/ui/widgets/modeToggles.js';
-import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.js';
-import { sha256Hex, canonicalStringify } from '../src/lab/hash.js';
-import { computeDescriptor } from '../src/lab/descriptor.js';
-import { buildParametricSummary, formatParametricValue } from '../src/lab/parametricSummary.js';
-import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.js';
-import { Notebook, sanitizeCheckpoint, INBOX_PROJECT_ID } from '../src/lab/notebook.js';
-import { NotebookWorkspace } from '../src/lab/workspace.js';
-import { MemoryNotebookRepository, migrateNotebook } from '../src/lab/notebookRepository.js';
+import { History } from '../src/core/history.ts';
+import { SessionStore, SESSION_STORAGE_KEY } from '../src/core/session.ts';
+import { toggleMode, normalizeModes } from '../src/ui/widgets/modeToggles.ts';
+import { HarmonicsEditor } from '../src/ui/widgets/HarmonicsEditor.ts';
+import { sha256Hex, canonicalStringify } from '../src/lab/hash.ts';
+import { computeDescriptor } from '../src/lab/descriptor.ts';
+import { buildParametricSummary, formatParametricValue } from '../src/lab/parametricSummary.ts';
+import { computeSensitivity, shapeDistance } from '../src/lab/sensitivity.ts';
+import { Notebook, sanitizeCheckpoint, INBOX_PROJECT_ID } from '../src/lab/notebook.ts';
+import { NotebookWorkspace } from '../src/lab/workspace.ts';
+import { MemoryNotebookRepository, migrateNotebook } from '../src/lab/notebookRepository.ts';
 import { supportsSpatial } from '../src/core/capabilities.ts';
-import { ParamTypes } from '../src/ui/params/ParamRegistry.js';
-import { FakeDialogService } from '../src/ui/dialogs.js';
-import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.js';
-import { validateGeometry, validateMesh, validateSolid, validateSurface } from '../src/geometry/validate.js';
-import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.js';
-import { tessellateSurface, tessellateSurfaceWithMapping, surfaceArea } from '../src/geometry/surfaceTessellation.js';
-import { documentDiff, descriptorDiff } from '../src/lab/diff.js';
-import { ExplorationSession, morphDocuments } from '../src/lab/exploration.js';
-import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.js';
-import { adviseOffline, resolvePath, validateSuggestion, applySuggestionToDocument } from '../src/ai/offline.js';
-import { createProvider, runAdvisor, parseAdvisorResponse, shouldAutoAnalyze, PROVIDERS } from '../src/ai/provider.js';
-import { AdvisorCache, cacheKey } from '../src/ai/cache.js';
-import { buildAdvisorPrompt } from '../src/ai/prompt.js';
-import { traceImageData, traceImageContours, otsuThreshold, binarize, grayscale, simplifyRDP, resampleClosed, contourToFourier, reconstructFromHarmonics, buildFourierDocument, buildFourierDocuments, MAX_IMAGE_EDGE } from '../src/input/imageTrace.js';
-import { createGeneration, nextGeneration, isChildValid, describeStructuralChange, MAX_CHILDREN, MAX_PARENTS } from '../src/lab/evolution.js';
-import { numericParameterRefs, refKey, schemaForRef, stageForRef, pathForRef } from '../src/lab/parameters.js';
-import { MutationEngine } from '../src/mutation/MutationEngine.js';
-import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/PresetManager.js';
-import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.js';
-import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
-import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.js';
-import { exportBinarySTL, BinaryStlExporter, FabricationExportError } from '../src/export/stl.js';
-import { buildFabricationReport, resolveFabricationSource } from '../src/application/fabricationSource.js';
-import { getLookPreset, LOOK_PRESETS, lookPresetAvailability, lookPresetMatchesView, resolveLookPreset } from '../src/render/lookPresets.js';
-import { encodeGIF, gifFrameTimes, GIF_MAX_FRAMES } from '../src/export/gif.js';
-import { analyzeCurve } from '../src/analysis/differential.js';
-import { warpExpressions } from '../src/operators/geometry/deform.js';
-import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.js';
-import { project3D } from '../src/view/camera.js';
-import { zoomCamera } from '../src/view/cameraController.js';
-import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh, projectMeshToView, projectWorldMeshesToView, applyViewTransformToMeshes } from '../src/view/projection.js';
-import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.js';
-import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.js';
+import { ParamTypes } from '../src/ui/params/ParamRegistry.ts';
+import { FakeDialogService } from '../src/ui/dialogs.ts';
+import { createCurve2D, createCurve3D, createSurface, createMesh } from '../src/geometry/contracts.ts';
+import { validateGeometry, validateMesh, validateSolid, validateSurface } from '../src/geometry/validate.ts';
+import { liftCurve2D, meshToSolid, surfaceToMesh } from '../src/geometry/relations.ts';
+import { tessellateSurface, tessellateSurfaceWithMapping, surfaceArea } from '../src/geometry/surfaceTessellation.ts';
+import { documentDiff, descriptorDiff } from '../src/lab/diff.ts';
+import { ExplorationSession, morphDocuments } from '../src/lab/exploration.ts';
+import { createTimeline, sanitizeTimeline, resolveTimelineValue, upsertKeyframe, frameTimes } from '../src/animation/timeline.ts';
+import { adviseOffline, resolvePath, validateSuggestion, applySuggestionToDocument } from '../src/ai/offline.ts';
+import { createProvider, runAdvisor, parseAdvisorResponse, shouldAutoAnalyze, PROVIDERS } from '../src/ai/provider.ts';
+import { AdvisorCache, cacheKey } from '../src/ai/cache.ts';
+import { buildAdvisorPrompt } from '../src/ai/prompt.ts';
+import { traceImageData, traceImageContours, otsuThreshold, binarize, grayscale, simplifyRDP, resampleClosed, contourToFourier, reconstructFromHarmonics, buildFourierDocument, buildFourierDocuments, MAX_IMAGE_EDGE } from '../src/input/imageTrace.ts';
+import { createGeneration, nextGeneration, isChildValid, describeStructuralChange, MAX_CHILDREN, MAX_PARENTS } from '../src/lab/evolution.ts';
+import { numericParameterRefs, refKey, schemaForRef, stageForRef, pathForRef } from '../src/lab/parameters.ts';
+import { MutationEngine } from '../src/mutation/MutationEngine.ts';
+import { PresetManager, META_STORAGE_KEY, RECENT_LIMIT } from '../src/presets/PresetManager.ts';
+import { PREVIEW_MAX_CHARS, PREVIEW_SIZE, PREVIEW_VERSION, previewKey } from '../src/presets/preview.ts';
+import { BUILT_IN_PRESETS } from '../src/presets/builtins.ts';
+import { Exporter, unsupportedSvgFeatures } from '../src/export/Exporter.ts';
+import { exportBinarySTL, BinaryStlExporter, FabricationExportError } from '../src/export/stl.ts';
+import { buildFabricationReport, resolveFabricationSource } from '../src/application/fabricationSource.ts';
+import { getLookPreset, LOOK_PRESETS, lookPresetAvailability, lookPresetMatchesView, resolveLookPreset } from '../src/render/lookPresets.ts';
+import { encodeGIF, gifFrameTimes, GIF_MAX_FRAMES } from '../src/export/gif.ts';
+import { analyzeCurve } from '../src/analysis/differential.ts';
+import { warpExpressions } from '../src/operators/geometry/deform.ts';
+import { projectCurves, projectPoint, gradientAxisValue, supportsOrthographic, projectionFor } from '../src/render/projection.ts';
+import { project3D } from '../src/view/camera.ts';
+import { zoomCamera } from '../src/view/cameraController.ts';
+import { projectWorldCurves, projectWorldMeshes, projectCameraCurveSegments, projectMesh, projectMeshToView, projectWorldMeshesToView, applyViewTransformToMeshes } from '../src/view/projection.ts';
+import { createViewTransform, createFrame, resolveFrame, sanitizeFrame, SPACE } from '../src/view/transform.ts';
+import { buildSpatialReference, createReference, sanitizeReference, referenceExtent } from '../src/view/spatialReference.ts';
 import { MAX_INSTANCE_LAYERS, MAX_LAYERS, canAddInstanceLayer, countInstanceLayers, dependentInstances, generatorForLayer, isInstanceLayer } from '../src/core/layers.ts';
-import { createDefaultUnits, sanitizeUnits, validateUnits, worldToMillimetres, artboardToMillimetres, bboxToMillimetres } from '../src/core/units.js';
-import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.js';
-import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.js';
-import { pickSurface, validatePickResult } from '../src/interaction/surfacePicker.js';
-import { buildInspectionOverlay } from '../src/interaction/inspectionOverlay.js';
-import { buildRenderScene } from '../src/application/renderSceneBuilder.js';
-import { rampColor, gradientRange } from '../src/render/passes/gradient.js';
-import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.js';
+import { createDefaultUnits, sanitizeUnits, validateUnits, worldToMillimetres, artboardToMillimetres, bboxToMillimetres } from '../src/core/units.ts';
+import { activeSurfaceDomain, summarizeSurfaceDomain, formatDomainValue } from '../src/geometry/uvDomain.ts';
+import { artboardPointFromCanvas, rayForArtboardPoint, intersectRayTriangle, orthoDepthForPoint } from '../src/interaction/ray.ts';
+import { pickSurface, validatePickResult } from '../src/interaction/surfacePicker.ts';
+import { buildInspectionOverlay } from '../src/interaction/inspectionOverlay.ts';
+import { buildRenderScene } from '../src/application/renderSceneBuilder.ts';
+import { rampColor, gradientRange } from '../src/render/passes/gradient.ts';
+import { PaletteStore, PALETTE_STORAGE_KEY, PALETTES } from '../src/render/palettes.ts';
 
 let failures = 0;
 let checks = 0;
@@ -884,7 +884,7 @@ console.log('11. sampling');
   // The adaptive sampler must respect `samples` as a hard upper
   // bound — high-curvature curves used to produce ~3× the requested
   // count, breaking the user-visible slider.
-  const { sampleUniform, sampleAdaptive } = await import('../src/sampling/sampling.js');
+  const { sampleUniform, sampleAdaptive } = await import('../src/sampling/sampling.ts');
   const fn = (t) => ({ x: Math.sin(t) + 0.25 * Math.sin(11 * t), y: Math.cos(2 * t) - 0.4 * Math.cos(7 * t) });
   for (const N of [32, 50, 100, 250, 700, 2000]) {
     const u = sampleUniform(fn, 0, Math.PI * 2, N);
@@ -909,7 +909,7 @@ console.log('11. sampling');
   // Inverted domain (t0 > t1) must be normalized by sampleParametric —
   // the user can type T MIN=57 > T MAX=-24 and get [−24, 57], not a
   // 13-period backwards tangle.
-  const { sampleParametric } = await import('../src/generators/helpers.js');
+  const { sampleParametric } = await import('../src/generators/helpers.ts');
   const scope = { t: 0, theta: 0, time: 0 };
   const inv = sampleParametric(
     (s) => Math.cos(s.t),
@@ -2553,7 +2553,7 @@ console.log('28. extensibility boundaries');
 
   const coreDir = new URL('../src/core/', import.meta.url);
   for (const file of readdirSync(coreDir)) {
-    if (!file.endsWith('.js') || file === 'App.js') continue;
+    if (!file.endsWith('.ts')) continue;
     const source = readFileSync(new URL(file, coreDir), 'utf8');
     assert(!/from ['"][^'"]*\/ui\//.test(source), `core/${file} does not import UI modules`);
   }

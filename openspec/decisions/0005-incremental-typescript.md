@@ -1,6 +1,6 @@
 # ADR-0005: Incremental TypeScript migration
 
-Status: accepted
+Status: accepted (completed 0.2.91)
 Date: 2026-11-09
 Related: ADR-0004, ADR-0006
 
@@ -130,3 +130,14 @@ the exact issues the migration is meant to expose.
 Rejected for this decision. The current runner is small, deterministic and
 already covers the engine. A test-runner migration is a separate decision with
 its own risk.
+
+## Outcome
+
+Phase 4 closed in 0.2.91. Every runtime module under `src/` is TypeScript, all
+same-name compatibility shims are gone, the seven cross-layer re-exports are
+`.ts`, `allowJs` is false and the architecture check fails if a `.js` file
+returns. The dependency graph is cruised as TypeScript: 367 modules with an
+empty baseline.
+
+The type-only `ui → application/App` edge is enforced textually because
+dependency-cruiser cannot classify type-only imports under TypeScript 7.

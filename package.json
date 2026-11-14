@@ -1,7 +1,7 @@
 {
   "name": "parametrica",
   "private": true,
-  "version": "0.2.90",
+  "version": "0.2.91",
   "type": "module",
   "description": "A parametric geometry workbench: discover continuous monoline forms by exploring mathematical equations, harmonics and parameter domains.",
   "scripts": {
@@ -20,7 +20,7 @@
     "bench:manifold": "node scripts/bench-manifold.mjs",
     "check:version": "node scripts/check-version.mjs",
     "typecheck": "tsc --noEmit",
-    "arch:check": "depcruise --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json src"
+    "arch:check": "depcruise --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json 'src/**/*.ts'"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

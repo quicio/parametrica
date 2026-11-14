@@ -22,10 +22,10 @@ interface LatticeParams {
 interface LatticeCell { id: string; boundary: boolean; invalidOpening: boolean; openingCenter?: { theta: number; z: number } | null; openingWidth: number }
 interface LatticeEdge { points: { x: number; y: number; z: number }[]; edgeId: string; cellIds: string[]; length: number }
 interface LatticeNetwork { curves: LatticeEdge[]; cells: LatticeCell[]; stats: Rec; specHash: string; networkHash: string; algorithmVersion: string }
-import { compileOrThrow, makeScope } from './helpers.js';
-import { createCurve3D } from '../geometry/contracts.js';
-import { buildRevolveLattice } from '../geometry/latticeNetwork.js';
-import { latticeSpecHash, normalizeLatticeSpec } from '../geometry/latticeSpec.js';
+import { compileOrThrow, makeScope } from './helpers.ts';
+import { createCurve3D } from '../geometry/contracts.ts';
+import { buildRevolveLattice } from '../geometry/latticeNetwork.ts';
+import { latticeSpecHash, normalizeLatticeSpec } from '../geometry/latticeSpec.ts';
 import { cameraFrom } from '../view/camera.ts';
 import { projectWorldCurves } from '../view/projection.ts';
 

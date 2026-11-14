@@ -10,7 +10,7 @@
 
 import type GUI from 'lil-gui';
 import type { ParamSchema } from '../../core/schema.ts';
-import { ExpressionField } from '../widgets/ExpressionField.js';
+import { ExpressionField } from '../widgets/ExpressionField.ts';
 import { bindParamType, isBindable, isExpression, isModulatable } from './ParamRegistry.ts';
 import type { StageLike } from './ParamRegistry.ts';
 

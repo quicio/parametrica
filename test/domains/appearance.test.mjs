@@ -2,9 +2,9 @@
  * appearance.test.mjs — user Looks and per-pass appearance domain checks.
  */
 
-import { LOOK_PRESETS } from '../../src/render/lookPresets.js';
-import { LookPresetStore, LOOKS_STORAGE_KEY, applyUserLookToView, sanitizeUserLook } from '../../src/render/lookPresetStore.js';
-import { resolvePassStyle, sanitizePassStyle } from '../../src/render/passStyle.js';
+import { LOOK_PRESETS } from '../../src/render/lookPresets.ts';
+import { LookPresetStore, LOOKS_STORAGE_KEY, applyUserLookToView, sanitizeUserLook } from '../../src/render/lookPresetStore.ts';
+import { resolvePassStyle, sanitizePassStyle } from '../../src/render/passStyle.ts';
 
 export function run(assert) {
   /* ——— 30i. user look presets ——— */

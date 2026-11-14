@@ -20,8 +20,8 @@ interface NoiseParams {
   walkers: number;
   size: number;
 }
-import { createNoise2D } from '../math/noise.js';
-import { genId, postProcess, TAU } from './helpers.js';
+import { createNoise2D } from '../math/noise.ts';
+import { genId, postProcess, TAU } from './helpers.ts';
 
 Generators.register(({
   id: 'noise-field',

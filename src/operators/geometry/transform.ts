@@ -6,8 +6,8 @@
 
 import { Operators } from '../../core/registry.ts';
 import { TYPE } from '../../core/schema.ts';
-import { fitCurves } from '../../sampling/sampling.js';
-import { cloneGeometry, mapGeometryPoints } from '../../geometry/transformGeometry.js';
+import { fitCurves } from '../../sampling/sampling.ts';
+import { cloneGeometry, mapGeometryPoints } from '../../geometry/transformGeometry.ts';
 import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.ts';
 import type { GeneratorContext } from '../../generators/context.ts';
 

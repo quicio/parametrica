@@ -4,8 +4,8 @@
 
 import { createCurve3D, createSolid } from './contracts.ts';
 import type { Curve2D, Curve3D, Mesh, Point3D, Solid, Surface } from './contracts.ts';
-import { tessellateSurface } from './surfaceTessellation.js';
-import { validateMesh, validateSolid } from './validate.js';
+import { tessellateSurface } from './surfaceTessellation.ts';
+import { validateMesh, validateSolid } from './validate.ts';
 
 interface ValidationMeta {
   closed?: boolean;

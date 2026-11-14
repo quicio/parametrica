@@ -7,8 +7,8 @@
  * hole layout is deterministic and roughly millimetre-sized.
  */
 
-import { buildRevolveLattice } from './latticeNetwork.js';
-import { cylinderMesh } from './latticeSolid.js';
+import { buildRevolveLattice } from './latticeNetwork.ts';
+import { cylinderMesh } from './latticeSolid.ts';
 
 type Rec = Record<string, unknown>;
 interface Point3D { x: number; y: number; z: number; [key: string]: unknown }

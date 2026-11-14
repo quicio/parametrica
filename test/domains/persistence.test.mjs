@@ -5,19 +5,19 @@
  * idempotent, and storage failures must never destroy the in-memory document.
  */
 
-import '../../src/generators/index.js';
-import '../../src/operators/index.js';
-import { createDocument } from '../../src/core/document.js';
-import { SessionStore, SESSION_STORAGE_KEY } from '../../src/core/session.js';
-import { Notebook } from '../../src/lab/notebook.js';
-import { PresetManager } from '../../src/presets/PresetManager.js';
+import '../../src/generators/index.ts';
+import '../../src/operators/index.ts';
+import { createDocument } from '../../src/core/document.ts';
+import { SessionStore, SESSION_STORAGE_KEY } from '../../src/core/session.ts';
+import { Notebook } from '../../src/lab/notebook.ts';
+import { PresetManager } from '../../src/presets/PresetManager.ts';
 import {
   PersistenceRepository,
   STORAGE_BACKUP_SUFFIX,
   STORAGE_KEYS,
   STORAGE_MIGRATION_KEY,
   migrateLocalStorage,
-} from '../../src/core/persistence.js';
+} from '../../src/core/persistence.ts';
 
 class MemoryStorage {
   constructor() {

@@ -11,7 +11,7 @@ import type { Mesh, Point3D } from './contracts.ts';
 import { weldMesh } from './solidPrep.ts';
 import { validateMesh } from './validate.ts';
 import type { ValidationResult } from './validate.ts';
-import { remesh } from './remesh.js';
+import { remesh } from './remesh.ts';
 import { adaptiveTolerance } from './robustPredicates.ts';
 import { isManifoldReady, manifoldBoolean } from './manifoldEngine.ts';
 

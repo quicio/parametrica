@@ -17,8 +17,8 @@ interface LissajousParams {
   samples: number;
   adaptive: boolean;
 }
-import { genId, postProcess, isClosedPolyline, lissajousTurns, TAU } from './helpers.js';
-import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
+import { genId, postProcess, isClosedPolyline, lissajousTurns, TAU } from './helpers.ts';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.ts';
 
 Generators.register(({
   id: 'lissajous',

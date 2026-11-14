@@ -9,7 +9,7 @@
 
 import { Operators } from '../../core/registry.ts';
 import { TYPE } from '../../core/schema.ts';
-import { bbox } from '../../sampling/sampling.js';
+import { bbox } from '../../sampling/sampling.ts';
 import { compileOptionalExpression, makeExpressionScope, evaluatePointExpression } from '../expression.ts';
 import type { GeneratorContext } from '../../generators/context.ts';
 

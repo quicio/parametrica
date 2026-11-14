@@ -10,7 +10,7 @@ test('traced ring renders and exports with an even-odd hole', async ({ page }) =
   await boot(page);
 
   const result = await page.evaluate(async () => {
-    const { traceImageContours, buildFourierDocuments } = await import('/src/input/imageTrace.js');
+    const { traceImageContours, buildFourierDocuments } = await import('/src/input/imageTrace.ts');
     const width = 240;
     const height = 240;
     const data = new Uint8ClampedArray(width * height * 4);

@@ -8,9 +8,9 @@
  */
 
 import { detectSelfIntersections } from './selfIntersection.ts';
-import { remesh } from './remesh.js';
+import { remesh } from './remesh.ts';
 import { sdfRepair } from './sdfRepair.ts';
-import { isManifoldReady } from './manifoldEngine.js';
+import { isManifoldReady } from './manifoldEngine.ts';
 import { repairMesh } from './repair.ts';
 import { validateMesh } from './validate.ts';
 import type { ValidationResult } from './validate.ts';

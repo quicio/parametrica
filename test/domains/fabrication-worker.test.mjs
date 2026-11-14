@@ -2,9 +2,9 @@
  * fabrication-worker.test.mjs — runner, fallback and job controller.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { runFabricationJob } from '../../src/application/fabricationJobRunner.js';
-import { FabricationJobs, isHeavyFabrication } from '../../src/application/fabricationJobs.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { runFabricationJob } from '../../src/application/fabricationJobRunner.ts';
+import { FabricationJobs, isHeavyFabrication } from '../../src/application/fabricationJobs.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null };
 

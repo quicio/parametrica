@@ -46,9 +46,9 @@ module.exports = {
     {
       name: 'ui-no-composition',
       severity: 'error',
-      comment: 'ADR-0004: only composition selects concrete adapters.',
+      comment: 'ADR-0004: only composition selects concrete adapters. Type-only App imports are checked textually because dependency-cruiser cannot flag them under TypeScript 7.',
       from: { path: '^src/ui/' },
-      to: { path: '^src/(composition/|application/App[.](js|ts)$)' },
+      to: { path: '^src/composition/' },
     },
     {
       name: 'adapters-no-composition',

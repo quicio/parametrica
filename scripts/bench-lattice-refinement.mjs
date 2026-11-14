@@ -5,15 +5,15 @@
  * Results are provisional and machine-specific; they are not CI gates.
  */
 
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
-import { evaluateDocument } from '../src/core/engine.js';
-import { BUILT_IN_PRESETS } from '../src/presets/builtins.js';
-import { buildFabricationReport } from '../src/application/fabricationSource.js';
-import { initManifold } from '../src/geometry/manifoldEngine.js';
-import { exportBinarySTL } from '../src/export/stl.js';
-import { export3MF } from '../src/export/3mf.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
+import { evaluateDocument } from '../src/core/engine.ts';
+import { BUILT_IN_PRESETS } from '../src/presets/builtins.ts';
+import { buildFabricationReport } from '../src/application/fabricationSource.ts';
+import { initManifold } from '../src/geometry/manifoldEngine.ts';
+import { exportBinarySTL } from '../src/export/stl.ts';
+import { export3MF } from '../src/export/3mf.ts';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 await initManifold();

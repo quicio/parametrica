@@ -22,8 +22,8 @@ interface SuperformulaParams {
   samples: number;
   adaptive: boolean;
 }
-import { genId, isClosedPolyline, TAU } from './helpers.js';
-import { sampleUniform, sampleAdaptive } from '../sampling/sampling.js';
+import { genId, isClosedPolyline, TAU } from './helpers.ts';
+import { sampleUniform, sampleAdaptive } from '../sampling/sampling.ts';
 
 const EPS = 1e-9;
 

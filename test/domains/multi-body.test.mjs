@@ -2,10 +2,10 @@
  * multi-body.test.mjs — body scopes, merged validation and STL counts.
  */
 
-import { createMesh } from '../../src/geometry/contracts.js';
-import { exportBinarySTL } from '../../src/export/stl.js';
-import { buildFabricationReport } from '../../src/application/fabricationSource.js';
-import { sanitizeFabricationSettings } from '../../src/core/document.js';
+import { createMesh } from '../../src/geometry/contracts.ts';
+import { exportBinarySTL } from '../../src/export/stl.ts';
+import { buildFabricationReport } from '../../src/application/fabricationSource.ts';
+import { sanitizeFabricationSettings } from '../../src/core/document.ts';
 
 const UNITS = { world: 'mm', mmPerWorldUnit: 1, artboard: 'unitless', mmPerArtboardUnit: null };
 

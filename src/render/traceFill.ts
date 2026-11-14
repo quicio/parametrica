@@ -1,6 +1,6 @@
 /** Even-odd fill groups for image-derived layers. */
 
-import { bboxAll } from '../sampling/sampling.js';
+import { bboxAll } from '../sampling/sampling.ts';
 
 interface Vec2 { x: number; y: number; [key: string]: unknown }
 interface FillLike {

@@ -8,12 +8,12 @@
  * pass with the engine registries before the app boots.
  */
 
-import './generators/index.js';
-import './operators/index.js';
-import './render/passes/index.js';
+import './generators/index.ts';
+import './operators/index.ts';
+import './render/passes/index.ts';
 
 import { createApp } from './composition/createApp.ts';
-import { initManifold } from './geometry/manifoldEngine.js';
+import { initManifold } from './geometry/manifoldEngine.ts';
 
 const versionEl = document.getElementById('app-version');
 if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`;

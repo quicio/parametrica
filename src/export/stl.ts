@@ -1,6 +1,6 @@
 /** Deterministic binary STL for validated world geometry. */
 
-import { isMesh, isSolid } from '../geometry/contracts.js';
+import { isMesh, isSolid } from '../geometry/contracts.ts';
 import { millimetresPerUnit } from '../domain/units.ts';
 import { validateForFabrication } from './geometryExport.ts';
 

@@ -21,7 +21,7 @@ test('Fabricate applies explicit union, difference and empty intersection', asyn
       artboard: 'unitless',
       mmPerArtboardUnit: null,
     };
-    const { createInstanceLayer } = await import('/src/core/document.js');
+    const { createInstanceLayer } = await import('/src/core/document.ts');
     const source = app.document.layers[0];
     app.document.layers.push(createInstanceLayer(source.id, {
       name: 'Torus copy',

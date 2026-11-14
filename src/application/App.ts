@@ -23,7 +23,7 @@ import { Generators, Operators, RenderPasses } from '../core/registry.ts';
 import { supportsSpatial } from '../core/capabilities.ts';
 import { evaluateDocument } from '../core/engine.ts';
 import { schemaDefaults } from '../core/schema.ts';
-import { History } from '../core/history.js';
+import { History } from '../core/history.ts';
 import { computeDescriptor } from '../lab/descriptor.ts';
 import { computeSensitivity } from '../lab/sensitivity.ts';
 import { applySuggestionToDocument } from '../ai/offline.ts';

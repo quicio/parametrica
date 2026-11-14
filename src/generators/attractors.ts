@@ -25,8 +25,8 @@
 
 import { Generators } from '../core/registry.ts';
 import { TYPE } from '../core/schema.ts';
-import { createNoise2D } from '../math/noise.js';
-import { TAU } from './helpers.js';
+import { createNoise2D } from '../math/noise.ts';
+import { TAU } from './helpers.ts';
 import type { GeneratorDefinition } from '../core/registry.ts';
 import type { GeneratorContext } from './context.ts';
 

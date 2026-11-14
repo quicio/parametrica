@@ -5,11 +5,11 @@
  * default remains `rounded` until a full preset benchmark passes every gate.
  */
 
-import '../src/generators/index.js';
-import '../src/operators/index.js';
-import '../src/render/passes/index.js';
-import { initManifold } from '../src/geometry/manifoldEngine.js';
-import { benchmarkLocalJoint } from '../src/geometry/latticeJointBlend.js';
+import '../src/generators/index.ts';
+import '../src/operators/index.ts';
+import '../src/render/passes/index.ts';
+import { initManifold } from '../src/geometry/manifoldEngine.ts';
+import { benchmarkLocalJoint } from '../src/geometry/latticeJointBlend.ts';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 await initManifold();
