@@ -19,8 +19,8 @@ export function run(assert) {
     assert(/export function build\w+Section\(controls(?:: [^)]+)?\)/.test(source), `${name} exports section builders`);
   }
 
-  const controls = readFileSync(join(root, 'src/ui/Controls.js'), 'utf8');
-  const wrappers = controls.match(/^ {2}build\w+Section\(\) \{ build\w+Section\(this\); \}$/gm) ?? [];
+  const controls = readFileSync(join(root, 'src/ui/Controls.ts'), 'utf8');
+  const wrappers = controls.match(/^ {2}build\w+Section\(\) \{ build\w+Section\(this(?: as unknown as \w+)?\); \}$/gm) ?? [];
   assert(wrappers.length >= 20, 'Controls only delegates section builds');
   assert(!/^ {2}build\w+Section\(\) \{\n/m.test(controls), 'Controls contains no inline section bodies');
 

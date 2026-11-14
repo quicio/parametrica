@@ -102,7 +102,7 @@ export async function run(assert) {
   assert(read('src/composition/createApp.ts').includes('createExportPort'), 'composition creates the export port');
 
   const uiSurface = new Set(UI_SURFACE);
-  const controlsSource = read('src/ui/Controls.js');
+  const controlsSource = read('src/ui/Controls.ts');
   for (const match of controlsSource.matchAll(/this\.app\.([a-zA-Z_][a-zA-Z0-9_]*)/g)) {
     assert(uiSurface.has(match[1]), `control port exposes app.${match[1]}`);
   }

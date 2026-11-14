@@ -108,7 +108,7 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }: CreateA
     createSeamLegend: (app: App) => new SeamLegend(canvasContainer, app),
     createRenderer: (app: App) => new P5Adapter(canvasContainer, app as never),
     createExporter: (app: App) => new Exporter(createExportPort(app)),
-    createControls: (app: App) => new Controls(createUiPort(app), uiContainer, {
+    createControls: (app: App) => new Controls(createUiPort(app) as never, uiContainer, {
       fabrication: createFabricationPort(app),
       render: createRenderPort(app),
       notebook: createNotebookPort(app),
@@ -119,7 +119,7 @@ export function createApp({ canvasContainer, uiContainer, telemetryEl }: CreateA
       keep: createKeepPort(app),
       ingest: createIngestPort(app),
       advisor: createAdvisorPort(app),
-    }),
+    } as never),
     createStartWithOverlay: (app: App, options: { firstRun: boolean; onClose: () => void }) => new StartWithOverlay(createStartWithPort(app) as never, options as never),
   };
 

@@ -7,6 +7,24 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.90] - 2026-11-14
+
+### Added
+
+- Strict TypeScript for the Controls coordinator.
+- Typed ports, section interfaces, DOM state, fabrication reports and render
+  mode entries.
+
+### Changed
+
+- `ui/Controls.js` remains a compatibility re-export.
+- Maintainability and architecture checks read the typed module.
+- No Controls behavior changed.
+
+### Milestone
+
+- `src/` is 100% strict TypeScript.
+
 ## [0.2.89] - 2026-11-13
 
 ### Added
