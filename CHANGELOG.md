@@ -7,6 +7,29 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.94] - 2026-11-14
+
+### Added
+
+- Oxlint covers every TypeScript module under `src/`.
+- `.oxlintrc.json` mirrors the existing unused/empty/constant policy.
+
+### Changed
+
+- `npm run lint` now runs ESLint for tests, scripts, e2e and config files, then
+  oxlint for `src/**/*.ts`.
+- Removed the dead `src/**/*.js` ESLint block.
+
+### Fixed
+
+- 26 unused type imports, aliases and interfaces removed from the source.
+
+### Notes
+
+- `typescript-eslint` cannot run under TypeScript 7: the native compiler no
+  longer exposes the JavaScript compiler API. Oxlint parses TypeScript itself.
+- `tsc --noEmit` remains the separate type gate.
+
 ## [0.2.93] - 2026-11-14
 
 ### Changed

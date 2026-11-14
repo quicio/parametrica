@@ -24,10 +24,8 @@ import { MAX_LAYERS, isInstanceLayer, sourceLayerFor } from './layers.ts';
 import type {
   AnimationShape,
   ArtboardShape,
-  CameraShape,
   DocumentOverrides,
   DocumentShape,
-  FillStyleShape,
   GeneratorStageShape,
   LayerOverrides,
   LayerShape,

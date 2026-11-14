@@ -64,11 +64,9 @@ function blendModeConstant(p: P5Like, value: unknown): unknown {
 
 import { Renderer } from '../Renderer.ts';
 import type { DocumentShape, LayerShape } from '../../core/documentTypes.ts';
-import type { EngineEvaluation, EngineLayerResult, EngineGeometry, EngineCurve } from '../../core/engineTypes.ts';
+import type { EngineEvaluation, EngineLayerResult, EngineGeometry } from '../../core/engineTypes.ts';
 import type { AllCurveAnalysis } from '../../analysis/differential.ts';
-import type { CameraState } from '../../view/camera.ts';
-import type { RenderScene, RenderLayer } from '../../domain/scene.ts';
-import type { EngineCurve as EngineCurveType } from '../../core/engineTypes.ts';
+import type { RenderScene } from '../../domain/scene.ts';
 
 type Rec = Record<string, unknown>;
 interface CanvasPoint { x: number; y: number }

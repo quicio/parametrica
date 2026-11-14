@@ -2,7 +2,6 @@
 
 import { bboxAll } from '../sampling/sampling.ts';
 
-interface Vec2 { x: number; y: number; [key: string]: unknown }
 interface FillLike {
   enabled?: boolean;
   [key: string]: unknown;

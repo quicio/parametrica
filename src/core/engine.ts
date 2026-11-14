@@ -40,7 +40,7 @@ import type {
   StageLike,
   InstanceSource,
 } from './engineTypes.ts';
-import type { DocumentShape, LayerShape, OperatorStageShape } from './documentTypes.ts';
+import type { DocumentShape, LayerShape } from './documentTypes.ts';
 import type { GeneratorDefinition, OperatorDefinition, StageDefinition } from './registry.ts';
 import type { ResolutionError } from '../animation/animatable.ts';
 import type { AllCurveAnalysis } from '../analysis/differential.ts';

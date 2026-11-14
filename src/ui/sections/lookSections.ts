@@ -10,7 +10,6 @@ import { supportsSpatial } from '../../core/capabilities.ts';
 import { ARTBOARD_PRESETS } from '../../render/palettes.ts';
 
 import type GUI from 'lil-gui';
-import type { Controller } from 'lil-gui';
 
 type Rec = Record<string, unknown>;
 

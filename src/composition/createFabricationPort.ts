@@ -1,7 +1,7 @@
 /** Narrow application surface used by the Fabricate panel. */
 
 import type { App } from '../application/App.ts';
-import { bindCall, bindMethod } from './portUtils.ts';
+import { bindMethod } from './portUtils.ts';
 import type { PortRecord } from './portUtils.ts';
 
 export const FABRICATION_PORT = Object.freeze([

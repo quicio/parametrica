@@ -19,7 +19,7 @@ import {
   quadPanelLayout,
   worldFromArtboardPoint,
 } from '../../view/viewportCoordinates.ts';
-import type { CoordinateSettings, NullableWorldPoint, PanelLayout, ViewportDescriptor } from '../../view/viewportCoordinates.ts';
+import type { CoordinateSettings, NullableWorldPoint, PanelLayout } from '../../view/viewportCoordinates.ts';
 import { drawSpatialReference } from '../reference.ts';
 import type { DocumentShape } from '../../core/documentTypes.ts';
 import type { RenderScene } from '../../domain/scene.ts';

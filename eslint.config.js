@@ -24,15 +24,6 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ['src/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 2024,
-      sourceType: 'module',
-      globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
-    },
-    rules,
-  },
-  {
     files: ['test/**/*.mjs', 'scripts/**/*.mjs', 'e2e/**/*.js'],
     languageOptions: {
       ecmaVersion: 2024,

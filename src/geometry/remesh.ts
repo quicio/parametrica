@@ -13,7 +13,6 @@ import type { RepairReport, RepairResult } from './repair.ts';
 import { validateMesh } from './validate.ts';
 import type { ValidationResult } from './validate.ts';
 
-type Rec = Record<string, unknown>;
 type Axis = 'x' | 'y' | 'z';
 
 interface BBox {

@@ -6,7 +6,7 @@ import {
   pointOnRay,
   rayForArtboardPoint,
 } from './ray.ts';
-import type { BoundsLike, OrthoDepth, Ray3, TransformLike, Vec2, Vec3 } from './ray.ts';
+import type { BoundsLike, OrthoDepth, TransformLike, Vec2, Vec3 } from './ray.ts';
 
 const TIE_EPS = 1e-9;
 

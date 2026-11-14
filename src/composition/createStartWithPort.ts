@@ -1,7 +1,7 @@
 /** Narrow surface for Start With. */
 
 import type { App } from '../application/App.ts';
-import { bindCall, bindMethod } from './portUtils.ts';
+import { bindMethod } from './portUtils.ts';
 import type { PortRecord } from './portUtils.ts';
 
 export const START_WITH_PORT = Object.freeze([

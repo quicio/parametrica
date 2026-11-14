@@ -30,9 +30,7 @@ import { TAU } from './helpers.ts';
 import type { GeneratorDefinition } from '../core/registry.ts';
 import type { GeneratorContext } from './context.ts';
 
-type Rec = Record<string, unknown>;
 interface Point2 { x: number; y: number }
-interface Point3 { x: number; y: number; z: number }
 interface LorenzParams { [key: string]: unknown; samples: number; trajectories: number; dt: number; skip: number; seed: number; sigma: number; rho: number; beta: number; projection: string }
 interface DiscreteParams { [key: string]: unknown; samples: number; trajectories: number; skip: number; seed: number; a: number; b: number; c: number; d: number }
 interface AizawaParams { [key: string]: unknown; samples: number; trajectories: number; dt: number; skip: number; seed: number; a: number; b: number; c: number; d: number; e: number; f: number }

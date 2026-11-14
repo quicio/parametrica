@@ -12,8 +12,7 @@ import { sanitizeDocument, attachLayerAliases } from '../core/document.ts';
 import { Operators } from '../core/registry.ts';
 import { evaluateDocument } from '../core/engine.ts';
 import { mulberry32 } from '../math/noise.ts';
-import type { DocumentShape, OperatorStageShape } from '../core/documentTypes.ts';
-import type { OperatorDefinition } from '../core/registry.ts';
+import type { DocumentShape } from '../core/documentTypes.ts';
 import type { ParameterRef } from './parameters.ts';
 import {
   numericParameterRefs,

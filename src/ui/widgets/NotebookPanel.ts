@@ -7,7 +7,7 @@
  */
 
 import { INBOX_PROJECT_ID } from '../../lab/notebook.ts';
-import type { Checkpoint, Notebook, NotebookComparison, NotebookProject, NotebookSeries } from '../../lab/notebook.ts';
+import type { Checkpoint, Notebook, NotebookComparison, NotebookSeries } from '../../lab/notebook.ts';
 import type { NotebookWorkspace } from '../../lab/workspace.ts';
 import type { DiffEntry } from '../../lab/diff.ts';
 import type { DocumentShape } from '../../core/documentTypes.ts';

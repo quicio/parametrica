@@ -2,7 +2,7 @@
 
 import { RenderPasses } from '../../core/registry.ts';
 import { applyFill, fillGradientEnabled, setFillDepth } from '../fill.ts';
-import type { PassContext, PassData, PassMesh, Rgb } from './types.ts';
+import type { PassContext, PassData, Rgb } from './types.ts';
 
 RenderPasses.register({
   id: 'surface-wireframe',

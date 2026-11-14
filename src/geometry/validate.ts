@@ -13,8 +13,6 @@ import {
 import type { Curve2D, Curve3D, Mesh, Point2D, Point3D, Solid, Surface } from './contracts.ts';
 import { detectSelfIntersections } from './selfIntersection.ts';
 
-type Rec = Record<string, unknown>;
-
 export interface ValidationMeta {
   closed?: boolean;
   manifold?: boolean;

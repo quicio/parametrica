@@ -23,7 +23,7 @@ mathematics is the only authoring surface.
 ```bash
 npm install
 npm run dev          # vite dev server, opens the app
-npm run lint         # ESLint flat config
+npm run lint         # ESLint (JS) + oxlint (TypeScript)
 npm run typecheck    # tsc --noEmit (strict TypeScript, allowJs false)
 npm run arch:check   # dependency-cruiser layer rules + baseline
 npm test             # node-only verification suite via tsx (3,639 checks: 2,224 lab + 1,415 domains)
@@ -282,8 +282,11 @@ through `tsx`, so they import the TypeScript sources directly.
 
 ### Linting
 
-ESLint runs with a flat config (`eslint.config.js`). `npm run lint` checks
-`src`, `test`, `e2e` and the config files; CI runs it before the unit suite.
+ESLint runs with a flat config (`eslint.config.js`) for tests, scripts, e2e and
+config files. Oxlint (`.oxlintrc.json`) covers every TypeScript module under
+`src/` because TypeScript 7 no longer exposes the compiler API that
+`typescript-eslint` needs. `npm run lint` runs both; CI runs it before the unit
+suite.
 `npm run check` runs lint, the Node suite, the production build, the lazy-chunk
 guard, the spec-purpose check, the version/changelog gate, `tsc --noEmit` and
 the dependency-cruiser layer gate.

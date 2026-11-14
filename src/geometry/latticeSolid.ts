@@ -7,9 +7,8 @@
  */
 
 import { createMesh, isCurve3D } from './contracts.ts';
-import type { Mesh, Point3D } from './contracts.ts';
+import type { Mesh } from './contracts.ts';
 import type { ValidationResult } from './validate.ts';
-import type { CsgResult } from './csg.ts';
 
 type Rec = Record<string, unknown>;
 interface P3 { x: number; y: number; z: number; [key: string]: unknown }
