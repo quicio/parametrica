@@ -143,3 +143,7 @@ export interface FabricationGroupShape {
   layers: string[];
   name: string;
 }
+export interface FabricationRecipeStepShape {
+  op: string;
+  layers: string[];
+}

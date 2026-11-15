@@ -412,6 +412,29 @@ export const BUILT_IN_PRESETS: Readonly<Record<string, () => DocumentShape>> = {
     return doc;
   },
 
+  'Sequential CSG': () => {
+    const doc = fabricateTorus('Sequential CSG', {}, {
+      fabrication: {
+        format: 'stl',
+        quality: 'standard',
+        scope: 'composition',
+        csgStrategy: 'manifold',
+      },
+    });
+    doc.layers[0]!.name = 'Torus A';
+    const a = doc.layers[0]!.id;
+    const b = addTorusInstance(doc, { name: 'Torus B', dz: 0.5 }).id;
+    const c = addTorusInstance(doc, { name: 'Cutter C', dx: 3 }).id;
+    doc.view.fabrication = {
+      ...doc.view.fabrication,
+      recipe: [
+        { op: 'union', layers: [a, b] },
+        { op: 'difference', layers: [c] },
+      ],
+    };
+    return doc;
+  },
+
   'Cap Catenoid': () => createDocument('parametric-surface', {
     name: 'Cap Catenoid',
     generator: {

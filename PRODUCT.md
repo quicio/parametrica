@@ -63,7 +63,7 @@ without changing its authoring model.
 
 ## Capabilities and Constraints
 
-- 25 registered generators, 37 operators, 15 render passes and 65 built-in
+- 25 registered generators, 37 operators, 15 render passes and 66 built-in
   presets.
 - Document v3 supports multiple layers, instance layers, layer styles and
   per-layer render modes.

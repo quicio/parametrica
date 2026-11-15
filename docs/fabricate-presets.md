@@ -9,6 +9,7 @@ fabrication controls without manual setup.
 | **Twin Tori** | Technical | Two disjoint bodies, composition scope, 3MF objects |
 | **Boolean Union** | Technical | Manifold union of overlapping tori |
 | **Boolean Difference** | Technical | Manifold difference with one result body |
+| **Sequential CSG** | Technical | Union A+B, then subtract C as one ordered recipe |
 | **Cap Catenoid** | Decorative | Open surface + Repair + automatic caps |
 | **Solid Vase 200** | Decorative | Hollow vase: 200 mm tall, ~175 mm diameter, ~135 mm mouth, 2.5 mm wall |
 | **Lattice Vase 200** | Decorative | Openwork vase: 200 mm tall, 20 mm Voronoi cells, 3.5 mm struts |
@@ -34,6 +35,19 @@ SDF Enneper and Möbius Challenge were removed: the former is a thin repair demo
 and the latter is intentionally non-exportable. The remaining technical solids
 are clearly labelled because the torus family needs supports or reorientation.
 
+## Sequential recipes
+
+`Sequential CSG` demonstrates an ordered recipe:
+
+1. **Union** `Torus A` and `Torus B`.
+2. **Difference** `Cutter C` from the accumulated body.
+
+The recipe is stored as `view.fabrication.recipe` and evaluated in order. Each
+intermediate result must be a closed solid; a failure names the step. A recipe
+takes precedence over `groups` and the global boolean. The Combine editor for
+building recipes by hand is the next slice; this preset makes the model
+inspectable and exportable.
+
 ## Fabricability review
 
 The review used the real `buildFabricationReport` and Manifold preparation. A
@@ -48,6 +62,7 @@ supports; the report surfaces that instead of hiding it.
 | Twin Tori | exportable, 2 bodies | 0 mm² | 25% | Needs supports |
 | Boolean Union | exportable | 0 mm² | 19% | Needs supports |
 | Boolean Difference | exportable | 0 mm² | 25% | Needs supports |
+| Sequential CSG | exportable | 0 mm² | 21% | Needs supports or reorientation |
 | Cap Catenoid | exportable | 278 mm² | 0% | Ready |
 | Solid Vase 200 | exportable | 6,675 mm² | 0% | Ready |
 | Lattice Vase 200 | exportable | 6,825 mm² | 9% | Ready |

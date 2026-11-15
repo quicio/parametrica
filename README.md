@@ -246,7 +246,7 @@ No central config to update.
 | Vesica Prime (v1) | `bilateral-spline` | legacy v1 generator, preserved |
 | Helix Lab | `helix` | Básica, Radio Variable, Paso Variable, Ondulada, Doble Hélice, Cónica |
 
-The library has **65 built-in presets**, grouped into Curves, Patterns, Fourier,
+The library has **66 built-in presets**, grouped into Curves, Patterns, Fourier,
 Attractors, 3D Curves, Surfaces, Fabricate, Compositions, Helix Lab and Legacy;
 user saves appear under My Presets. The **Fabricate** category contains 24
 exportable pieces: the 200 mm vase family, lattice and perforated vases,
@@ -360,7 +360,7 @@ separate chunk (~1.06 MB minified, ~270 KB gzip) after first paint.
 
 Deferred / next:
 
-- Sequential CSG recipes beyond independent boolean groups
+- Sequential CSG recipe authoring in the Combine section (the model and a demo preset ship)
 - Modular dovetail planter tiles, folding hinges and snap-fit tolerances
 - Stable cross-runner screenshot baselines (CI uses pixel variance instead)
 - Automated slicer verification (the manufacturing record remains manual)

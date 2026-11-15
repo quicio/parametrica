@@ -557,6 +557,7 @@ proved insufficient for evaluating an organic, fabricable sculpture.
 | `2026-11-06-fabrication-preview` | Phase 4: optional WebGL/PBR product preview | archived (2026-11-08) |
 | `2026-11-06-product-render-export` | Phase 4 follow-up: Product PNG export | archived (2026-11-08) |
 | `2026-11-14-fabricate-wall-thickness` | Phase 5 follow-up: sampled wall estimate | archived (2026-11-14) |
+| `2026-11-14-sequential-csg` | Phase 5 follow-up: ordered boolean recipe and demo preset | archived (2026-11-15) |
 
 Appearance/PBR is now **implemented**, not deferred. It remains independent of
 the geometry pipeline and ships behind an explicit Technical/Product toggle, with

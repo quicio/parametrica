@@ -308,3 +308,14 @@ Every Fabricate preset SHALL pass the wall check at its default profile.
 - **AND** it keeps more than 50 through-holes
 - **AND** the sampled p5 meets the FDM minimum
 
+### Requirement: Sequential CSG example
+
+Fabricate SHALL include an ordered-recipe example.
+
+#### Scenario: Preset
+
+- **WHEN** `Sequential CSG` is loaded
+- **THEN** it unions two tori and subtracts a third
+- **AND** Fabricate reports one exportable body
+- **AND** the plan shows two recipe steps
+

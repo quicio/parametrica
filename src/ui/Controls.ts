@@ -122,6 +122,7 @@ interface PreparationLike {
   format?: string;
   scope?: string;
   csgStrategy?: string;
+  recipe?: Array<{ op: string; layers: string[] }>;
   manufacturing?: Rec;
 }
 interface FabricationInputLike {
@@ -1262,11 +1263,13 @@ export class Controls {
     const compositionScope = report.scope === 'composition';
     els.compositionNote.hidden = instanceCount === 0 && !compositionScope;
     els.compositionNote.textContent = compositionScope
-      ? report.groups?.length
-        ? `Composition · ${report.groups.length} boolean groups · ${report.bodies ?? 0} derived bod${report.bodies === 1 ? 'y' : 'ies'}`
-        : report.boolean
-          ? `Composition · ${(report.boolean as unknown as BooleanReport).operation} of ${(report.boolean as unknown as BooleanReport).operands} bodies · one derived shell`
-          : `Composition · ${report.bodies ?? 0} validated bod${report.bodies === 1 ? 'y' : 'ies'} · separate shells, not a union`
+      ? report.recipe?.length
+        ? `Composition · ${report.recipe.length} recipe steps · one derived shell`
+        : report.groups?.length
+          ? `Composition · ${report.groups.length} boolean groups · ${report.bodies ?? 0} derived bod${report.bodies === 1 ? 'y' : 'ies'}`
+          : report.boolean
+            ? `Composition · ${(report.boolean as unknown as BooleanReport).operation} of ${(report.boolean as unknown as BooleanReport).operands} bodies · one derived shell`
+            : `Composition · ${report.bodies ?? 0} validated bod${report.bodies === 1 ? 'y' : 'ies'} · separate shells, not a union`
       : instanceCount
         ? `Composition · ${instanceCount} instance${instanceCount === 1 ? '' : 's'} · ${report.multiBody ? `${report.bodies} bodies` : 'one body'} · scope: ${report.scope ?? 'single'}`
         : '';
@@ -1309,6 +1312,8 @@ export class Controls {
       && (activeLayer?.generator?.id === 'surface-lattice' || preparation.latticeMode === 'cutouts');
     if (latticeActive) {
       parts.push('lattice');
+    } else if (preparation.recipe?.length) {
+      parts.push(`recipe ×${preparation.recipe.length}`);
     } else if (preparation.boolean && preparation.boolean !== 'none') {
       parts.push(`${preparation.boolean}${preparation.csgStrategy ? ` (${preparation.csgStrategy})` : ''}`);
     }

@@ -7,6 +7,28 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in
 `package.json` is authoritative; see
 [ADR-0001](./openspec/decisions/0001-code-versioning.md).
 
+## [0.2.95] - 2026-11-15
+
+### Added
+
+- Ordered `view.fabrication.recipe`: union, difference and intersection steps
+  evaluated in sequence with intermediate validation.
+- `Sequential CSG` Fabricate preset: union two tori, then subtract a third.
+- Plan and composition note report the recipe step count.
+- Sanitization drops invalid steps, deduplicates layers and caps the recipe.
+
+### Changed
+
+- A recipe takes precedence over boolean groups and the global boolean.
+- The preset library now has 66 built-in presets.
+
+### Notes
+
+- The recipe editor in Combine is the next slice; this release ships the model,
+  pipeline and a demo preset.
+- Existing groups and single-boolean presets are unchanged.
+- No CSG engine, unit or export-format change.
+
 ## [0.2.94] - 2026-11-14
 
 ### Added

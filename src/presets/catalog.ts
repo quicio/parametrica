@@ -216,6 +216,11 @@ export const PRESET_META: Readonly<Record<string, PresetMeta>> = {
     description: 'A torus with a bite cut by a second overlapping torus.',
     tags: ['fabricate', 'boolean', 'difference', 'manifold'],
   },
+  'Sequential CSG': {
+    category: 'fabricate',
+    description: 'Two tori unioned, then a third torus subtracted in one ordered recipe.',
+    tags: ['fabricate', 'boolean', 'recipe', 'sequential', 'manifold'],
+  },
   'Cap Catenoid': {
     category: 'fabricate',
     description: 'Open catenoid prepared with automatic caps for STL export.',

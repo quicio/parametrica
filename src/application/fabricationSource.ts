@@ -12,7 +12,7 @@ import { measureWallThickness } from '../geometry/wallThickness.ts';
 import type { WallThicknessReport } from '../geometry/wallThickness.ts';
 import { buildPerforationCutters, radiusProfileFromSurface } from '../geometry/perforation.ts';
 import { bboxToMillimetres, millimetresPerUnit } from '../domain/units.ts';
-import { sanitizeFabricationGroups } from '../core/document.ts';
+import { sanitizeFabricationGroups, sanitizeFabricationRecipe } from '../core/document.ts';
 import { compileExpression } from '../math/expression.ts';
 import { buildManufacturingReport, sanitizeManufacturingProfile } from '../domain/manufacturingProfile.ts';
 import type { ManufacturingProfile, ManufacturingReport } from '../domain/manufacturingProfile.ts';
@@ -63,6 +63,7 @@ interface Candidate {
 }
 interface FabricationPreparation {
   groups: Array<{ op: string; layers: string[]; name?: string }>;
+  recipe: Array<{ op: string; layers: string[] }>;
   weld: boolean;
   cap: boolean;
   tolerance: unknown;
@@ -117,6 +118,7 @@ export interface ResolvedFabricationSource {
   repair: Rec | null;
   prepared: boolean;
   groups: Array<Rec> | null;
+  recipe: Array<Rec> | null;
   reason: string | null;
 }
 export interface FabricationReport extends Omit<ResolvedFabricationSource, 'manufacturing'> {
@@ -147,8 +149,10 @@ export function resolveFabricationSource({
 } = {}): ResolvedFabricationSource {
   const prepare = normalizePreparation(preparation);
   const groups = prepare.groups ?? [];
-  const useGroups = groups.length > 0;
-  const scope = useGroups ? 'composition' : prepare.scope;
+  const recipe = prepare.recipe ?? [];
+  const useRecipe = recipe.length > 0;
+  const useGroups = !useRecipe && groups.length > 0;
+  const scope = useRecipe || useGroups ? 'composition' : prepare.scope;
   const layers = Array.isArray(evaluation?.layers) ? evaluation.layers : null;
   const activeIndex = Math.max(0, Math.min((layers?.length ?? 1) - 1, layerIndex));
   const activeLayer = layers ? layers[activeIndex] ?? null : evaluation as LayerLike | null;
@@ -255,7 +259,7 @@ export function resolveFabricationSource({
   }
 
   const exportable = candidates.filter((candidate) => candidate.exportable);
-  let source: Candidate | null = useGroups
+  let source: Candidate | null = useGroups || useRecipe
     ? null
     : (scope === 'single' || exportable.length <= 1 ? exportable[0] ?? null : null);
   let mergedError: string | null = null;
@@ -264,8 +268,21 @@ export function resolveFabricationSource({
   let booleanEmpty = false;
   let groupError: string | null = null;
   let groupMetadata: Array<Rec> | null = null;
+  let recipeError: string | null = null;
+  let recipeMetadata: Array<Rec> | null = null;
 
-  if (useGroups) {
+  if (useRecipe) {
+    const sequenced = resolveSequentialRecipe(exportable, recipe, prepare);
+    if (sequenced.error) {
+      source = null;
+      recipeError = sequenced.error;
+      recipeMetadata = sequenced.metadata ?? null;
+    } else {
+      source = sequenced.source ?? null;
+      bodies = 1;
+      recipeMetadata = sequenced.metadata ?? null;
+    }
+  } else if (useGroups) {
     const grouped = resolveBooleanGroups(exportable, groups, prepare);
     if (grouped.error) {
       source = null;
@@ -428,19 +445,22 @@ export function resolveFabricationSource({
     repair: (source?.repair as Rec | undefined) ?? null,
     prepared: Boolean(source?.prepared),
     groups: groupMetadata,
+    recipe: recipeMetadata,
     reason: source
       ? null
-      : groupError
-        ? groupError
-        : perforationError
-          ? perforationError
-          : booleanError
-            ? booleanError
-            : mergedError
-              ? `Multi-body export failed: ${mergedError}`
-              : candidates.length
-                ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
-                : 'The active layer has no Mesh/Solid geometry',
+      : recipeError
+        ? recipeError
+        : groupError
+          ? groupError
+          : perforationError
+            ? perforationError
+            : booleanError
+              ? booleanError
+              : mergedError
+                ? `Multi-body export failed: ${mergedError}`
+                : candidates.length
+                  ? `No validated closed Mesh/Solid in the active layer${firstError ? `: ${firstError}` : ''}`
+                  : 'The active layer has no Mesh/Solid geometry',
   };
 }
 
@@ -635,6 +655,7 @@ function normalizePreparation(raw: unknown): FabricationPreparation {
   const source = raw && typeof raw === 'object' ? raw as Rec : {};
   return {
     groups: sanitizeFabricationGroups(source.groups) as Array<{ op: string; layers: string[]; name?: string }>,
+    recipe: sanitizeFabricationRecipe(source.recipe) as Array<{ op: string; layers: string[] }>,
     weld: source.weld === true,
     cap: source.cap === true,
     tolerance: source.tolerance,
@@ -679,6 +700,124 @@ interface GroupedResult {
   multiBody?: boolean;
   metadata?: Array<Rec>;
   error?: string;
+}
+
+
+function resolveSequentialRecipe(
+  exportable: Candidate[],
+  recipe: Array<{ op: string; layers: string[] }>,
+  prepare: FabricationPreparation,
+): { source?: Candidate; metadata: Array<Rec>; error?: string } {
+  const byLayer = new Map<string, Candidate>();
+  for (const candidate of exportable) {
+    if (candidate.layerId) byLayer.set(candidate.layerId, candidate);
+  }
+  const used = new Set<Candidate>();
+  const metadata: Array<Rec> = [];
+  const options = {
+    tolerance: prepare.tolerance,
+    strategy: prepare.csgStrategy as never,
+    remeshResolution: prepare.remeshResolution,
+  };
+  let current: Candidate | null = null;
+
+  for (let index = 0; index < recipe.length; index++) {
+    const step = recipe[index];
+    if (!step) continue;
+    const members = step.layers
+      .map((id) => byLayer.get(id))
+      .filter((member): member is Candidate => Boolean(member));
+    if (!members.length) return { metadata, error: `Recipe step ${index + 1} has no validated body` };
+    if (members.some((member) => used.has(member))) {
+      return { metadata, error: 'Layer reused across recipe steps' };
+    }
+    members.forEach((member) => used.add(member));
+    metadata.push({ index, operation: step.op, layers: step.layers });
+
+    const geometries = members
+      .map((member) => member.geometry)
+      .filter((geometry): geometry is GeometryLike => Boolean(geometry))
+      .map((geometry) => isSolid(geometry) ? geometry.boundary : geometry);
+    if (!geometries.length) return { metadata, error: `Recipe step ${index + 1} has no geometry` };
+
+    if (index === 0) {
+      if (members.length === 1) {
+        current = { ...members[0]! };
+        continue;
+      }
+      const union = booleanSolids('union', geometries as never, options as never) as unknown as {
+        ok: boolean; empty?: boolean; geometry?: GeometryLike; validation?: ValidationLike; stats?: Rec; error?: { message?: string };
+      };
+      if (!union.ok) return { metadata, error: `Recipe step 1 failed: ${union.error?.message ?? 'unknown error'}` };
+      if (union.empty) return { metadata, error: 'Recipe step 1 is empty' };
+      const validation = validateForFabrication(union.geometry as never) as ValidationLike;
+      if (!validation.ok || !validation.meta?.closed) {
+        return { metadata, error: `Recipe step 1 is not a closed solid: ${validation.errors?.[0] ?? 'unknown error'}` };
+      }
+      current = {
+        geometry: union.geometry ?? null,
+        kind: 'mesh',
+        id: 'recipe-1',
+        validation,
+        closed: true,
+        exportable: true,
+        prepared: members.some((member) => member.prepared),
+        repair: aggregateRepair(members),
+        preparation: aggregatePreparation(members),
+        boolean: { operation: 'union', operands: members.length, stats: union.stats, step: 1 },
+        group: { index, operation: 'union', layerIds: step.layers },
+      };
+      continue;
+    }
+
+    if (!current?.geometry) return { metadata, error: `Recipe step ${index + 1} has no accumulated body` };
+    let stepGeometry = geometries[0]!;
+    if (geometries.length > 1) {
+      const union = booleanSolids('union', geometries as never, options as never) as unknown as {
+        ok: boolean; empty?: boolean; geometry?: GeometryLike; error?: { message?: string };
+      };
+      if (!union.ok || union.empty || !union.geometry) {
+        return { metadata, error: `Recipe step ${index + 1} operands could not be combined` };
+      }
+      stepGeometry = union.geometry;
+    }
+    const result = booleanSolids(step.op as never, [current.geometry, stepGeometry] as never, options as never) as unknown as {
+      ok: boolean; empty?: boolean; geometry?: GeometryLike; validation?: ValidationLike; stats?: Rec; error?: { message?: string };
+    };
+    if (!result.ok) return { metadata, error: `Recipe step ${index + 1} failed: ${result.error?.message ?? 'unknown error'}` };
+    if (result.empty) return { metadata, error: `Recipe step ${index + 1} is empty` };
+    const validation = validateForFabrication(result.geometry as never) as ValidationLike;
+    if (!validation.ok || !validation.meta?.closed) {
+      return { metadata, error: `Recipe step ${index + 1} is not a closed solid: ${validation.errors?.[0] ?? 'unknown error'}` };
+    }
+    current = {
+      geometry: result.geometry ?? null,
+      kind: 'mesh',
+      id: `recipe-${index + 1}`,
+      validation,
+      closed: true,
+      exportable: true,
+      prepared: members.some((member) => member.prepared) || current.prepared,
+      repair: aggregateRepair(members),
+      preparation: aggregatePreparation(members),
+      boolean: { operation: step.op, operands: members.length + 1, stats: result.stats, step: index + 1 },
+      group: { index, operation: step.op, layerIds: step.layers },
+    };
+  }
+
+  if (!current) return { metadata, error: 'Recipe produced no body' };
+  return {
+    metadata,
+    source: {
+      ...current,
+      id: 'sequential-recipe',
+      bodies: 1,
+      bodyIds: [...used].map((member) => member.id ?? null),
+      multiBody: false,
+      boolean: { operation: 'recipe', operands: used.size, steps: metadata },
+      recipe: metadata,
+    },
+  };
 }
 
 function resolveBooleanGroups(exportable: Candidate[], groups: Array<{ op: string; layers: string[]; name?: string }>, prepare: FabricationPreparation): GroupedResult {

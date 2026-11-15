@@ -18,6 +18,7 @@ const PRESETS = [
   'Twin Tori',
   'Boolean Union',
   'Boolean Difference',
+  'Sequential CSG',
   'Cap Catenoid',
   'Solid Vase 200',
   'Pencil Cup 100',

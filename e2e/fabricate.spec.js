@@ -479,3 +479,28 @@ test('Fabricate estimates wall thickness from the prepared body', async ({ page 
   await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('Wall thickness', { timeout: 10_000 });
   await expect(fabricate.locator('.fabricate-manufacturing-checks')).toContainText('samples');
 });
+
+test('Sequential CSG applies an ordered recipe', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__parametrica.applyPreset('Sequential CSG'));
+  await page.waitForTimeout(700);
+  const fabricate = await openSection(page, 'Fabricate');
+  await expect(fabricate.locator('.fabricate-status')).toContainText('READY', { timeout: 30_000 });
+  await expect(fabricate.locator('.fabricate-plan')).toContainText('recipe ×2');
+  await expect(fabricate.locator('.fabricate-composition-note')).toContainText('recipe steps');
+  await expect(fabricate.locator('.fabricate-export')).toBeEnabled();
+
+  const recipe = await page.evaluate(() => {
+    const report = window.__parametrica.controls.fabricationReport;
+    return {
+      steps: report.recipe?.length ?? 0,
+      operation: report.boolean?.operation,
+      bodies: report.bodies,
+      triangles: report.triangles,
+    };
+  });
+  expect(recipe.steps).toBe(2);
+  expect(recipe.operation).toBe('recipe');
+  expect(recipe.bodies).toBe(1);
+  expect(recipe.triangles).toBeGreaterThan(1000);
+});

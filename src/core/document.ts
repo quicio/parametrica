@@ -34,6 +34,7 @@ import type {
   StyleShape,
   ViewShape,
   FabricationGroupShape,
+  FabricationRecipeStepShape,
 } from './documentTypes.ts';
 
 export const DOCUMENT_VERSION = 3;
@@ -83,6 +84,7 @@ export const FABRICATION_NON_ORIENTABLE = Object.freeze(['cut', 'reject']);
 export const FABRICATION_CSG_STRATEGIES = Object.freeze(['auto', 'manifold', 'bsp', 'remesh']);
 export const DEFAULT_FABRICATION = Object.freeze({
   groups: Object.freeze([]),
+  recipe: Object.freeze([]),
   weld: false,
   cap: false,
   tolerance: 1e-4,
@@ -146,12 +148,29 @@ export function sanitizeFabricationGroups(raw: unknown): FabricationGroupShape[]
   return out;
 }
 
+export function sanitizeFabricationRecipe(raw: unknown): FabricationRecipeStepShape[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FabricationRecipeStepShape[] = [];
+  for (const entry of raw.slice(0, 16)) {
+    if (!entry || typeof entry !== 'object') continue;
+    const step = entry as Rec;
+    const op = stringIn(FABRICATION_BOOLEANS, step.op) && step.op !== 'none' ? step.op : null;
+    const layers = Array.isArray(step.layers)
+      ? [...new Set(step.layers.filter((id): id is string => typeof id === 'string' && Boolean(id)))].slice(0, 64)
+      : [];
+    if (!op || !layers.length) continue;
+    out.push({ op, layers });
+  }
+  return out;
+}
+
 export function sanitizeFabricationSettings(raw: unknown): Rec {
   const source = (raw && typeof raw === 'object' ? raw : {}) as Rec;
   const tolerance = Number(source.tolerance);
   const maxHoleEdges = Number(source.maxHoleEdges);
   return {
     groups: sanitizeFabricationGroups(source.groups),
+    recipe: sanitizeFabricationRecipe(source.recipe),
     weld: source.weld === true,
     cap: source.cap === true,
     tolerance: Number.isFinite(tolerance) && tolerance > 0

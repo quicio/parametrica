@@ -8,7 +8,7 @@ Fabricate is a guided single-panel workflow: Source → Repair → Combine → O
 - **Source** — body scope and count.
 - **Repair** — quality preset, weld/cap, Repair, cap strategy, topology,
   non-orientable handling, self-intersection strategy and resolution.
-- **Combine** — boolean operation and CSG strategy.
+- **Combine** — boolean operation, CSG strategy and ordered recipe presets.
 - **Output** — format, world scale and export.
 - **Checks** — source, triangles/vertices/volume, bounds, warnings, preparation
   and repair report.

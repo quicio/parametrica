@@ -206,7 +206,7 @@ the entire mathematical model — parameter panel is rebuilt from schema.
 || `parametric-3d` | Projected x/y/z expression curve | exprX/Y/Z, t0, t1, samples | user |
 
 > **Current status (2026-11-09, v0.2.0):** 25 generators, 37 operators, 15 render
-> passes and 65 built-in presets. Fabricate includes Manifold CSG, STL/3MF,
+> passes and 66 built-in presets. Fabricate includes Manifold CSG, STL/3MF,
 > multi-body and grouped recipes, repair/cap, lattice and perforated bodies,
 > a manufacturing profile and an optional WebGL/PBR Product preview. The
 > post-lattice accessibility, preview, persistence and image even-odd slices
