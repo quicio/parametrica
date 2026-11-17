@@ -955,25 +955,37 @@ console.log('12. performance');
 
   // Geometry-only reference: 20k samples, no differential analysis.
   // The CI gate is deliberately looser than the local <16ms target.
+  // One cold sample on a shared runner also includes JIT and a GC pause,
+  // which is enough to miss a 50ms gate without a slower pipeline.
+  // Discard one uncached run, then keep the median.
+  const measureUncached = (document, runs = 5) => {
+    let pointCount = 0;
+    const timeOnce = () => {
+      const started = performance.now();
+      const evaluation = evaluateDocument(document, { time: 0, bypassCache: true });
+      pointCount = evaluation.stats.pointCount;
+      return performance.now() - started;
+    };
+    timeOnce();
+    const samples = [];
+    for (let i = 0; i < runs; i++) samples.push(timeOnce());
+    samples.sort((a, b) => a - b);
+    return { ms: samples[Math.floor((samples.length - 1) / 2)], pointCount };
+  };
+
   const heavy = createDocument('clifford', { generator: { params: { samples: 20000 } } });
-  delete evaluateDocument._cache;
-  const t1 = performance.now();
-  const heavyEval = evaluateDocument(heavy, { time: 0 });
-  const heavyMs = performance.now() - t1;
-  assert(heavyEval.stats.pointCount === 20000, 'performance sample has 20k points');
-  assert(heavyMs < 50, `20k geometry pipeline in ${heavyMs.toFixed(1)}ms (< 50ms CI gate)`);
+  const heavySample = measureUncached(heavy);
+  assert(heavySample.pointCount === 20000, 'performance sample has 20k points');
+  assert(heavySample.ms < 50, `20k geometry pipeline median ${heavySample.ms.toFixed(1)}ms (< 50ms CI gate)`);
 
   // Helix at the maximum practical sample count: the 3D pipeline must stay
   // inside the same geometry gate; gradient batching is covered by e2e.
   const helixHeavy = createDocument('helix', {
     generator: { params: { samples: 8000, adaptive: false } },
   });
-  delete evaluateDocument._cache;
-  const t2 = performance.now();
-  const helixEval = evaluateDocument(helixHeavy, { time: 0 });
-  const helixMs = performance.now() - t2;
-  assert(helixEval.stats.pointCount === 8000, 'helix performance sample has 8k points');
-  assert(helixMs < 50, `8k helix pipeline in ${helixMs.toFixed(1)}ms (< 50ms CI gate)`);
+  const helixSample = measureUncached(helixHeavy);
+  assert(helixSample.pointCount === 8000, 'helix performance sample has 8k points');
+  assert(helixSample.ms < 50, `8k helix pipeline median ${helixSample.ms.toFixed(1)}ms (< 50ms CI gate)`);
 }
 
 /* ——— 13. Reliability hardening regressions ——— */
